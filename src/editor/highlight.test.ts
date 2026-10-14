@@ -33,8 +33,7 @@ const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'or
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
   ['obsidian-1.14.4-seed-12345.json', []],
   ['obsidian-1.14.4-seed-2026.json', []],
-  // A quote fence after a list item and a comment line opens a code block in the editor, and a code span here.
-  ['obsidian-1.14.4-seed-2718.json', ['rich-41']],
+  ['obsidian-1.14.4-seed-2718.json', []],
   ['obsidian-1.14.4-seed-31337.json', []],
   ['obsidian-1.14.4-seed-4242.json', []],
   ['obsidian-1.14.4-seed-777.json', []],

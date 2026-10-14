@@ -385,10 +385,13 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     /*
      * Obsidian: a fence inside a quote toggles an inline-code state instead of opening a code block. It must be the
      * first inline token after a quote mark, which may be on an earlier line when nothing followed that mark; a fence
-     * that could open a code block is read as one first. The fork alone reads such a fence in `inlineNormal`.
+     * that could open a code block is read as one first. That includes a fence after a quote mark whose column equals a
+     * block indentation left behind when the line closed every list item, since the mark is then not the first token.
+     * The fork alone reads such a fence in `inlineNormal`.
      */
     const isAfterQuoteMark = />\s*$/u.test(stream.string.slice(0, stream.start)) || (state.quoteOpen && state.indentation > maxNonCodeIndentation);
-    if (isEditor && state.quote && isAfterQuoteMark && (match = matchRe(stream, FENCED_CODE_RE))) {
+    const isFenceCanOpenBlock = isFirstTokenOnLine && state.indentation <= maxNonCodeIndentation;
+    if (isEditor && state.quote && isAfterQuoteMark && !isFenceCanOpenBlock && (match = matchRe(stream, FENCED_CODE_RE))) {
       state.quoteFence = state.quoteFence ? 0 : (match[1] ?? '').length;
       return `${getType(state) ?? ''} inline-code`;
     }
