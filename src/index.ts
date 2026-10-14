@@ -20,6 +20,9 @@
  *   Lezer tree as CommonMark's reference implementation does, so each adapter is checked against the spec suites.
  * - The same options take Obsidian's quirks ({@link ObsidianQuirkFlags}), where it reads valid CommonMark differently.
  *   Every preset leaves them off, and {@link micromarkQuirksHtml} renders micromark's events with them.
+ * - {@link parseRemark} parses as Obsidian's reading view and metadata worker do: `remark-parse` 8 with Obsidian's
+ *   edits, giving its mdast tree, and {@link renderRemarkHtml} renders that tree as `remark-html` does. Obsidian's
+ *   inline algorithm, tabs, lazy quote lines and paragraph whitespace come from it by construction.
  */
 
 import type { Tree } from '@lezer/common';
@@ -54,6 +57,46 @@ export {
   editorClassDecorations,
   editorClasses
 } from './editor/view.ts';
+
+export { renderRemarkHtml } from './remark/html.ts';
+
+export { parseRemark } from './remark/parse.ts';
+
+export type {
+  RemarkBlockquote,
+  RemarkBreak,
+  RemarkCallout,
+  RemarkCode,
+  RemarkDefinition,
+  RemarkDelete,
+  RemarkEmphasis,
+  RemarkHeading,
+  RemarkHtml,
+  RemarkImage,
+  RemarkImageReference,
+  RemarkInlineCode,
+  RemarkLink,
+  RemarkLinkReference,
+  RemarkList,
+  RemarkListItem,
+  RemarkNode,
+  RemarkNodeBase,
+  RemarkParagraph,
+  RemarkParent,
+  RemarkParentBase,
+  RemarkPoint,
+  RemarkPosition,
+  RemarkReferenceType,
+  RemarkRoot,
+  RemarkStrong,
+  RemarkTable,
+  RemarkTableAlignment,
+  RemarkTableCell,
+  RemarkTableCellPadding,
+  RemarkTableRow,
+  RemarkText,
+  RemarkThematicBreak
+} from './remark/types.ts';
 
 export type {
   ConformanceCase,

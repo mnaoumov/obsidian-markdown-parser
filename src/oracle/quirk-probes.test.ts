@@ -19,6 +19,8 @@ import type {
 } from './quirk-probes.ts';
 import type { Adapter } from './render-html.ts';
 
+import { renderRemarkHtml } from '../remark/html.ts';
+import { parseRemark } from '../remark/parse.ts';
 import {
   OBSIDIAN_QUIRK_FLAGS,
   OBSIDIAN_QUIRKS
@@ -142,6 +144,9 @@ const UNFLAGGED_NOT_REPRODUCED = [
   '> \ta'
 ];
 
+// The browser drops the end tag the engine's raw HTML leaves without its start tag.
+const ENGINE_RAW_HTML = ['*a <span title="*">x</span>'];
+
 describe('the quirk probe oracle', () => {
   it('holds every probe, in order', () => {
     expect(ORACLE.probes.map((probe) => probe.markdown)).toEqual(QUIRK_PROBES.map((probe) => probe.markdown));
@@ -163,5 +168,14 @@ describe.each(ADAPTERS)('%s with the quirk flag of each probe', (adapter) => {
       return normalizeHtml(toHtml(probe.markdown)) !== normalizeHtml(probe.html);
     }).map((probe) => probe.markdown);
     expect(differing.toSorted(compareKeys)).toEqual(UNFLAGGED_NOT_REPRODUCED.toSorted(compareKeys));
+  });
+});
+
+describe('the remark-parse 8 engine', () => {
+  it('reproduces the reading view on every probe but the rendered ones and raw HTML, the quirks that are no flag included', () => {
+    const differing = ORACLE.probes
+      .filter((probe) => normalizeHtml(renderRemarkHtml(parseRemark(probe.markdown))) !== normalizeHtml(probe.html))
+      .map((probe) => probe.markdown);
+    expect(differing.toSorted(compareKeys)).toEqual([...RENDERED, ...ENGINE_RAW_HTML].toSorted(compareKeys));
   });
 });
