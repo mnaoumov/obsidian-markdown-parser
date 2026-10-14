@@ -1,14 +1,17 @@
 /**
  * @file
  *
- * Compares the micromark adapter with the `@lezer/markdown` extensions on the documents of oracle files, construct by
- * construct: both are built on the rules in `src/syntax/spec.ts`, so a difference is a place where the two parsers'
- * block structure reads a document differently.
+ * Compares the micromark adapter or the markdown-it plugin with the `@lezer/markdown` extensions on the documents of
+ * oracle files, construct by construct: all are built on the rules in `src/syntax/spec.ts`, so a difference is a place
+ * where the parsers' block structure reads a document differently.
  *
  * Usage:
- * - `jiti scripts/adapter-diff.ts [--oracle <file>]...`: per construct, the documents that use it and those that agree.
+ * - `jiti scripts/adapter-diff.ts [--adapter micromark|markdown-it] [--oracle <file>]...`: per construct, the documents
+ *   that use it and those that agree. The adapter defaults to micromark.
  * - `jiti scripts/adapter-diff.ts --construct <name> --examples <n>`: the first `n` disagreements of one construct.
  */
+
+import type Token from 'markdown-it/lib/token.mjs';
 
 import {
   parse,
@@ -22,6 +25,11 @@ import type { OracleFile } from '../src/oracle/oracle-file.ts';
 import type { ObsidianNodeName } from '../src/syntax/spec.ts';
 
 import { obsidianParser } from '../src/syntax/lezer.ts';
+import {
+  getObsidianTokenRange,
+  obsidianNodeNameOf,
+  parseMarkdownIt
+} from '../src/syntax/markdown-it.ts';
 import { micromarkObsidianMarkdown } from '../src/syntax/micromark.ts';
 import {
   isObsidianNodeName,
@@ -42,7 +50,7 @@ const DEFAULT_ORACLES = [
 const NAME_COLUMN_WIDTH = 22;
 const COUNT_COLUMN_WIDTH = 7;
 const SHOWN_SPANS = 10;
-// The group of the documents where Lezer's node takes the document's final line break and micromark's stops before it.
+// The group of the documents where Lezer's node takes the document's final line break and the adapter's stops before it.
 const FINAL_LINE_BREAK = 'final line break';
 
 // Each construct is compared with its parts: the marks, labels and names inside it.
@@ -71,6 +79,7 @@ const CONSTRUCTS: Readonly<Record<string, readonly ObsidianNodeName[]>> = {
 
 const { values } = parseArgs({
   options: {
+    adapter: { default: 'micromark', type: 'string' },
     construct: { type: 'string' },
     examples: { default: '5', type: 'string' },
     oracle: { multiple: true, type: 'string' }
@@ -85,10 +94,10 @@ function add(spans: Spans, name: ObsidianNodeName, from: number, to: number): vo
 
 /*
  * An unclosed block or front matter at the end of a document that ends with a line break: Lezer reads the empty last
- * line as part of it, and micromark ends it before that line break.
+ * line as part of it, and the adapter ends it before that line break.
  */
-function isOnlyFinalLineBreak(text: string, lezer: string, micromark: string): boolean {
-  return text.endsWith('\n') && lezer.split(`-${String(text.length)}`).join(`-${String(text.length - 1)}`) === micromark;
+function isOnlyFinalLineBreak(text: string, lezer: string, adapter: string): boolean {
+  return text.endsWith('\n') && lezer.split(`-${String(text.length)}`).join(`-${String(text.length - 1)}`) === adapter;
 }
 
 function lezerSpans(text: string): Spans {
@@ -103,6 +112,23 @@ function lezerSpans(text: string): Spans {
   return spans;
 }
 
+function markdownItSpans(text: string): Spans {
+  const spans: Spans = new Map();
+  visit(parseMarkdownIt(text));
+  return spans;
+
+  function visit(tokens: readonly Token[]): void {
+    for (const token of tokens) {
+      const name = obsidianNodeNameOf(token);
+      const range = getObsidianTokenRange(token);
+      if (name && range) {
+        add(spans, name, range.from, range.to);
+      }
+      visit(token.children ?? []);
+    }
+  }
+}
+
 function micromarkSpans(text: string): Spans {
   const spans: Spans = new Map();
   const events = postprocess(parse({ extensions: [...micromarkObsidianMarkdown] }).document().write(preprocess()(text, undefined, true)));
@@ -114,9 +140,24 @@ function micromarkSpans(text: string): Spans {
   return spans;
 }
 
+function resolveAdapter(name: string): (text: string) => Spans {
+  const spans = ADAPTERS[name];
+  if (!spans) {
+    throw new Error(`Unknown adapter: ${name}. Use one of: ${Object.keys(ADAPTERS).join(', ')}.`);
+  }
+  return spans;
+}
+
 function spansOf(spans: Spans, names: readonly ObsidianNodeName[]): string {
   return names.map((name) => `${name}: ${(spans.get(name) ?? []).join(' ')}`).join('; ');
 }
+
+const ADAPTERS: Readonly<Record<string, (text: string) => Spans>> = {
+  'markdown-it': markdownItSpans,
+  'micromark': micromarkSpans
+};
+const adapterName = values.adapter;
+const adapterSpans = resolveAdapter(adapterName);
 
 const scores = new Map(Object.keys(CONSTRUCTS).map((name) => [name, { agreeing: 0, failing: new Map<string, number>(), using: 0 }]));
 let documents = 0;
@@ -128,13 +169,13 @@ for (const file of oracleFiles) {
   for (const document of oracle.docs) {
     documents++;
     const lezer = lezerSpans(document.text);
-    const micromark = micromarkSpans(document.text);
+    const adapter = adapterSpans(document.text);
     let isIdentical = true;
     for (const [construct, names] of Object.entries(CONSTRUCTS)) {
       const score = scores.get(construct);
       const expected = spansOf(lezer, names);
-      const actual = spansOf(micromark, names);
-      if (!score || names.every((name) => !lezer.has(name) && !micromark.has(name))) {
+      const actual = spansOf(adapter, names);
+      if (!score || names.every((name) => !lezer.has(name) && !adapter.has(name))) {
         continue;
       }
       score.using++;
@@ -152,9 +193,9 @@ for (const file of oracleFiles) {
       console.log(`--- ${document.id}`);
       for (const name of names) {
         const lezerList = (lezer.get(name) ?? []).slice(0, SHOWN_SPANS).join(' ');
-        const micromarkList = (micromark.get(name) ?? []).slice(0, SHOWN_SPANS).join(' ');
-        if (lezerList !== micromarkList) {
-          console.log(`${name}\n  lezer:     ${lezerList}\n  micromark: ${micromarkList}`);
+        const adapterList = (adapter.get(name) ?? []).slice(0, SHOWN_SPANS).join(' ');
+        if (lezerList !== adapterList) {
+          console.log(`${name}\n  lezer:   ${lezerList}\n  adapter: ${adapterList}`);
         }
       }
       console.log(document.text);
@@ -165,7 +206,7 @@ for (const file of oracleFiles) {
   }
 }
 
-console.log(`${String(identical)} of ${String(documents)} documents give the same Obsidian nodes in both adapters.`);
+console.log(`${String(identical)} of ${String(documents)} documents give the same Obsidian nodes in ${adapterName} and Lezer.`);
 console.log(`${'construct'.padEnd(NAME_COLUMN_WIDTH)}${'docs'.padStart(COUNT_COLUMN_WIDTH)}${'agree'.padStart(COUNT_COLUMN_WIDTH)}`);
 for (const [name, score] of scores) {
   const sets = [...score.failing].toSorted((a, b) => b[1] - a[1]).map(([set, count]) => `${set} ${String(count)}`).join(', ');
