@@ -19,6 +19,13 @@
       "check": null,
       "manualCheck": "When the oracle is re-measured against a newer Obsidian, find the CodeMirror 5 release that build bundles and move the pin to it, then re-run the oracle-backed tests (src/editor/highlight.test.ts)."
     },
+    "eslint-plugin-unicorn": {
+      "section": "devDependencies",
+      "why": "eslint.config.mts is copied by hand from obsidian-dev-utils, which declares eslint-plugin-unicorn ^76.0.0. Version 78 adds unicorn/no-asterisk-prefix-in-documentation-comments, which reports 751 findings here, plus a few from other new rules. Exact so a sweep cannot lift it to 78 ahead of obsidian-dev-utils.",
+      "check": "npm view obsidian-dev-utils dependencies.eslint-plugin-unicorn",
+      "expect": "^76.0.0",
+      "manualCheck": "When obsidian-dev-utils moves to a newer major, move this to its range, copy any config change it made to eslint.config.mts, run `npx eslint --fix` for the new rules, fix what remains by hand, and update this entry."
+    },
     "katex": {
       "section": "overrides",
       "why": "Clears GHSA-238p-pmpm-9mq7 (KaTeX prototype pollution bypassing trust restrictions, katex 0.11.0 - 0.18.1). katex reaches the tree only through markdownlint -> micromark-extension-math, which declares ^0.16.0, so nothing direct can be bumped. markdownlint parses math syntax and never renders it, so the major-zero bump to 0.19 changes nothing it calls; lint:md passes on it.",
