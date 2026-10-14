@@ -838,14 +838,9 @@ function getUnicornConfigs(): Linter.Config[] {
        * `unicorn/name-replacements`, which upstream DOES answer with inline disables. Keeping them on is what
        * makes those three directives used rather than unused, and so what lets this repo take upstream's bytes
        * whole instead of stripping the lines — see the transform arms in `scripts/check-vendored-eslint-rules.ts`.
-       *
-       * `@typescript-eslint/no-unsafe-enum-assignment` is new in typescript-eslint 8.71 and upstream still lints
-       * with 8.70, so it has never seen it: the copies' `node as TSESTree.<Node>` narrowing of ESLint's own
-       * `Rule.Node` trips it twice. The answer belongs upstream; drop this line once the copies carry it.
        */
       files: ['scripts/helpers/eslint-rules/**/*.ts'],
       rules: {
-        '@typescript-eslint/no-unsafe-enum-assignment': 'off',
         'unicorn/no-break-in-nested-loop': 'off',
         'unicorn/no-unreadable-for-of-expression': 'off'
       }
