@@ -3,13 +3,27 @@
  *
  * Entry point of the Obsidian-flavoured markdown parser.
  *
- * For now it exposes the plain `@lezer/markdown` parser. The Obsidian syntax extensions and the editor's
- * class-compatibility layer are shaped by Phase 0 and land on top of it.
+ * - {@link highlight} and {@link highlightLines} give the classes Obsidian's editor puts on every character and
+ *   line, resumable from any line.
+ * - {@link parse} gives the plain `@lezer/markdown` tree. The Obsidian syntax extensions for it come later.
  */
 
 import type { Tree } from '@lezer/common';
 
 import { parser } from '@lezer/markdown';
+
+export type {
+  ClassSpan,
+  HighlightedLine,
+  HighlightLinesParams,
+  LineState
+} from './editor/highlight.ts';
+
+export {
+  copyLineState,
+  highlight,
+  highlightLines
+} from './editor/highlight.ts';
 
 /**
  * Parses a markdown document into a Lezer syntax tree.
