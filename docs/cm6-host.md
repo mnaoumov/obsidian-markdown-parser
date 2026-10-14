@@ -16,7 +16,7 @@ The tree has the shape the oracle reads from the live editor:
 
 `lineClassesProperty` and `tokenClassesProperty` carry the classes on the node types, so the renderer does not split names on `_`, which a `tag-<name>` class may contain. `editorClasses` puts a token's classes on its text as `cm-<class>` and a line's classes on its `.cm-line`, for the visible ranges.
 
-The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it has the tokenizer's single difference, `rich-41` of seed 2718.
+The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it is exact on all of them too.
 
 ## Incremental reuse
 
