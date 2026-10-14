@@ -21,7 +21,7 @@ A single incremental markdown parser for Obsidian-flavoured markdown, built on [
 
 ## L4. Phases
 
-0. Class-span oracle against the live editor; measure the gap between plain `@lezer/markdown` and today's tokens. Stop here if the CM5 tokenizer's quirks prove impractical to reproduce.
+0. Class-span oracle against the live editor; measure the gap between plain `@lezer/markdown` and today's tokens. Stop here if the CM5 tokenizer's quirks prove impractical to reproduce. **Done 2026-10-13: go, with a stateful mapping layer.** The numbers are in [`docs/phase-0.md`](docs/phase-0.md), and the harness is in `phase0/`: `oracle.mjs` reads the live editor's tree over CDP, `corpus.mjs` builds the documents, and `gap.mjs` scores a Lezer mapping against the oracle. The harness is plain `.mjs`, outside the TypeScript lint scope, because it is measurement tooling. Port it into `src/` or `scripts/` when Phase 1 makes it the test oracle.
 1. Obsidian syntax extensions plus a class-compatibility layer, driven to 0 diffs on fuzzed documents.
 2. `CachedMetadata` projection from the same tree, checked against the metadata worker.
 3. A write-up for the team.
