@@ -4,7 +4,7 @@ Measured on 2026-10-14 against Obsidian 1.14.4 (installer 1.14.4), on a harness-
 
 ## Result
 
-The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on all 20,296 oracle documents.
+The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on 28,150 of the 28,152 oracle documents. The two it misses are listed under [What is left](#what-is-left).
 
 | Oracle corpus                               | Documents | Exact |
 | ------------------------------------------- | --------: | ----: |
@@ -15,12 +15,16 @@ The tokenizer gives every character and every line of a document the same classe
 | seed 9001 (wider corpus, validation)        |     3,328 | 3,328 |
 | seed 31337 (markdown blocks, tuned against) |     3,628 | 3,628 |
 | seed 2718 (markdown blocks, validation)     |     3,628 | 3,628 |
+| seed 1618 (code spans, tuned against)       |     3,928 | 3,928 |
+| seed 1414 (code spans, validation)          |     3,928 | 3,926 |
 
 Seed 777 scored 2,110 the first time it was read, which measured how well rules found on seed 12345 carry to documents nobody looked at. The rules it then taught carried to seed 4242, which scored 2,122 on its first read and 2,126 after two fixes found there. The last 4 documents (`inline-83`, `inline-280`, `inline-34`, `inline-206`) were closed by the two rules under [Line starts the markdown mode never sees](#line-starts-the-markdown-mode-never-sees) and by the CodeMirror 5 release under [Tables and front matter](#tables-and-front-matter).
 
 Seeds 2026 and 9001 add four piece sets the first three corpora lacked: `table` (tables with and without outer pipes, after paragraphs, lists and headings, with code, links, math and HTML in cells), `html` (blocks, inline tags, scripts, styles, comments, declarations, HTML in quotes and lists), `lang` (30 fenced languages and their code lines) and `nest` (nested and mixed lists with fences, quotes, math and tables). Seed 2026 scored 3,268 of 3,328 on its first read. Seed 9001 was first read once seed 2026 was exact, and scored 3,289. Both were read again after a last change to the corpus, which only reordered the sets. Its one document left, `lang-163`, was a ```` ```markdown ```` block, and the rules under [Markdown blocks](#markdown-blocks) fixed it.
 
 Seeds 31337 and 2718 add the `mdlang` piece set: markdown nested in a markdown fence, opened by ```` ```markdown ````, ````` ````markdown `````, `~~~markdown` or ```` ```text/x-markdown ````, at a line start, in a list item or after a quote mark. Seed 31337 scored 3,605 of 3,628 on its first read. Its other misses taught the editor rules at the end of [Markdown blocks](#markdown-blocks). Seed 2718 was then read once and scored 3,627. Its one document left, `rich-41`, had no markdown block: it taught the last rule under [Quotes and callouts](#quotes-and-callouts), which Obsidian's fork of the markdown mode states in its own code.
+
+Seeds 1618 and 1414 add the `codespan` piece set: code spans opened by one, two or three backticks and left open at the end of their line, outside and inside quotes, list items, footnote definitions, headings, tables, comments and links, and lines that could close them. Seed 1618 scored 3,749 of 3,928 on its first read: the editor ends a one- or two-backtick span with its line everywhere, not only in a quote, as `app.js` says. That rule, and three it uncovered about footnote definitions and comments, made it exact. Seed 1414 was then read once and scored 3,921. Its misses taught the rule under [Footnotes](#footnotes) about link text left open on the line above, and the highlight rule under [Inline syntax](#inline-syntax). Its two documents left, `mdlang-25` and `mdlang-80`, failed before this round too, and have nothing to do with code spans.
 
 From this round on, a rule the oracle could not settle was read from the editor's own code, as AGENTS.md L3 allows: the HyperMD-derived mode in Obsidian's `app.js` and Obsidian's fork of the CodeMirror 5 markdown mode in `lib/codemirror/markdown.js`. The rules were then written in this port's own code and checked against all five corpora.
 
@@ -57,7 +61,6 @@ Each rule below was read off the oracle and checked against all three corpora.
 - A callout marker joins the quote mark's token and marks the line `HyperMD-callout`. On a line's first mark, it does so only when the line above is not a quote line.
 - A fence inside a quote is not a code block. It opens an inline-code state that styles everything after it until a backtick run of three or more closes it. No blank line ends that state, and opening a real fence does. The fence must be the first inline token after a quote mark. That mark may be on the line above when nothing followed it, as long as the fence could not open a code block itself.
 - A line that closes every open list item keeps the block indentation of the outermost one. A quote mark before that column is then not the line's first token, and a fence after it that starts at that column is, so it opens a real code block. In `rich-41` of seed 2718, ```` > ``` ```` after `+ L` and a deeper list item `- D` indented by four spaces opens one.
-- A code span opened inside a quote ends with its line.
 
 ### Lists and code
 
@@ -70,8 +73,9 @@ Each rule below was read off the oracle and checked against all three corpora.
 
 ### Inline syntax
 
-- `%%` toggles a comment state. Inside a comment, each token read as markdown inline text carries `comment`. A footnote definition's opening mark gets the single class `commentformatting`, which is two classes joined without a space.
-- `==` toggles a highlight. A run of three or more `=` is text.
+- `%%` toggles a comment state. Inside a comment, each token read as markdown inline text carries `comment`. A footnote definition's opening mark gets the single class `commentformatting`, which is two classes joined without a space, unless a code span left open on the line above hides the comment.
+- A code span opened by one or two backticks ends with its line, wherever it was opened. One opened by three or more runs on until a run of the same length closes it.
+- `==` toggles a highlight. A run of three or more `=` is text. A list item ends a highlight, as it ends emphasis and code spans.
 - A run of plain text also stops at `|` and `$`.
 - A tag token carries `tag-<name>`, keeping only ASCII letters, digits, `_` and `-`. The `#` token takes the whole name, and the last token takes its own text. The tokens after the `#` drop `em`.
 - A `<!` declaration, `<?` instruction or `<![CDATA[` section in inline markdown is a comment. Its first token also carries the class `null`: HyperMD appends the inner mode's first style as a string, and that style is `null`. The line after indented code is not inline markdown when its first token is read, so a declaration there has no classes.
@@ -85,7 +89,8 @@ Each rule below was read off the oracle and checked against all three corpora.
 
 - `[^ref]` and `^[inline]` have their own marks (`footref`, `formatting-link-start`/`-end`, `inline-footnote-start`/`-end`) and no `link` class.
 - A definition opens only at the start of its line. Its marks do not wear the quote style, but its label does.
-- Indented lines after a definition continue it (`HyperMD-footnote`), and so do blank lines. An indented list item does not.
+- A line after a definition continues it (`HyperMD-footnote`) when it is indented by a whole number of tab stops of 4, counting a tab as 4 spaces. Blank lines continue it too. A line indented by 2 spaces, and an indented list item, do not.
+- A definition opens even when link text was left open on the line above. Other links on that line wear no `hmd-barelink`: the open link text hides them.
 - After a definition's `]:`, only a URL is marked. Anything else is plain text.
 
 ### Tables and front matter
@@ -130,6 +135,7 @@ The `mdlang` set also reached three editor rules that no corpus had touched befo
 
 ## What is left
 
+- Two documents of seed 1414, which no rule of this port explains yet: in `mdlang-25` the editor gives `\a` no escape classes after a markdown block opened in a list item, and in `mdlang-80` it reads `> [!note]` as a callout after a quote fence that the port still thinks is open.
 - CodeMirror 6's `StreamLanguage` cannot host this tokenizer, because it gives modes no way to read the next line, which setext headings and tables need. `src/editor/language.ts` is a host that can, with the editor's tree shape and incremental re-parsing. Its design and cost are in [cm6-host.md](cm6-host.md).
 - The Obsidian syntax extensions for `@lezer/markdown`, which Phase 2's `CachedMetadata` projection needs, are in [syntax.md](syntax.md).
 

@@ -32,6 +32,8 @@ import {
 } from './sub-modes.ts';
 
 const TOKEN_BREAK_RE = /[^\\][$|]/u;
+// Obsidian counts a tab in a footnote continuation's indentation as four spaces, wherever it stands.
+const TAB_WIDTH = 4;
 const LIST_RE = /^(?:[*\-+]|^[0-9]+([.)]))\s+/u;
 const EMAIL_RE = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/u;
 // Obsidian: a table's head and delimiter rows, the rows that continue it, and a delimiter cell.
@@ -270,6 +272,10 @@ export function createObsidianMode(): ObsidianMode {
       state.hmdLinkType = LinkType.None;
       state.hmdWasHeading = state.hmdIsHeading;
       state.hmdIsHeading = false;
+      // Obsidian: a code span opened by one or two backticks does not run past the end of its line.
+      if (state.code === 1 || state.code === 2) {
+        state.code = 0;
+      }
     }
     let isInMarkdown = !(wasInCodeFence || wasInHTML);
     let isInMarkdownInline = isInMarkdown && !(state.code || state.quoteFence || state.indentedCode || state.linkHref);
@@ -290,9 +296,11 @@ export function createObsidianMode(): ObsidianMode {
         return math ?? null;
       }
     }
-    // Obsidian: an indented line after a footnote definition continues it.
+    // Obsidian: a line after a footnote definition indented by a whole number of tab stops continues it.
     if (isBol && state.hmdFootnote) {
-      if (/^\s+\S/u.test(stream.string) && !LIST_RE.test(stream.string.trimStart())) {
+      const leading = /^\s*/u.exec(stream.string)?.[0] ?? '';
+      const indentation = leading.length + (leading.length - leading.replaceAll('\t', '').length) * (TAB_WIDTH - 1);
+      if (indentation > 0 && indentation % TAB_WIDTH === 0 && /\S/u.test(stream.string) && !LIST_RE.test(stream.string.trimStart())) {
         ans += ' line-HyperMD-footnote';
       } else {
         state.hmdFootnote = false;
@@ -456,6 +464,12 @@ export function createObsidianMode(): ObsidianMode {
             state.hmdLinkType = LinkType.Normal;
           }
         }
+      } else if (isBol && state.linkText && /^\s*$/u.test(stream.string.slice(0, stream.start)) && matchRe(stream, /^[^\]]+\]:/u, false)) {
+        /*
+         * Obsidian: link text left open on the line above hides the new link this line opens, but not a footnote
+         * definition, which it reads apart from link text.
+         */
+        state.hmdLinkType = LinkType.Footnote;
       }
       if (wasLinkHref !== state.linkHref) {
         if (!wasLinkHref) {
