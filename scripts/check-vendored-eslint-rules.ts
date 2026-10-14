@@ -152,9 +152,9 @@ const REGISTRATION_FILE_NAMES = new Set([
  */
 const TRANSFORM_ARMS: readonly TransformArm[] = [
   {
-    apply: (text) => text.replaceAll('\'../../../type-guards.ts\'', '\'../type-guards.ts\''),
+    apply: (text) => text.replaceAll('\'../../../type-guards.ts\'', '\'../type-guards.ts\'').replaceAll('\'../../../object-utils.ts\'', '\'../object-utils.ts\''),
     fileNames: [],
-    reason: 'Upstream sits three levels under `src/script-utils/`, so it reaches `type-guards.ts` by `../../../`. A vendored tree sits directly beside its copy of that helper.'
+    reason: 'Upstream sits three levels under `src/script-utils/`, so it reaches `type-guards.ts` and `object-utils.ts` by `../../../`. A vendored tree sits directly beside its copies of those helpers.'
   },
   {
     // The replacements are passed as functions rather than as strings so that no `$`-sequence in them is read as a capture-group reference.
