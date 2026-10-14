@@ -1,0 +1,57 @@
+{
+  "comment": [
+    "Release conditions for every exact-pinned version and every advisory-driven override in package.json.",
+    "update-npm-deps.ps1 upgrades caret ranges and skips exact versions, `$name` override references and nested overrides,",
+    "so nothing else would ever say that a pin has gone stale. On every run the script executes each `check` and compares",
+    "its trimmed stdout to `expect`: equal means the pin is still needed, different means re-examine it. `check: null` means",
+    "there is no mechanical test, and the entry is reported for manual review on every run instead.",
+    "Known surviving advisory (2026-10-14): GHSA-vfj7-8cjw-p6xm, braces stack exhaustion on deeply nested patterns. It",
+    "affects every braces release (<= 3.0.3, no patched version), reached only through markdownlint-cli2 -> micromatch",
+    "(and globby -> fast-glob -> micromatch), so no override can clear it and npm's own remedy downgrades markdownlint-cli2",
+    "to 0.21.0. Exposure: braces only expands the glob patterns this repo's own lint:md script and config hand it, never",
+    "untrusted input, and it never ships. Re-check with `npm view braces version` against the advisory's patched version;",
+    "once one exists, add a caret override for it here."
+  ],
+  "pins": {
+    "codemirror": {
+      "section": "dependencies",
+      "why": "The class tokenizer runs CodeMirror 5's own sub-modes from this package, and their classes differ between CM5 releases. 5.64.0 is the release Obsidian 1.14.4 bundles, which is what the oracle corpora were measured against (AGENTS.md L4).",
+      "check": null,
+      "manualCheck": "When the oracle is re-measured against a newer Obsidian, find the CodeMirror 5 release that build bundles and move the pin to it, then re-run the oracle-backed tests (src/editor/highlight.test.ts)."
+    },
+    "katex": {
+      "section": "overrides",
+      "why": "Clears GHSA-238p-pmpm-9mq7 (KaTeX prototype pollution bypassing trust restrictions, katex 0.11.0 - 0.18.1). katex reaches the tree only through markdownlint -> micromark-extension-math, which declares ^0.16.0, so nothing direct can be bumped. markdownlint parses math syntax and never renders it, so the major-zero bump to 0.19 changes nothing it calls; lint:md passes on it.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/micromark-extension-math/package.json','utf8')).dependencies.katex)\"",
+      "expect": "^0.16.0",
+      "manualCheck": "When micromark-extension-math's range admits a patched katex (>= 0.18.2) on its own, delete this override and this entry."
+    },
+    "linkify-it": {
+      "section": "devDependencies",
+      "why": "Not used directly: it is here only to make npm hoist linkify-it 5 to the root. @types/markdown-it 14 imports 'linkify-it' and is written against @types/linkify-it 5, but linkify-it 6 ships its own types, and TypeScript prefers those over @types. markdownlint-cli2 0.23.3 brings markdown-it 15, which needs linkify-it 6 (it imports a named LinkifyIt export 5 lacks), so a global override to 5 breaks lint:md; without this pin npm hoists 6 and build:compile fails with TS2709 in @types/markdown-it. Exact so the sweep cannot lift it to 6.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/markdown-it/package.json','utf8')).version.split('.')[0])\"",
+      "expect": "14",
+      "manualCheck": "The pin is needed while this repo's own markdown-it is 14 and typed by @types/markdown-it. Once src/syntax/markdown-it.ts moves to markdown-it 15, which ships its own types, drop @types/markdown-it, this pin and this entry."
+    },
+    "markdownlint-rule-relative-links": {
+      "section": "overrides",
+      "why": "Nested override giving the rule this repo's own markdown-it (\"$markdown-it\"). 5.1.3 pins markdown-it 15.0.1 exactly, and its src/index.d.ts does not type-check against markdown-it 15's bundled types (TS2749), which build:compile reaches through scripts/markdownlint-cli2-config.ts with skipLibCheck off. The earlier releases are no way out: 5.1.1 and 5.1.2 pin markdown-it 14.2.0 and 14.3.0, both inside GHSA-253c-mchw-3w2r (< 14.3.1). The rule only parses links, and lint:md passes on 14.3.2.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/markdownlint-rule-relative-links/package.json','utf8')).dependencies['markdown-it'])\"",
+      "expect": "15.0.1",
+      "manualCheck": "Drop the override once this repo's own markdown-it is 15 (then the shared copy is the one it pins), or once a release of the rule ships types that check against markdown-it 15."
+    },
+    "smol-toml": {
+      "section": "overrides",
+      "why": "Clears GHSA-r4xh-jqrq-34v2 (quadratic parse() on key lines) and GHSA-7w5x-hrqm-74c2 (DoS on malformed TOML), smol-toml <= 1.8.0. markdownlint-cli2 0.23.3 pins smol-toml 1.8.0 exactly and is already the latest release; 1.9.1 is a minor bump within the same API.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/markdownlint-cli2/package.json','utf8')).dependencies['smol-toml'])\"",
+      "expect": "1.8.0",
+      "manualCheck": "When markdownlint-cli2 depends on smol-toml >= 1.9.0 on its own, delete this override and this entry."
+    },
+    "typescript": {
+      "section": "devDependencies",
+      "why": "typescript-eslint peer-requires >=4.8.4 <6.1.0, and its parser cannot run on the TypeScript 7 native API, so type-aware ESLint would stop working on 7. Exact so a sweep cannot drift it to 7.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/typescript-eslint/package.json','utf8')).peerDependencies.typescript)\"",
+      "expect": ">=4.8.4 <6.1.0"
+    }
+  }
+}
