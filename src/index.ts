@@ -9,6 +9,8 @@
  *   re-parsing, and {@link editorClasses} renders its classes the way the editor does.
  * - {@link parse} gives the `@lezer/markdown` tree with the Obsidian syntax, and {@link obsidianMarkdown} is that
  *   syntax as `@lezer/markdown` extensions.
+ * - {@link parseMdast} gives the mdast tree with the Obsidian syntax, and {@link micromarkObsidianMarkdown} and
+ *   {@link mdastObsidianMarkdown} are that syntax as micromark and `mdast-util-from-markdown` extensions.
  * - {@link ObsidianNode} names the syntax nodes, and {@link CONFORMANCE_CASES} is the corpus every adapter is checked
  *   against.
  */
@@ -58,6 +60,34 @@ export {
   obsidianParser,
   obsidianSyntax
 } from './syntax/lezer.ts';
+
+export type {
+  BlockId,
+  Callout,
+  Embed,
+  Highlight,
+  InlineFootnote,
+  InlineMath,
+  InternalLink,
+  InternalLinkFields,
+  MathBlock,
+  ObsidianComment,
+  ObsidianCommentBlock,
+  Tag
+} from './syntax/mdast.ts';
+
+export {
+  MDAST_NODE_TYPES,
+  mdastObsidianMarkdown,
+  mdastObsidianSyntax,
+  parseMdast
+} from './syntax/mdast.ts';
+
+export {
+  micromarkObsidianMarkdown,
+  micromarkObsidianSyntax,
+  ObsidianToken
+} from './syntax/micromark.ts';
 
 export type { ObsidianNodeName } from './syntax/spec.ts';
 
