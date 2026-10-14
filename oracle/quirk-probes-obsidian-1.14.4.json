@@ -937,6 +937,632 @@
         "list@0-0",
         "paragraph@2-2"
       ]
+    },
+    {
+      "markdown": "a*b*c a_b_c",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p>a<em>b</em>c a_b_c</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "foo_bar_baz __a__b",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p>foo_bar_baz <strong>a</strong>b</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*foo*bar **foo**bar",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>foo</em>bar <strong>foo</strong>bar</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a **b* c**",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a **b</em> c**</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "**a *b** c*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><strong>a *b</strong> c*</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a `*` b*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a `</em>` b*</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a <span title=\"*\">x</span>",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a &lt;span title=\"</em>\"&gt;x</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*[a*](b)",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>[a</em>](b)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a <http://x/*> b*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a &lt;http://x/</em>&gt; b*</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "***a***",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><strong><em>a</em></strong></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a**b*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a**b</em></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "* a *",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<ul>\n<li>a *</li>\n</ul>",
+      "sections": [
+        "list@0-0"
+      ]
+    },
+    {
+      "markdown": "x *a\n* b",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p>x *a</p>\n<ul>\n<li>b</li>\n</ul>",
+      "sections": [
+        "paragraph@0-0",
+        "list@1-1"
+      ]
+    },
+    {
+      "markdown": "**a* *b**",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><strong>a* *b</strong></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "_a *b_ c*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>a *b</em> c*</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "a ** b ** c",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p>a <strong> b </strong> c</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "_(a)_ *(*a*)*",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p><em>(a)</em> <em>(</em>a<em>)</em></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "\"*a*\" .\"_b_\".",
+      "preset": "commonmark",
+      "quirk": "emphasis",
+      "html": "<p>\"<em>a</em>\" .\"<em>b</em>\".</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "*a ~~b* c~~",
+      "preset": "gfm",
+      "quirk": "emphasis",
+      "html": "<p><em>a ~~b</em> c~~</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "~~a *b~~ c*",
+      "preset": "gfm",
+      "quirk": "emphasis",
+      "html": "<p><del>a *b</del> c*</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a [b](c)](d)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"d\">a [b](c)</a></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "![a [b](c)][d]\n\n[d]: d.jpg",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><img alt=\"a [b](c)\" src=\"d.jpg\"></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "[![a][b]](c)\n\n[b]: b.jpg",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"c\"><img alt=\"a\" src=\"b.jpg\"></a></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "[a](<b c>) [a](b c)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b c\">a</a> [a](b c)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a]( b ) [a](b \"t\" )",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b\">a</a> <a href=\"b\" title=\"t\">a</a></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a `]` b](c)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p>[a `]` b](c)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a <b>]</b>](c)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p>[a <b>]</b>](c)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a <http://x/]> b](c)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p>[a &lt;http://x/]&gt; b](c)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a](b\\)c) [a](b(c)d) [a](b((c))d)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b)c\">a</a> <a href=\"b(c)d\">a</a> <a href=\"b((c))d\">a</a></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a](b)(c) [a](b)[c]",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b\">a</a>(c) <a href=\"b\">a</a>[c]</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a][b] [a] [b] [b][]\n\n[b]: /u",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"/u\">a</a> [a] <a href=\"/u\">b</a> <a href=\"/u\">b</a></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "[ a ] [A]\n\n[a]: /u",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p>[ a ] <a href=\"/u\">A</a></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "[a]\n\n[ a ]: /u",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p>[a]</p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "[a](b 't') [a](b (t)) [a](b \"t)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b\" title=\"t\">a</a> <a href=\"b\" title=\"t\">a</a> [a](b \"t)</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "[a\nb](c) [a](\nb\n)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"c\">a\nb</a> <a href=\"b\">a</a></p>",
+      "sections": [
+        "paragraph@0-3"
+      ]
+    },
+    {
+      "markdown": "[*a](b*)",
+      "preset": "commonmark",
+      "quirk": "link",
+      "html": "<p><a href=\"b*\">*a</a></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "``a`b`` ``` a ``",
+      "preset": "commonmark",
+      "quirk": "codeSpan",
+      "html": "<p><code>a`b</code> `<code>a</code></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "`a``b` `` `a` ``",
+      "preset": "commonmark",
+      "quirk": "codeSpan",
+      "html": "<p><code>a``b</code> <code>`a`</code></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "` a ` `  ` ` `",
+      "preset": "commonmark",
+      "quirk": "codeSpan",
+      "html": "<p><code>a</code> <code>  </code> <code> </code></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "``a\nb`` `a\\`b`",
+      "preset": "commonmark",
+      "quirk": "codeSpan",
+      "html": "<p><code>a b</code> <code>a\\</code>b`</p>",
+      "sections": [
+        "paragraph@0-1"
+      ]
+    },
+    {
+      "markdown": "```a`` b```",
+      "preset": "commonmark",
+      "quirk": "codeSpan",
+      "html": "<p><code>a`` b</code></p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "![*a* `b` [c](d)][e]\n\n[e]: e.jpg",
+      "preset": "commonmark",
+      "quirk": "image",
+      "html": "<p><img alt=\"*a* `b` [c](d)\" src=\"e.jpg\"></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "![a\\*b &amp; c][e]\n\n[e]: e.jpg",
+      "preset": "commonmark",
+      "quirk": "image",
+      "html": "<p><img alt=\"a*b &amp; c\" src=\"e.jpg\"></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2"
+      ]
+    },
+    {
+      "markdown": "![a ![b][c]][d]\n\n[c]: c.jpg\n[d]: d.jpg",
+      "preset": "commonmark",
+      "quirk": "image",
+      "html": "<p><img alt=\"a ![b][c]\" src=\"d.jpg\"></p>",
+      "sections": [
+        "paragraph@0-0",
+        "definition@2-2",
+        "definition@3-3"
+      ]
+    },
+    {
+      "markdown": "-\ta",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<ul>\n<li>a</li>\n</ul>",
+      "sections": [
+        "list@0-0"
+      ]
+    },
+    {
+      "markdown": ">\ta",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<blockquote>\n<pre><code>a\n</code></pre>\n</blockquote>",
+      "sections": [
+        "blockquote@0-0"
+      ]
+    },
+    {
+      "markdown": ">\t\tcode",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<blockquote>\n<pre><code>\tcode\n</code></pre>\n</blockquote>",
+      "sections": [
+        "blockquote@0-0"
+      ]
+    },
+    {
+      "markdown": "\tcode\n \tcode",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<pre><code>code\n</code></pre>\n<p> \tcode</p>",
+      "sections": [
+        "code@0-0",
+        "paragraph@1-1"
+      ]
+    },
+    {
+      "markdown": "- a\n\n\tb",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<ul>\n<li>\n<p>a</p>\n<p>b</p>\n</li>\n</ul>",
+      "sections": [
+        "list@0-2"
+      ]
+    },
+    {
+      "markdown": "- a\n\n\t\tb",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<ul>\n<li>\n<p>a</p>\n<pre><code>b\n</code></pre>\n</li>\n</ul>",
+      "sections": [
+        "list@0-2"
+      ]
+    },
+    {
+      "markdown": "1.\ta\n\n\tb",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<ol>\n<li>\n<p>a</p>\n<p>b</p>\n</li>\n</ol>",
+      "sections": [
+        "list@0-2"
+      ]
+    },
+    {
+      "markdown": "-\t\ta",
+      "preset": "commonmark",
+      "quirk": "tab",
+      "html": "<ul>\n<li>\n<pre><code>a\n</code></pre>\n</li>\n</ul>",
+      "sections": [
+        "list@0-0"
+      ]
+    },
+    {
+      "markdown": "> a\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<p>a\nb</p>\n</blockquote>",
+      "sections": [
+        "blockquote@0-1"
+      ]
+    },
+    {
+      "markdown": "> a\n>\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<p>a</p>\n<p>b</p>\n</blockquote>",
+      "sections": [
+        "blockquote@0-2"
+      ]
+    },
+    {
+      "markdown": "> - a\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<ul>\n<li>a\nb</li>\n</ul>\n</blockquote>",
+      "sections": [
+        "blockquote@0-1"
+      ]
+    },
+    {
+      "markdown": "> ```\na",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<pre><code>a\n</code></pre>\n</blockquote>",
+      "sections": [
+        "blockquote@0-1"
+      ]
+    },
+    {
+      "markdown": "> a\n    b",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<p>a</p>\n</blockquote>\n<pre><code>b\n</code></pre>",
+      "sections": [
+        "blockquote@0-0",
+        "code@1-1"
+      ]
+    },
+    {
+      "markdown": ">> a\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<blockquote>\n<p>a\nb</p>\n</blockquote>\n</blockquote>",
+      "sections": [
+        "blockquote@0-1"
+      ]
+    },
+    {
+      "markdown": "- > a\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<ul>\n<li>\n<blockquote>\n<p>a\nb</p>\n</blockquote>\n</li>\n</ul>",
+      "sections": [
+        "list@0-1"
+      ]
+    },
+    {
+      "markdown": "> a\n- b",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li>b</li>\n</ul>",
+      "sections": [
+        "blockquote@0-0",
+        "list@1-1"
+      ]
+    },
+    {
+      "markdown": "> a\n\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<p>a</p>\n</blockquote>\n<p>b</p>",
+      "sections": [
+        "blockquote@0-0",
+        "paragraph@2-2"
+      ]
+    },
+    {
+      "markdown": ">     code\nb",
+      "preset": "commonmark",
+      "quirk": "lazyQuote",
+      "html": "<blockquote>\n<pre><code>code\n</code></pre>\n<p>b</p>\n</blockquote>",
+      "sections": [
+        "blockquote@0-1"
+      ]
+    },
+    {
+      "markdown": "  a",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<p>  a</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "a  \nb",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<p>a<br>\nb</p>",
+      "sections": [
+        "paragraph@0-1"
+      ]
+    },
+    {
+      "markdown": " a\n b",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<p> a\nb</p>",
+      "sections": [
+        "paragraph@0-1"
+      ]
+    },
+    {
+      "markdown": "a\t",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<p>a\t</p>",
+      "sections": [
+        "paragraph@0-0"
+      ]
+    },
+    {
+      "markdown": "   a\n   b",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<p>   a\nb</p>",
+      "sections": [
+        "paragraph@0-1"
+      ]
+    },
+    {
+      "markdown": "> \ta",
+      "preset": "commonmark",
+      "quirk": "whitespace",
+      "html": "<blockquote>\n<pre><code>a\n</code></pre>\n</blockquote>",
+      "sections": [
+        "blockquote@0-0"
+      ]
     }
   ]
 }

@@ -3,7 +3,8 @@
  *
  * Documents beyond the spec examples that show the quirk flags' rules, read from a live Obsidian by
  * `scripts/quirk-probe-oracle.ts` into `oracle/quirk-probes-obsidian-<version>.json`. `gfmTable` and `listItem` were
- * measured on them; the others check what the flags read against the reading view.
+ * measured on them; the others check what the flags read against the reading view. The probes of an
+ * {@link UnflaggedQuirk} measure what no flag reproduces.
  */
 
 import type { ObsidianQuirkFlags } from '../syntax/options.ts';
@@ -24,9 +25,9 @@ export interface QuirkProbe {
   readonly preset: 'commonmark' | 'gfm';
 
   /**
-   * The quirk it shows.
+   * The quirk it shows: a flag, or a quirk that is no flag.
    */
-  readonly quirk: keyof ObsidianQuirkFlags;
+  readonly quirk: keyof ObsidianQuirkFlags | UnflaggedQuirk;
 }
 
 /**
@@ -58,6 +59,12 @@ export interface QuirkProbeRead extends QuirkProbe {
    */
   readonly sections: readonly string[];
 }
+
+/**
+ * A quirk that no flag reproduces, since each adapter reads it inside its own inline algorithm or container handling:
+ * code span runs, emphasis, image descriptions, lazy quote lines, links, tabs and paragraph whitespace.
+ */
+export type UnflaggedQuirk = 'codeSpan' | 'emphasis' | 'image' | 'lazyQuote' | 'link' | 'tab' | 'whitespace';
 
 /**
  * The probes.
@@ -163,5 +170,73 @@ export const QUIRK_PROBES: readonly QuirkProbe[] = [
   { markdown: '- a\n\n      code', preset: 'commonmark', quirk: 'listItem' },
   { markdown: '- a\n\n        code', preset: 'commonmark', quirk: 'listItem' },
   { markdown: '- a\nb', preset: 'commonmark', quirk: 'listItem' },
-  { markdown: '- a\n\n b', preset: 'commonmark', quirk: 'listItem' }
+  { markdown: '- a\n\n b', preset: 'commonmark', quirk: 'listItem' },
+  { markdown: 'a*b*c a_b_c', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: 'foo_bar_baz __a__b', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*foo*bar **foo**bar', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a **b* c**', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '**a *b** c*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a `*` b*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a <span title="*">x</span>', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*[a*](b)', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a <http://x/*> b*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '***a***', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a**b*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '* a *', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: 'x *a\n* b', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '**a* *b**', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '_a *b_ c*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: 'a ** b ** c', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '_(a)_ *(*a*)*', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '"*a*" ."_b_".', preset: 'commonmark', quirk: 'emphasis' },
+  { markdown: '*a ~~b* c~~', preset: 'gfm', quirk: 'emphasis' },
+  { markdown: '~~a *b~~ c*', preset: 'gfm', quirk: 'emphasis' },
+  { markdown: '[a [b](c)](d)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '![a [b](c)][d]\n\n[d]: d.jpg', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[![a][b]](c)\n\n[b]: b.jpg', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a](<b c>) [a](b c)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a]( b ) [a](b "t" )', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a `]` b](c)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a <b>]</b>](c)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a <http://x/]> b](c)', preset: 'commonmark', quirk: 'link' },
+  { markdown: String.raw`[a](b\)c) [a](b(c)d) [a](b((c))d)`, preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a](b)(c) [a](b)[c]', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a][b] [a] [b] [b][]\n\n[b]: /u', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[ a ] [A]\n\n[a]: /u', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a]\n\n[ a ]: /u', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a](b \'t\') [a](b (t)) [a](b "t)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[a\nb](c) [a](\nb\n)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '[*a](b*)', preset: 'commonmark', quirk: 'link' },
+  { markdown: '``a`b`` ``` a ``', preset: 'commonmark', quirk: 'codeSpan' },
+  { markdown: '`a``b` `` `a` ``', preset: 'commonmark', quirk: 'codeSpan' },
+  { markdown: '` a ` `  ` ` `', preset: 'commonmark', quirk: 'codeSpan' },
+  { markdown: '``a\nb`` `a\\`b`', preset: 'commonmark', quirk: 'codeSpan' },
+  { markdown: '```a`` b```', preset: 'commonmark', quirk: 'codeSpan' },
+  { markdown: '![*a* `b` [c](d)][e]\n\n[e]: e.jpg', preset: 'commonmark', quirk: 'image' },
+  { markdown: '![a\\*b &amp; c][e]\n\n[e]: e.jpg', preset: 'commonmark', quirk: 'image' },
+  { markdown: '![a ![b][c]][d]\n\n[c]: c.jpg\n[d]: d.jpg', preset: 'commonmark', quirk: 'image' },
+  { markdown: '-\ta', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '>\ta', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '>\t\tcode', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '\tcode\n \tcode', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '- a\n\n\tb', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '- a\n\n\t\tb', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '1.\ta\n\n\tb', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '-\t\ta', preset: 'commonmark', quirk: 'tab' },
+  { markdown: '> a\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> a\n>\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> - a\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> ```\na', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> a\n    b', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '>> a\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '- > a\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> a\n- b', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '> a\n\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '>     code\nb', preset: 'commonmark', quirk: 'lazyQuote' },
+  { markdown: '  a', preset: 'commonmark', quirk: 'whitespace' },
+  { markdown: 'a  \nb', preset: 'commonmark', quirk: 'whitespace' },
+  { markdown: ' a\n b', preset: 'commonmark', quirk: 'whitespace' },
+  { markdown: 'a\t', preset: 'commonmark', quirk: 'whitespace' },
+  { markdown: '   a\n   b', preset: 'commonmark', quirk: 'whitespace' },
+  { markdown: '> \ta', preset: 'commonmark', quirk: 'whitespace' }
 ];
