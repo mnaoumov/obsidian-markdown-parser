@@ -3,8 +3,8 @@
  *
  * The Obsidian syntax, defined once for every parser ecosystem: the node vocabulary and the lexical rules.
  *
- * The rules are written as plain functions over strings, so the `@lezer/markdown` extensions here and the micromark and
- * markdown-it adapters to come read the same definition. They follow the editor's tokenizer (`src/editor/`), the
+ * The rules are written as plain functions over strings, so the `@lezer/markdown` extensions, the micromark adapter and
+ * the markdown-it plugin read the same definition. They follow the editor's tokenizer (`src/editor/`), the
  * behaviour measured against Obsidian so far. `docs/syntax.md` lists the rules and where the metadata worker may differ.
  */
 

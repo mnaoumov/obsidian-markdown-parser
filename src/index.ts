@@ -11,6 +11,8 @@
  *   syntax as `@lezer/markdown` extensions.
  * - {@link parseMdast} gives the mdast tree with the Obsidian syntax, and {@link micromarkObsidianMarkdown} and
  *   {@link mdastObsidianMarkdown} are that syntax as micromark and `mdast-util-from-markdown` extensions.
+ * - {@link parseMarkdownIt} gives markdown-it tokens with the Obsidian syntax, {@link markdownItObsidianSyntax} is that
+ *   syntax as a markdown-it plugin, and {@link createObsidianMarkdownIt} is a markdown-it configured with it.
  * - {@link ObsidianNode} names the syntax nodes, and {@link CONFORMANCE_CASES} is the corpus every adapter is checked
  *   against.
  */
@@ -61,6 +63,14 @@ export {
   obsidianSyntax
 } from './syntax/lezer.ts';
 
+export {
+  createObsidianMarkdownIt,
+  getObsidianTokenRange,
+  markdownItObsidianSyntax,
+  obsidianNodeNameOf,
+  parseMarkdownIt
+} from './syntax/markdown-it.ts';
+
 export type {
   BlockId,
   Callout,
@@ -89,7 +99,10 @@ export {
   ObsidianToken
 } from './syntax/micromark.ts';
 
-export type { ObsidianNodeName } from './syntax/spec.ts';
+export type {
+  ObsidianNodeName,
+  TextRange
+} from './syntax/spec.ts';
 
 export { ObsidianNode } from './syntax/spec.ts';
 
