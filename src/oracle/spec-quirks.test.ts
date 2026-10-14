@@ -1,8 +1,4 @@
 /* eslint-disable import-x/no-nodejs-modules -- The test runs in Node and reads the spec oracle from disk. */
-import { micromark } from 'micromark';
-import { gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
-import { gfmStrikethroughHtml } from 'micromark-extension-gfm-strikethrough';
-import { gfmTableHtml } from 'micromark-extension-gfm-table';
 import { readFileSync } from 'node:fs';
 import {
   dirname,
@@ -17,21 +13,20 @@ import {
 } from 'vitest';
 
 import type { ObsidianQuirkFlags } from '../syntax/options.ts';
+import type { Adapter } from './render-html.ts';
 import type {
   SpecOracleFile,
   SpecOracleRead
 } from './spec-oracle-file.ts';
 
-import { parseWithLinkReferences } from '../syntax/lezer-commonmark.ts';
-import { renderLezerHtml } from '../syntax/lezer-html.ts';
-import { createObsidianParser } from '../syntax/lezer.ts';
-import { createObsidianMarkdownIt } from '../syntax/markdown-it.ts';
-import { micromarkQuirksHtml } from '../syntax/micromark-quirks.ts';
-import { createMicromarkObsidianMarkdown } from '../syntax/micromark.ts';
+import { OBSIDIAN_QUIRKS } from '../syntax/options.ts';
 import {
-  OBSIDIAN_QUIRKS,
-  resolveObsidianQuirks
-} from '../syntax/options.ts';
+  ADAPTERS,
+  compareKeys,
+  htmlRenderer,
+  isExpressible,
+  normalizeHtml
+} from './render-html.ts';
 import {
   exampleKey,
   readingViewDifferences,
@@ -42,17 +37,8 @@ import {
   workerSectionMismatches
 } from './spec-quirks.ts';
 
-type Adapter = 'lezer' | 'markdown-it' | 'micromark';
-
 const ORACLE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'spec-obsidian-1.14.4.json');
 const ORACLE = JSON.parse(readFileSync(ORACLE_PATH, 'utf-8')) as SpecOracleFile;
-const ADAPTERS: readonly Adapter[] = ['lezer', 'markdown-it', 'micromark'];
-const TAG_RE = /<(?<name>[a-z][\da-z]*)(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")?)*)\s*\/?>/gu;
-const TAG_PARTS_RE = /<(?<name>[a-z][\da-z]*)(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")?)*)\s*\/?>/u;
-const ATTRIBUTE_RE = /[^\s/=>]+(?:="[^"]*")?/gu;
-const BETWEEN_TAGS_RE = />\s+</gu;
-const TARGET_ATTRIBUTE_RE = /^(?<name>href|src)="(?<value>[^"]*)"$/u;
-
 /*
  * The examples of each flag on which the flag alone does not give Obsidian's reading view, because another of its
  * quirks shows there too.
@@ -77,28 +63,6 @@ const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly string[
   setextHeading: ['commonmark:82', 'commonmark:84'],
   softLineBreak: [...[28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625].map((example) => `commonmark:${String(example)}`), 'gfm:199']
 };
-// The quirks an adapter cannot express: its flag changes nothing there.
-const NOT_EXPRESSIBLE: Readonly<Partial<Record<Adapter, readonly (keyof ObsidianQuirkFlags)[]>>> = {
-  lezer: ['listItem']
-};
-
-function compareKeys(a: string, b: string): number {
-  return a.localeCompare(b);
-}
-
-function decodeTarget(attribute: string): string {
-  const groups = TARGET_ATTRIBUTE_RE.exec(attribute)?.groups;
-  if (!groups) {
-    return attribute;
-  }
-  try {
-    return `${groups['name'] ?? ''}="${decodeURI(groups['value'] ?? '')}"`;
-  } catch {
-    // A target that is not valid percent-encoding is compared as it is, as the oracle compares it.
-    return attribute;
-  }
-}
-
 function exampleRead(key: string): SpecOracleRead {
   const read = ORACLE.examples.find((candidate) => exampleKey(candidate) === key);
   if (!read) {
@@ -107,43 +71,9 @@ function exampleRead(key: string): SpecOracleRead {
   return read;
 }
 
-// HTML as the DOM serializes it: tags without their `/`, attributes in name order, and text quotes and spaces as such.
-// Link targets are decoded, as the oracle decodes them.
-function normalizeHtml(html: string): string {
-  return html
-    .replaceAll(TAG_RE, (tag) => normalizeTag(tag))
-    .replaceAll('&quot;', '"')
-    .replaceAll('&nbsp;', ' ')
-    .replaceAll(BETWEEN_TAGS_RE, '><')
-    .trim();
-}
-
-function normalizeTag(tag: string): string {
-  const groups = TAG_PARTS_RE.exec(tag)?.groups;
-  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => decodeTarget(attribute));
-  return `<${[groups?.['name'] ?? '', ...attributes.toSorted(compareKeys)].join(' ')}>`;
-}
-
 // A CommonMark example renders with the `commonmark` preset, and a GFM one with the `gfm` preset.
 function render(adapter: Adapter, quirk: keyof ObsidianQuirkFlags, preset: 'commonmark' | 'gfm'): (markdown: string) => string {
-  const options = { preset, [quirk]: OBSIDIAN_QUIRKS[quirk] } as const;
-  switch (adapter) {
-    case 'lezer': {
-      const parser = createObsidianParser(options);
-      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), resolveObsidianQuirks(options));
-    }
-    case 'markdown-it': {
-      const md = createObsidianMarkdownIt(options);
-      return (markdown) => md.render(markdown);
-    }
-    case 'micromark': {
-      const extensions = createMicromarkObsidianMarkdown(options);
-      return (markdown) => micromark(markdown, { allowDangerousHtml: true, extensions, htmlExtensions: [gfmTableHtml(), gfmStrikethroughHtml(), gfmAutolinkLiteralHtml(), micromarkQuirksHtml] });
-    }
-    default: {
-      throw new Error('Unknown adapter');
-    }
-  }
+  return htmlRenderer(adapter, { preset, [quirk]: OBSIDIAN_QUIRKS[quirk] });
 }
 
 describe('the spec oracle', () => {
@@ -178,6 +108,6 @@ describe.each(ADAPTERS)('%s with a quirk flag', (adapter) => {
       const obsidian = quirk === 'softLineBreak' ? read.html : read.htmlStrict;
       return normalizeHtml(toHtml(read.markdown)) !== normalizeHtml(obsidian);
     });
-    expect(differing).toEqual(NOT_EXPRESSIBLE[adapter]?.includes(quirk) === true ? specDifferenceKeys(difference) : NOT_REPRODUCED[quirk]);
+    expect(differing).toEqual(isExpressible(adapter, quirk) ? NOT_REPRODUCED[quirk] : specDifferenceKeys(difference));
   });
 });

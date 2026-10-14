@@ -940,30 +940,30 @@ function tableRegionOps(from: number, to: number, pipes: readonly number[]): Tok
 }
 
 /*
- * The tokens of a table row: one cell token per cell, from the pipe before it, or the row's start, to the next cell's,
- * holding its pipes, its whitespace, and its content as text. `offset` is how many characters of `text` come before
- * the codes the row consumes: the indentation micromark took as a line prefix.
+ * The tokens of a table row: one cell token per cell, from the end of the cell before it, or the row's start, to its
+ * closing pipe, or the row's end for the last, holding its pipes, its whitespace, and its content as text. None is
+ * empty. `offset` is how many characters of `text` come before the codes the row consumes: the indentation micromark
+ * took as a line prefix.
  */
 function tableRowOps(text: string, offset: number, cellType: TokenType): TokenOp[] {
   const cells = obsidianTableCells(text);
   const pipes = tablePipes(text);
-  const hasLeadingPipe = hasObsidianTableLeadingPipe(text);
-  const regionStarts = cells.map((_, index) => {
-    if (index === 0) {
-      return offset;
-    }
-    return pipes[hasLeadingPipe ? index : index - 1] ?? offset;
-  });
+  // The pipe that closes each cell: a row that starts with its pipe opens with one that closes none.
+  const closers = hasObsidianTableLeadingPipe(text) ? pipes.slice(1) : pipes;
   const ops: TokenOp[] = [{ kind: 'enter', type: 'tableRow' }];
+  let from = offset;
   for (const [index, cell] of cells.entries()) {
-    const from = regionStarts[index] ?? offset;
-    const to = regionStarts[index + 1] ?? text.length;
-    ops.push({ kind: 'enter', type: cellType }, ...tableRegionOps(from, cell.from, pipes), ...cell.to > cell.from ? [{ kind: 'enter', type: 'tableContent' } as const, { contentType: 'text', kind: 'enter', type: 'chunkText' } as const, { kind: 'consume', length: cell.to - cell.from } as const, { kind: 'exit', type: 'chunkText' } as const, { kind: 'exit', type: 'tableContent' } as const] : [], ...tableRegionOps(Math.max(cell.to, from), to, pipes), { kind: 'exit', type: cellType });
+    const closer = closers[index];
+    const to = closer === undefined || index === cells.length - 1 ? text.length : closer + 1;
+    const content: TokenOp[] = cell.to > cell.from
+      ? [{ kind: 'enter', type: 'tableContent' }, { contentType: 'text', kind: 'enter', type: 'chunkText' }, { kind: 'consume', length: cell.to - cell.from }, { kind: 'exit', type: 'chunkText' }, { kind: 'exit', type: 'tableContent' }]
+      : [];
+    ops.push({ kind: 'enter', type: cellType }, ...tableRegionOps(from, cell.from, pipes), ...content, ...tableRegionOps(Math.max(cell.to, from), to, pipes), { kind: 'exit', type: cellType });
+    from = to;
   }
   ops.push({ kind: 'exit', type: 'tableRow' });
   return ops;
 }
-
 /*
  * An autolink as Obsidian reads it: its markers as micromark's own, and an `obsidianAutolinkTarget` between them that
  * carries what it shows and where it links to, which `micromarkQuirksHtml` and `parseMdast` read. A CommonMark
