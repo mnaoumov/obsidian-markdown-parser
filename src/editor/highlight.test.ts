@@ -31,9 +31,9 @@ const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'or
  * breaks another fails the suite.
  */
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
-  ['obsidian-1.14.4-seed-12345.json', ['inline-83']],
-  ['obsidian-1.14.4-seed-4242.json', ['inline-34', 'inline-206']],
-  ['obsidian-1.14.4-seed-777.json', ['inline-280']]
+  ['obsidian-1.14.4-seed-12345.json', []],
+  ['obsidian-1.14.4-seed-4242.json', []],
+  ['obsidian-1.14.4-seed-777.json', []]
 ]);
 
 function readOracle(name: string): OracleFile {

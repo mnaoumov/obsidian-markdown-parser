@@ -87,6 +87,7 @@ export interface ObsidianState extends MarkdownState {
   hmdInnerMode: AnyMode | null;
   hmdInnerState: null | object;
   hmdInnerStyle: string | undefined;
+  hmdLineStartedWithMath: boolean;
   hmdLinkType: LinkType;
   hmdMathBlock: boolean;
   hmdNextMaybe: NextMaybe;
@@ -175,11 +176,15 @@ export function createObsidianMode(): ObsidianMode {
       // A bare URL or email address.
       return !state.hmdLinkType && (matchRe(stream, URL_RE) || matchRe(stream, EMAIL_RE)) ? `${rawMode.getType(state) ?? ''} url` : undefined;
     }
-    const endTag = temporary[0];
-    const mathLevel = endTag.length;
-    if (mathLevel === 1 && !(/^\$[^\s$]/u.test(stream.string.slice(stream.pos)) && /[^\s\\]\$/u.test(stream.string.slice(stream.pos + 1)))) {
+    if (!isMathAt(stream)) {
+      state.hmdLineStartedWithMath = false;
       return undefined;
     }
+    if (stream.pos === 0) {
+      state.hmdLineStartedWithMath = true;
+    }
+    const endTag = temporary[0];
+    const mathLevel = endTag.length;
     let ans = enterMode(stream, state, TEX_MODE, {
       exitChecker: createSimpleInnerModeExitChecker(endTag, {
         style: 'formatting formatting-math formatting-math-end math-'
@@ -246,6 +251,21 @@ export function createObsidianMode(): ObsidianMode {
     let isInMarkdownInline = isInMarkdown && !(state.code || state.quoteFence || state.indentedCode || state.linkHref);
     let ans = '';
     let temporary: null | RegExpMatchArray;
+    /*
+     * Obsidian: two tokens that start a line are read without the markdown mode, which then never sees that line: a
+     * block id that is the whole line, and math once an earlier line has started with math. A `$` that does not open
+     * math clears that memory.
+     */
+    if (isBol && isInMarkdownInline) {
+      if (matchRe(stream, /^\^[A-Za-z0-9-]+$/u)) {
+        return 'blockid';
+      }
+      if (state.hmdLineStartedWithMath && stream.peek() === '$' && !state.internalLink && isMathAt(stream)) {
+        const math = enterMath(stream, state);
+        state.hmdEnteredMath = false;
+        return math ?? null;
+      }
+    }
     // Obsidian: an indented line after a footnote definition continues it.
     if (isBol && state.hmdFootnote) {
       if (/^\s+\S/u.test(stream.string) && !LIST_RE.test(stream.string.trimStart())) {
@@ -539,6 +559,7 @@ export function createObsidianMode(): ObsidianMode {
         hmdInnerMode: null,
         hmdInnerState: null,
         hmdInnerStyle: undefined,
+        hmdLineStartedWithMath: false,
         hmdLinkType: LinkType.None,
         hmdMathBlock: false,
         hmdNextMaybe: NextMaybe.FrontMatter,
@@ -580,6 +601,17 @@ function createSimpleInnerModeExitChecker(endTag: string, returnValueInfo: ExitI
     }
     return null;
   };
+}
+
+/**
+ * Whether math opens at the cursor: `$$`, or a `$` before a non-space that a later `$` after a non-space closes.
+ *
+ * @param stream - The cursor, at a `$`.
+ * @returns `true` when math opens.
+ */
+function isMathAt(stream: Stream): boolean {
+  const rest = stream.string.slice(stream.pos);
+  return rest.startsWith('$$') || (/^\$[^\s$]/u.test(rest) && /[^\s\\]\$/u.test(rest.slice(1)));
 }
 
 function resetTable(state: ObsidianState): void {
