@@ -102,7 +102,6 @@ export interface MarkdownModeConfig {
 export interface MarkdownState {
   block: TokenFunction;
   code: number;
-  codeOpenedInQuote: boolean;
   comment: boolean;
   em: false | string;
   emoji: boolean;
@@ -408,6 +407,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.code = 0;
       state.quoteFence = 0;
       state.strikethrough = false;
+      // The fork: a highlight does not carry into a list item either.
+      state.highlight = false;
 
       if (isTaskLists && matchRe(stream, TASK_LIST_RE, false)) {
         state.taskList = true;
@@ -699,7 +700,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       const count = stream.current().length;
       if (state.code === 0 && (!state.quote || count === 1)) {
         state.code = count;
-        state.codeOpenedInQuote = state.quote > 0;
         return getType(state);
       }
       if (count === state.code) {
@@ -1051,8 +1051,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       }
       // Obsidian: the `^` of a footnote definition belongs to the opening mark.
       stream.eat('^');
-      // Obsidian joins the comment class onto this mark without a space.
-      return state.comment ? `comment${FOOTNOTE_MARK}` : FOOTNOTE_MARK;
+      // Obsidian joins the comment class onto this mark without a space, unless a code span hides the comment.
+      return state.comment && state.extensionsAllowed ? `comment${FOOTNOTE_MARK}` : FOOTNOTE_MARK;
     }
     return switchInline(stream, state, inlineNormal);
   }
@@ -1124,7 +1124,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       return {
         block: blockNormal,
         code: 0,
-        codeOpenedInQuote: false,
         comment: false,
         em: false,
         emoji: false,
@@ -1183,10 +1182,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         state.prevLine = state.thisLine;
         state.thisLine = { stream };
         state.lineStartQuote = state.quote;
-        // Obsidian: a code span opened inside a quote does not run past the end of its line.
-        if (isEditor && state.code > 0 && state.codeOpenedInQuote) {
-          state.code = 0;
-        }
 
         state.taskList = false;
         // The fork: link text and an unfinished image do not run past the end of their line.

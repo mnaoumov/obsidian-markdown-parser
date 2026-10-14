@@ -32,6 +32,8 @@ const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'or
  */
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
   ['obsidian-1.14.4-seed-12345.json', []],
+  ['obsidian-1.14.4-seed-1414.json', ['mdlang-25', 'mdlang-80']],
+  ['obsidian-1.14.4-seed-1618.json', []],
   ['obsidian-1.14.4-seed-2026.json', []],
   ['obsidian-1.14.4-seed-2718.json', []],
   ['obsidian-1.14.4-seed-31337.json', []],
