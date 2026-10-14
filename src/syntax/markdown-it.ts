@@ -40,7 +40,10 @@ import type {
   TextRange
 } from './spec.ts';
 
-import { markdownItQuirks } from './markdown-it-quirks.ts';
+import {
+  createObsidianReferenceRule,
+  markdownItQuirks
+} from './markdown-it-quirks.ts';
 import {
   resolveObsidianQuirks,
   resolveObsidianSyntax
@@ -239,6 +242,11 @@ export function getObsidianTokenRange(token: Token): null | TextRange {
  */
 export function markdownItObsidianSyntax(md: MarkdownIt, options: MarkdownItObsidianSyntaxOptions = {}): void {
   const flags: ObsidianSyntaxFlags = resolveObsidianSyntax(options);
+  const quirks = resolveObsidianQuirks(options);
+  if (quirks.linkDefinition === 'obsidian') {
+    // Before the footnote syntax wraps the rule.
+    md.block.ruler.at('reference', createObsidianReferenceRule(quirks.setextHeading === 'single-line'));
+  }
   const blockquote = findBlockRule(md, 'blockquote');
   const reference = findBlockRule(md, 'reference');
 
@@ -290,7 +298,7 @@ export function markdownItObsidianSyntax(md: MarkdownIt, options: MarkdownItObsi
   });
   md.core.ruler.after('inline', 'obsidian_ranges', resolveInlineRanges);
 
-  markdownItQuirks(md, resolveObsidianQuirks(options));
+  markdownItQuirks(md, quirks);
   addRenderRules(md);
 }
 

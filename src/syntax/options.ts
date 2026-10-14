@@ -58,6 +58,15 @@ export interface ObsidianQuirkFlags {
   readonly htmlComment: 'commonmark' | 'obsidian';
 
   /**
+   * How a link reference definition is read. CommonMark: a title that does not end its line leaves the definition
+   * without one, and a setext underline below a definition is text. Obsidian: such a title spoils the definition, so it
+   * is a paragraph; a title holds no escaped quote and starts no line with its closing quote; `<>` is no destination,
+   * and a label may hold brackets; and a definition of one line with a setext underline below it is a heading. A
+   * definition runs over no blank line, though Obsidian's may.
+   */
+  readonly linkDefinition: 'commonmark' | 'obsidian';
+
+  /**
    * When a list is loose, its items' paragraphs rendered in `<p>`. CommonMark: when a blank line separates two of its
    * items, or two blocks directly inside one item. Obsidian: when a blank line anywhere inside it is followed by more of
    * it, in a nested list or in fenced code as well.
@@ -246,6 +255,7 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
   emptyListItem: 'cannot-interrupt',
   htmlBlock: 'commonmark',
   htmlComment: 'commonmark',
+  linkDefinition: 'commonmark',
   looseList: 'between-blocks',
   setextHeading: 'multi-line',
   softLineBreak: 'line-ending'
@@ -260,6 +270,7 @@ export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
   emptyListItem: 'interrupts-paragraph',
   htmlBlock: 'obsidian',
   htmlComment: 'obsidian',
+  linkDefinition: 'obsidian',
   looseList: 'blank-line-anywhere',
   setextHeading: 'single-line',
   softLineBreak: 'hard-break'
@@ -283,6 +294,7 @@ export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
     htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
     htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,
+    linkDefinition: options.linkDefinition ?? COMMONMARK_QUIRKS.linkDefinition,
     looseList: options.looseList ?? COMMONMARK_QUIRKS.looseList,
     setextHeading: options.setextHeading ?? COMMONMARK_QUIRKS.setextHeading,
     softLineBreak: options.softLineBreak ?? COMMONMARK_QUIRKS.softLineBreak

@@ -112,8 +112,9 @@ const FLAG_CHANGES: Readonly<Record<keyof ObsidianSyntaxFlags, readonly number[]
  * The CommonMark examples whose rendering changes when a quirk is turned on, whatever the preset. Each example shows the
  * quirk's behaviour, and Obsidian's reading view differs from the spec on it (`src/oracle/spec-quirks.ts`), except where
  * Obsidian's other quirks hide it: `softLineBreak` shows on every soft line break, including in examples Obsidian
- * parses differently. `@lezer/markdown` keeps the paragraph of example 280 in its list item (`COMMONMARK_FAILURES`),
- * where a blank line before it makes the list loose.
+ * parses differently. `linkDefinition` reads the definitions of 546 and 552, whose labels hold a bracket or only
+ * whitespace; Obsidian differs from the spec there in its links too. `@lezer/markdown` keeps the paragraph of example
+ * 280 in its list item (`COMMONMARK_FAILURES`), where a blank line before it makes the list loose.
  */
 const SOFT_LINE_BREAK_CHANGES = [
   14,
@@ -191,6 +192,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
     looseList: [280, 307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
@@ -201,6 +203,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
@@ -211,6 +214,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES

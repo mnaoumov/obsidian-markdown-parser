@@ -65,6 +65,7 @@ const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly number[
   emptyListItem: [],
   htmlBlock: [148, 171],
   htmlComment: [],
+  linkDefinition: [],
   looseList: [],
   setextHeading: [82, 84],
   softLineBreak: [28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625]

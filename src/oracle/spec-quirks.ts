@@ -217,11 +217,11 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
     notAFlag: 'Lazy continuation is decided inside each adapter\'s container handling (`@lezer/markdown`\'s block context, micromark\'s document tokenizer, markdown-it\'s blockquote rule), which no extension point reaches.'
   },
   {
-    behaviour: 'A link reference definition\'s title is on its own line or none (196, 210), `<>` is no destination (200), a title with an escaped quote is no title (202), and a setext underline below a definition makes it a heading (216).',
+    behaviour: 'A link reference definition\'s title is on its own line or none (196, 210), `<>` is no destination (200), a title with an escaped quote is no title (202), and a setext underline below a definition makes it a heading (216). A label may hold brackets or only whitespace: the definitions of 546 and 552 are read, and their links are part of the links quirk.',
     commonmark: [196, 200, 202, 210, 216],
+    flag: 'linkDefinition',
     kind: 'quirk',
-    name: 'link reference definitions',
-    notAFlag: 'Each adapter reads definitions in its own paragraph handling (`@lezer/markdown`\'s link reference leaf parser, micromark\'s content construct, markdown-it\'s reference rule). Not done yet.'
+    name: 'link reference definitions'
   },
   {
     behaviour: 'List items: a marker indented four or more columns, but less than the item\'s content, opens a sibling item (312, 313); a paragraph indented less than the content column after a blank line stays in the item (257); an ordered marker takes ten or more digits (266); an item that starts with an empty line keeps an indented paragraph after a blank line (280), and its content starts a column further left (278).',

@@ -32,14 +32,29 @@ import {
   isObsidianHtmlComment,
   matchObsidianAutolink,
   matchObsidianCharacterReference,
-  obsidianHtmlBlockKind
+  obsidianHtmlBlockKind,
+  parseObsidianDefinition
 } from './quirk-rules.ts';
+
+// The link reference definitions markdown-it collects in its environment.
+interface ReferenceEnvironment {
+  references?: Record<string, ReferenceTarget>;
+}
+
+interface ReferenceTarget {
+  readonly href: string;
+  readonly title: string;
+}
+
+type RuleBlock = ReturnType<MarkdownIt['block']['ruler']['getRules']>[number];
 
 const CODE_INDENT = 4;
 const EQUALS_LEVEL = 1;
 const DASH_LEVEL = 2;
 const SETEXT_LEVELS: Readonly<Record<string, number>> = { '-': DASH_LEVEL, '=': EQUALS_LEVEL };
 const BARE_UNDERLINE_RE = /^(?:=+|-+)$/u;
+const SETEXT_UNDERLINE_RE = /^(?:=+|-+)[\t ]*$/u;
+const LINE_BREAK_RE = /\n/gu;
 const EMPTY_LIST_ITEM_RE = /^(?:[*+-]|1[).])[\t ]*$/u;
 const TRAILING_WHITESPACE_RE = /[\t ]+$/u;
 const QUOTE_OPENS = new Set(['blockquote_open', 'Callout_open']);
@@ -47,6 +62,59 @@ const QUOTE_CLOSES = new Set(['blockquote_close', 'Callout_close']);
 const LIST_OPENS = new Set(['bullet_list_open', 'ordered_list_open']);
 // A list item's paragraph is two levels below its list: the list holds the item, and the item the paragraph.
 const PARAGRAPH_LEVEL_IN_LIST = 2;
+
+/**
+ * The `reference` rule of the `linkDefinition` quirk: a link reference definition as Obsidian reads it (see
+ * `parseObsidianDefinition`), adapted from markdown-it's own rule, which reads the block's lines the same way. A
+ * definition of one line with a setext underline below it is left to the `lheading` rule.
+ *
+ * @param isSingleLineSetext - Whether setext headings follow the `setextHeading` quirk.
+ * @returns The rule.
+ */
+export function createObsidianReferenceRule(isSingleLineSetext: boolean): RuleBlock {
+  return (state, startLine, _endLine, isSilent) => {
+    if ((state.sCount[startLine] ?? 0) - state.blkIndent >= CODE_INDENT || !lineText(state, startLine).startsWith('[') || isSetextUnderlineAt(state, startLine + 1, isSingleLineSetext)) {
+      return false;
+    }
+    let text = state.getLines(startLine, startLine + 1, state.blkIndent, false);
+    let nextLine = startLine + 1;
+    let definition = parseObsidianDefinition(text, false);
+    while (definition === 'pending') {
+      const more = isReferenceContinuation(state, nextLine) ? state.getLines(nextLine, nextLine + 1, state.blkIndent, false) : null;
+      if (more === null) {
+        definition = parseObsidianDefinition(text, true);
+        break;
+      }
+      text += `\n${more}`;
+      nextLine++;
+      definition = parseObsidianDefinition(text, false);
+    }
+    if (definition === null || definition === 'pending') {
+      return false;
+    }
+    const { utils } = state.md;
+    const destination = text.slice(definition.destination.from, definition.destination.to);
+    const href = state.md.normalizeLink(utils.unescapeAll(destination.startsWith('<') ? destination.slice(1, -1) : destination));
+    if (!state.md.validateLink(href)) {
+      return false;
+    }
+    if (isSilent) {
+      return true;
+    }
+    const label = utils.normalizeReference(text.slice(definition.label.from + 1, definition.label.to - 1));
+    const title = definition.title ? utils.unescapeAll(text.slice(definition.title.from + 1, definition.title.to - 1)) : '';
+    const env = state.env as ReferenceEnvironment;
+    env.references ??= {};
+    env.references[label] ??= { href, title };
+    const endLine = startLine + 1 + (text.slice(0, definition.length).match(LINE_BREAK_RE)?.length ?? 0);
+    const token = state.push('reference_definition', '', 0);
+    token.map = [startLine, endLine];
+    token.hidden = true;
+    token.meta = { label };
+    state.line = endLine;
+    return true;
+  };
+}
 
 /**
  * Adds the rules for the quirks asked for. The CommonMark behaviour of every quirk needs none.
@@ -232,6 +300,30 @@ function isEmptyLine(state: StateBlock, line: number): boolean {
 
 function isEmptyListItem(state: StateBlock, line: number): boolean {
   return (state.sCount[line] ?? 0) - state.blkIndent < CODE_INDENT && EMPTY_LIST_ITEM_RE.test(lineText(state, line));
+}
+
+// Whether a line continues the block a reference opens: it is no blank line, and no other block interrupts there.
+function isReferenceContinuation(state: StateBlock, line: number): boolean {
+  if (line >= state.lineMax || state.isEmpty(line)) {
+    return false;
+  }
+  if ((state.sCount[line] ?? 0) - state.blkIndent >= CODE_INDENT || (state.sCount[line] ?? 0) < 0) {
+    return true;
+  }
+  const parentType = state.parentType;
+  state.parentType = 'reference';
+  const isInterrupted = state.md.block.ruler.getRules('reference').some((rule) => rule(state, line, state.lineMax, true));
+  state.parentType = parentType;
+  return !isInterrupted;
+}
+
+// Whether a line is a setext underline below a paragraph's line, as the `lheading` rule in use reads it.
+function isSetextUnderlineAt(state: StateBlock, line: number, isSingleLineSetext: boolean): boolean {
+  if (line >= state.lineMax || (state.sCount[line] ?? 0) < state.blkIndent) {
+    return false;
+  }
+  const text = lineText(state, line);
+  return isSingleLineSetext ? state.sCount[line] === state.blkIndent && BARE_UNDERLINE_RE.test(text) : (state.sCount[line] ?? 0) - state.blkIndent < CODE_INDENT && SETEXT_UNDERLINE_RE.test(text);
 }
 
 function lineText(state: StateBlock, line: number): string {

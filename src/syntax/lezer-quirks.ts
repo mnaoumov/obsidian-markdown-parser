@@ -28,7 +28,10 @@ import type {
 import { parser } from '@lezer/markdown';
 
 import type { ObsidianQuirkFlags } from './options.ts';
-import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
+import type {
+  ObsidianDefinition,
+  ObsidianHtmlBlockKind
+} from './quirk-rules.ts';
 
 import { isCommonMarkAutolink } from './lezer-commonmark.ts';
 import {
@@ -36,7 +39,8 @@ import {
   isObsidianHtmlComment,
   matchObsidianAutolink,
   matchObsidianCharacterReference,
-  obsidianHtmlBlockKind
+  obsidianHtmlBlockKind,
+  parseObsidianDefinition
 } from './quirk-rules.ts';
 
 // The parts of `MarkdownParser` its typings leave out: the leaf parser factories, in the order of the block names.
@@ -69,6 +73,47 @@ const THEMATIC_DASHES_RE = /^-[\t ]*-[\t ]*-[\t -]*$/u;
 
 // The class of `@lezer/markdown`'s own setext heading parser, read from the factory it registers.
 const SetextHeadingParserClass = findSetextHeadingParserClass();
+
+/*
+ * A link reference definition as Obsidian reads it (see `parseObsidianDefinition`), in place of `@lezer/markdown`'s own
+ * parser, and with its nodes. It is decided at the first line that settles it, and the paragraph's lines after it are
+ * parsed again, as `@lezer/markdown` does. A definition of one line with a setext underline below it is the heading's
+ * text.
+ */
+class ObsidianLinkReferenceParser implements LeafBlockParser {
+  private isFailed = false;
+
+  public constructor(private readonly isSingleLineSetext: boolean) {}
+
+  public finish(cx: BlockContext, leaf: LeafBlock): boolean {
+    const definition = this.isFailed ? null : parseObsidianDefinition(leaf.content, true);
+    if (definition === null || definition === 'pending' || definition.length !== leaf.content.length) {
+      return false;
+    }
+    addDefinition(cx, leaf, definition);
+    return true;
+  }
+
+  public nextLine(cx: BlockContext, line: Line, leaf: LeafBlock): boolean {
+    if (this.isFailed) {
+      return false;
+    }
+    if (!leaf.content.includes('\n') && isTakenAsSetextUnderline(cx, line, leaf, this.isSingleLineSetext)) {
+      this.isFailed = true;
+      return false;
+    }
+    const definition = parseObsidianDefinition(`${leaf.content}\n${scrubbed(line)}`, false);
+    if (definition === 'pending') {
+      return false;
+    }
+    if (definition === null || definition.length > leaf.content.length) {
+      this.isFailed = true;
+      return false;
+    }
+    addDefinition(cx, leaf, definition);
+    return true;
+  }
+}
 
 /*
  * A paragraph whose next line is a setext underline Obsidian does not read loses the setext heading parser, so the
@@ -139,6 +184,14 @@ export function createLezerQuirks(quirks: ObsidianQuirkFlags): MarkdownConfig[] 
   if (quirks.characterReference === 'obsidian') {
     configs.push({ parseInline: [{ before: 'Entity', name: 'ObsidianCharacterReference', parse: parseObsidianCharacterReference }] });
   }
+  if (quirks.linkDefinition === 'obsidian') {
+    configs.push({
+      parseBlock: [{
+        leaf: (_cx, leaf): LeafBlockParser | null => leaf.content.startsWith('[') ? new ObsidianLinkReferenceParser(isSingleLine) : null,
+        name: 'LinkReference'
+      }]
+    });
+  }
   if (quirks.htmlComment === 'obsidian') {
     configs.push({ parseInline: [{ before: 'RawHTML', name: 'ObsidianHTMLComment', parse: parseObsidianHtmlComment }] });
   }
@@ -149,6 +202,21 @@ export function createLezerQuirks(quirks: ObsidianQuirkFlags): MarkdownConfig[] 
  * An HTML block as Obsidian reads it, adapted from `@lezer/markdown`'s own HTML block parser. It runs to the line that
  * holds its end, or to the line before an empty one, or to the end of its container.
  */
+function addDefinition(cx: BlockContext, leaf: LeafBlock, definition: ObsidianDefinition): void {
+  function at(offset: number): number {
+    return leaf.start + offset;
+  }
+  const children = [
+    cx.elt('LinkLabel', at(definition.label.from), at(definition.label.to)),
+    cx.elt('LinkMark', at(definition.label.to), at(definition.label.to + 1)),
+    cx.elt('URL', at(definition.destination.from), at(definition.destination.to))
+  ];
+  if (definition.title) {
+    children.push(cx.elt('LinkTitle', at(definition.title.from), at(definition.title.to)));
+  }
+  cx.addLeafElement(leaf, cx.elt('LinkReference', leaf.start, at(definition.length), children));
+}
+
 function checkObsidianHtmlBlock(cx: BlockContext, line: Line): boolean {
   const kind = obsidianHtmlBlockKindAt(line);
   if (!kind) {
@@ -274,4 +342,12 @@ function parseSoftLineBreak(cx: InlineContext, next: number, start: number): num
     }
   }
   return cx.char(end) === Char.LineFeed ? cx.addElement(cx.elt('HardBreak', start, end + 1)) : -1;
+}
+
+/*
+ * A line's text as a paragraph holds it: its container markup replaced by spaces, as `@lezer/markdown`'s internal
+ * `Line.scrub` gives it.
+ */
+function scrubbed(line: Line): string {
+  return line.baseIndent === 0 ? line.text : ' '.repeat(line.basePos) + line.text.slice(line.basePos);
 }

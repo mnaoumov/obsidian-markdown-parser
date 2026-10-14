@@ -43,13 +43,18 @@ import {
 } from 'micromark-core-commonmark';
 import { decodeNumericCharacterReference } from 'micromark-util-decode-numeric-character-reference';
 import { encode } from 'micromark-util-encode';
+import { normalizeIdentifier } from 'micromark-util-normalize-identifier';
 import { sanitizeUri } from 'micromark-util-sanitize-uri';
 import { codes } from 'micromark-util-symbol';
 
-import type { ObsidianQuirkFlags } from './options.ts';
+import type {
+  ObsidianQuirkFlags,
+  ObsidianSyntaxFlags
+} from './options.ts';
 import type {
   ObsidianAutolink,
   ObsidianCharacterReference,
+  ObsidianDefinition,
   ObsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
@@ -59,7 +64,8 @@ import {
   isObsidianHtmlComment,
   matchObsidianAutolink,
   matchObsidianCharacterReference,
-  obsidianHtmlBlockKind
+  obsidianHtmlBlockKind,
+  parseObsidianDefinition
 } from './quirk-rules.ts';
 
 declare module 'micromark-util-types' {
@@ -100,7 +106,27 @@ export interface ObsidianLinkTarget {
   readonly url: string;
 }
 
+// Consumes the codes of so many characters of text.
+interface ConsumeOp {
+  readonly kind: 'consume';
+  readonly length: number;
+}
+
 type ContextTokenizer = (context: TokenizeContext, effects: Effects, ok: State, nok: State) => State;
+
+// A step of a definition's token layout.
+type DefinitionOp = ConsumeOp | EnterOp | ExitOp;
+
+interface EnterOp {
+  readonly contentType?: 'string';
+  readonly kind: 'enter';
+  readonly type: TokenType;
+}
+
+interface ExitOp {
+  readonly kind: 'exit';
+  readonly type: TokenType;
+}
 
 // A list being scanned for a blank line followed by more of it.
 interface LooseListScan {
@@ -118,6 +144,12 @@ interface LooseListsScan {
   quotePrefixes: number;
 }
 
+// The paragraph content open before a line: where it starts, and its text so far.
+interface OpenContent {
+  readonly from: number;
+  readonly text: string;
+}
+
 const Char = {
   Asterisk: codeOf('*'),
   CloseParen: codeOf(')'),
@@ -132,6 +164,9 @@ const Char = {
 const PEEK = 'ObsidianPeek';
 
 const LINE_BREAK_RE = /\r\n|\r|\n/u;
+const TRAILING_LINE_ENDING_RE = /(?:\r\n|\r|\n)$/u;
+const BARE_UNDERLINE_RE = /^(?:=+|-+)$/u;
+const SETEXT_UNDERLINE_RE = /^(?:=+|-+)[\t ]*$/u;
 const BLANK_LINE_RE = /^[\t ]*(?:\r\n|\r|\n)?$/u;
 const DEFINITION_START_RE = /^ {0,3}\[/u;
 const DIGIT_COUNT = 10;
@@ -143,6 +178,9 @@ const LIST_START_CODES = [Char.Asterisk, Char.Plus, Char.Dash, ...DIGIT_CODES];
 
 const SPACE_OR_TAB_CODES: ReadonlySet<Code> = new Set([codes.horizontalTab, codes.space, codes.virtualSpace]);
 const LINE_ENDING_CODES: ReadonlySet<Code> = new Set([codes.carriageReturn, codes.carriageReturnLineFeed, codes.lineFeed]);
+
+// The paragraphs whose single line is a definition that a setext underline makes a heading, by where they start.
+const definitionHeadings = new WeakMap<TokenizeContext['parser'], Set<number>>();
 
 // The line endings the soft line break construct read, which are the ones of inline content.
 const softLineEndings = new WeakSet<Token>();
@@ -176,9 +214,10 @@ const emptyListItemLine: Construct = { partial: true, tokenize: tokenizeEmptyLis
  * The micromark syntax extension for the quirks asked for. The CommonMark behaviour of every quirk needs none.
  *
  * @param quirks - The quirks.
+ * @param flags - The syntax flags the quirks depend on: with footnotes, a `[^label]:` is no link reference definition.
  * @returns The extension.
  */
-export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
+export function createMicromarkQuirks(quirks: ObsidianQuirkFlags, flags: Pick<ObsidianSyntaxFlags, 'footnote'>): Extension {
   const extension: Extension = {};
   const isSingleLine = quirks.setextHeading === 'single-line';
   if (isSingleLine) {
@@ -207,6 +246,12 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
   }
   const text: Record<number, Construct[]> = {};
   const disabled: string[] = [];
+  if (quirks.linkDefinition === 'obsidian') {
+    const headingProbe: Construct = { name: 'obsidianDefinitionHeadingProbe', tokenize: withContext((context, effects, _ok, nok) => tokenizeDefinitionHeadingProbe(context, effects, nok, isSingleLine)) };
+    extension.flow = { ...extension.flow, [Char.Dash]: [headingProbe, ...asList(extension.flow?.[Char.Dash])], [Char.Equals]: [headingProbe, ...asList(extension.flow?.[Char.Equals])] };
+    extension.contentInitial = { [codes.leftSquareBracket]: { name: 'obsidianDefinition', tokenize: withContext((context, effects, ok, nok) => tokenizeObsidianDefinition(context, effects, ok, nok, flags.footnote)) } };
+    disabled.push('definition', 'obsidianLinkDefinition');
+  }
   if (quirks.softLineBreak === 'hard-break') {
     const softLineBreak: Construct = {
       name: 'obsidianSoftLineBreak',
@@ -291,6 +336,13 @@ export function characterReferenceValue(source: string, markerType: string | und
   return named === false ? source : named;
 }
 
+function asList(constructs: Construct | Construct[] | undefined): Construct[] {
+  if (constructs === undefined) {
+    return [];
+  }
+  return Array.isArray(constructs) ? constructs : [constructs];
+}
+
 function codeOf(ch: string): number {
   return ch.codePointAt(0) ?? -1;
 }
@@ -315,6 +367,52 @@ function contentParagraphLines(content: string): number {
   return lines.length;
 }
 
+function definitionLeaf(type: TokenType, length: number): DefinitionOp[] {
+  return length > 0 ? [{ kind: 'enter', type }, { kind: 'consume', length }, { kind: 'exit', type }] : [];
+}
+
+function definitionNode(type: TokenType, children: DefinitionOp[]): DefinitionOp[] {
+  return [{ kind: 'enter', type }, ...children, { kind: 'exit', type }];
+}
+
+// The tokens of a definition, in the layout micromark's own definition construct gives.
+function definitionOps(text: string, definition: ObsidianDefinition): DefinitionOp[] {
+  const { destination, label, title } = definition;
+  const afterDestination = title?.from ?? definition.length;
+  const labelString = definitionString(text.slice(label.from + 1, label.to - 1));
+  const isPointy = text.charAt(destination.from) === '<';
+  const destinationString = definitionString(isPointy ? text.slice(destination.from + 1, destination.to - 1) : text.slice(destination.from, destination.to));
+  const destinationOps = isPointy
+    ? delimited('definitionDestinationLiteral', 'definitionDestinationLiteralMarker', 'definitionDestinationString', destinationString)
+    : definitionNode('definitionDestinationRaw', definitionNode('definitionDestinationString', destinationString));
+  const titleOps = title ? delimited('definitionTitle', 'definitionTitleMarker', 'definitionTitleString', definitionString(text.slice(title.from + 1, title.to - 1))) : [];
+  return definitionNode('definition', [
+    ...delimited('definitionLabel', 'definitionLabelMarker', 'definitionLabelString', labelString),
+    ...definitionLeaf('definitionMarker', 1),
+    ...definitionWhitespace(text.slice(label.to + 1, destination.from)),
+    ...definitionNode('definitionDestination', destinationOps),
+    ...definitionWhitespace(text.slice(destination.to, afterDestination)),
+    ...titleOps,
+    ...definitionWhitespace(text.slice(title?.to ?? afterDestination, definition.length))
+  ]);
+}
+
+// A string of a definition, read by micromark's string tokenizer a line at a time, with the line endings between.
+function definitionString(text: string): DefinitionOp[] {
+  return text.split('\n').flatMap((line, index) => [
+    ...index > 0 ? definitionLeaf('lineEnding', 1) : [],
+    ...line.length > 0 ? stringChunk(line.length) : []
+  ]);
+}
+function definitionWhitespace(text: string): DefinitionOp[] {
+  return text.split('\n').flatMap((part, index) => [...index > 0 ? definitionLeaf('lineEnding', 1) : [], ...definitionLeaf('lineSuffix', part.length)]);
+}
+
+// A part of a definition between two one-character markers, holding a string.
+function delimited(type: TokenType, markerType: TokenType, stringType: TokenType, string: DefinitionOp[]): DefinitionOp[] {
+  return definitionNode(type, [...definitionLeaf(markerType, 1), ...definitionNode(stringType, string), ...definitionLeaf(markerType, 1)]);
+}
+
 // Whether the line so far, in a container tokenizer's events, starts with whitespace.
 function isIndented(context: TokenizeContext): boolean {
   const tail = context.events.at(-1);
@@ -333,6 +431,25 @@ function listEnterHandler(tag: string): (this: CompileContext, token: Token) => 
     this.tag(`<${tag}`);
     this.setData('expectFirstItem', true);
   };
+}
+
+// The paragraph content open before the line being tried: where it starts, and its text so far.
+function openContent(context: TokenizeContext): null | OpenContent {
+  const chunks: string[] = [];
+  for (let index = context.events.length - 1; index >= 0; index--) {
+    const event = context.events[index];
+    if (!event) {
+      break;
+    }
+    const [kind, token, tokenizer] = event;
+    if (token.type === 'content') {
+      return kind === 'enter' ? { from: token.start.offset, text: chunks.toReversed().join('') } : null;
+    }
+    if (kind === 'exit' && token.type === 'chunkContent') {
+      chunks.push(tokenizer.sliceSerialize(token));
+    }
+  }
+  return null;
 }
 
 /*
@@ -408,6 +525,40 @@ function resolveSoftLineBreaks(events: Event[], context: TokenizeContext): Event
     events.splice(index, 0, ['enter', hardBreak, context], ['exit', hardBreak, context]);
   }
   return events;
+}
+
+/*
+ * Runs a token layout: enters and exits tokens, and consumes the given number of characters of the text the codes give
+ * (see `textOf`).
+ */
+function runDefinitionOps(effects: Effects, ops: readonly DefinitionOp[], ok: State): State {
+  let index = 0;
+  let left = 0;
+  return step;
+
+  function step(code: Code): State | undefined {
+    for (let op = ops[index]; op !== undefined; op = ops[index]) {
+      if (op.kind === 'consume') {
+        if (left === 0) {
+          left = op.length;
+        }
+        effects.consume(code);
+        left -= textOf(code).length;
+        if (left <= 0) {
+          left = 0;
+          index++;
+        }
+        return step;
+      }
+      if (op.kind === 'enter') {
+        effects.enter(op.type, op.contentType ? { contentType: op.contentType } : undefined);
+      } else {
+        effects.exit(op.type);
+      }
+      index++;
+    }
+    return ok(code);
+  }
 }
 
 /*
@@ -488,6 +639,12 @@ function scanLooseListEvent(scan: LooseListsScan, isEnter: boolean, token: Token
   }
 }
 
+// The tokens of a definition's whitespace: spaces and tabs, and line endings.
+// A chunk of a definition's string, which micromark's string tokenizer reads.
+function stringChunk(length: number): DefinitionOp[] {
+  return [{ contentType: 'string', kind: 'enter', type: 'chunkString' }, { kind: 'consume', length }, { kind: 'exit', type: 'chunkString' }];
+}
+
 function textOf(code: Code): string {
   if (code === null) {
     return '';
@@ -520,6 +677,31 @@ function tokenizeBareUnderline(effects: Effects, ok: State, nok: State): State {
     effects.exit(PEEK);
     return code === null || isLineEnding(code) ? ok(code) : nok(code);
   }
+}
+
+/*
+ * Notes a paragraph whose single line is a link reference definition, where a setext underline interrupts it:
+ * Obsidian reads the line as the heading's text, so `tokenizeObsidianDefinition` leaves it. It never matches itself.
+ */
+function tokenizeDefinitionHeadingProbe(context: TokenizeContext, effects: Effects, nok: State, isSingleLine: boolean): State {
+  return (code) => {
+    const content = context.interrupt ? openContent(context) : null;
+    const line = content?.text.replace(TRAILING_LINE_ENDING_RE, '') ?? '';
+    const definition = content && !line.includes('\n') ? parseObsidianDefinition(line, true) : null;
+    if (!content || definition === null || definition === 'pending' || (isSingleLine && isIndented(context))) {
+      return nok(code);
+    }
+    const underline = scanAhead((text, next) => next === null || isLineEnding(next) ? (isSingleLine ? BARE_UNDERLINE_RE : SETEXT_UNDERLINE_RE).test(text) : null);
+    return effects.check(underline, (next) => {
+      let starts = definitionHeadings.get(context.parser);
+      if (!starts) {
+        starts = new Set();
+        definitionHeadings.set(context.parser, starts);
+      }
+      starts.add(content.from);
+      return nok(next);
+    }, nok)(code);
+  };
 }
 
 /*
@@ -740,6 +922,30 @@ function tokenizeObsidianCharacterReference(effects: Effects, ok: State, nok: St
     effects.exit(type);
     index++;
   }
+}
+
+/*
+ * A link reference definition as Obsidian reads it (see `parseObsidianDefinition`), with the tokens of micromark's own,
+ * read from the paragraph content it opens. One that a setext underline makes a heading is left to the paragraph, and
+ * with footnotes so is a `[^label]:`.
+ */
+function tokenizeObsidianDefinition(context: TokenizeContext, effects: Effects, ok: State, nok: State, hasFootnotes: boolean): State {
+  let ops: DefinitionOp[] = [];
+  const ahead = scanAhead((text, next) => {
+    if (next !== null) {
+      return null;
+    }
+    const definition = parseObsidianDefinition(text, true);
+    if (definition === null || definition === 'pending' || (hasFootnotes && text.startsWith('[^'))) {
+      return false;
+    }
+    ops = definitionOps(text, definition);
+    context.parser.defined.push(normalizeIdentifier(text.slice(definition.label.from + 1, definition.label.to - 1)));
+    return true;
+  });
+  return (code) => {
+    return definitionHeadings.get(context.parser)?.has(context.now().offset) === true ? nok(code) : effects.check(ahead, (next) => runDefinitionOps(effects, ops, ok)(next), nok)(code);
+  };
 }
 
 /*

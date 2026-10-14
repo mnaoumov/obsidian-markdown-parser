@@ -303,7 +303,7 @@ export function createMicromarkObsidianMarkdown(options: CreateMicromarkObsidian
   if (flags.autolinkLiteral) {
     extensions.push(gfmAutolinkLiteral());
   }
-  extensions.push(createMicromarkObsidianSyntax(flags), createMicromarkQuirks(resolveObsidianQuirks(options)));
+  extensions.push(createMicromarkObsidianSyntax(flags), createMicromarkQuirks(resolveObsidianQuirks(options), flags));
   return extensions;
 }
 

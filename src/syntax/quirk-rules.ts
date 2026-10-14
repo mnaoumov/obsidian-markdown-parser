@@ -46,6 +46,37 @@ export interface ObsidianCharacterReference {
 }
 
 /**
+ * A link reference definition Obsidian reads: the ranges of its parts, from the start of its text.
+ */
+export interface ObsidianDefinition {
+  /**
+   * Its destination, with its `<` and `>` when it has them.
+   */
+  readonly destination: TextSpan;
+
+  /**
+   * Its label, with its brackets.
+   */
+  readonly label: TextSpan;
+
+  /**
+   * Its length: it ends at the end of its last line, after any spaces and tabs there.
+   */
+  readonly length: number;
+
+  /**
+   * Its title, with its quotes or parentheses, or `null` for none.
+   */
+  readonly title: null | TextSpan;
+}
+
+/**
+ * What {@link parseObsidianDefinition} found: a definition, none, or one that the text after it could still extend or
+ * spoil.
+ */
+export type ObsidianDefinitionParse = 'pending' | null | ObsidianDefinition;
+
+/**
  * A kind of HTML block Obsidian reads: what its first line starts with, what ends it, and whether it can interrupt a
  * paragraph.
  */
@@ -64,6 +95,21 @@ export interface ObsidianHtmlBlockKind {
    * Whether it is a comment, a processing instruction or another kind of HTML.
    */
   readonly type: 'comment' | 'html' | 'processingInstruction';
+}
+
+/**
+ * A range of text.
+ */
+export interface TextSpan {
+  /**
+   * Where it starts.
+   */
+  readonly from: number;
+
+  /**
+   * Where it ends.
+   */
+  readonly to: number;
 }
 
 /**
@@ -88,6 +134,16 @@ const NUMERIC_OPEN_LENGTH = 2;
 const HEXADECIMAL_OPEN_LENGTH = 3;
 // The `&` and the `;` around a name.
 const AMPERSAND_AND_SEMICOLON = 2;
+
+// A definition's empty label, and its empty pointy destination.
+const LABEL_BRACKETS = 2;
+const DESTINATION_BRACKETS = 2;
+const ENCLOSED_DESTINATION_STOPS = new Set(['[', ']', '>']);
+// What a part of a definition that the text ends inside gives.
+const PENDING = -2;
+const RAW_DESTINATION_STOP_RE = /[\s[\]]/u;
+const DEFINITION_WHITESPACE = new Set(['\t', '\n', ' ']);
+const TITLE_CLOSERS: Readonly<Record<string, string>> = { '\'': '\'', '"': '"', '(': ')' };
 
 const MAILTO = 'mailto:';
 // A scheme up to its `://`, or an email address's local part up to its `@`, then the rest up to the `>`. What comes
@@ -261,6 +317,136 @@ export function obsidianHtmlBlockKind(line: string): null | ObsidianHtmlBlockKin
   return HTML_BLOCK_KINDS.find(([start]) => start.test(line))?.[1] ?? null;
 }
 
+/**
+ * The link reference definition at the start of the text, as Obsidian reads it. After up to any spaces and tabs come a
+ * label in brackets, in which a backslash escapes the next character, then `:`, whitespace, and a destination: `<`,
+ * characters but `<`, `>`, `[` and `]`, and a `>`, or characters but whitespace, `[` and `]`. Whitespace and a title may
+ * follow: `"`, `'` or `(`, then text that has no blank line and starts no line with its closing `"`, `'` or `)`, which
+ * ends it. Only spaces and tabs may follow on the definition's last line, or it is no definition at all.
+ *
+ * @param text - The text: a block's lines, joined by `\n`, without their containers' markup.
+ * @param isEnd - Whether the text is all of the block. When it is not, a definition that the next line could still
+ *   extend or spoil is `'pending'`.
+ * @returns The definition, `null` for none, or `'pending'`.
+ */
+export function parseObsidianDefinition(text: string, isEnd: boolean): ObsidianDefinitionParse {
+  const atEnd = isEnd ? null : 'pending';
+  const labelFrom = skipSpacesAndTabs(text, 0);
+  if (text.charAt(labelFrom) !== '[') {
+    return null;
+  }
+  const labelTo = definitionLabelEnd(text, labelFrom + 1);
+  if (labelTo === -1) {
+    return atEnd;
+  }
+  if (labelTo === labelFrom + LABEL_BRACKETS || text.charAt(labelTo) !== ':') {
+    return null;
+  }
+  const destinationFrom = skipWhitespace(text, labelTo + 1);
+  if (destinationFrom >= text.length) {
+    return atEnd;
+  }
+  const destinationTo = definitionDestinationEnd(text, destinationFrom);
+  if (destinationTo === PENDING) {
+    return atEnd;
+  }
+  if (destinationTo === -1) {
+    return null;
+  }
+  const label = { from: labelFrom, to: labelTo };
+  // An empty `<>` before a destination is no part of it.
+  const destination = { from: text.startsWith('<>', destinationFrom) ? destinationFrom + DESTINATION_BRACKETS : destinationFrom, to: destinationTo };
+  const titleFrom = skipWhitespace(text, destinationTo);
+  const closer = TITLE_CLOSERS[text.charAt(titleFrom)];
+  // Past the end of the text there is no title either.
+  if (closer === undefined) {
+    const end = skipSpacesAndTabs(text, destinationTo);
+    if (end >= text.length) {
+      return isEnd ? { destination, label, length: end, title: null } : 'pending';
+    }
+    return text.charAt(end) === '\n' ? { destination, label, length: end, title: null } : null;
+  }
+  if (titleFrom === destinationTo) {
+    return null;
+  }
+  const titleTo = definitionTitleEnd(text, titleFrom + 1, closer);
+  if (titleTo === -1) {
+    return atEnd;
+  }
+  if (titleTo === 0) {
+    return null;
+  }
+  const end = skipSpacesAndTabs(text, titleTo);
+  const definition = { destination, label, length: end, title: { from: titleFrom, to: titleTo } };
+  if (end >= text.length) {
+    return isEnd ? definition : 'pending';
+  }
+  return text.charAt(end) === '\n' ? definition : null;
+}
+
+// The end of a destination from its first character, -1 for none, or `PENDING` for one the text ends inside.
+function definitionDestinationEnd(text: string, from: number): number {
+  let pos = from;
+  if (text.charAt(pos) === '<') {
+    pos++;
+    while (pos < text.length && !ENCLOSED_DESTINATION_STOPS.has(text.charAt(pos))) {
+      pos++;
+    }
+    if (pos >= text.length) {
+      return PENDING;
+    }
+    if (text.charAt(pos) !== '>') {
+      return -1;
+    }
+    pos++;
+    if (pos > from + DESTINATION_BRACKETS) {
+      return pos;
+    }
+  }
+  const rawFrom = pos;
+  while (pos < text.length && !RAW_DESTINATION_STOP_RE.test(text.charAt(pos))) {
+    pos++;
+  }
+  return pos > rawFrom ? pos : -1;
+}
+
+// The end of a label from after its `[`, after its `]`, or -1 when the text ends inside it.
+function definitionLabelEnd(text: string, from: number): number {
+  for (let pos = from; pos < text.length; pos++) {
+    const char = text.charAt(pos);
+    if (char === ']') {
+      return pos + 1;
+    }
+    if (char === '\\') {
+      pos++;
+    }
+  }
+  return -1;
+}
+
+// The end of a title from after its opener, after its closer; 0 for none; or -1 when the text ends inside it.
+function definitionTitleEnd(text: string, from: number, closer: string): number {
+  for (let pos = from; pos < text.length; pos++) {
+    const char = text.charAt(pos);
+    if (char === closer) {
+      return pos + 1;
+    }
+    if (char !== '\n') {
+      continue;
+    }
+    // The character after a line ending is the title's, whatever it is, but a blank line or a closer there spoils it.
+    pos++;
+    if (pos >= text.length) {
+      return -1;
+    }
+    const next = text.charAt(pos);
+    if (next === '\n' || next === closer) {
+      return 0;
+    }
+  }
+  return -1;
+}
+
 function matchNamedReference(text: string, requiresSemicolon: boolean): null | ObsidianCharacterReference {
   const name = NAME_RE.exec(text.slice(1))?.[0] ?? '';
   const isTerminated = text.charAt(name.length + 1) === ';';
@@ -298,4 +484,20 @@ function matchNumericReference(text: string, requiresSemicolon: boolean): null |
 
 function numericReferenceValue(code: number): string {
   return (code >= SURROGATE_FIRST && code <= SURROGATE_LAST) || code > MAX_CODE_POINT ? REPLACEMENT_CHARACTER : characterReferenceInvalid[code] ?? String.fromCodePoint(code);
+}
+
+function skipSpacesAndTabs(text: string, from: number): number {
+  let pos = from;
+  while (text.charAt(pos) === ' ' || text.charAt(pos) === '\t') {
+    pos++;
+  }
+  return pos;
+}
+
+function skipWhitespace(text: string, from: number): number {
+  let pos = from;
+  while (pos < text.length && DEFINITION_WHITESPACE.has(text.charAt(pos))) {
+    pos++;
+  }
+  return pos;
 }
