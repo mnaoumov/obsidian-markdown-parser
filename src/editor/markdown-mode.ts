@@ -393,8 +393,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       setFormatting(state, 'quote');
       stream.eatSpace();
       // Obsidian: a callout marker joins the quote mark.
-      // A callout opens a quote: on a line's first mark only when the line above is not a quote line.
-      return isEditor && !state.quoteFence && (!isFirstTokenOnLine || state.lineStartQuote === 0) && matchRe(stream, /^\[![^\]]+\][+-]?\s*/u)
+      // A callout opens a quote: on a line's first mark only when the line above is not a quote line, even in a quote fence.
+      return isEditor && (!isFirstTokenOnLine || state.lineStartQuote === 0) && matchRe(stream, /^\[![^\]]+\][+-]?\s*/u)
         ? `${getType(state) ?? ''} hmd-callout line-HyperMD-callout`
         : getType(state);
     }
@@ -734,14 +734,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       return getType(state);
     }
 
-    if (ch === '\\' && isEditor && !stream.eol()) {
-      stream.next();
-      const type = getType(state);
-      const formattingEscape = `${TOKEN_TYPES.formatting}-escape`;
-      return type ? `${type} ${formattingEscape}` : formattingEscape;
-    }
     // The fork: a backslash takes the character after it only when CommonMark lets it escape that character.
-    if (ch === '\\' && !isEditor && matchRe(stream, ESCAPABLE_RE) && isHighlightFormatting) {
+    if (ch === '\\' && matchRe(stream, ESCAPABLE_RE) && isHighlightFormatting) {
       const type = getType(state);
       const formattingEscape = `${TOKEN_TYPES.formatting}-escape`;
       return type ? `${type} ${formattingEscape}` : formattingEscape;
