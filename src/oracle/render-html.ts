@@ -47,6 +47,14 @@ const TAG_PARTS_RE = /<(?<name>[a-z][\da-z]*)(?<attributes>(?:\s+[^\s/=>]+(?:="[
 const ATTRIBUTE_RE = /[^\s/=>]+(?:="[^"]*")?/gu;
 const BETWEEN_TAGS_RE = />\s+</gu;
 const TARGET_ATTRIBUTE_RE = /^(?<name>href|src)="(?<value>[^"]*)"$/u;
+const ATTRIBUTE_PARTS_RE = /^(?<name>[^\s/=>]+)(?:="(?<value>[^"]*)")?$/u;
+const EMBED_RE = /<span(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")?)*\s+class="(?:[^"]*\s)?internal-embed(?:\s[^"]*)?"(?:\s+[^\s/=>]+(?:="[^"]*")?)*)\s*>[\s\S]*?<\/span>/gu;
+const CODE_BLOCK_RE = /<pre(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")?)*)\s*>(?=<code[\s>])/gu;
+const CLASS_LIST_RE = /\s+/u;
+
+// What the oracle takes off the reading view's DOM: what the view adds to links, headings and blocks.
+const DROPPED_ATTRIBUTES: ReadonlySet<string> = new Set(['aria-label', 'data-heading', 'data-href', 'data-tooltip-position', 'dir', 'referrerpolicy', 'rel', 'target']);
+const DROPPED_CLASSES: ReadonlySet<string> = new Set(['external-link', 'internal-link', 'is-loaded', 'language-none']);
 
 /**
  * Orders two keys.
@@ -100,18 +108,27 @@ export function isExpressible(adapter: Adapter, quirk: keyof ObsidianQuirkFlags)
 
 /**
  * HTML as the DOM serializes it: tags without their `/`, attributes in name order, and text quotes and spaces as such.
- * Link targets are decoded, as the oracle decodes them.
+ * Link targets are decoded, and what the reading view adds is taken off, as the oracle does: the attributes it puts on
+ * links, headings and blocks, the classes of internal and external links, a code block's class, and an embed, which
+ * is put back as the image it was.
  *
  * @param html - The HTML.
  * @returns The normalized HTML.
  */
 export function normalizeHtml(html: string): string {
   return html
+    .replaceAll(EMBED_RE, (embed) => embedImage(embed))
+    .replaceAll(CODE_BLOCK_RE, (pre) => openingWithout(pre, 'class'))
     .replaceAll(TAG_RE, (tag) => normalizeTag(tag))
     .replaceAll('&quot;', '"')
     .replaceAll('&nbsp;', ' ')
     .replaceAll(BETWEEN_TAGS_RE, '><')
     .trim();
+}
+
+// The attributes of the tag that opens `html`.
+function attributesOf(html: string): string[] {
+  return TAG_PARTS_RE.exec(html)?.groups?.['attributes']?.match(ATTRIBUTE_RE) ?? [];
 }
 
 function decodeTarget(attribute: string): string {
@@ -127,8 +144,34 @@ function decodeTarget(attribute: string): string {
   }
 }
 
+// An embed as the image the oracle puts back: its `alt` and `src` alone.
+function embedImage(embed: string): string {
+  const kept = attributesOf(embed).filter((attribute) => attribute.startsWith('alt=') || attribute.startsWith('src='));
+  return `<img${kept.map((attribute) => ` ${attribute}`).join('')}>`;
+}
+
+function normalizeAttribute(attribute: string): string | undefined {
+  const groups = ATTRIBUTE_PARTS_RE.exec(attribute)?.groups;
+  const name = groups?.['name'] ?? '';
+  if (DROPPED_ATTRIBUTES.has(name)) {
+    return undefined;
+  }
+  if (name === 'class') {
+    const classes = (groups?.['value'] ?? '').split(CLASS_LIST_RE).filter((value) => value !== '' && !DROPPED_CLASSES.has(value));
+    return classes.length > 0 ? `class="${classes.join(' ')}"` : undefined;
+  }
+  return decodeTarget(attribute);
+}
+
 function normalizeTag(tag: string): string {
   const groups = TAG_PARTS_RE.exec(tag)?.groups;
-  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => decodeTarget(attribute));
+  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => normalizeAttribute(attribute)).filter((attribute) => attribute !== undefined);
   return `<${[groups?.['name'] ?? '', ...attributes.toSorted(compareKeys)].join(' ')}>`;
+}
+
+// An opening tag without one of its attributes.
+function openingWithout(tag: string, name: string): string {
+  const groups = TAG_PARTS_RE.exec(tag)?.groups;
+  const kept = attributesOf(tag).filter((attribute) => attribute !== name && !attribute.startsWith(`${name}=`));
+  return `<${groups?.['name'] ?? ''}${kept.map((attribute) => ` ${attribute}`).join('')}>`;
 }
