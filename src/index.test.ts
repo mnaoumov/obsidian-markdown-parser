@@ -8,7 +8,7 @@ import { parse } from './index.ts';
 
 describe('parse', () => {
   it('should parse a document into a tree covering all of it', () => {
-    const text = '# Heading\n\nSome *emphasis* and a [link](https://example.com).\n';
+    const text = '# Heading\n\nSome *emphasis*, a [link](https://example.com) and an [[internal link]].\n';
     const tree = parse(text);
 
     const nodeNames: string[] = [];
@@ -19,6 +19,6 @@ describe('parse', () => {
     });
 
     expect(tree.length).toBe(text.length);
-    expect(nodeNames).toEqual(expect.arrayContaining(['Document', 'ATXHeading1', 'Paragraph', 'Emphasis', 'Link', 'URL']));
+    expect(nodeNames).toEqual(expect.arrayContaining(['Document', 'ATXHeading1', 'Paragraph', 'Emphasis', 'Link', 'URL', 'InternalLink']));
   });
 });
