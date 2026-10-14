@@ -363,10 +363,10 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'Tables: a delimiter row without edge pipes under a header with them makes none (199), `\\|` in a code span keeps its backslash (200), a line without a pipe ends the table (202), and a delimiter row with fewer cells than the header still makes one (203).',
     commonmark: [],
+    flag: 'gfmTable',
     gfm: [199, 200, 202, 203],
     kind: 'quirk',
-    name: 'tables',
-    notAFlag: 'Not done yet: each adapter takes its table extension from its own package.'
+    name: 'tables'
   },
   {
     behaviour: 'An `ftp://` address is no bare URL, as for `@lezer/markdown`, micromark and github.com today.',

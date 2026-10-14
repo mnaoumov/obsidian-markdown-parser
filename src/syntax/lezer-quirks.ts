@@ -25,7 +25,10 @@ import type {
   MarkdownConfig
 } from '@lezer/markdown';
 
-import { parser } from '@lezer/markdown';
+import {
+  parser,
+  Table
+} from '@lezer/markdown';
 
 import type { ObsidianQuirkFlags } from './options.ts';
 import type {
@@ -36,12 +39,22 @@ import type {
 import { isCommonMarkAutolink } from './lezer-commonmark.ts';
 import {
   COMMENT_OPEN,
+  hasObsidianTableLeadingPipe,
   isObsidianHtmlComment,
+  isObsidianTableRow,
   matchObsidianAutolink,
   matchObsidianCharacterReference,
   obsidianHtmlBlockKind,
+  obsidianTableAlignments,
+  obsidianTableCells,
   parseObsidianDefinition
 } from './quirk-rules.ts';
+
+// The line a paragraph starts on: where the base of its containers is, and its text from there.
+interface HeaderLine {
+  readonly from: number;
+  readonly text: string;
+}
 
 // The parts of `MarkdownParser` its typings leave out: the leaf parser factories, in the order of the block names.
 interface ParserInternals {
@@ -60,6 +73,9 @@ const Char = {
   Space: codeOf(' '),
   Tab: codeOf('\t')
 } as const;
+
+// The line each paragraph of a parse starts on, by where the paragraph starts.
+const headerLines = new WeakMap<BlockContext, Map<number, HeaderLine>>();
 
 const HTML_BLOCK_NODES: Readonly<Record<ObsidianHtmlBlockKind['type'], string>> = {
   comment: 'CommentBlock',
@@ -116,6 +132,50 @@ class ObsidianLinkReferenceParser implements LeafBlockParser {
 }
 
 /*
+ * A table as Obsidian reads it (see `ObsidianQuirkFlags.gfmTable`), with the nodes of `@lezer/markdown`'s own. It is a
+ * leaf parser, so it interrupts no paragraph, and it ends at the first line that is no row of it. Every cell is a
+ * `TableCell`, an empty one empty, and every pipe a `TableDelimiter`.
+ */
+class ObsidianTableParser implements LeafBlockParser {
+  private readonly hasLeadingPipe: boolean;
+  private rows: Element[] | false | null = null;
+
+  public constructor(private readonly header: HeaderLine) {
+    this.hasLeadingPipe = hasObsidianTableLeadingPipe(header.text);
+  }
+
+  public finish(cx: BlockContext, leaf: LeafBlock): boolean {
+    if (!this.rows) {
+      return false;
+    }
+    cx.addLeafElement(leaf, cx.elt('Table', leaf.start, leaf.start + leaf.content.length, this.rows));
+    return true;
+  }
+
+  public nextLine(cx: BlockContext, line: Line, leaf: LeafBlock): boolean {
+    const text = line.text.slice(line.basePos);
+    const rowFrom = cx.lineStart + line.pos;
+    const rowTo = cx.lineStart + line.text.length;
+    if (this.rows === null) {
+      const isDelimiter = isObsidianTableRow(text) && hasObsidianTableLeadingPipe(text) === this.hasLeadingPipe && obsidianTableAlignments(text) !== null;
+      this.rows = isDelimiter && [
+        cx.elt('TableHeader', leaf.start, leaf.start + leaf.content.length, tableRowElements(cx, this.header.text, this.header.from)),
+        cx.elt('TableDelimiter', rowFrom, rowTo)
+      ];
+      return false;
+    }
+    if (!this.rows) {
+      return false;
+    }
+    if (isObsidianTableRow(text) && hasObsidianTableLeadingPipe(text) === this.hasLeadingPipe) {
+      this.rows.push(cx.elt('TableRow', rowFrom, rowTo, tableRowElements(cx, text, cx.lineStart + line.basePos)));
+      return false;
+    }
+    return this.finish(cx, leaf);
+  }
+}
+
+/*
  * A paragraph whose next line is a setext underline Obsidian does not read loses the setext heading parser, so the
  * line is text of the paragraph, and no later line can make it a heading either: its text is no longer one line.
  */
@@ -135,6 +195,32 @@ class SingleLineSetextGuard implements LeafBlockParser {
     return false;
   }
 }
+
+/**
+ * The `@lezer/markdown` table extension of the `gfmTable` quirk: tables as Obsidian reads them, with the nodes of
+ * `@lezer/markdown`'s `Table`, which it replaces.
+ */
+export const obsidianTable: MarkdownConfig = {
+  defineNodes: Table.defineNodes ?? [],
+  parseBlock: [
+    {
+      before: 'LinkReference',
+      name: 'ObsidianTableHeaderLine',
+      parse: (cx, line): boolean => {
+        recordHeaderLine(cx, line);
+        return false;
+      }
+    },
+    {
+      before: 'SetextHeading',
+      leaf: (cx, leaf): LeafBlockParser | null => {
+        const header = headerLines.get(cx)?.get(leaf.start);
+        return header && isObsidianTableRow(header.text) ? new ObsidianTableParser(header) : null;
+      },
+      name: 'Table'
+    }
+  ]
+};
 
 /**
  * The `@lezer/markdown` extensions for the quirks asked for. The CommonMark behaviour of every quirk needs none.
@@ -344,10 +430,33 @@ function parseSoftLineBreak(cx: InlineContext, next: number, start: number): num
   return cx.char(end) === Char.LineFeed ? cx.addElement(cx.elt('HardBreak', start, end + 1)) : -1;
 }
 
+// The line a paragraph starts on, from the base of its containers, so the table parser sees its indentation.
+function recordHeaderLine(cx: BlockContext, line: Line): void {
+  let lines = headerLines.get(cx);
+  if (!lines) {
+    lines = new Map();
+    headerLines.set(cx, lines);
+  }
+  lines.set(cx.lineStart + line.pos, { from: cx.lineStart + line.basePos, text: line.text.slice(line.basePos) });
+}
+
 /*
  * A line's text as a paragraph holds it: its container markup replaced by spaces, as `@lezer/markdown`'s internal
  * `Line.scrub` gives it.
  */
 function scrubbed(line: Line): string {
   return line.baseIndent === 0 ? line.text : ' '.repeat(line.basePos) + line.text.slice(line.basePos);
+}
+
+// A table row's cells and pipes, read from its text, which starts at `from`.
+function tableRowElements(cx: BlockContext, text: string, from: number): Element[] {
+  const elements = obsidianTableCells(text).map((cell) => cx.elt('TableCell', from + cell.from, from + cell.to, cx.parser.parseInline(text.slice(cell.from, cell.to), from + cell.from)));
+  for (let pos = 0; pos < text.length; pos++) {
+    if (text.charAt(pos) === '\\') {
+      pos++;
+    } else if (text.charAt(pos) === '|') {
+      elements.push(cx.elt('TableDelimiter', from + pos, from + pos + 1));
+    }
+  }
+  return elements.toSorted((a, b) => a.from - b.from || a.to - b.to);
 }

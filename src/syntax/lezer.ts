@@ -36,7 +36,10 @@ import {
   commonMarkFixes,
   commonMarkFixesWithoutHtmlBlock
 } from './lezer-commonmark.ts';
-import { createLezerQuirks } from './lezer-quirks.ts';
+import {
+  createLezerQuirks,
+  obsidianTable
+} from './lezer-quirks.ts';
 import {
   resolveObsidianQuirks,
   resolveObsidianSyntax
@@ -298,7 +301,7 @@ export function createObsidianMarkdown(options: CreateObsidianMarkdownOptions = 
   const quirks = resolveObsidianQuirks(options);
   const configs: MarkdownConfig[] = [quirks.htmlBlock === 'obsidian' ? commonMarkFixesWithoutHtmlBlock : commonMarkFixes];
   if (flags.table) {
-    configs.push(Table);
+    configs.push(quirks.gfmTable === 'obsidian' ? obsidianTable : Table);
   }
   if (flags.strikethrough) {
     configs.push(Strikethrough);

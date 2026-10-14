@@ -190,6 +190,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
@@ -201,6 +202,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
@@ -212,6 +214,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
@@ -219,6 +222,16 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   }
+};
+
+/*
+ * The GFM extension examples whose rendering changes when a quirk is turned on from the gfm preset, in the same way:
+ * `gfmTable` changes the four table examples Obsidian reads differently, and `softLineBreak` the one that GFM reads as a
+ * paragraph of three lines, which Obsidian reads as a table.
+ */
+const GFM_QUIRK_CHANGES: Readonly<Partial<Record<keyof ObsidianQuirkFlags, readonly number[]>>> = {
+  gfmTable: [199, 200, 202, 203],
+  softLineBreak: [203]
 };
 
 function failingExamples(examples: readonly SpecExample[], render: (markdown: string) => string): number[] {
@@ -324,6 +337,20 @@ describe.each(ADAPTERS)('%s', (adapter) => {
       changes[quirk] = COMMONMARK.filter((example, index) => quirked(example.markdown) !== baseHtml[index]).map((example) => example.example);
     }
     expect(changes).toEqual(QUIRK_CHANGES[adapter]);
+  });
+
+  it('changes only the GFM extension examples showing a quirk when the quirk is turned on from the gfm preset', () => {
+    const base = renderer(adapter, { preset: 'gfm' }, true);
+    const baseHtml = GFM_EXTENSIONS.map((example) => base(example.markdown));
+    const changes: Partial<Record<keyof ObsidianQuirkFlags, number[]>> = {};
+    for (const quirk of OBSIDIAN_QUIRK_FLAGS) {
+      const quirked = renderer(adapter, { preset: 'gfm', [quirk]: OBSIDIAN_QUIRKS[quirk] }, true);
+      const changed = GFM_EXTENSIONS.filter((example, index) => quirked(example.markdown) !== baseHtml[index]).map((example) => example.example);
+      if (changed.length > 0) {
+        changes[quirk] = changed;
+      }
+    }
+    expect(changes).toEqual(GFM_QUIRK_CHANGES);
   });
 
   it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', () => {

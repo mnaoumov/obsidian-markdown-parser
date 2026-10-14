@@ -24,15 +24,20 @@ import type {
 } from 'markdown-it';
 
 import type { ObsidianQuirkFlags } from './options.ts';
+import type { ObsidianTableAlignment } from './quirk-rules.ts';
 
 import { hasBlankLineInside } from './loose-list.ts';
 import {
   COMMENT_OPEN,
   decodeObsidianCharacterReferences,
+  hasObsidianTableLeadingPipe,
   isObsidianHtmlComment,
+  isObsidianTableRow,
   matchObsidianAutolink,
   matchObsidianCharacterReference,
   obsidianHtmlBlockKind,
+  obsidianTableAlignments,
+  obsidianTableCells,
   parseObsidianDefinition
 } from './quirk-rules.ts';
 
@@ -141,6 +146,14 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   if (quirks.characterReference === 'obsidian') {
     md.inline.ruler.before('entity', 'obsidian_character_reference', checkObsidianCharacterReference);
   }
+  if (quirks.gfmTable === 'obsidian') {
+    // In place of markdown-it's table rule, when it is on, and after every other block, as Obsidian tries a table last.
+    const ruleCount = md.block.ruler.getRules('').length;
+    md.block.ruler.disable('table', true);
+    if (md.block.ruler.getRules('').length < ruleCount) {
+      md.block.ruler.before('paragraph', 'obsidian_table', checkObsidianTable);
+    }
+  }
   if (quirks.htmlBlock === 'obsidian') {
     md.block.ruler.at('html_block', checkObsidianHtmlBlock, { alt: ['paragraph', 'reference', 'blockquote'] });
   }
@@ -248,6 +261,45 @@ function checkObsidianHtmlComment(state: StateInline, isSilent: boolean): boolea
 }
 
 /*
+ * A table as Obsidian reads it (see `ObsidianQuirkFlags.gfmTable`), with the tokens of markdown-it's own `table` rule.
+ * It interrupts no paragraph, and its cells are inline content as written.
+ */
+function checkObsidianTable(state: StateBlock, startLine: number, endLine: number, isSilent: boolean): boolean {
+  const delimiterLine = startLine + 1;
+  if ((state.sCount[startLine] ?? 0) - state.blkIndent >= CODE_INDENT || delimiterLine >= endLine || (state.sCount[delimiterLine] ?? 0) < state.blkIndent) {
+    return false;
+  }
+  const header = rowText(state, startLine);
+  const delimiter = rowText(state, delimiterLine);
+  const hasLeadingPipe = hasObsidianTableLeadingPipe(header);
+  const alignments = isObsidianTableRow(header) && isObsidianTableRow(delimiter) && hasObsidianTableLeadingPipe(delimiter) === hasLeadingPipe ? obsidianTableAlignments(delimiter) : null;
+  if (!alignments) {
+    return false;
+  }
+  if (isSilent) {
+    return true;
+  }
+  let nextLine = delimiterLine + 1;
+  while (nextLine < endLine && (state.sCount[nextLine] ?? 0) >= state.blkIndent && isObsidianTableRowOf(rowText(state, nextLine), hasLeadingPipe)) {
+    nextLine++;
+  }
+  state.push('table_open', 'table', 1).map = [startLine, nextLine];
+  state.push('thead_open', 'thead', 1).map = [startLine, delimiterLine + 1];
+  pushTableRow(state, startLine, header, 'th', alignments);
+  state.push('thead_close', 'thead', -1);
+  if (nextLine > delimiterLine + 1) {
+    state.push('tbody_open', 'tbody', 1).map = [delimiterLine + 1, nextLine];
+    for (let line = delimiterLine + 1; line < nextLine; line++) {
+      pushTableRow(state, line, rowText(state, line), 'td', alignments);
+    }
+    state.push('tbody_close', 'tbody', -1);
+  }
+  state.push('table_close', 'table', -1);
+  state.line = nextLine;
+  return true;
+}
+
+/*
  * Obsidian's setext heading: one line of text, and an underline right below it that starts its line and ends with its
  * marker. Adapted from markdown-it's `lheading` rule, which reads CommonMark's.
  */
@@ -302,6 +354,10 @@ function isEmptyListItem(state: StateBlock, line: number): boolean {
   return (state.sCount[line] ?? 0) - state.blkIndent < CODE_INDENT && EMPTY_LIST_ITEM_RE.test(lineText(state, line));
 }
 
+function isObsidianTableRowOf(text: string, hasLeadingPipe: boolean): boolean {
+  return isObsidianTableRow(text) && hasObsidianTableLeadingPipe(text) === hasLeadingPipe;
+}
+
 // Whether a line continues the block a reference opens: it is no blank line, and no other block interrupts there.
 function isReferenceContinuation(state: StateBlock, line: number): boolean {
   if (line >= state.lineMax || state.isEmpty(line)) {
@@ -350,6 +406,30 @@ function loosenLists(state: StateCore): void {
       }
     }
   }
+}
+
+// A table row's cells, cut or padded to the columns of its delimiter row.
+function pushTableRow(state: StateBlock, line: number, text: string, tag: 'td' | 'th', alignments: readonly ObsidianTableAlignment[]): void {
+  const cells = obsidianTableCells(text);
+  state.push('tr_open', 'tr', 1).map = [line, line + 1];
+  for (const [column, alignment] of alignments.entries()) {
+    const open = state.push(`${tag}_open`, tag, 1);
+    if (alignment) {
+      open.attrSet('style', `text-align:${alignment}`);
+    }
+    const cell = cells[column];
+    const inline = state.push('inline', '', 0);
+    inline.content = cell ? text.slice(cell.from, cell.to) : '';
+    inline.map = [line, line + 1];
+    inline.children = [];
+    state.push(`${tag}_close`, tag, -1);
+  }
+  state.push('tr_close', 'tr', -1);
+}
+
+// A line's text after the markup of its containers, as a table row reads it.
+function rowText(state: StateBlock, line: number): string {
+  return state.getLines(line, line + 1, state.blkIndent, false);
 }
 
 function showListParagraphs(tokens: readonly Token[], listIndex: number): void {

@@ -98,6 +98,11 @@ export interface ObsidianHtmlBlockKind {
 }
 
 /**
+ * How a table column is aligned: `null` for no alignment.
+ */
+export type ObsidianTableAlignment = 'center' | 'left' | 'right' | null;
+
+/**
  * A range of text.
  */
 export interface TextSpan {
@@ -110,6 +115,14 @@ export interface TextSpan {
    * Where it ends.
    */
   readonly to: number;
+}
+
+// A delimiter row being read: the cell so far, `false` before its first `-` or `:`, and the cells before it.
+interface AlignmentScan {
+  alignment: false | ObsidianTableAlignment;
+  readonly alignments: ObsidianTableAlignment[];
+  hasDash: boolean;
+  isFirstPipe: boolean;
 }
 
 /**
@@ -146,6 +159,7 @@ const DEFINITION_WHITESPACE = new Set(['\t', '\n', ' ']);
 const TITLE_CLOSERS: Readonly<Record<string, string>> = { '\'': '\'', '"': '"', '(': ')' };
 
 const MAILTO = 'mailto:';
+const WHITESPACE_RE = /\s/u;
 // A scheme up to its `://`, or an email address's local part up to its `@`, then the rest up to the `>`. What comes
 // before either holds no `@` and no `:/`.
 const AUTOLINK_RE = /^<(?<link>(?:[^\s:>@]|:(?!\/))+(?:(?<at>@)[^\s>]+|:\/\/[^\s>]*))>/u;
@@ -253,6 +267,17 @@ export function decodeObsidianCharacterReferences(text: string, requiresSemicolo
 }
 
 /**
+ * Whether a line of a table starts with its pipe: Obsidian's rows agree with the header on this, and a row that does not
+ * ends the table. Whitespace before the pipe is a start without it.
+ *
+ * @param line - The line, after the markup of its containers.
+ * @returns Whether its first character is `|`.
+ */
+export function hasObsidianTableLeadingPipe(line: string): boolean {
+  return line.startsWith('|');
+}
+
+/**
  * Whether text that starts with `<!--` starts with an HTML comment Obsidian reads.
  *
  * @param text - The text, from its `<`.
@@ -262,6 +287,15 @@ export function isObsidianHtmlComment(text: string): boolean {
   return OBSIDIAN_COMMENT_RE.test(text);
 }
 
+/**
+ * Whether a line can be a row of an Obsidian table: it holds a `|` after its first character, escaped or not.
+ *
+ * @param line - The line, after the markup of its containers.
+ * @returns Whether it can.
+ */
+export function isObsidianTableRow(line: string): boolean {
+  return line.includes('|', 1);
+}
 /**
  * The autolink at the start of the text, as Obsidian reads it: a `<`, then either an address of non-whitespace with an
  * `@` in it, or a scheme of any characters but whitespace and `@` with `://` and more after it, then a `>`. An email
@@ -305,6 +339,7 @@ export function matchObsidianCharacterReference(text: string, requiresSemicolon 
   }
   return next === '#' ? matchNumericReference(text, requiresSemicolon) : matchNamedReference(text, requiresSemicolon);
 }
+
 /**
  * The kind of HTML block a line opens, as Obsidian reads it. Its first kind is `<script>`, `<pre>` and `<style>`, with
  * no `<textarea>`; its sixth kind takes Obsidian's own tags; and the sixth and seventh end at an empty line, not at a
@@ -315,6 +350,66 @@ export function matchObsidianCharacterReference(text: string, requiresSemicolon 
  */
 export function obsidianHtmlBlockKind(line: string): null | ObsidianHtmlBlockKind {
   return HTML_BLOCK_KINDS.find(([start]) => start.test(line))?.[1] ?? null;
+}
+
+/**
+ * The alignments of an Obsidian table's delimiter row: cells of `-`, `:` and whitespace between pipes, with no empty
+ * cell after the first pipe. A `:` alone aligns left, `:` after a `-` right, and a second `:` center.
+ *
+ * @param line - The line, after the markup of its containers.
+ * @returns One alignment per column, or `null` for a line that is no delimiter row.
+ */
+export function obsidianTableAlignments(line: string): null | ObsidianTableAlignment[] {
+  const scan: AlignmentScan = { alignment: false, alignments: [], hasDash: false, isFirstPipe: true };
+  for (const char of line) {
+    if (!canScanAlignmentChar(scan, char)) {
+      return null;
+    }
+  }
+  if (scan.alignment !== false) {
+    scan.alignments.push(scan.alignment);
+  }
+  return scan.alignments.length > 0 ? scan.alignments : null;
+}
+/**
+ * The cells of a row of an Obsidian table, as the ranges of their content, without the whitespace around it. Unescaped
+ * pipes separate them. A row that starts with its pipe has no cell before it; one that does not has one, empty when
+ * only whitespace comes before the first pipe. Nothing after the last pipe is no cell.
+ *
+ * @param line - The line, after the markup of its containers.
+ * @returns The cells. An empty cell is an empty range at its closing pipe.
+ */
+export function obsidianTableCells(line: string): TextSpan[] {
+  const cells: TextSpan[] = [];
+  let isPreamble = hasObsidianTableLeadingPipe(line);
+  let from = -1;
+  let to = -1;
+  for (let pos = 0; pos < line.length; pos++) {
+    const char = line.charAt(pos);
+    if (char === ' ' || char === '\t') {
+      continue;
+    }
+    if (char === '|') {
+      if (!isPreamble) {
+        cells.push(from === -1 ? { from: pos, to: pos } : { from, to });
+      }
+      isPreamble = false;
+      from = -1;
+      continue;
+    }
+    isPreamble = false;
+    if (from === -1) {
+      from = pos;
+    }
+    if (char === '\\' && pos < line.length - 1) {
+      pos++;
+    }
+    to = pos + 1;
+  }
+  if (from !== -1) {
+    cells.push({ from, to });
+  }
+  return cells;
 }
 
 /**
@@ -382,6 +477,32 @@ export function parseObsidianDefinition(text: string, isEnd: boolean): ObsidianD
     return isEnd ? definition : 'pending';
   }
   return text.charAt(end) === '\n' ? definition : null;
+}
+
+// Reads one character of a delimiter row, and whether the row can still be one.
+function canScanAlignmentChar(scan: AlignmentScan, char: string): boolean {
+  if (char === '|') {
+    if (scan.alignment === false && !scan.isFirstPipe) {
+      return false;
+    }
+    if (scan.alignment !== false) {
+      scan.alignments.push(scan.alignment);
+    }
+    scan.alignment = false;
+    scan.hasDash = false;
+    scan.isFirstPipe = false;
+    return true;
+  }
+  if (char === '-') {
+    scan.hasDash = true;
+    scan.alignment = scan.alignment === false ? null : scan.alignment;
+    return true;
+  }
+  if (char === ':') {
+    scan.alignment = nextAlignment(scan.alignment, scan.hasDash);
+    return true;
+  }
+  return WHITESPACE_RE.test(char);
 }
 
 // The end of a destination from its first character, -1 for none, or `PENDING` for one the text ends inside.
@@ -480,6 +601,13 @@ function matchNumericReference(text: string, requiresSemicolon: boolean): null |
     length: isTerminated ? end + 1 : end,
     value: numericReferenceValue(Number.parseInt(digits, isHexadecimal ? HEXADECIMAL : DECIMAL))
   };
+}
+
+function nextAlignment(alignment: false | ObsidianTableAlignment, hasDash: boolean): ObsidianTableAlignment {
+  if (alignment === 'left') {
+    return 'center';
+  }
+  return hasDash && alignment === null ? 'right' : 'left';
 }
 
 function numericReferenceValue(code: number): string {

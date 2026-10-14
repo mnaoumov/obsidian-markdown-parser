@@ -31,7 +31,8 @@ import { hasBlankLineInside } from './loose-list.ts';
 import {
   decodeObsidianCharacterReferences,
   matchObsidianAutolink,
-  matchObsidianCharacterReference
+  matchObsidianCharacterReference,
+  obsidianTableAlignments
 } from './quirk-rules.ts';
 
 /**
@@ -47,6 +48,12 @@ export interface RenderLezerHtmlOptions {
    * How a character reference is decoded (see `ObsidianQuirkFlags`): Obsidian's references need no `;`.
    */
   readonly characterReference?: ObsidianQuirkFlags['characterReference'] | undefined;
+
+  /**
+   * How a table is read (see `ObsidianQuirkFlags`): an Obsidian table's cells are its `TableCell` nodes, its columns its
+   * delimiter row's, and `\|` in its code spans keeps its backslash.
+   */
+  readonly gfmTable?: ObsidianQuirkFlags['gfmTable'] | undefined;
 
   /**
    * When a list is loose (see `ObsidianQuirkFlags`). The tree does not say, so the renderer applies the quirk.
@@ -88,6 +95,7 @@ interface RenderContext {
   readonly autolink: ObsidianQuirkFlags['autolink'];
   readonly characterReference: ObsidianQuirkFlags['characterReference'];
   readonly definitions: Map<string, Definition>;
+  readonly gfmTable: ObsidianQuirkFlags['gfmTable'];
   readonly hasTagFilter: boolean;
   readonly lineStarts: readonly number[];
   readonly listItemLayouts: Map<number, ListItemLayout>;
@@ -149,7 +157,7 @@ const DELIMITED_TAGS: Readonly<Record<string, string>> = {
  * @returns The HTML.
  */
 export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHtmlOptions = {}): string {
-  const { autolink = 'commonmark', characterReference = 'commonmark', looseList = 'between-blocks', tagFilter = false } = options;
+  const { autolink = 'commonmark', characterReference = 'commonmark', gfmTable = 'commonmark', looseList = 'between-blocks', tagFilter = false } = options;
   const lineStarts = [0];
   for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
     lineStarts.push(index + 1);
@@ -158,6 +166,7 @@ export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHt
     autolink,
     characterReference,
     definitions: new Map(),
+    gfmTable,
     hasTagFilter: tagFilter,
     lineStarts,
     listItemLayouts: new Map(),
@@ -186,11 +195,18 @@ function alignmentOf(cell: string): null | string {
 
 // The delimiter row is one node, with no cell nodes, so its cells are read from its text.
 function alignmentsOf(cx: RenderContext, delimiterRow: SyntaxNode | undefined): (null | string)[] {
+  if (delimiterRow && cx.gfmTable === 'obsidian') {
+    return obsidianTableAlignments(cx.text.slice(delimiterRow.from, delimiterRow.to)) ?? [];
+  }
   return delimiterRow ? cx.text.slice(delimiterRow.from, delimiterRow.to).trim().replaceAll(EDGE_PIPES_RE, '').split('|').map((cell) => alignmentOf(cell)) : [];
 }
 
-// The cells of a table row, as the ranges between its pipes, without the empty ones outside its edge pipes.
+// The cells of a table row, as the ranges between its pipes, without the empty ones outside its edge pipes. An Obsidian
+// table has a node for each.
 function cellsOf(cx: RenderContext, row: SyntaxNode): Range[] {
+  if (cx.gfmTable === 'obsidian') {
+    return childrenOf(row).filter((child) => child.name === 'TableCell');
+  }
   const pipes = childrenOf(row).filter((child) => child.name === 'TableDelimiter');
   const bounds = [row.from, ...pipes.flatMap((pipe) => [pipe.from, pipe.to]), row.to];
   const cells: Range[] = [];
@@ -539,7 +555,7 @@ function renderCode(cx: RenderContext, node: SyntaxNode): void {
 function renderCodeSpan(cx: RenderContext, node: SyntaxNode, mode: InlineMode): string {
   const marks = childrenOf(node).filter((child) => child.name === 'CodeMark');
   let code = renderInline(cx, node, { from: marks[0]?.to ?? node.from, to: marks.at(-1)?.from ?? node.to }, InlineMode.Code);
-  if (cx.tableCellDepth > 0) {
+  if (cx.tableCellDepth > 0 && cx.gfmTable === 'commonmark') {
     code = code.replaceAll(String.raw`\|`, '|');
   }
   if (code.length > PAIR_SIZE && code.startsWith(' ') && code.endsWith(' ') && code.trim() !== '') {

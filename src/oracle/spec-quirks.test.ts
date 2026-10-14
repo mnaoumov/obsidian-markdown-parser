@@ -1,5 +1,8 @@
 /* eslint-disable import-x/no-nodejs-modules -- The test runs in Node and reads the spec oracle from disk. */
 import { micromark } from 'micromark';
+import { gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
+import { gfmStrikethroughHtml } from 'micromark-extension-gfm-strikethrough';
+import { gfmTableHtml } from 'micromark-extension-gfm-table';
 import { readFileSync } from 'node:fs';
 import {
   dirname,
@@ -30,6 +33,7 @@ import {
   resolveObsidianQuirks
 } from '../syntax/options.ts';
 import {
+  exampleKey,
   readingViewDifferences,
   SPEC_DIFFERENCES,
   specDifferenceKeys,
@@ -57,20 +61,20 @@ const TARGET_ATTRIBUTE_RE = /^(?<name>href|src)="(?<value>[^"]*)"$/u;
  * - setextHeading 82, 84: the paragraph keeps its leading whitespace.
  * - softLineBreak 28: character references; 81, 82, 84, 95: setext headings; 187, 494: unclosed tags in the spec;
  *   196, 210: link reference definitions; 222, 224: leading whitespace; 241: trailing whitespace; 384, 432: emphasis;
- *   552: links; 625: HTML comments.
+ *   552: links; 625: HTML comments; GFM 199: tables.
  */
-const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>> = {
+const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly string[]>> = {
   autolink: [],
   characterReference: [],
   emptyListItem: [],
-  htmlBlock: [148, 171],
+  gfmTable: [],
+  htmlBlock: ['commonmark:148', 'commonmark:171'],
   htmlComment: [],
   linkDefinition: [],
   looseList: [],
-  setextHeading: [82, 84],
-  softLineBreak: [28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625]
+  setextHeading: ['commonmark:82', 'commonmark:84'],
+  softLineBreak: [...[28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625].map((example) => `commonmark:${String(example)}`), 'gfm:199']
 };
-
 function compareKeys(a: string, b: string): number {
   return a.localeCompare(b);
 }
@@ -81,17 +85,17 @@ function decodeTarget(attribute: string): string {
     return attribute;
   }
   try {
-    return `{groups['name'] ?? ''}="${decodeURI(groups['value'] ?? '')}"`;
+    return `${groups['name'] ?? ''}="${decodeURI(groups['value'] ?? '')}"`;
   } catch {
     // A target that is not valid percent-encoding is compared as it is, as the oracle compares it.
     return attribute;
   }
 }
 
-function exampleRead(example: number): SpecOracleRead {
-  const read = ORACLE.examples.find((candidate) => candidate.suite === 'commonmark' && candidate.example === example);
+function exampleRead(key: string): SpecOracleRead {
+  const read = ORACLE.examples.find((candidate) => exampleKey(candidate) === key);
   if (!read) {
-    throw new Error(`The oracle holds no CommonMark example ${String(example)}`);
+    throw new Error(`The oracle holds no example ${key}`);
   }
   return read;
 }
@@ -113,8 +117,9 @@ function normalizeTag(tag: string): string {
   return `<${[groups?.['name'] ?? '', ...attributes.toSorted(compareKeys)].join(' ')}>`;
 }
 
-function render(adapter: Adapter, quirk: keyof ObsidianQuirkFlags): (markdown: string) => string {
-  const options = { preset: 'commonmark', [quirk]: OBSIDIAN_QUIRKS[quirk] } as const;
+// A CommonMark example renders with the `commonmark` preset, and a GFM one with the `gfm` preset.
+function render(adapter: Adapter, quirk: keyof ObsidianQuirkFlags, preset: 'commonmark' | 'gfm'): (markdown: string) => string {
+  const options = { preset, [quirk]: OBSIDIAN_QUIRKS[quirk] } as const;
   switch (adapter) {
     case 'lezer': {
       const parser = createObsidianParser(options);
@@ -126,7 +131,7 @@ function render(adapter: Adapter, quirk: keyof ObsidianQuirkFlags): (markdown: s
     }
     case 'micromark': {
       const extensions = createMicromarkObsidianMarkdown(options);
-      return (markdown) => micromark(markdown, { allowDangerousHtml: true, extensions, htmlExtensions: [micromarkQuirksHtml] });
+      return (markdown) => micromark(markdown, { allowDangerousHtml: true, extensions, htmlExtensions: [gfmTableHtml(), gfmStrikethroughHtml(), gfmAutolinkLiteralHtml(), micromarkQuirksHtml] });
     }
     default: {
       throw new Error('Unknown adapter');
@@ -159,9 +164,10 @@ describe('the spec oracle', () => {
 describe.each(ADAPTERS)('%s with a quirk flag', (adapter) => {
   it.each(SPEC_DIFFERENCES.filter((difference) => difference.flag !== undefined))('reproduces the reading view on the examples of $name', (difference) => {
     const quirk = difference.flag ?? 'softLineBreak';
-    const toHtml = render(adapter, quirk);
-    const differing = difference.commonmark.filter((example) => {
-      const read = exampleRead(example);
+    const renderers = { commonmark: render(adapter, quirk, 'commonmark'), gfm: render(adapter, quirk, 'gfm') };
+    const differing = specDifferenceKeys(difference).filter((key) => {
+      const read = exampleRead(key);
+      const toHtml = renderers[read.suite];
       const obsidian = quirk === 'softLineBreak' ? read.html : read.htmlStrict;
       return normalizeHtml(toHtml(read.markdown)) !== normalizeHtml(obsidian);
     });

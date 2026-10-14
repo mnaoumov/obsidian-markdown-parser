@@ -455,6 +455,18 @@ export function parseMdast(markdown: string, options?: ParseMdastOptions): Root 
   return root;
 }
 
+declare module 'mdast-util-from-markdown' {
+  interface CompileData {
+    /**
+     * Whether the compiler is inside a table the `gfmTable` quirk read.
+     */
+    obsidianTable?: boolean | undefined;
+  }
+}
+
+// The escapes `mdast-util-gfm-table` takes off in a table's code spans.
+const TABLE_ESCAPE_RE = /\\\|/gu;
+
 /*
  * An autolink the `autolink` quirk read shows the text and links to the address its target token carries. A character
  * reference the `characterReference` quirk read stands for the text its token carries. Any other is decoded as
@@ -470,6 +482,9 @@ const mdastQuirks: FromMarkdownExtension = {
       }
       link.url = target.url;
       this.enter({ type: 'text', value: target.text }, token);
+    },
+    obsidianTable(this: CompileContext): undefined {
+      this.data.obsidianTable = true;
     }
   },
   exit: {
@@ -481,10 +496,25 @@ const mdastQuirks: FromMarkdownExtension = {
         tail.value += characterReferenceValue(this.sliceSerialize(token), type, token);
       }
     },
+    // `mdast-util-gfm-table`'s own handler, except in an Obsidian table, whose code spans keep their escapes.
+    codeText(this: CompileContext, token: Token): undefined {
+      let value = this.resume();
+      if (this.data.inTable === true && this.data.obsidianTable !== true) {
+        value = value.replaceAll(TABLE_ESCAPE_RE, '|');
+      }
+      const node = this.stack.at(-1);
+      if (node?.type === 'inlineCode') {
+        node.value = value;
+      }
+      this.exit(token);
+    },
     obsidianAutolinkTarget(this: CompileContext, token: Token): undefined {
       if (token._obsidianAutolink) {
         this.exit(token);
       }
+    },
+    obsidianTable(this: CompileContext): undefined {
+      this.data.obsidianTable = undefined;
     }
   }
 };

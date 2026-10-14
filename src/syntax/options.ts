@@ -43,6 +43,15 @@ export interface ObsidianQuirkFlags {
   readonly emptyListItem: 'cannot-interrupt' | 'interrupts-paragraph';
 
   /**
+   * How a GFM table is read. GFM: its header and delimiter rows have as many cells, it can interrupt a paragraph, and it
+   * runs to a blank line or another block. `\|` is a pipe in any cell content. Obsidian: its rows agree with the header
+   * on whether they start with a pipe, and the delimiter row gives the columns, to which every row is cut or padded. It
+   * interrupts no paragraph, and runs to a line that holds no pipe after its first character or disagrees on the leading
+   * pipe. Its cells are read as written, so `\|` in a code span keeps its backslash.
+   */
+  readonly gfmTable: 'commonmark' | 'obsidian';
+
+  /**
    * Which lines open an HTML block, and what ends it. CommonMark 0.31.2: its seven kinds. Obsidian: the first kind is
    * `<script>`, `<pre>` and `<style>`, with no `<textarea>`; the sixth kind's tags have no `search` and add `hgroup`,
    * `meta`, `pre` and `source`, so `</pre>` interrupts a paragraph; and the sixth and seventh kinds end at an empty line,
@@ -253,6 +262,7 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
   autolink: 'commonmark',
   characterReference: 'commonmark',
   emptyListItem: 'cannot-interrupt',
+  gfmTable: 'commonmark',
   htmlBlock: 'commonmark',
   htmlComment: 'commonmark',
   linkDefinition: 'commonmark',
@@ -268,6 +278,7 @@ export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
   autolink: 'obsidian',
   characterReference: 'obsidian',
   emptyListItem: 'interrupts-paragraph',
+  gfmTable: 'obsidian',
   htmlBlock: 'obsidian',
   htmlComment: 'obsidian',
   linkDefinition: 'obsidian',
@@ -292,6 +303,7 @@ export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}
     autolink: options.autolink ?? COMMONMARK_QUIRKS.autolink,
     characterReference: options.characterReference ?? COMMONMARK_QUIRKS.characterReference,
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
+    gfmTable: options.gfmTable ?? COMMONMARK_QUIRKS.gfmTable,
     htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
     htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,
     linkDefinition: options.linkDefinition ?? COMMONMARK_QUIRKS.linkDefinition,
