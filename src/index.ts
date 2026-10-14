@@ -5,6 +5,8 @@
  *
  * - {@link highlight} and {@link highlightLines} give the classes Obsidian's editor puts on every character and
  *   line, resumable from any line.
+ * - {@link editorClassLanguage} hosts that tokenizer in CodeMirror 6, with the editor's tree shape and incremental
+ *   re-parsing, and {@link editorClasses} renders its classes the way the editor does.
  * - {@link parse} gives the `@lezer/markdown` tree with the Obsidian syntax, and {@link obsidianMarkdown} is that
  *   syntax as `@lezer/markdown` extensions.
  * - {@link ObsidianNode} names the syntax nodes, and {@link CONFORMANCE_CASES} is the corpus every adapter is checked
@@ -27,6 +29,22 @@ export {
   highlight,
   highlightLines
 } from './editor/highlight.ts';
+
+export type { CreateEditorClassLanguageOptions } from './editor/language.ts';
+
+export {
+  createEditorClassLanguage,
+  editorClassLanguage,
+  lineClassesProperty,
+  tokenClassesProperty
+} from './editor/language.ts';
+
+export type { DocumentRange } from './editor/view.ts';
+
+export {
+  editorClassDecorations,
+  editorClasses
+} from './editor/view.ts';
 
 export type {
   ConformanceCase,
