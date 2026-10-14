@@ -18,17 +18,17 @@
  * to the document with the alignment each inline token's content was cut from.
  */
 
-import type { Options } from 'markdown-it';
-import type { RuleBlock } from 'markdown-it/lib/parser_block.mjs';
-import type Renderer from 'markdown-it/lib/renderer.mjs';
-import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs';
-import type StateCore from 'markdown-it/lib/rules_core/state_core.mjs';
-import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs';
-import type Token from 'markdown-it/lib/token.mjs';
-import type { Nesting } from 'markdown-it/lib/token.mjs';
+import type {
+  MarkdownIt,
+  MarkdownItOptions,
+  Renderer,
+  StateBlock,
+  StateCore,
+  StateInline,
+  Token
+} from 'markdown-it';
 
-import MarkdownIt from 'markdown-it';
-import { escapeHtml } from 'markdown-it/lib/common/utils.mjs';
+import MarkdownItCallable from 'markdown-it';
 
 import type {
   CalloutMarker,
@@ -60,7 +60,7 @@ import {
 /**
  * The options of {@link createObsidianMarkdownIt}: markdown-it's own.
  */
-export type CreateObsidianMarkdownItOptions = Options;
+export type CreateObsidianMarkdownItOptions = MarkdownItOptions;
 
 // Where a delimited block closes: the line holding the closing delimiter and the delimiter's offset, or `-1` for both.
 interface BlockClose {
@@ -69,7 +69,6 @@ interface BlockClose {
   // The first line after the block's last line.
   readonly nextLine: number;
 }
-
 // A callout's first line: the quote's `>`, the marker and the title after it, in document offsets.
 interface CalloutLine {
   readonly marker: CalloutMarker;
@@ -93,6 +92,11 @@ interface HighlightDelimiter {
   readonly canOpen: boolean;
 }
 
+// The parts of markdown-it's types its package root does not export.
+type Nesting = Token['nesting'];
+
+type RuleBlock = ReturnType<MarkdownIt['block']['ruler']['getRules']>[number];
+
 // A task marker found at the start of a list item's first paragraph, in document offsets.
 interface TaskStart {
   readonly marker: string;
@@ -113,6 +117,8 @@ const CODE_INDENT = 4;
 const PARAGRAPH_TOKENS = 3;
 const LEADING_SPACE_RE = /^[ \t]*/u;
 const CLOSING_SEQUENCE_RE = /[ \t]#+$/u;
+const HTML_ESCAPE_RE = /[&<>"]/gu;
+const HTML_ESCAPES: Readonly<Record<string, string>> = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
 // The block rules a footnote definition, a callout and a comment or math block can interrupt, as fenced code can.
 const INTERRUPTS = ['paragraph', 'reference', 'blockquote', 'list'];
 
@@ -167,7 +173,7 @@ const taskStarts = new WeakMap<Token, TaskStart>();
  * @returns The markdown-it instance.
  */
 export function createObsidianMarkdownIt(options: CreateObsidianMarkdownItOptions = {}): MarkdownIt {
-  return new MarkdownIt({ html: true, linkify: true, ...options }).use(markdownItObsidianSyntax);
+  return new MarkdownItCallable({ html: true, linkify: true, ...options }).use(markdownItObsidianSyntax);
 }
 
 /**
@@ -294,7 +300,7 @@ function blockToken(state: StateBlock, type: string, nesting: Nesting, tokenRang
   token.content = fields.content ?? '';
   token.markup = fields.markup ?? '';
   if (tokenRange) {
-    token.meta = tokenRange;
+    token.meta = rangeMeta(tokenRange);
   }
   return token;
 }
@@ -462,7 +468,7 @@ function checkFootnoteDefinition(state: StateBlock, startLine: number, endLine: 
     lastLine--;
   }
   open.map = [startLine, lastLine + 1];
-  open.meta = range(contentStart, state.eMarks[lastLine] ?? contentStart);
+  open.meta = rangeMeta(range(contentStart, state.eMarks[lastLine] ?? contentStart));
   state.push(ObsidianNode.FootnoteDefinition + CLOSE_SUFFIX, 'div', -1).block = true;
   return true;
 }
@@ -516,7 +522,7 @@ function checkFrontMatter(state: StateBlock, startLine: number, endLine: number,
   open.block = true;
   open.content = lines.join('\n');
   open.map = [0, lastLine + 1];
-  open.meta = range(0, end);
+  open.meta = rangeMeta(range(0, end));
   pushBlockLeaf(state, ObsidianNode.FrontMatterMark, range(0, fenceEnd), { markup: '---' });
   // The content is every line between the fences, empty ones included, and may itself be empty.
   const contentFrom = fenceEnd + 1;
@@ -687,7 +693,7 @@ function delimitedBlockRule(spec: DelimitedBlockSpec): RuleBlock {
     open.block = true;
     open.content = blockValue(state, spec, startLine, close);
     open.map = [startLine, lastLine + 1];
-    open.meta = range(from, to);
+    open.meta = rangeMeta(range(from, to));
     if (spec.type === ObsidianNode.MathBlock) {
       open.attrSet('class', 'math math-block');
     }
@@ -699,6 +705,11 @@ function delimitedBlockRule(spec: DelimitedBlockSpec): RuleBlock {
     state.line = lastLine + 1;
     return true;
   };
+}
+
+// The escaping markdown-it's own renderer applies, which its package exports only on an instance.
+function escapeHtml(text: string): string {
+  return text.replaceAll(HTML_ESCAPE_RE, (ch) => HTML_ESCAPES[ch] ?? ch);
 }
 
 // The line that closes a delimited block, before a line its container does not hold.
@@ -987,7 +998,7 @@ function pushBlockLeaf(state: StateBlock, type: ObsidianNodeName, tokenRange: Te
   token.block = true;
   token.content = fields.content ?? '';
   token.markup = fields.markup ?? '';
-  token.meta = tokenRange;
+  token.meta = rangeMeta(tokenRange);
 }
 
 function pushInline(state: StateInline, type: string, tag: string, nesting: Nesting, tokenRange: null | TextRange): Token {
@@ -1009,6 +1020,11 @@ function range(from: number, to: number): TextRange {
   return { from, to };
 }
 
+// The types of markdown-it give a token's meta as an index-signature record, which an interface does not satisfy.
+function rangeMeta(textRange: null | TextRange): null | Record<string, unknown> {
+  return textRange && { from: textRange.from, to: textRange.to };
+}
+
 // Turns a quote's opening and closing tokens into a callout's.
 function renameQuote(state: StateBlock, open: Token, close: Token, line: CalloutLine): void {
   const { marker, markerText } = line;
@@ -1021,7 +1037,7 @@ function renameQuote(state: StateBlock, open: Token, close: Token, line: Callout
   if (marker.fold) {
     open.attrSet('data-callout-fold', markerText.slice(marker.fold.from, marker.fold.to));
   }
-  open.meta = range(line.quoteFrom, state.eMarks[lastLine] ?? line.quoteFrom);
+  open.meta = rangeMeta(range(line.quoteFrom, state.eMarks[lastLine] ?? line.quoteFrom));
   close.type = ObsidianNode.Callout + CLOSE_SUFFIX;
   close.tag = 'div';
   close.markup = '';
@@ -1048,7 +1064,7 @@ function renderMarkup(tokens: Token[], index: number): string {
 }
 
 // Math shows its source, for a math renderer to typeset.
-function renderMath(tokens: Token[], index: number, _options: Options, _env: unknown, self: Renderer): string {
+function renderMath(tokens: Token[], index: number, _options: MarkdownItOptions, _env: unknown, self: Renderer): string {
   const token = tokens[index];
   return token ? `<${token.tag}${self.renderAttrs(token)}>${escapeHtml(token.content)}` : '';
 }
@@ -1076,7 +1092,7 @@ function resolveInlineRanges(state: StateCore): void {
     for (const child of token.children) {
       const contentRange = contentRanges.get(child);
       if (contentRange) {
-        child.meta = range(offsets[contentRange.from] ?? end, offsets[contentRange.to] ?? end);
+        child.meta = rangeMeta(range(offsets[contentRange.from] ?? end, offsets[contentRange.to] ?? end));
       }
     }
     const task = taskStarts.get(token);
@@ -1085,10 +1101,10 @@ function resolveInlineRanges(state: StateCore): void {
     }
     const open = new state.Token(ObsidianNode.Task + OPEN_SUFFIX, '', 1);
     open.markup = task.marker;
-    open.meta = range(task.markerRange.from, end);
+    open.meta = rangeMeta(range(task.markerRange.from, end));
     const marker = new state.Token(ObsidianNode.TaskMarker, '', 0);
     marker.markup = `[${task.marker}]`;
-    marker.meta = task.markerRange;
+    marker.meta = rangeMeta(task.markerRange);
     token.children = [open, marker, ...token.children, new state.Token(ObsidianNode.Task + CLOSE_SUFFIX, '', -1)];
   }
 }
