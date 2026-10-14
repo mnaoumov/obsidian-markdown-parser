@@ -34,8 +34,12 @@ import {
 const TOKEN_BREAK_RE = /[^\\][$|]/u;
 const LIST_RE = /^(?:[*\-+]|^[0-9]+([.)]))\s+/u;
 const EMAIL_RE = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/u;
-const SIMPLE_TABLE_LOOSE_RE = /^\s*[^|].*\|/u;
-const NORMAL_TABLE_LOOSE_RE = /^\s*\|/u;
+// Obsidian: a table's head and delimiter rows, the rows that continue it, and a delimiter cell.
+const SIMPLE_TABLE_RE = /^\s*[^|].*?\|.*[^|]\s*$/u;
+const SIMPLE_TABLE_ROW_RE = /^\s*[^|].*\|/u;
+const NORMAL_TABLE_RE = /^\|(?:[^|]+\|)+?\s*$/u;
+const NORMAL_TABLE_ROW_RE = /^\|/u;
+const TABLE_DELIMITER_CELL_RE = /^\s*(?::\s*)?-+(?:\s*:)?\s*$/u;
 
 const enum LinkType {
   None = 0,
@@ -87,6 +91,7 @@ export interface ObsidianState extends MarkdownState {
   hmdInnerMode: AnyMode | null;
   hmdInnerState: null | object;
   hmdInnerStyle: string | undefined;
+  hmdIsHeading: boolean;
   hmdLineStartedWithMath: boolean;
   hmdLinkType: LinkType;
   hmdMathBlock: boolean;
@@ -96,6 +101,7 @@ export interface ObsidianState extends MarkdownState {
   hmdTableCol: number;
   hmdTableColumns: string[];
   hmdTableRow: number;
+  hmdWasHeading: boolean;
 }
 
 type ExitChecker = (stream: Stream, state: ObsidianState) => ExitInfo | null;
@@ -185,10 +191,11 @@ export function createObsidianMode(): ObsidianMode {
     }
     const endTag = temporary[0];
     const mathLevel = endTag.length;
+    const endStyle = 'formatting formatting-math formatting-math-end math-';
+    const endAtTag = createSimpleInnerModeExitChecker(endTag, { style: endStyle });
     let ans = enterMode(stream, state, TEX_MODE, {
-      exitChecker: createSimpleInnerModeExitChecker(endTag, {
-        style: 'formatting formatting-math formatting-math-end math-'
-      }),
+      // Obsidian: in a table, math also ends before a pipe.
+      exitChecker: (s, st) => st.hmdTable && s.string.charAt(s.start) === '|' ? { endPos: s.start, style: endStyle } : endAtTag(s, st),
       fallbackMode: () => createDummyMode(endTag),
       style: 'math'
     });
@@ -215,7 +222,8 @@ export function createObsidianMode(): ObsidianMode {
     state.hmdInnerState = startState(innerMode);
     let ans = opt.style ?? '';
     if (!opt.skipFirstToken) {
-      ans += ` ${innerMode.token(stream, state.hmdInnerState) ?? ''}`;
+      // As in HyperMD, a first token without a style is concatenated as the string `null`, which becomes a class.
+      ans += ` ${String(innerMode.token(stream, state.hmdInnerState))}`;
     }
     return ans.trim();
   }
@@ -223,6 +231,17 @@ export function createObsidianMode(): ObsidianMode {
   function token(stream: Stream, state: ObsidianState): null | string {
     if (state.hmdOverride) {
       return state.hmdOverride(stream, state);
+    }
+    // Obsidian: in a table, the spaces beside a pipe are a token of their own, with no classes.
+    if (state.hmdTable && stream.peek() === ' ') {
+      if (stream.string.charAt(stream.pos - 1) === '|' && stream.string.charAt(stream.pos - 2) !== '\\') {
+        matchRe(stream, /^ +/u);
+        return null;
+      }
+      if (matchRe(stream, /^ +\|/u)) {
+        stream.backUp(1);
+        return null;
+      }
     }
     if (state.hmdNextMaybe === NextMaybe.FrontMatter) {
       if (stream.string === '---') {
@@ -241,12 +260,15 @@ export function createObsidianMode(): ObsidianMode {
       state.hmdNextMaybe = NextMaybe.None;
     }
 
-    const wasInHTML = state.f === rawMode.htmlBlock;
+    let wasInHTML = state.f === rawMode.htmlBlock;
     const wasInCodeFence = state.code === -1;
     const isBol = stream.start === 0;
     const wasLinkText = state.linkText;
     const wasLinkHref = state.linkHref;
-    const wasInComment = state.comment;
+    if (isBol) {
+      state.hmdWasHeading = state.hmdIsHeading;
+      state.hmdIsHeading = false;
+    }
     let isInMarkdown = !(wasInCodeFence || wasInHTML);
     let isInMarkdownInline = isInMarkdown && !(state.code || state.quoteFence || state.indentedCode || state.linkHref);
     let ans = '';
@@ -274,9 +296,34 @@ export function createObsidianMode(): ObsidianMode {
         state.hmdFootnote = false;
       }
     }
+    // Obsidian: a heading mark right after a bullet is read here, so it wears no other class.
+    if (isInMarkdown && state.list && !state.header && stream.peek() === '#' && /^\s*[*+-]\s$/u.test(stream.string.slice(0, stream.pos))) {
+      const heading = matchRe(stream, /^(#+)(?: |$)/u);
+      if (heading) {
+        const level = String((heading[1] ?? '').length);
+        state.header = (heading[1] ?? '').length;
+        return `formatting formatting-header formatting-header-${level} header header-${level}`;
+      }
+    }
+    /*
+     * Obsidian: a pipe in a table ends every inline span open in its cell. A pipe inside an internal link keeps its
+     * alias-pipe class, which is read before the reset, and ends the link.
+     */
+    if (state.hmdTable && stream.peek() === '|' && stream.string.charAt(stream.pos - 1) !== '\\') {
+      if (state.internalLink) {
+        ans += ' link-alias-pipe';
+        state.f = rawMode.inlineNormal;
+        state.inline = rawMode.inlineNormal;
+      }
+      resetTableCell(state);
+    }
+    const wasInComment = state.comment;
     const wasInMarkdownInline = isInMarkdownInline;
     state.extensionsAllowed = isInMarkdownInline;
     ans += ` ${rawMode.token(stream, state) ?? ''}`;
+    if (state.header) {
+      state.hmdIsHeading = true;
+    }
     if (state.hmdEnteredMath) {
       state.hmdEnteredMath = false;
       return ans.trim();
@@ -286,7 +333,20 @@ export function createObsidianMode(): ObsidianMode {
       ans += ' comment';
     }
 
-    const isInHTML = state.f === rawMode.htmlBlock;
+    let isInHTML = state.f === rawMode.htmlBlock;
+    // Obsidian: in a table, HTML ends at a pipe read as text, a string or an attribute.
+    if (state.hmdTable && isInHTML) {
+      const htmlToken = stream.current();
+      if (/(?:^|[^\\])\|/u.test(htmlToken) && (!ans.trim() || /string|attribute|error/u.test(ans))) {
+        isInHTML = false;
+        wasInHTML = false;
+        state.htmlState = null;
+        state.block = rawMode.blockNormal;
+        state.f = rawMode.inlineNormal;
+        state.inline = rawMode.inlineNormal;
+        stream.pos = htmlToken === '|' ? stream.start : stream.start + 1;
+      }
+    }
     const isInCodeFence = state.code === -1;
     isInMarkdown &&= !(isInHTML || isInCodeFence);
     isInMarkdownInline = isInMarkdown && !(state.code || state.quoteFence || state.indentedCode || state.linkHref);
@@ -317,7 +377,7 @@ export function createObsidianMode(): ObsidianMode {
     if (isInMarkdown) {
       let tableType = state.hmdTable;
       if (isBol && tableType) {
-        const rowRE = tableType === TableType.Simple ? SIMPLE_TABLE_LOOSE_RE : NORMAL_TABLE_LOOSE_RE;
+        const rowRE = tableType === TableType.Simple ? SIMPLE_TABLE_ROW_RE : NORMAL_TABLE_ROW_RE;
         if (rowRE.test(stream.string)) {
           state.hmdTableCol = 0;
           state.hmdTableRow++;
@@ -332,9 +392,11 @@ export function createObsidianMode(): ObsidianMode {
         ans += ' hmd-indented-code';
       }
       if (state.quote) {
-        // Obsidian: a trailing block id is not part of the line's text, so the token before it ends the line.
-        const isEndsLine = stream.eol() || /^\^[A-Za-z0-9-]+$/u.test(stream.string.slice(stream.pos));
-        if (isEndsLine && !/\bblockid\b/u.test(ans)) {
+        /*
+         * Obsidian: any markdown token read while a quote is open marks its line a quote line, unless another quote
+         * mark follows it; a line whose first quote mark is not within 3 spaces of its start is a lazy one.
+         */
+        if (!matchRe(stream, /^\s*>/u, false) || stream.eol()) {
           ans += ` line-HyperMD-quote line-HyperMD-quote-${String(state.quote)}`;
           if (!/^ {0,3}>/u.test(stream.string)) {
             ans += ' line-HyperMD-quote-lazy';
@@ -342,8 +404,7 @@ export function createObsidianMode(): ObsidianMode {
         }
         if (isBol && (temporary = /^\s+/u.exec(current))) {
           stream.pos = temporary[0].length;
-          // Obsidian: an indented line under a quote is a lazy quote line.
-          ans += ` hmd-indent-in-quote line-HyperMD-quote line-HyperMD-quote-${String(state.quote)} line-HyperMD-quote-lazy`;
+          ans += ' hmd-indent-in-quote';
           return ans.trim();
         }
       }
@@ -426,22 +487,22 @@ export function createObsidianMode(): ObsidianMode {
           current = '|';
           isTableSeparator = true;
         }
-        // Obsidian: a table does not interrupt a paragraph; its header row follows a blank line or starts the document.
-        if (isTableSeparator && (tableType || !state.prevLine.stream || !/\S/u.test(state.prevLine.stream.string))) {
+        // Obsidian: a table does not interrupt a paragraph; its header row follows a blank line or a heading.
+        if (isTableSeparator && (tableType || !state.prevLine.stream || !/\S/u.test(state.prevLine.stream.string) || state.hmdWasHeading)) {
           if (!tableType) {
             /*
-             * Obsidian: a row wrapped in pipes heads a table when the next line is a delimiter row wrapped in pipes, and
-             * a row with an inner pipe when the next one is a delimiter row without outer pipes. Dashes may be single,
-             * and the column counts need not agree.
+             * Obsidian: a row starting with a pipe and holding no empty cell heads a table when the next line is a
+             * delimiter row of the same shape. A row with an inner pipe, starting and ending with something else, heads
+             * one when the next line has that shape too. Dashes may be single, and the column counts need not agree.
              */
             const nextLine = stream.lookAhead(1) ?? '';
-            if (/^\s*\|.*\|\s*$/u.test(stream.string) && /^\s*\|.*\|\s*$/u.test(nextLine)) {
-              tableType = TableType.Normal;
-            } else if (/^\s*[^|\s].*\|/u.test(stream.string) && /^\s*[^|\s].*[^|\s]\s*$/u.test(nextLine)) {
-              tableType = TableType.Simple;
+            if (SIMPLE_TABLE_RE.test(stream.string)) {
+              tableType = SIMPLE_TABLE_RE.test(nextLine) ? TableType.Simple : TableType.None;
+            } else if (NORMAL_TABLE_RE.test(stream.string)) {
+              tableType = NORMAL_TABLE_RE.test(nextLine) ? TableType.Normal : TableType.None;
             }
             const rowStyles = (tableType === TableType.Normal ? nextLine.replace(/^\s*\|/u, '').replace(/\|\s*$/u, '') : nextLine).split('|');
-            if (rowStyles.length < (tableType === TableType.Simple ? 2 : 1) || rowStyles.some((cell) => !/^\s*:?-+:?\s*$/u.test(cell))) {
+            if (rowStyles.some((cell) => !TABLE_DELIMITER_CELL_RE.test(cell))) {
               tableType = TableType.None;
             }
             if (tableType) {
@@ -453,6 +514,10 @@ export function createObsidianMode(): ObsidianMode {
           }
           if (tableType) {
             const colUbound = state.hmdTableColumns.length - 1;
+            // Obsidian: a row is marked by a separator read while its column count is still 0.
+            if (state.hmdTableCol === 0) {
+              ans += ` line-HyperMD-table-${String(tableType)} line-HyperMD-table-row line-HyperMD-table-row-${String(state.hmdTableRow)}`;
+            }
             if (
               tableType === TableType.Normal
               && ((state.hmdTableCol === 0 && /^\s*\|$/u.test(stream.string.slice(0, stream.pos))) || matchRe(stream, /^\s*$/u, false))
@@ -462,13 +527,13 @@ export function createObsidianMode(): ObsidianMode {
               const col = state.hmdTableCol++;
               ans += ` hmd-table-sep hmd-table-sep-${String(col)}`;
             }
-            // Obsidian: every row of a table is marked, whatever its separators.
-            ans += ` line-HyperMD-table-${String(tableType)} line-HyperMD-table-row line-HyperMD-table-row-${String(state.hmdTableRow)}`;
           }
         }
       }
       if (isInMarkdownInline && wasInMarkdownInline) {
         if (state.hashtag) {
+          // Obsidian: the rest of a tag drops the emphasis it opened in.
+          ans = `${ans} `.replaceAll(/(?:(?:formatting )?formatting-em|em) /gu, '');
           let isEndHashtag = false;
           if (!ans.includes('formatting') && !/^\s*$/u.test(current)) {
             const tagChars = TAG_RE.exec(current)?.[0].length ?? 0;
@@ -495,7 +560,8 @@ export function createObsidianMode(): ObsidianMode {
           }
         }
       }
-      if (isInMarkdownInline && current === '<') {
+      // Obsidian: the line must also have been inline markdown before the token, so not the line after indented code.
+      if (isInMarkdownInline && wasInMarkdownInline && current === '<') {
         let endTag: null | string = null;
         if (matchRe(stream, /^!(?:[A-Z]+)/u)) {
           endTag = '>';
@@ -559,6 +625,7 @@ export function createObsidianMode(): ObsidianMode {
         hmdInnerMode: null,
         hmdInnerState: null,
         hmdInnerStyle: undefined,
+        hmdIsHeading: false,
         hmdLineStartedWithMath: false,
         hmdLinkType: LinkType.None,
         hmdMathBlock: false,
@@ -567,7 +634,8 @@ export function createObsidianMode(): ObsidianMode {
         hmdTable: TableType.None,
         hmdTableCol: 0,
         hmdTableColumns: [],
-        hmdTableRow: 0
+        hmdTableRow: 0,
+        hmdWasHeading: false
       };
     },
     token
@@ -621,8 +689,25 @@ function resetTable(state: ObsidianState): void {
   state.hmdTableRow = 0;
 }
 
+function resetTableCell(state: ObsidianState): void {
+  state.code = 0;
+  state.comment = false;
+  state.em = false;
+  state.formatting = false;
+  state.hashtag = false;
+  state.highlight = false;
+  state.hmdLinkType = LinkType.None;
+  state.internalLink = null;
+  state.linkHref = false;
+  state.linkText = false;
+  state.linkTitle = false;
+  state.strikethrough = false;
+  state.strong = false;
+}
+
+// Obsidian: a tag class keeps only ASCII letters, digits, `_` and `-`.
 function tagClass(name: string): string {
-  return `tag-${name.replaceAll('/', '')}`;
+  return `tag-${name.replaceAll(/[^\w-]/gu, '')}`;
 }
 
 /* eslint-enable complexity, no-magic-numbers, prefer-named-capture-group, unicorn/consistent-function-scoping, unicorn/no-declarations-before-early-exit, unicorn/prefer-simple-condition-first -- The port ends here. */

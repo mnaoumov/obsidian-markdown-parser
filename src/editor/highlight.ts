@@ -158,7 +158,10 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
       }
       const lineClass = LINE_CLASS_RE.exec(cls)?.groups?.['name'];
       if (lineClass) {
-        lineClasses.push(lineClass);
+        // Like CodeMirror, a line class is added once however many tokens carry it.
+        if (!lineClasses.includes(lineClass)) {
+          lineClasses.push(lineClass);
+        }
       } else {
         tokenClasses.push(cls);
       }

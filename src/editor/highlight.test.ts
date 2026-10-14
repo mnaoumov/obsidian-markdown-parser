@@ -32,8 +32,11 @@ const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'or
  */
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
   ['obsidian-1.14.4-seed-12345.json', []],
+  ['obsidian-1.14.4-seed-2026.json', []],
   ['obsidian-1.14.4-seed-4242.json', []],
-  ['obsidian-1.14.4-seed-777.json', []]
+  ['obsidian-1.14.4-seed-777.json', []],
+  // A ```` ```markdown ```` block runs CodeMirror 5's stock markdown mode, where Obsidian runs its own fork.
+  ['obsidian-1.14.4-seed-9001.json', ['lang-163']]
 ]);
 
 function readOracle(name: string): OracleFile {

@@ -7,8 +7,6 @@
 
 import type { StringStream as CodeMirrorStringStream } from '@codemirror/streamparser';
 
-const INDENT_UNIT = 2;
-
 /**
  * A mode whose state type is not known to the caller.
  */
@@ -43,10 +41,10 @@ export interface Mode<State> {
   /**
    * Creates the state at the start of a document.
    *
-   * @param indentUnit - The indent unit.
+   * @param baseColumn - The column the mode's text starts at. CodeMirror 5's markdown mode never passes one.
    * @returns The state.
    */
-  startState?: (indentUnit: number) => State;
+  startState?: (baseColumn?: number) => State;
 
   /**
    * Reads one token.
@@ -78,11 +76,12 @@ export function copyState(mode: AnyMode, state: object): object {
 }
 
 /**
- * Creates a mode's start state.
+ * Creates a mode's start state, the way CodeMirror 5's markdown mode does: with no base column, since a mode such as
+ * Python reads one as the indentation its first scope starts at.
  *
  * @param mode - The mode.
  * @returns The state.
  */
 export function startState(mode: AnyMode): object {
-  return mode.startState?.(INDENT_UNIT) ?? {};
+  return mode.startState?.() ?? {};
 }
