@@ -35,6 +35,7 @@ import type {
 } from '../src/oracle/oracle-file.ts';
 
 import { buildCorpus } from '../src/oracle/corpus.ts';
+import { format } from './helpers/format.ts';
 
 interface AbstractFile {
   path: string;
@@ -293,6 +294,8 @@ try {
   const outFile = join(outDirectory, `obsidian-${version}-seed-${String(seed)}.json`);
   const oracleFile: OracleFile = { docs: results, meta: { ...meta, perSet, seed } };
   writeFileSync(outFile, `${JSON.stringify(oracleFile)}\n`);
+  // The repository's dprint check covers `oracle/`, and its layout is not `JSON.stringify`'s.
+  await format({ paths: [outFile] });
   console.log(`oracle: ${String(results.length)} docs written to ${outFile}`);
 } finally {
   await conn[Symbol.asyncDispose]();

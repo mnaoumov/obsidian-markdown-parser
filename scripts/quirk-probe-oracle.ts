@@ -33,6 +33,7 @@ import type {
 import type { SpecOracleMeta } from '../src/oracle/spec-oracle-file.ts';
 
 import { QUIRK_PROBES } from '../src/oracle/quirk-probes.ts';
+import { format } from './helpers/format.ts';
 
 interface App {
   metadataCache: MetadataCache;
@@ -265,6 +266,8 @@ try {
   const oracleFile: QuirkProbeFile = { meta, probes };
   // Indented as dprint formats it.
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
+  // The repository's dprint check covers `oracle/`, and its layout matches `JSON.stringify`'s only by chance.
+  await format({ paths: [outFile] });
   console.log(`quirk-probe-oracle: ${String(probes.length)} probes written to ${outFile}`);
 } finally {
   await conn[Symbol.asyncDispose]();
