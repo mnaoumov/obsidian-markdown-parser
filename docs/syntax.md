@@ -175,5 +175,5 @@ markdown-it drops a last line of the document that holds only whitespace and has
 
 ## What is left
 
-- Phase 2 checks the rules against the metadata worker: the groups above, empty internal links (`[[]]`, a link here, as in the editor), a block id with no space before its `^` (one here, as in the editor), front matter that never closes, and whether a lazy line belongs to a footnote definition.
+- The metadata worker reads the syntax with its own rules, which the `remark-parse` 8 engine follows ([its syntax](remark.md#the-obsidian-syntax)). Where it reads the conformance corpus differently from the editor is [listed there](remark.md#where-the-worker-and-the-editor-differ): a link holding a `]`, the syntax inside comments, inline comments on one line, a `%%` line opening a comment block, a reference to no definition, and a definition inside a quote. The rules here stay the editor's, which the class layer and the three adapters follow.
 - The front matter content and math are left as text. A YAML and a LaTeX parser can be mounted on `FrontMatterContent` and the math nodes later.

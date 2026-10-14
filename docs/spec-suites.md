@@ -212,11 +212,10 @@ So the choice was:
 
 **Decided (2026-10-14): the first.** The three adapters keep their own inline algorithm and container handling, which is what each one's ecosystem expects, and get no `inline` flag. The quirk flags stay what they are: the block and syntax rules an adapter's extension points reach. A reader that wants Obsidian's parse exactly uses the fourth parser.
 
-**Built (2026-10-14):** `src/remark/`, `parseRemark` and `renderRemarkHtml`. It gives the reading view's HTML on every example of the `quirk` rows but five that the browser or the sanitizer changes after the parse, and on all 68 probes of these quirks; [The `remark-parse` 8 engine](remark.md) has its edits, how it is checked and what it misses.
+**Built (2026-10-14):** `src/remark/`, `parseRemark` and `renderRemarkHtml`. It gives the reading view's HTML on every example of the `quirk` rows but five that the browser or the sanitizer changes after the parse, and on all 68 probes of these quirks. It reads the Obsidian syntax as the metadata worker does, so it gives the reading view's HTML on every example of the `syntax` row too. [The `remark-parse` 8 engine](remark.md) has its edits, its syntax, how it is checked and what it misses.
 
 ## What is left
 
-- **The Obsidian syntax in the fourth parser**: the engine reads Obsidian's markdown, but not yet its syntax ([what is left there](remark.md#what-is-left)).
 - **`listItem` in `@lezer/markdown`**, and **example 280** there, which both need a change to its list item continuation.
 - **Pipe-less table rows that open a container** in `@lezer/markdown` and micromark, and other paragraph-interrupting blocks in `@lezer/markdown`.
 - **The edges of the flags' rules**: a link title's lenient character references; a definition that runs over a blank line, which Obsidian reads and no adapter does, since none reads a paragraph over one; an HTML block's empty line read after whitespace a container took; and an item whose empty first line has trailing spaces.

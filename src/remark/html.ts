@@ -10,7 +10,9 @@
 
 import type {
   RemarkDefinition,
+  RemarkEmbed,
   RemarkImageReference,
+  RemarkInternalLink,
   RemarkLinkReference,
   RemarkList,
   RemarkListItem,
@@ -19,6 +21,31 @@ import type {
   RemarkRoot,
   RemarkTable
 } from './types.ts';
+
+interface EmbedSize {
+  readonly height: number;
+  readonly width: number;
+}
+
+// A numbered footnote: its content, and how often it is referred to.
+interface FootnoteNote {
+  readonly content: readonly RemarkNode[];
+  count: number;
+}
+
+interface FootnoteNumber {
+  // The footnote's number, from 1.
+  readonly number: number;
+  // How many references to it come before this one.
+  readonly repeat: number;
+}
+
+interface Footnotes {
+  // The numbered footnotes, in order.
+  readonly notes: FootnoteNote[];
+  // The number of each reference and inline footnote.
+  readonly numbers: Map<RemarkNode, FootnoteNumber>;
+}
 
 type HastAttributes = Record<string, boolean | number | string | undefined>;
 
@@ -43,6 +70,7 @@ interface HastText {
 
 interface RenderContext {
   readonly definitions: ReadonlyMap<string, RemarkDefinition>;
+  readonly footnotes: Footnotes;
 }
 
 const VOID_ELEMENTS: ReadonlySet<string> = new Set(['br', 'hr', 'img', 'input']);
@@ -53,6 +81,7 @@ const LINE_ENDING_RE = /\r?\n|\r/gu;
 const ESCAPED_RE = /^[\da-f]{2}$/iu;
 const URL_SAFE = ';/?:@&=+$,-_.!~*\'()#';
 const ALPHANUMERIC_RE = /^[\da-z]$/iu;
+const SIZE_RE = /^\s*(?<width>\d+)\s*(?:x\s*(?<height>\d+)\s*)?$/u;
 
 /**
  * Renders a tree as HTML.
@@ -63,8 +92,12 @@ const ALPHANUMERIC_RE = /^[\da-z]$/iu;
 export function renderRemarkHtml(tree: RemarkRoot): string {
   const definitions = new Map<string, RemarkDefinition>();
   collectDefinitions(tree, definitions);
-  const context: RenderContext = { definitions };
-  const html = serializeAll(wrap(all(context, tree)));
+  const context: RenderContext = { definitions, footnotes: numberFootnotes(tree) };
+  const nodes = all(context, tree);
+  if (context.footnotes.notes.length > 0) {
+    nodes.push({ type: 'text', value: '\n' }, footnoteSection(context));
+  }
+  const html = serializeAll(wrap(nodes));
   return html && !html.endsWith('\n') ? `${html}\n` : html;
 }
 
@@ -117,6 +150,27 @@ function element(tagName: string, attributes: HastAttributes = {}, children: Has
   return { attributes, children, tagName, type: 'element' };
 }
 
+// An embed shows its alias as its alternative text, but a size `200` or `200x100`, alone or after a last `|`.
+function embed(node: RemarkEmbed): HastElement {
+  // eslint-disable-next-line unicorn/name-replacements -- The HTML attribute.
+  const attributes: HastAttributes = { alt: node.displayText, class: 'internal-embed', src: node.target };
+  const text = node.displayText;
+
+  if (text) {
+    const pipe = text.lastIndexOf('|');
+    const size = sizeOf(pipe === -1 ? text : text.slice(pipe + 1));
+    let alt = text;
+    if (size) {
+      attributes['width'] = size.width;
+      attributes['height'] = size.height || undefined;
+      alt = pipe === -1 ? '' : text.slice(0, pipe);
+    }
+    attributes['alt'] = alt === '' ? node.target : alt;
+  }
+
+  return element('span', attributes, [{ type: 'text', value: node.displayText }]);
+}
+
 function encodeUrl(value: string): string {
   let result = '';
 
@@ -161,9 +215,44 @@ function escapeText(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\u{A0}', '&nbsp;');
 }
 
+function footnoteReference(context: RenderContext, node: RemarkNode, identifier: string | undefined): HastNode | null {
+  const footnote = context.footnotes.numbers.get(node);
+  if (!footnote) {
+    return null;
+  }
+  const number = String(footnote.number);
+  const id = footnote.repeat > 0 ? `${number}-${String(footnote.repeat)}` : number;
+  const link = element('a', { 'class': 'footnote-link', 'data-footref': identifier, 'href': `#fn-${number}` }, [{ type: 'text', value: `[${id}]` }]);
+  return element('sup', { 'class': 'footnote-ref', 'data-footnote-id': `fnref-${id}` }, [link]);
+}
+
+// The footnotes, numbered, after the document: each with a link back to each reference to it.
+function footnoteSection(context: RenderContext): HastElement {
+  const items = context.footnotes.notes.map((note, index) => {
+    const number = String(index + 1);
+    const content = all(context, { children: [...note.content], type: 'paragraph' });
+    for (let repeat = 0; repeat < note.count; repeat++) {
+      const id = repeat > 0 ? `${number}-${String(repeat)}` : number;
+      content.push(element('a', { class: 'footnote-backref footnote-link', href: `#fnref-${id}` }, [{ type: 'text', value: '↩︎' }]));
+    }
+    return element('li', { 'data-footnote-id': `fn-${number}` }, [element('p', {}, content)]);
+  });
+  const list = element('ol', {}, wrap(items, true));
+  return element('section', { class: 'footnotes' }, wrap([element('hr'), list], true));
+}
+
 function image(alt: null | string, url: string, title: null | string): HastElement {
   // eslint-disable-next-line unicorn/name-replacements -- The HTML attribute.
   return element('img', { alt: alt ?? undefined, src: encodeUrl(url), title: title ?? undefined });
+}
+
+function internalLink(node: RemarkInternalLink): HastElement {
+  const attributes: HastAttributes = { 'class': 'internal-link', 'data-href': node.target, 'href': node.target };
+  if (node.alias !== null) {
+    attributes['aria-label'] = node.target.split('#').filter(Boolean).join(' > ').trim();
+    attributes['data-tooltip-position'] = 'top';
+  }
+  return element('a', attributes, [{ type: 'text', value: node.displayText }]);
 }
 
 function isLoose(list: RemarkList): boolean {
@@ -217,9 +306,53 @@ function listItem(context: RenderContext, node: RemarkListItem, parent: RemarkPa
   return element('li', attributes, wrapped);
 }
 
+/*
+ * Numbers the footnotes as Obsidian does: each inline footnote, and each definition at its first reference, in
+ * document order outside the inline footnotes' content. A definition takes the content of the last definition of its
+ * label.
+ */
+function numberFootnotes(tree: RemarkRoot): Footnotes {
+  const definitions = new Map<string, readonly RemarkNode[]>();
+  const indexes = new Map<string, number>();
+  const footnotes: Footnotes = { notes: [], numbers: new Map() };
+
+  visitOutsideInlineFootnotes(tree, (node) => {
+    if (node.type === 'footnoteDefinition') {
+      definitions.set(node.identifier, node.children);
+    }
+  });
+
+  visitOutsideInlineFootnotes(tree, (node) => {
+    if (node.type === 'inlineFootnote') {
+      footnotes.numbers.set(node, { number: footnotes.notes.length + 1, repeat: 0 });
+      footnotes.notes.push({ content: node.children, count: 1 });
+    } else if (node.type === 'footnoteReference') {
+      let index = indexes.get(node.identifier);
+      if (index === undefined) {
+        index = footnotes.notes.length;
+        indexes.set(node.identifier, index);
+        footnotes.notes.push({ content: definitions.get(node.identifier) ?? [], count: 0 });
+      }
+      const note = footnotes.notes[index];
+      if (note) {
+        footnotes.numbers.set(node, { number: index + 1, repeat: note.count });
+        note.count++;
+      }
+    }
+  });
+
+  return footnotes;
+}
+
 // eslint-disable-next-line complexity -- One handler per node type, as `mdast-util-to-hast` has.
 function one(context: RenderContext, node: RemarkNode, parent: RemarkParent): HastNode | HastNode[] | null {
   switch (node.type) {
+    case 'blockId':
+    case 'footnoteDefinition':
+    case 'obsidianComment':
+    case 'obsidianCommentBlock': {
+      return null;
+    }
     case 'blockquote': {
       return element('blockquote', {}, wrap(all(context, node), true));
     }
@@ -237,11 +370,20 @@ function one(context: RenderContext, node: RemarkNode, parent: RemarkParent): Ha
     case 'delete': {
       return element('del', {}, all(context, node));
     }
+    case 'embed': {
+      return embed(node);
+    }
     case 'emphasis': {
       return element('em', {}, all(context, node));
     }
+    case 'footnoteReference': {
+      return footnoteReference(context, node, node.identifier);
+    }
     case 'heading': {
       return element(`h${String(node.depth)}`, {}, all(context, node));
+    }
+    case 'highlight': {
+      return element('mark', { 'data-highlight': node.color ?? undefined }, all(context, node));
     }
     case 'html': {
       return { type: 'raw', value: node.value };
@@ -255,6 +397,16 @@ function one(context: RenderContext, node: RemarkNode, parent: RemarkParent): Ha
     }
     case 'inlineCode': {
       return element('code', {}, [{ type: 'text', value: node.value.replaceAll(LINE_ENDING_RE, ' ') }]);
+    }
+    case 'inlineFootnote': {
+      const footnote = context.footnotes.numbers.get(node);
+      return footnoteReference(context, node, footnote && node.children.length > 0 ? `[inline${String(footnote.number - 1)}` : undefined);
+    }
+    case 'inlineMath': {
+      return element('span', { class: node.display ? 'math math-block' : 'math math-inline' }, [{ type: 'text', value: node.value }]);
+    }
+    case 'internalLink': {
+      return internalLink(node);
     }
     case 'link': {
       return element('a', { href: encodeUrl(node.url), title: node.title ?? undefined }, all(context, node));
@@ -277,6 +429,9 @@ function one(context: RenderContext, node: RemarkNode, parent: RemarkParent): Ha
     case 'listItem': {
       return listItem(context, node, parent);
     }
+    case 'math': {
+      return element('div', { class: 'math math-block' }, [{ type: 'text', value: node.value }]);
+    }
     case 'paragraph': {
       return element('p', {}, all(context, node));
     }
@@ -293,11 +448,18 @@ function one(context: RenderContext, node: RemarkNode, parent: RemarkParent): Ha
     case 'tableRow': {
       return element('div', {}, all(context, node));
     }
+    case 'tag': {
+      return element('a', { class: 'tag', href: `#${node.name}` }, [{ type: 'text', value: `#${node.name}` }]);
+    }
     case 'text': {
       return { type: 'text', value: node.value.replaceAll(LINE_ENDING_WHITESPACE_RE, '$<ending>') };
     }
     case 'thematicBreak': {
       return element('hr');
+    }
+    case 'yaml': {
+      // The reading view hides front matter.
+      return element('pre', { class: 'frontmatter', style: 'display: none;' }, [element('code', { class: 'language-yaml' }, [{ type: 'text', value: node.value }])]);
     }
     default: {
       throw new Error('Unknown node type');
@@ -365,6 +527,12 @@ function serializeAll(nodes: readonly HastNode[]): string {
   return nodes.map((node) => serialize(node)).join('');
 }
 
+// The size `200` or `200x100` names; a height of 0 is none.
+function sizeOf(value: string): EmbedSize | undefined {
+  const groups = SIZE_RE.exec(value)?.groups;
+  return groups && { height: Number(groups['height'] ?? '0'), width: Number(groups['width']) };
+}
+
 function table(context: RenderContext, node: RemarkTable): HastElement {
   const rows: HastElement[] = node.children.map((row, rowIndex) => {
     const cells = row.type === 'tableRow' ? row.children : [];
@@ -383,6 +551,16 @@ function table(context: RenderContext, node: RemarkTable): HastElement {
     sections.push(element('tbody', {}, wrap(body, true)));
   }
   return element('table', {}, wrap(sections, true));
+}
+
+// Visits the tree in document order, but the inside of inline footnotes.
+function visitOutsideInlineFootnotes(node: RemarkNode, visitor: (node: RemarkNode) => void): void {
+  visitor(node);
+  if ('children' in node && node.type !== 'inlineFootnote') {
+    for (const child of node.children) {
+      visitOutsideInlineFootnotes(child, visitor);
+    }
+  }
 }
 
 // Line feeds between the nodes, and around them when `isSpread`.

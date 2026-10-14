@@ -28,7 +28,6 @@ import {
   normalizeIdentifier
 } from './block.ts';
 import { decodeEntities } from './entities.ts';
-import { INLINE_METHODS } from './parser.ts';
 
 const AUTO_LINK_MAILTO = 'mailto:';
 const URL_PREFIXES = ['www.', 'http://', 'https://'];
@@ -40,7 +39,7 @@ const MIN_BREAK_LENGTH = 2;
 /**
  * The inline tokenizers.
  */
-export const INLINE_TOKENIZERS: Readonly<Record<InlineTokenizerName, InlineTokenizer>> = {
+export const INLINE_TOKENIZERS: Readonly<Partial<Record<InlineTokenizerName, InlineTokenizer>>> = {
   autoLink: { locator: locateTag, notInLink: true, tokenize: autoLink },
   break: { locator: locateBreak, tokenize: hardBreak },
   code: { locator: locateInlineCode, tokenize: inlineCode },
@@ -1262,7 +1261,7 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
   const tokenizers = parser.inlineTokenizers;
   let min = value.length;
 
-  for (const name of INLINE_METHODS) {
+  for (const name of parser.tokenizers.inlineMethods) {
     const tokenizer = tokenizers[name];
 
     if (name === 'text' || !tokenizer) {
