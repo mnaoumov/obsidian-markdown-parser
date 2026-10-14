@@ -4,15 +4,15 @@ Measured on 2026-10-14 against Obsidian 1.14.4 (installer 1.14.4), on a harness-
 
 ## Result
 
-The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on 6,380 of 6,384 oracle documents (99.94%).
+The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on all 6,384 oracle documents.
 
-| Oracle corpus                        | Documents | Exact | Not exact                      |
-| ------------------------------------ | --------: | ----: | ------------------------------ |
-| seed 12345 (tuned against)           |     2,128 | 2,127 | `inline-83`                    |
-| seed 777 (first read after tuning)   |     2,128 | 2,127 | `inline-280`                   |
-| seed 4242 (read once, at the end)    |     2,128 | 2,126 | `inline-34`, `inline-206`      |
+| Oracle corpus                        | Documents | Exact |
+| ------------------------------------ | --------: | ----: |
+| seed 12345 (tuned against)           |     2,128 | 2,128 |
+| seed 777 (first read after tuning)   |     2,128 | 2,128 |
+| seed 4242 (read once, at the end)    |     2,128 | 2,128 |
 
-Seed 777 scored 2,110 the first time it was read, which measured how well rules found on seed 12345 carry to documents nobody looked at. The rules it then taught carried to seed 4242, which scored 2,122 on its first read and 2,126 after two fixes found there.
+Seed 777 scored 2,110 the first time it was read, which measured how well rules found on seed 12345 carry to documents nobody looked at. The rules it then taught carried to seed 4242, which scored 2,122 on its first read and 2,126 after two fixes found there. The last 4 documents (`inline-83`, `inline-280`, `inline-34`, `inline-206`) were closed by the two rules under [Line starts the markdown mode never sees](#line-starts-the-markdown-mode-never-sees) and by the CodeMirror 5 release under [Tables and front matter](#tables-and-front-matter).
 
 For comparison, Phase 0's best stage (a Lezer tree, a mapping and a 70-line inline state machine) reached 613 of 2,128.
 
@@ -24,7 +24,7 @@ The classes are the output of a CodeMirror 5 line tokenizer, not of a tree. So t
 
 - `src/editor/markdown-mode.ts` ports the CodeMirror 5 `markdown` mode (MIT). Obsidian's additions to the inline flow live here: `%%` comments, `==highlights==`, `[[internal links]]` and embeds, footnote references, inline footnotes, block ids, callouts, fences in list items and in quotes.
 - `src/editor/obsidian-mode.ts` ports HyperMD (MIT), which wraps the markdown mode. It adds math, tables, footnote definitions, front matter, hashtags and the `line-*` classes, plus the Obsidian rules that act on whole lines.
-- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror@5` package: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`.
+- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror` package, pinned to 5.64.0, the release Obsidian 1.14.4 bundles: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`.
 - `src/editor/highlight.ts` runs the mode the way the editor does. It reads one line at a time, calls `blankLine` for empty lines, and never parses an empty last line.
 
 The oracle harness from Phase 0 is now TypeScript:
@@ -79,11 +79,17 @@ Each rule below was read off the oracle and checked against all three corpora.
 - A table does not interrupt a paragraph.
 - Every table row is marked `HyperMD-table-<type>`, `HyperMD-table-row` and `HyperMD-table-row-<n>`. The type is 1 for a table without outer pipes and 2 for one with them, as in HyperMD.
 - Front matter must open on the document's first line.
+- Front matter is read by the YAML mode of CodeMirror 5.64.0, the release Obsidian bundles. Its key pattern differs from later releases: in `- [ ] [a]: /u` it reads everything from the space after `[` to `:` as a key, where 5.65 closes a flow sequence at `]`.
+
+### Line starts the markdown mode never sees
+
+Obsidian reads two tokens that start a line before the markdown mode runs. The markdown mode never sees such a line, so the line cannot head a setext heading, and the next line's `---` is a rule.
+
+- A block id that is the whole line.
+- Math at the line's start, once an earlier line has started with math. Obsidian keeps this memory across lines and clears it only at a `$` that does not open math. The first line in a document to start with math still goes through the markdown mode.
 
 ## What is left
 
-- **`inline-83` and `inline-34`.** A line that starts with math or a block id, and is followed by `---`, sometimes heads a setext heading and sometimes does not. Both misses follow a line with a footnote construct. Other documents show the opposite outcome after an inline footnote, so the rule is not that simple.
-- **`inline-280` and `inline-206`.** Unclosed front matter whose YAML holds `- [ ] [a]: /u`. Obsidian's YAML mode treats `] [a]` as a key, while CodeMirror 5.65.21's marks `]` as closing a flow sequence. Obsidian probably bundles a different CodeMirror 5 release.
 - The corpus has few tables, few HTML blocks and only the `js` code language, so rules there rest on few samples. A corpus with more of those pieces would test them.
 - CodeMirror 6's `StreamLanguage` cannot host this tokenizer as it stands, because it gives modes no way to read the next line. Setext headings and tables need that lookahead. Obsidian's editor has its own host that provides it.
 - The Obsidian syntax extensions for `@lezer/markdown`, which Phase 2's `CachedMetadata` projection needs, are not written yet.

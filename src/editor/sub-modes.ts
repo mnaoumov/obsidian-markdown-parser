@@ -3,7 +3,8 @@
  *
  * The sub-modes the editor switches into: HTML, sTeX for math, YAML for front matter, and fenced-code languages.
  *
- * They are CodeMirror 5's own modes (MIT, the `codemirror@5` package), which is what the editor's class names come
+ * They are CodeMirror 5's own modes (MIT, the `codemirror` package pinned to 5.64.0, the release Obsidian 1.14.4
+ * bundles: the YAML mode's key pattern differs in later releases), which is what the editor's class names come
  * from. They load through CodeMirror 5's `runmode.node.js`, a minimal CodeMirror object made for running modes
  * outside an editor, which registers itself in place of the full library before the mode files require it.
  */

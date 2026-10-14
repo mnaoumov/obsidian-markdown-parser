@@ -41,7 +41,7 @@
     "@lezer/common": "^1.5.3",
     "@lezer/highlight": "^1.2.5",
     "@lezer/markdown": "^1.8.0",
-    "codemirror": "^5.65.21"
+    "codemirror": "5.64.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
