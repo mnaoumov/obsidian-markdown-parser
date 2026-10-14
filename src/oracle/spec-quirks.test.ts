@@ -18,7 +18,10 @@ import type {
   SpecOracleFile,
   SpecOracleRead
 } from './spec-oracle-file.ts';
+import type { SpecDifference } from './spec-quirks.ts';
 
+import { renderRemarkHtml } from '../remark/html.ts';
+import { parseRemark } from '../remark/parse.ts';
 import { OBSIDIAN_QUIRKS } from '../syntax/options.ts';
 import {
   ADAPTERS,
@@ -63,6 +66,23 @@ const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly string[
   setextHeading: ['commonmark:82', 'commonmark:84'],
   softLineBreak: [...[28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625].map((example) => `commonmark:${String(example)}`), 'gfm:199']
 };
+/*
+ * The examples on which the `remark-parse` 8 engine does not give the reading view's DOM. Its parse is the reading
+ * view's on every one of them; what differs comes after the parse, or is the Obsidian syntax it does not read yet.
+ * - ENGINE_RAW_HTML: the browser re-reads raw HTML. It closes the tags left open, adds `<tbody>`, decodes character
+ *   references in attributes and folds their whitespace, and drops stray end tags.
+ * - ENGINE_COMPARISON: the spec's HTML holds an unclosed tag, which the browser closes (the comparison rows).
+ * - ENGINE_RENDERED: the reading view's sanitizer and embeds (the rendering rows).
+ * - ENGINE_SYNTAX: the Obsidian syntax, which the engine does not read yet.
+ */
+const ENGINE_RAW_HTML = [21, 31, 149, 151, 152, 154, 155, 156, 157, 158, 160, 165, 171, 174, 175, 181, 184, 190, 191, 623].map((example) => `commonmark:${String(example)}`);
+const ENGINE_COMPARISON = [148, 187, 344, 494, 630, 631, 642, 643].map((example) => `commonmark:${String(example)}`);
+const ENGINE_RENDERED = [
+  ...[150, 163, 169, 170, 172, 173, 176, 177, 178, 179, 180, 182, 183, 201, 308, 309, 491, 572, 579, 613, 614, 615, 616, 617, 628, 629].map((example) => `commonmark:${String(example)}`),
+  'gfm:652'
+];
+const ENGINE_SYNTAX = [64, 96, 98, 548, 559, 590].map((example) => `commonmark:${String(example)}`);
+
 function exampleRead(key: string): SpecOracleRead {
   const read = ORACLE.examples.find((candidate) => exampleKey(candidate) === key);
   if (!read) {
@@ -109,5 +129,27 @@ describe.each(ADAPTERS)('%s with a quirk flag', (adapter) => {
       return normalizeHtml(toHtml(read.markdown)) !== normalizeHtml(obsidian);
     });
     expect(differing).toEqual(isExpressible(adapter, quirk) ? NOT_REPRODUCED[quirk] : specDifferenceKeys(difference));
+  });
+});
+
+function keysOf(kind: SpecDifference['kind']): Set<string> {
+  return new Set(SPEC_DIFFERENCES.filter((difference) => difference.kind === kind).flatMap((difference) => specDifferenceKeys(difference)));
+}
+
+describe('the remark-parse 8 engine', () => {
+  it('gives the reading view\'s HTML on every example but raw HTML, the rendering and comparison rows and the Obsidian syntax', () => {
+    const differing = ORACLE.examples
+      .filter((read) => normalizeHtml(renderRemarkHtml(parseRemark(read.markdown))) !== normalizeHtml(read.htmlStrict))
+      .map((read) => exampleKey(read));
+    expect(differing.toSorted(compareKeys)).toEqual([...ENGINE_RAW_HTML, ...ENGINE_COMPARISON, ...ENGINE_RENDERED, ...ENGINE_SYNTAX].toSorted(compareKeys));
+  });
+
+  it('misses only examples of the comparison, rendering and syntax rows it names, and raw HTML', () => {
+    const differences = new Set(readingViewDifferences(ORACLE));
+    expect(ENGINE_COMPARISON.filter((key) => !keysOf('comparison').has(key))).toEqual([]);
+    expect(ENGINE_RENDERED.filter((key) => !keysOf('rendering').has(key))).toEqual([]);
+    expect(ENGINE_SYNTAX.filter((key) => !keysOf('syntax').has(key))).toEqual([]);
+    // Raw HTML the engine passes through as the reading view's parser does: on all but one, Obsidian agrees with the spec.
+    expect(ENGINE_RAW_HTML.filter((key) => differences.has(key))).toEqual(['commonmark:171']);
   });
 });
