@@ -38,8 +38,16 @@ import { splice } from 'micromark-util-chunked';
 import { resolveAll } from 'micromark-util-resolve-all';
 import { codes } from 'micromark-util-symbol';
 
+import type {
+  ObsidianSyntaxFlags,
+  ObsidianSyntaxOptions
+} from './options.ts';
 import type { CalloutMarker } from './spec.ts';
 
+import {
+  OBSIDIAN_SYNTAX_PRESETS,
+  resolveObsidianSyntax
+} from './options.ts';
 import {
   canOpenHighlightBefore,
   canOpenTagAfter,
@@ -256,22 +264,7 @@ const fenceAhead: Construct = { partial: true, tokenize: tokenizeFenceAhead };
 /**
  * The Obsidian syntax as a micromark syntax extension.
  */
-export const micromarkObsidianSyntax: Extension = {
-  contentInitial: { [Char.OpenBracket]: linkDefinition },
-  // A `[^label]:` is never a link reference definition: `linkDefinition` stands in for the CommonMark one.
-  disable: { null: ['definition'] },
-  document: { [Char.GreaterThan]: callout, [Char.OpenBracket]: footnoteDefinition },
-  flow: { [Char.Dash]: frontMatter, [Char.Dollar]: mathBlock, [Char.OpenBracket]: calloutMarkerLine, [Char.Percent]: commentBlock },
-  text: {
-    [Char.Bang]: internalLink,
-    [Char.Caret]: [inlineFootnote, blockId],
-    [Char.Dollar]: inlineMath,
-    [Char.Equals]: highlight,
-    [Char.Hash]: tag,
-    [Char.OpenBracket]: [task, calloutMarker, internalLink, footnoteReference],
-    [Char.Percent]: comment
-  }
-};
+export const micromarkObsidianSyntax: Extension = createMicromarkObsidianSyntax(OBSIDIAN_SYNTAX_PRESETS.obsidian);
 
 /**
  * The Obsidian syntax with the GFM extensions Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task
@@ -284,6 +277,69 @@ export const micromarkObsidianMarkdown: readonly Extension[] = [
   micromarkObsidianSyntax
 ];
 
+/**
+ * The options of {@link createMicromarkObsidianMarkdown}: the syntax to read.
+ */
+export type CreateMicromarkObsidianMarkdownOptions = ObsidianSyntaxOptions;
+
+/**
+ * The micromark syntax extensions for the syntax the options turn on: the GFM extensions it turns on, then the Obsidian
+ * syntax, so that its constructs take precedence.
+ *
+ * @param options - The syntax to read.
+ * @returns The extensions.
+ */
+export function createMicromarkObsidianMarkdown(options: CreateMicromarkObsidianMarkdownOptions = {}): Extension[] {
+  const flags = resolveObsidianSyntax(options);
+  const extensions: Extension[] = [];
+  if (flags.table) {
+    extensions.push(gfmTable());
+  }
+  if (flags.strikethrough) {
+    extensions.push(gfmStrikethrough({ singleTilde: false }));
+  }
+  if (flags.autolinkLiteral) {
+    extensions.push(gfmAutolinkLiteral());
+  }
+  extensions.push(createMicromarkObsidianSyntax(flags));
+  return extensions;
+}
+
+/**
+ * The micromark syntax extension for the Obsidian syntax the flags turn on.
+ *
+ * @param flags - The constructs to read.
+ * @returns The extension.
+ */
+export function createMicromarkObsidianSyntax(flags: ObsidianSyntaxFlags): Extension {
+  const extension: Extension = {
+    document: {
+      [Char.GreaterThan]: pick([[callout, flags.callout]]),
+      [Char.OpenBracket]: pick([[footnoteDefinition, flags.footnote]])
+    },
+    flow: {
+      [Char.Dash]: pick([[frontMatter, flags.frontMatter]]),
+      [Char.Dollar]: pick([[mathBlock, flags.math]]),
+      [Char.OpenBracket]: pick([[calloutMarkerLine, flags.callout]]),
+      [Char.Percent]: pick([[commentBlock, flags.comment]])
+    },
+    text: {
+      [Char.Bang]: pick([[internalLink, flags.internalLink]]),
+      [Char.Caret]: pick([[inlineFootnote, flags.inlineFootnote], [blockId, flags.blockId]]),
+      [Char.Dollar]: pick([[inlineMath, flags.math]]),
+      [Char.Equals]: pick([[highlight, flags.highlight]]),
+      [Char.Hash]: pick([[tag, flags.tag]]),
+      [Char.OpenBracket]: pick([[task, flags.task], [calloutMarker, flags.callout], [internalLink, flags.internalLink], [footnoteReference, flags.footnote]]),
+      [Char.Percent]: pick([[comment, flags.comment]])
+    }
+  };
+  if (flags.footnote) {
+    extension.contentInitial = { [Char.OpenBracket]: linkDefinition };
+    extension.disable = { null: ['definition'] };
+  }
+  return extension;
+}
+
 function calloutMark(marker: CalloutMarker): Op[] {
   return node(
     ObsidianNode.CalloutMark,
@@ -293,6 +349,7 @@ function calloutMark(marker: CalloutMarker): Op[] {
     marker.fold ? leaf(ObsidianNode.CalloutFold, 1) : []
   );
 }
+
 function charOf(code: Code): string {
   switch (code) {
     case Char.CarriageReturn: {
@@ -320,7 +377,6 @@ function charOf(code: Code): string {
     }
   }
 }
-
 function codeOf(ch: string): number {
   return ch.codePointAt(0) ?? -1;
 }
@@ -543,6 +599,11 @@ function paragraphSoFar(context: TokenizeContext): string {
     }
   }
   return '';
+}
+
+// The constructs whose flag is on.
+function pick(constructs: readonly (readonly [Construct, boolean])[]): Construct[] {
+  return constructs.filter(([, isOn]) => isOn).map(([construct]) => construct);
 }
 
 /*

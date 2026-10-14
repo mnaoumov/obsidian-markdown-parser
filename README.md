@@ -18,6 +18,8 @@ The tooling follows the owner's TypeScript template: `npm install`, then `npm ru
 
 `parseMarkdownIt(text)` gives the same syntax as markdown-it tokens, through the markdown-it plugin `markdownItObsidianSyntax`, and `createObsidianMarkdownIt()` is a markdown-it configured with it, which also renders the syntax as HTML. The tokens and how they compare with the Lezer tree are in [docs/syntax.md](docs/syntax.md#the-markdown-it-plugin). To compare them on the oracles, run `npx jiti scripts/adapter-diff.ts --adapter markdown-it`.
 
+Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, as in `createObsidianParser({ preset: 'commonmark', tag: true })`, `createMicromarkObsidianMarkdown(options)` and `createObsidianMarkdownIt(options)`. With the `commonmark` preset each adapter is checked against the CommonMark 0.31.2 spec suite, and with `gfm` against the GFM spec's extension examples, both vendored in `spec/`. The results, the examples still failing and what each flag changes are in [docs/spec-suites.md](docs/spec-suites.md).
+
 To read a new oracle from a live Obsidian, run `npx jiti scripts/oracle.ts --seed <n>` (this needs a global `obsidian-integration-testing` install). To score the tokenizer against an oracle, run `npx jiti scripts/oracle-diff.ts [--oracle <file>]`, and add `--show <id>...` to see where documents differ.
 
 The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.
