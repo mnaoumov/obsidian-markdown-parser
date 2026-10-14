@@ -39,6 +39,8 @@ import type {
   SpecOracleRead
 } from '../src/oracle/spec-oracle-file.ts';
 
+import { format } from './helpers/format.ts';
+
 interface AbstractFile {
   path: string;
 }
@@ -408,6 +410,8 @@ try {
   const outFile = join(outDirectory, `spec-obsidian-${version}.json`);
   const oracleFile: SpecOracleFile = { examples: results, meta };
   writeFileSync(outFile, `${JSON.stringify(oracleFile)}\n`);
+  // The repository's dprint check covers `oracle/`, and its layout is not `JSON.stringify`'s.
+  await format({ paths: [outFile] });
   console.log(`spec-oracle: ${String(results.length)} examples written to ${outFile}`);
 } finally {
   await conn[Symbol.asyncDispose]();
