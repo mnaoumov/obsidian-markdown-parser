@@ -2,9 +2,10 @@
 
 The semantic tree Phase 2 reads is the `@lezer/markdown` tree with the Obsidian syntax added. The syntax is defined once, in three files every parser adapter shares:
 
-- `src/syntax/spec.ts`: the node names (`ObsidianNode`) and the lexical rules, as plain functions over strings. The micromark and markdown-it adapters to come call the same functions.
+- `src/syntax/spec.ts`: the node names (`ObsidianNode`) and the lexical rules, as plain functions over strings. The micromark adapter calls the same functions, and so will the markdown-it adapter to come.
 - `src/syntax/conformance.ts`: the conformance corpus. Each case is a document and the outline of the Obsidian nodes in it, in document order with the text each covers. Plain markdown nodes are not in the outline, so a case means the same to every parser. An adapter passes when it gives every case's outline.
 - `src/syntax/lezer.ts`: the `@lezer/markdown` extensions. `obsidianSyntax` is the Obsidian syntax, and `obsidianMarkdown` adds the GFM pieces Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task markers replace GFM's. `parse()` in `src/index.ts` uses them.
+- `src/syntax/micromark.ts` and `src/syntax/mdast.ts`: the micromark syntax extension and its `mdast-util-from-markdown` extension, described [below](#the-micromark-and-mdast-adapter). `parseMdast()` in `src/index.ts` uses them.
 
 ## The rules
 
@@ -56,8 +57,72 @@ The documents that disagree fall into a few groups. None of them is a rule of th
 - **Quote continuation.** The editor treats a lazy line, or a `---` after a quote, as still in the quote. So a `> [!type]` on the next line continues that quote instead of opening a callout. It also marks a callout on every line where a deeper `>` opens with `[!type]`. The tree has one callout per quote.
 - **Task markers in quotes.** The editor does not style a task marker in a list inside a quote. The tree reads a task there, as the metadata worker lists one.
 
+## The micromark and mdast adapter
+
+`micromarkObsidianSyntax` in `src/syntax/micromark.ts` is the Obsidian syntax as a micromark syntax extension, and `micromarkObsidianMarkdown` adds GFM tables, strikethrough (`~~` only) and bare URLs, as `obsidianMarkdown` does for Lezer. GFM task list items are left out, because Obsidian's task markers replace them. `mdastObsidianSyntax` in `src/syntax/mdast.ts` turns the tokens into mdast nodes, and `parseMdast()` runs both.
+
+The tokens carry the `ObsidianNode` names, so the micromark events give the same outline as the Lezer tree. Every case in the corpus passes on the events, and on the mdast tree once the marks are left out (`src/syntax/micromark.test.ts`, `src/syntax/mdast.test.ts`).
+
+How the constructs are built:
+
+- **Measured, then consumed.** micromark gives a construct one character at a time. Most constructs look ahead with `effects.check`, collect the rest of the line (or of the inline content, for comments and math), measure it with the rule in `spec.ts`, and then consume exactly that many characters. Tabs are measured with the virtual spaces micromark pads them with.
+- **Highlights** pair their `==` delimiters in a `resolveAll`, as GFM strikethrough pairs `~~`. So a `==` inside a code span is not a delimiter.
+- **Comment and math blocks, and front matter,** are flow constructs that read one line at a time. A block that interrupts a paragraph only shows that it starts, as micromark's fenced code does.
+- **Callouts and footnote definitions** are containers. A callout continues like a block quote. Its marker and title are read in its first paragraph, and the line ending after the title goes with them, so the rest of that paragraph is the content's first paragraph. A marker with no title takes its line outside any paragraph, so a lazy line does not continue the callout, as in the Lezer tree.
+- **A `[^label]:`** never opens a CommonMark link reference definition. The extension disables micromark's `definition` and stands in for it.
+- **Every line ending a construct spans** is a token of its own, as in micromark's own constructs. micromark's subtokenizer splits the events of an inline parse at those tokens, and a token that crosses a line ending without one makes it loop forever.
+
+### The mdast nodes
+
+Where mdast already has a node for a construct, the adapter gives that node, so existing tools read it. Every other construct gets a node of its own. The marks are not kept: the node and its fields hold what they said. `MDAST_NODE_TYPES` lists the mapping.
+
+| Construct | mdast node | Fields |
+| --- | --- | --- |
+| Internal link, embed | `internalLink`, `embed` | `path`, `subpath` (with its `#`, or `null`), `alias` (or `null`) |
+| Tag | `tag` | `name`, without its `#` |
+| Comment | `obsidianComment`, `obsidianCommentBlock` | `value`: the text between the delimiters |
+| Math | `inlineMath`, `math`, as in `mdast-util-math` | `value`: the text between the delimiters |
+| Highlight | `highlight` | phrasing `children` |
+| Footnote reference | `footnoteReference`, as in GFM | `label`, `identifier` |
+| Inline footnote | `inlineFootnote` | phrasing `children` |
+| Footnote definition | `footnoteDefinition`, as in GFM | `label`, `identifier`, block `children` |
+| Block id | `blockId` | `value`, without its `^` |
+| Callout | `callout` | `calloutType`, `fold` (`+`, `-` or `null`), `title` (phrasing), block `children` |
+| Task | the `listItem` | `task` (the marker's character), `checked` (`false` for a space) |
+| Front matter | `yaml`, as in `mdast-util-frontmatter` | `value`: the content lines |
+
+A block's value leaves out the line ending after its opening delimiter and the one before its closing delimiter.
+
+### Measured against the Lezer extensions
+
+`scripts/adapter-diff.ts` compares the Obsidian nodes of the two adapters on the 20,296 documents of the seven oracle corpora, construct by construct, with each node's parts. 19,509 documents give the same nodes. `src/syntax/micromark.test.ts` pins the count for the first corpus (2,011 of 2,128).
+
+| Construct | Documents using it | Agreeing | Disagreeing, by group |
+| --- | ---: | ---: | --- |
+| internal link | 1,668 | 1,662 | table 5, html 1 |
+| tag | 1,089 | 1,089 | |
+| highlight | 774 | 774 | |
+| comment | 2,241 | 1,870 | final line break 361, quote 8, gap 2 |
+| math | 2,125 | 1,769 | final line break 317, table 18, quote 13, gap 5, rich 3 |
+| footnote reference | 899 | 899 | |
+| inline footnote | 483 | 483 | |
+| block id | 1,277 | 1,274 | table 3 |
+| front matter | 2,684 | 2,670 | obsidian 9, gap 3, inline 2 |
+| callout | 591 | 590 | obsidian 1 |
+| footnote definition | 496 | 496 | |
+| task | 1,371 | 1,332 | ord 30, obsidian 3, quote 3, rich 2, nest 1 |
+
+None of the differences is a rule of the Obsidian syntax. Each is a place where the two parsers' block structure reads a document differently:
+
+- **A final line break.** A comment or math block that never closes, at the end of a document that ends with a line break, takes that line break in the Lezer tree, which reads the empty last line as part of the block. micromark ends the block before it, as it ends fenced code. This is most of the comment and math rows.
+- **The end of a container.** Likewise, an unclosed block inside a quote or a list item takes the quote's last empty line in the Lezer tree, and ends before it in micromark.
+- **Tables.** The two GFM table parsers disagree on which lines form a table, for example a header row above a delimiter row with a different number of cells, or a table after a lazy line.
+- **Lists and lazy lines.** micromark lets a list item that does not start at 1 interrupt a lazy paragraph line, and Lezer does not. The task rows are these.
+- **Empty front matter content.** For front matter whose content is one empty line, the Lezer tree has an empty `FrontMatterContent` node. A micromark token cannot be empty, so the adapter gives none.
+- **A task in a later paragraph.** The Lezer tree reads a task marker at the start of any paragraph in a list item. The micromark adapter reads one only in the item's first paragraph, where micromark marks the content as such.
+
 ## What is left
 
-- The micromark and mdast extension, then the markdown-it plugin, each built on `src/syntax/spec.ts` and checked against the corpus.
+- The markdown-it plugin, built on `src/syntax/spec.ts` and checked against the corpus.
 - Phase 2 checks the rules against the metadata worker: the groups above, empty internal links (`[[]]`, a link here, as in the editor), a block id with no space before its `^` (one here, as in the editor), front matter that never closes, and whether a lazy line belongs to a footnote definition.
 - The front matter content and math are left as text. A YAML and a LaTeX parser can be mounted on `FrontMatterContent` and the math nodes later.
