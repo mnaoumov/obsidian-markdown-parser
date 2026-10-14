@@ -12,10 +12,17 @@ import {
   it
 } from 'vitest';
 
-import type { QuirkProbeFile } from './quirk-probes.ts';
+import type { ObsidianQuirkFlags } from '../syntax/options.ts';
+import type {
+  QuirkProbeFile,
+  QuirkProbeRead
+} from './quirk-probes.ts';
 import type { Adapter } from './render-html.ts';
 
-import { OBSIDIAN_QUIRKS } from '../syntax/options.ts';
+import {
+  OBSIDIAN_QUIRK_FLAGS,
+  OBSIDIAN_QUIRKS
+} from '../syntax/options.ts';
 import { QUIRK_PROBES } from './quirk-probes.ts';
 import {
   ADAPTERS,
@@ -26,6 +33,19 @@ import {
 
 const ORACLE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'quirk-probes-obsidian-1.14.4.json');
 const ORACLE = JSON.parse(readFileSync(ORACLE_PATH, 'utf-8')) as QuirkProbeFile;
+
+interface FlaggedProbe extends QuirkProbeRead {
+  readonly quirk: keyof ObsidianQuirkFlags;
+}
+
+function isFlagged(probe: QuirkProbeRead): probe is FlaggedProbe {
+  return (OBSIDIAN_QUIRK_FLAGS as readonly string[]).includes(probe.quirk);
+}
+
+const FLAGGED = ORACLE.probes.filter(isFlagged);
+const UNFLAGGED = ORACLE.probes.filter((probe) => !isFlagged(probe));
+// Every quirk flag at Obsidian's behaviour, but line endings, which the oracle reads with `strictLineBreaks: true`.
+const ALL_QUIRKS: ObsidianQuirkFlags = { ...OBSIDIAN_QUIRKS, softLineBreak: 'line-ending' };
 
 // The reading view's sanitizer or DOM changes the parser's HTML: it drops comments, `<meta>`, a `javascript:` link's
 // target and stray end tags, and closes and moves what is left open.
@@ -81,6 +101,47 @@ const NOT_REPRODUCED: Readonly<Record<Adapter, readonly string[]>> = {
   'micromark': [...RENDERED, ...TITLE_REFERENCES, ...LEADING_WHITESPACE, ...CONTAINER_ROWS]
 };
 
+/*
+ * The probes of a quirk that is no flag on which every adapter, with every quirk flag on, does not give the reading
+ * view's DOM. The same in each adapter: Obsidian's inline algorithm, tabs, lazy quote lines and paragraph whitespace.
+ */
+const UNFLAGGED_NOT_REPRODUCED = [
+  'foo_bar_baz __a__b',
+  '*a **b* c**',
+  '**a *b** c*',
+  '*a `*` b*',
+  '*a <span title="*">x</span>',
+  '*[a*](b)',
+  '*a <http://x/*> b*',
+  '***a***',
+  '**a* *b**',
+  'a ** b ** c',
+  '_(a)_ *(*a*)*',
+  '[a [b](c)](d)',
+  '![a [b](c)][d]\n\n[d]: d.jpg',
+  '[a `]` b](c)',
+  '[a <http://x/]> b](c)',
+  '[ a ] [A]\n\n[a]: /u',
+  '[a]\n\n[ a ]: /u',
+  '``a`b`` ``` a ``',
+  '![*a* `b` [c](d)][e]\n\n[e]: e.jpg',
+  '![a ![b][c]][d]\n\n[c]: c.jpg\n[d]: d.jpg',
+  '>\ta',
+  '>\t\tcode',
+  '\tcode\n \tcode',
+  '- a\n\n\t\tb',
+  '-\t\ta',
+  '> a\n>\nb',
+  '> ```\na',
+  '> a\n    b',
+  '>     code\nb',
+  '  a',
+  ' a\n b',
+  'a\t',
+  '   a\n   b',
+  '> \ta'
+];
+
 describe('the quirk probe oracle', () => {
   it('holds every probe, in order', () => {
     expect(ORACLE.probes.map((probe) => probe.markdown)).toEqual(QUIRK_PROBES.map((probe) => probe.markdown));
@@ -89,10 +150,18 @@ describe('the quirk probe oracle', () => {
 
 describe.each(ADAPTERS)('%s with the quirk flag of each probe', (adapter) => {
   it('reproduces the reading view on the probes', () => {
-    const differing = ORACLE.probes.filter((probe) => {
+    const differing = FLAGGED.filter((probe) => {
       const toHtml = htmlRenderer(adapter, { preset: probe.preset, [probe.quirk]: OBSIDIAN_QUIRKS[probe.quirk] });
       return normalizeHtml(toHtml(probe.markdown)) !== normalizeHtml(probe.html);
     }).map((probe) => probe.markdown);
     expect(differing.toSorted(compareKeys)).toEqual(NOT_REPRODUCED[adapter].toSorted(compareKeys));
+  });
+
+  it('does not reproduce the quirks that are no flag', () => {
+    const differing = UNFLAGGED.filter((probe) => {
+      const toHtml = htmlRenderer(adapter, { preset: probe.preset, ...ALL_QUIRKS });
+      return normalizeHtml(toHtml(probe.markdown)) !== normalizeHtml(probe.html);
+    }).map((probe) => probe.markdown);
+    expect(differing.toSorted(compareKeys)).toEqual(UNFLAGGED_NOT_REPRODUCED.toSorted(compareKeys));
   });
 });
