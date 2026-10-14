@@ -40,7 +40,11 @@ import type {
   TextRange
 } from './spec.ts';
 
-import { resolveObsidianSyntax } from './options.ts';
+import { markdownItQuirks } from './markdown-it-quirks.ts';
+import {
+  resolveObsidianQuirks,
+  resolveObsidianSyntax
+} from './options.ts';
 import {
   canOpenHighlightBefore,
   canOpenTagAfter,
@@ -211,7 +215,7 @@ export function createObsidianMarkdownIt(options: CreateObsidianMarkdownItOption
     md.enable(gfmRules);
   }
   addGfmRenderRules(md);
-  return md.use(markdownItObsidianSyntax, flags);
+  return md.use(markdownItObsidianSyntax, { ...flags, ...resolveObsidianQuirks(syntaxOptions) });
 }
 
 /**
@@ -230,8 +234,8 @@ export function getObsidianTokenRange(token: Token): null | TextRange {
  * The Obsidian syntax as a markdown-it plugin: `md.use(markdownItObsidianSyntax, options)`.
  *
  * @param md - The markdown-it instance to extend.
- * @param options - The Obsidian syntax to read. Its GFM flags are markdown-it's own rules, which the plugin leaves as
- *   they are.
+ * @param options - The Obsidian syntax to read, and the quirks to apply. Its GFM flags are markdown-it's own rules,
+ *   which the plugin leaves as they are.
  */
 export function markdownItObsidianSyntax(md: MarkdownIt, options: MarkdownItObsidianSyntaxOptions = {}): void {
   const flags: ObsidianSyntaxFlags = resolveObsidianSyntax(options);
@@ -286,6 +290,7 @@ export function markdownItObsidianSyntax(md: MarkdownIt, options: MarkdownItObsi
   });
   md.core.ruler.after('inline', 'obsidian_ranges', resolveInlineRanges);
 
+  markdownItQuirks(md, resolveObsidianQuirks(options));
   addRenderRules(md);
 }
 

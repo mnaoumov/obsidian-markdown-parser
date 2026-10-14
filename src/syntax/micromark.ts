@@ -44,8 +44,10 @@ import type {
 } from './options.ts';
 import type { CalloutMarker } from './spec.ts';
 
+import { createMicromarkQuirks } from './micromark-quirks.ts';
 import {
   OBSIDIAN_SYNTAX_PRESETS,
+  resolveObsidianQuirks,
   resolveObsidianSyntax
 } from './options.ts';
 import {
@@ -284,7 +286,7 @@ export type CreateMicromarkObsidianMarkdownOptions = ObsidianSyntaxOptions;
 
 /**
  * The micromark syntax extensions for the syntax the options turn on: the GFM extensions it turns on, then the Obsidian
- * syntax, so that its constructs take precedence.
+ * syntax, so that its constructs take precedence, then the quirks the options ask for.
  *
  * @param options - The syntax to read.
  * @returns The extensions.
@@ -301,7 +303,7 @@ export function createMicromarkObsidianMarkdown(options: CreateMicromarkObsidian
   if (flags.autolinkLiteral) {
     extensions.push(gfmAutolinkLiteral());
   }
-  extensions.push(createMicromarkObsidianSyntax(flags));
+  extensions.push(createMicromarkObsidianSyntax(flags), createMicromarkQuirks(resolveObsidianQuirks(options)));
   return extensions;
 }
 

@@ -26,6 +26,7 @@ import {
 } from 'vitest';
 
 import type {
+  ObsidianQuirkFlags,
   ObsidianSyntaxFlags,
   ObsidianSyntaxOptions,
   ObsidianSyntaxPreset
@@ -35,10 +36,15 @@ import { parseWithLinkReferences } from './lezer-commonmark.ts';
 import { renderLezerHtml } from './lezer-html.ts';
 import { createObsidianParser } from './lezer.ts';
 import { createObsidianMarkdownIt } from './markdown-it.ts';
+import { micromarkQuirksHtml } from './micromark-quirks.ts';
 import { createMicromarkObsidianMarkdown } from './micromark.ts';
 import {
+  COMMONMARK_QUIRKS,
+  OBSIDIAN_QUIRK_FLAGS,
+  OBSIDIAN_QUIRKS,
   OBSIDIAN_SYNTAX_FLAGS,
-  OBSIDIAN_SYNTAX_PRESETS
+  OBSIDIAN_SYNTAX_PRESETS,
+  resolveObsidianQuirks
 } from './options.ts';
 
 type Adapter = 'lezer' | 'markdown-it' | 'micromark';
@@ -102,6 +108,103 @@ const FLAG_CHANGES: Readonly<Record<keyof ObsidianSyntaxFlags, readonly number[]
   task: []
 };
 
+/*
+ * The CommonMark examples whose rendering changes when a quirk is turned on, whatever the preset. Each example shows the
+ * quirk's behaviour, and Obsidian's reading view differs from the spec on it (`src/oracle/spec-quirks.ts`), except where
+ * Obsidian's other quirks hide it: `softLineBreak` shows on every soft line break, including in examples Obsidian
+ * parses differently. `@lezer/markdown` keeps the paragraph of example 280 in its list item (`COMMONMARK_FAILURES`),
+ * where a blank line before it makes the list loose.
+ */
+const SOFT_LINE_BREAK_CHANGES = [
+  14,
+  25,
+  28,
+  37,
+  46,
+  49,
+  70,
+  81,
+  82,
+  87,
+  88,
+  93,
+  95,
+  104,
+  105,
+  106,
+  113,
+  138,
+  145,
+  148,
+  187,
+  213,
+  216,
+  217,
+  220,
+  222,
+  223,
+  224,
+  228,
+  229,
+  230,
+  232,
+  233,
+  238,
+  243,
+  247,
+  250,
+  251,
+  253,
+  254,
+  285,
+  286,
+  287,
+  288,
+  290,
+  291,
+  292,
+  293,
+  304,
+  312,
+  334,
+  367,
+  384,
+  394,
+  405,
+  423,
+  432,
+  490,
+  494,
+  505,
+  543,
+  552,
+  556,
+  587,
+  621,
+  648,
+  649
+];
+const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>>>> = {
+  'lezer': {
+    emptyListItem: [285, 367],
+    looseList: [280, 307, 318, 319],
+    setextHeading: [81, 82, 84, 86, 95],
+    softLineBreak: SOFT_LINE_BREAK_CHANGES
+  },
+  'markdown-it': {
+    emptyListItem: [285, 367],
+    looseList: [307, 318, 319],
+    setextHeading: [81, 82, 84, 86, 95],
+    softLineBreak: SOFT_LINE_BREAK_CHANGES
+  },
+  'micromark': {
+    emptyListItem: [285, 367],
+    looseList: [307, 318, 319],
+    setextHeading: [81, 82, 84, 86, 95],
+    softLineBreak: SOFT_LINE_BREAK_CHANGES
+  }
+};
+
 function failingExamples(examples: readonly SpecExample[], render: (markdown: string) => string): number[] {
   return examples.filter((example) => render(example.markdown) !== example.html).map((example) => example.example);
 }
@@ -122,7 +225,7 @@ function renderer(adapter: Adapter, options: ObsidianSyntaxOptions, hasTagFilter
   const renderers: Record<Adapter, () => (markdown: string) => string> = {
     'lezer': () => {
       const parser = createObsidianParser(options);
-      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { tagFilter: hasTagFilter });
+      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { looseList: resolveObsidianQuirks(options).looseList, tagFilter: hasTagFilter });
     },
     'markdown-it': () => {
       const md = createObsidianMarkdownIt(options);
@@ -130,7 +233,7 @@ function renderer(adapter: Adapter, options: ObsidianSyntaxOptions, hasTagFilter
     },
     'micromark': () => {
       const extensions = createMicromarkObsidianMarkdown(options);
-      const htmlExtensions = [gfmTableHtml(), gfmStrikethroughHtml(), gfmAutolinkLiteralHtml(), ...hasTagFilter ? [gfmTagfilterHtml()] : []];
+      const htmlExtensions = [gfmTableHtml(), gfmStrikethroughHtml(), gfmAutolinkLiteralHtml(), micromarkQuirksHtml, ...hasTagFilter ? [gfmTagfilterHtml()] : []];
       return (markdown) => micromark(markdown, { allowDangerousHtml: true, allowDangerousProtocol: true, extensions, htmlExtensions });
     }
   };
@@ -194,5 +297,20 @@ describe.each(ADAPTERS)('%s', (adapter) => {
       changes[flag] = COMMONMARK.filter((example, index) => toggled(example.markdown) !== baseStructures[index]).map((example) => example.example);
     }
     expect(changes).toEqual(FLAG_CHANGES);
+  });
+
+  it.each(PRESETS)('changes only the examples showing a quirk when the quirk is turned on from the %s preset', (preset) => {
+    const base = renderer(adapter, { preset }, false);
+    const baseHtml = COMMONMARK.map((example) => base(example.markdown));
+    const changes: Partial<Record<keyof ObsidianQuirkFlags, number[]>> = {};
+    for (const quirk of OBSIDIAN_QUIRK_FLAGS) {
+      const quirked = renderer(adapter, { preset, [quirk]: OBSIDIAN_QUIRKS[quirk] }, false);
+      changes[quirk] = COMMONMARK.filter((example, index) => quirked(example.markdown) !== baseHtml[index]).map((example) => example.example);
+    }
+    expect(changes).toEqual(QUIRK_CHANGES[adapter]);
+  });
+
+  it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', () => {
+    expect(failingExamples(COMMONMARK, renderer(adapter, { ...COMMONMARK_QUIRKS, preset: 'commonmark' }, false))).toEqual(COMMONMARK_FAILURES[adapter]);
   });
 });

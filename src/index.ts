@@ -18,6 +18,8 @@
  * - {@link createObsidianParser}, {@link createMicromarkObsidianMarkdown} and {@link createObsidianMarkdownIt} take a
  *   preset (`commonmark`, `gfm` or `obsidian`) with any of its flags overridden, and {@link renderLezerHtml} renders a
  *   Lezer tree as CommonMark's reference implementation does, so each adapter is checked against the spec suites.
+ * - The same options take Obsidian's quirks ({@link ObsidianQuirkFlags}), where it reads valid CommonMark differently.
+ *   Every preset leaves them off, and {@link micromarkQuirksHtml} renders micromark's events with them.
  */
 
 import type { Tree } from '@lezer/common';
@@ -112,12 +114,16 @@ export type {
   Tag
 } from './syntax/mdast.ts';
 
+export type { ParseMdastOptions } from './syntax/mdast.ts';
+
 export {
   MDAST_NODE_TYPES,
   mdastObsidianMarkdown,
   mdastObsidianSyntax,
   parseMdast
 } from './syntax/mdast.ts';
+
+export { micromarkQuirksHtml } from './syntax/micromark-quirks.ts';
 
 export type { CreateMicromarkObsidianMarkdownOptions } from './syntax/micromark.ts';
 
@@ -130,15 +136,21 @@ export {
 } from './syntax/micromark.ts';
 
 export type {
+  ObsidianQuirkFlags,
   ObsidianSyntaxFlags,
   ObsidianSyntaxOptions,
   ObsidianSyntaxPreset,
+  ResolveObsidianQuirksOptions,
   ResolveObsidianSyntaxOptions
 } from './syntax/options.ts';
 
 export {
+  COMMONMARK_QUIRKS,
+  OBSIDIAN_QUIRK_FLAGS,
+  OBSIDIAN_QUIRKS,
   OBSIDIAN_SYNTAX_FLAGS,
   OBSIDIAN_SYNTAX_PRESETS,
+  resolveObsidianQuirks,
   resolveObsidianSyntax
 } from './syntax/options.ts';
 

@@ -34,12 +34,16 @@ import { gfmStrikethroughFromMarkdown } from 'mdast-util-gfm-strikethrough';
 import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
 import { normalizeIdentifier } from 'micromark-util-normalize-identifier';
 
+import type { ObsidianSyntaxOptions } from './options.ts';
 import type { ObsidianNodeName } from './spec.ts';
 
+import { hasBlankLineInside } from './loose-list.ts';
 import {
+  createMicromarkObsidianMarkdown,
   micromarkObsidianMarkdown,
   ObsidianToken
 } from './micromark.ts';
+import { resolveObsidianQuirks } from './options.ts';
 import { ObsidianNode } from './spec.ts';
 
 /**
@@ -426,13 +430,28 @@ export const mdastObsidianMarkdown: readonly FromMarkdownExtension[] = [
 ];
 
 /**
- * Parses a markdown document into an mdast tree with the Obsidian syntax.
+ * The options of {@link parseMdast}: the syntax to read, and the quirks to apply.
+ */
+export type ParseMdastOptions = ObsidianSyntaxOptions;
+
+/**
+ * Parses a markdown document into an mdast tree with the Obsidian syntax, or with the syntax and the quirks the options
+ * ask for.
+ *
+ * With the `looseList: 'blank-line-anywhere'` quirk, a list item is `spread` when a blank line inside it is followed by
+ * more of it, as in Obsidian's tree, so a list renders loose when any of its items is.
  *
  * @param markdown - The document to parse.
+ * @param options - The syntax to read, and the quirks to apply.
  * @returns The document's mdast tree.
  */
-export function parseMdast(markdown: string): Root {
-  return fromMarkdown(markdown, { extensions: [...micromarkObsidianMarkdown], mdastExtensions: [...mdastObsidianMarkdown] });
+export function parseMdast(markdown: string, options?: ParseMdastOptions): Root {
+  const extensions = options === undefined ? [...micromarkObsidianMarkdown] : createMicromarkObsidianMarkdown(options);
+  const root = fromMarkdown(markdown, { extensions, mdastExtensions: [...mdastObsidianMarkdown] });
+  if (options !== undefined && resolveObsidianQuirks(options).looseList === 'blank-line-anywhere') {
+    spreadListItems(root, markdown, 0);
+  }
+  return root;
 }
 
 function enterNode(create: () => Nodes): Handle {
@@ -479,6 +498,20 @@ function splitTitleParagraph(callout: Callout): void {
     return;
   }
   first.position.start = { ...firstChild.position?.start ?? first.position.start };
+}
+
+// Marks every list item that a blank line inside, followed by more of it, makes loose by Obsidian's rule.
+function spreadListItems(parent: Nodes, markdown: string, quoteDepth: number): void {
+  if (!('children' in parent)) {
+    return;
+  }
+  const depth = parent.type === 'blockquote' || parent.type === 'callout' ? quoteDepth + 1 : quoteDepth;
+  for (const child of parent.children) {
+    if (child.type === 'listItem' && child.position && hasBlankLineInside(markdown.slice(child.position.start.offset, child.position.end.offset), depth)) {
+      child.spread = true;
+    }
+    spreadListItems(child, markdown, depth);
+  }
 }
 
 function withNode<Type extends Nodes['type']>(context: CompileContext, type: Type, update: (node: Extract<Nodes, WithType<Type>>) => void): void {

@@ -25,10 +25,19 @@ import { encode } from 'micromark-util-encode';
 import { normalizeIdentifier } from 'micromark-util-normalize-identifier';
 import { sanitizeUri } from 'micromark-util-sanitize-uri';
 
+import type { ObsidianQuirkFlags } from './options.ts';
+
+import { hasBlankLineInside } from './loose-list.ts';
+
 /**
  * Options of {@link renderLezerHtml}.
  */
 export interface RenderLezerHtmlOptions {
+  /**
+   * When a list is loose (see `ObsidianQuirkFlags`). The tree does not say, so the renderer applies the quirk.
+   */
+  readonly looseList?: ObsidianQuirkFlags['looseList'] | undefined;
+
   /**
    * Whether to apply GFM's tag filter, which disarms raw HTML tags such as `<script>` by escaping their `<`.
    */
@@ -65,6 +74,7 @@ interface RenderContext {
   readonly hasTagFilter: boolean;
   readonly lineStarts: readonly number[];
   readonly listItemLayouts: Map<number, ListItemLayout>;
+  readonly looseList: ObsidianQuirkFlags['looseList'];
   out: string;
   tableCellDepth: number;
   readonly text: string;
@@ -122,7 +132,7 @@ const DELIMITED_TAGS: Readonly<Record<string, string>> = {
  * @returns The HTML.
  */
 export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHtmlOptions = {}): string {
-  const { tagFilter = false } = options;
+  const { looseList = 'between-blocks', tagFilter = false } = options;
   const lineStarts = [0];
   for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
     lineStarts.push(index + 1);
@@ -132,6 +142,7 @@ export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHt
     hasTagFilter: tagFilter,
     lineStarts,
     listItemLayouts: new Map(),
+    looseList,
     out: '',
     tableCellDepth: 0,
     text
@@ -308,6 +319,12 @@ function isBlankCell(cx: RenderContext, cell: Range | undefined): boolean {
 }
 
 function isLoose(cx: RenderContext, list: SyntaxNode): boolean {
+  if (cx.looseList === 'blank-line-anywhere') {
+    const quoteDepth = containersOf(list).filter((container) => QUOTE_LIKE.has(container.name)).length;
+    if (hasBlankLineInside(cx.text.slice(list.from, list.to), quoteDepth)) {
+      return true;
+    }
+  }
   const items = childrenOf(list).filter((child) => child.name === 'ListItem');
   return items.some((item, index) => {
     const next = items[index + 1];
@@ -517,7 +534,9 @@ function renderDelimited(cx: RenderContext, node: SyntaxNode, mode: InlineMode):
 function renderHeading(cx: RenderContext, node: SyntaxNode): void {
   const level = HEADING_LEVEL_RE.exec(node.name)?.[0] ?? '1';
   const marks = childrenOf(node).filter((child) => child.name === 'HeaderMark');
-  let range: Range = { from: node.from, to: marks.at(-1)?.from ?? node.to };
+  // A setext heading's text ends with the line before its underline, whose container prefixes are not the heading's.
+  const underline = marks.at(-1);
+  let range: Range = { from: node.from, to: underline ? cx.text.lastIndexOf('\n', underline.from) : node.to };
   if (node.name.startsWith('ATX')) {
     const [open, close] = marks;
     range = { from: open?.to ?? node.from, to: close?.from ?? node.to };
