@@ -20,11 +20,70 @@
  */
 export interface ObsidianQuirkFlags {
   /**
+   * Which autolinks there are. CommonMark: a scheme of 2 to 32 letters, digits, `+`, `.` and `-`, then a `:`, or an email
+   * address of the characters HTML allows. Obsidian: a `<`, then a scheme of any characters but whitespace and `@` with
+   * `://` and more after it, or any non-whitespace with an `@` in it, then a `>`. A `mailto:` address shows without its
+   * scheme.
+   */
+  readonly autolink: 'commonmark' | 'obsidian';
+
+  /**
+   * Which character references inline content holds. CommonMark: a `;` ends each, a name must be one HTML defines, and
+   * a numeric reference takes up to seven decimal or six hexadecimal digits. Obsidian: a numeric reference takes any
+   * number of digits and needs no `;`, and a named one without its `;` takes the longest of HTML's legacy names it
+   * starts with (`&copy`, `&nbsp`). A numeric reference past the last code point is U+FFFD.
+   */
+  readonly characterReference: 'commonmark' | 'obsidian';
+
+  /**
    * Whether an empty list item can interrupt a paragraph. CommonMark: it cannot, so `foo\n*` is one paragraph.
    * Obsidian: `*`, `+`, `-` and `1.` with nothing after them end the paragraph and open a list, wherever the line is not
    * a setext heading's underline.
    */
   readonly emptyListItem: 'cannot-interrupt' | 'interrupts-paragraph';
+
+  /**
+   * How a GFM table is read. GFM: its header and delimiter rows have as many cells, it can interrupt a paragraph, and it
+   * runs to a blank line or another block. `\|` is a pipe in any cell content. Obsidian: its rows agree with the header
+   * on whether they start with a pipe, and the delimiter row gives the columns, to which every row is cut or padded. It
+   * interrupts no paragraph, and runs to a line that holds no pipe after its first character or disagrees on the leading
+   * pipe. Its cells are read as written, so `\|` in a code span keeps its backslash.
+   */
+  readonly gfmTable: 'commonmark' | 'obsidian';
+
+  /**
+   * Which lines open an HTML block, and what ends it. CommonMark 0.31.2: its seven kinds. Obsidian: the first kind is
+   * `<script>`, `<pre>` and `<style>`, with no `<textarea>`; the sixth kind's tags have no `search` and add `hgroup`,
+   * `meta`, `pre` and `source`, so `</pre>` interrupts a paragraph; and the sixth and seventh kinds end at an empty line,
+   * not at a line of whitespace.
+   */
+  readonly htmlBlock: 'commonmark' | 'obsidian';
+
+  /**
+   * Which raw inline HTML comments there are. CommonMark 0.31.2: `<!-->`, `<!--->`, and any text between `<!--` and the
+   * first `-->`. Obsidian, as CommonMark 0.30: the text does not start with `>` or `->`, does not end with `-`, and holds
+   * no `--`. Any other `<!--` is text.
+   */
+  readonly htmlComment: 'commonmark' | 'obsidian';
+
+  /**
+   * How a link reference definition is read. CommonMark: a title that does not end its line leaves the definition
+   * without one, and a setext underline below a definition is text. Obsidian: such a title spoils the definition, so it
+   * is a paragraph; a title holds no escaped quote and starts no line with its closing quote; `<>` is no destination,
+   * and a label may hold brackets; and a definition of one line with a setext underline below it is a heading. A
+   * definition runs over no blank line, though Obsidian's may.
+   */
+  readonly linkDefinition: 'commonmark' | 'obsidian';
+
+  /**
+   * How list items are structured. CommonMark: an ordered marker has at most nine digits, an item whose first line is
+   * empty has its content a column after its marker and ends at a blank line, a line indented less than an item's
+   * content ends it, and a marker indented four or more columns opens no item. Obsidian: an ordered marker has any
+   * number of digits; an item whose first line is empty has its content right after its marker, and a blank line does
+   * not end it; a line indented more than four columns, though less than the item's content, continues the item; and a
+   * marker of the same list indented less than the item's content opens the next item, however far it is indented.
+   */
+  readonly listItem: 'commonmark' | 'obsidian';
 
   /**
    * When a list is loose, its items' paragraphs rendered in `<p>`. CommonMark: when a blank line separates two of its
@@ -210,7 +269,14 @@ export const OBSIDIAN_SYNTAX_FLAGS = Object.keys(COMMONMARK) as readonly (keyof 
  * The CommonMark behaviour of every quirk, which every preset keeps.
  */
 export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
+  autolink: 'commonmark',
+  characterReference: 'commonmark',
   emptyListItem: 'cannot-interrupt',
+  gfmTable: 'commonmark',
+  htmlBlock: 'commonmark',
+  htmlComment: 'commonmark',
+  linkDefinition: 'commonmark',
+  listItem: 'commonmark',
   looseList: 'between-blocks',
   setextHeading: 'multi-line',
   softLineBreak: 'line-ending'
@@ -220,7 +286,14 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
  * Obsidian's behaviour for every quirk, as its reading view and its metadata worker show it.
  */
 export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
+  autolink: 'obsidian',
+  characterReference: 'obsidian',
   emptyListItem: 'interrupts-paragraph',
+  gfmTable: 'obsidian',
+  htmlBlock: 'obsidian',
+  htmlComment: 'obsidian',
+  linkDefinition: 'obsidian',
+  listItem: 'obsidian',
   looseList: 'blank-line-anywhere',
   setextHeading: 'single-line',
   softLineBreak: 'hard-break'
@@ -239,7 +312,14 @@ export const OBSIDIAN_QUIRK_FLAGS = Object.keys(COMMONMARK_QUIRKS) as readonly (
  */
 export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}): ObsidianQuirkFlags {
   return {
+    autolink: options.autolink ?? COMMONMARK_QUIRKS.autolink,
+    characterReference: options.characterReference ?? COMMONMARK_QUIRKS.characterReference,
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
+    gfmTable: options.gfmTable ?? COMMONMARK_QUIRKS.gfmTable,
+    htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
+    htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,
+    linkDefinition: options.linkDefinition ?? COMMONMARK_QUIRKS.linkDefinition,
+    listItem: options.listItem ?? COMMONMARK_QUIRKS.listItem,
     looseList: options.looseList ?? COMMONMARK_QUIRKS.looseList,
     setextHeading: options.setextHeading ?? COMMONMARK_QUIRKS.setextHeading,
     softLineBreak: options.softLineBreak ?? COMMONMARK_QUIRKS.softLineBreak

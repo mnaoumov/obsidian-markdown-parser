@@ -65,6 +65,7 @@ export { CONFORMANCE_CASES } from './syntax/conformance.ts';
 export {
   collectLinkReferenceLabels,
   commonMarkFixes,
+  commonMarkFixesWithoutHtmlBlock,
   linkReferenceCheck,
   parseWithLinkReferences
 } from './syntax/lezer-commonmark.ts';
@@ -123,7 +124,10 @@ export {
   parseMdast
 } from './syntax/mdast.ts';
 
-export { micromarkQuirksHtml } from './syntax/micromark-quirks.ts';
+export {
+  micromarkObsidianTable,
+  micromarkQuirksHtml
+} from './syntax/micromark-quirks.ts';
 
 export type { CreateMicromarkObsidianMarkdownOptions } from './syntax/micromark.ts';
 

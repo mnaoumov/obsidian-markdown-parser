@@ -2,11 +2,13 @@
 
 `src/editor/markdown-mode.ts` is a TypeScript port of the CodeMirror 5 `markdown` mode, and `src/editor/obsidian-mode.ts` is a TypeScript port of the HyperMD mode. Both are modified, and both originals are under the MIT license below. The CodeMirror 5 modes in `src/editor/sub-modes.ts` are used from the `codemirror@5` package, under the same license.
 
-In `src/syntax/micromark.ts`, the highlight pairing (`resolveAllHighlight`) is adapted from `micromark-extension-gfm-strikethrough`, and the non-lazy line check (`tokenizeNonLazyContinuation`) from `micromark-core-commonmark`. Both are under the MIT license in the micromark section below. In `src/syntax/micromark-quirks.ts`, the list handler of `micromarkQuirksHtml` is adapted from `micromark`'s HTML compiler, under the same license.
+In `src/syntax/micromark.ts`, the highlight pairing (`resolveAllHighlight`) is adapted from `micromark-extension-gfm-strikethrough`, and the non-lazy line check (`tokenizeNonLazyContinuation`) from `micromark-core-commonmark`. Both are under the MIT license in the micromark section below. In `src/syntax/micromark-quirks.ts`, the list handler of `micromarkQuirksHtml` is adapted from `micromark`'s HTML compiler, and its table handlers from `micromark-extension-gfm-table`'s; `src/syntax/micromark-list.ts` adapts the list construct of `micromark-core-commonmark`; and in `src/syntax/mdast.ts` the character reference and code span handlers are adapted from `mdast-util-from-markdown` and `mdast-util-gfm-table`. All are under the same license, by the same author.
 
-`src/syntax/markdown-it-quirks.ts` adapts the `lheading` rule of `markdown-it`, under the MIT license in the markdown-it section below.
+`src/syntax/markdown-it-quirks.ts` adapts the `lheading`, `html_block`, `reference`, `table` and `list` rules of `markdown-it`, under the MIT license in the markdown-it section below.
 
-`src/syntax/lezer-commonmark.ts` adapts the ATX heading and HTML block parsers of `@lezer/markdown`, under the MIT license in the `@lezer/markdown` section below.
+`src/syntax/lezer-commonmark.ts` adapts the ATX heading and HTML block parsers of `@lezer/markdown`, and `src/syntax/lezer-quirks.ts` its HTML block parser, under the MIT license in the `@lezer/markdown` section below.
+
+`src/syntax/quirk-rules.ts` re-expresses rules of `remark-parse` 8.0.3, the parser Obsidian's reading view and metadata worker run: its link reference definitions, autolinks, HTML blocks, HTML comments and table delimiter rows. Its character references follow `parse-entities` 2. Both are under the MIT licenses in the remark-parse and parse-entities sections below.
 
 The CommonMark and GFM spec suites in `spec/` are made from the specs' examples, under the Creative Commons Attribution-ShareAlike 4.0 license (CC-BY-SA 4.0, <https://creativecommons.org/licenses/by-sa/4.0/>), and are shared under the same license:
 
@@ -129,4 +131,58 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## remark-parse
+
+```text
+(The MIT License)
+
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## parse-entities
+
+```text
+(The MIT License)
+
+Copyright (c) 2015 Titus Wormer <mailto:tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```

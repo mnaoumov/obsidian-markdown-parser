@@ -184,9 +184,9 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'A named character reference needs no `;` (`&nbsp`, `&copy`), and a numeric one past the last code point is U+FFFD.',
     commonmark: [28, 29],
+    flag: 'characterReference',
     kind: 'quirk',
-    name: 'character references',
-    notAFlag: 'Not done yet: each adapter can read references with an inline parser of its own.'
+    name: 'character references'
   },
   {
     behaviour: 'A paragraph keeps the whitespace its first line starts with (222, 224, 252, 255, 275, 276), also after a list marker (278, 280).',
@@ -217,32 +217,32 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
     notAFlag: 'Lazy continuation is decided inside each adapter\'s container handling (`@lezer/markdown`\'s block context, micromark\'s document tokenizer, markdown-it\'s blockquote rule), which no extension point reaches.'
   },
   {
-    behaviour: 'A link reference definition\'s title is on its own line or none (196, 210), `<>` is no destination (200), a title with an escaped quote is no title (202), and a setext underline below a definition makes it a heading (216).',
+    behaviour: 'A link reference definition\'s title is on its own line or none (196, 210), `<>` is no destination (200), a title with an escaped quote is no title (202), and a setext underline below a definition makes it a heading (216). A label may hold brackets or only whitespace: the definitions of 546 and 552 are read, and their links are part of the links quirk.',
     commonmark: [196, 200, 202, 210, 216],
+    flag: 'linkDefinition',
     kind: 'quirk',
-    name: 'link reference definitions',
-    notAFlag: 'Each adapter reads definitions in its own paragraph handling (`@lezer/markdown`\'s link reference leaf parser, micromark\'s content construct, markdown-it\'s reference rule). Not done yet.'
+    name: 'link reference definitions'
   },
   {
     behaviour: 'List items: a marker indented four or more columns, but less than the item\'s content, opens a sibling item (312, 313); a paragraph indented less than the content column after a blank line stays in the item (257); an ordered marker takes ten or more digits (266); an item that starts with an empty line keeps an indented paragraph after a blank line (280), and its content starts a column further left (278).',
     commonmark: [257, 266, 278, 280, 312, 313],
+    flag: 'listItem',
     kind: 'quirk',
-    name: 'list item structure',
-    notAFlag: 'List item continuation is internal to `@lezer/markdown`, as for example 280 in the CommonMark suite. micromark and markdown-it need their list constructs replaced. Not done yet.'
+    name: 'list item structure'
   },
   {
     behaviour: '`<textarea>` opens no raw HTML block (171), as in CommonMark 0.30, and a `</pre>` line ends a paragraph (148).',
     commonmark: [148, 171],
+    flag: 'htmlBlock',
     kind: 'quirk',
-    name: 'HTML block kinds',
-    notAFlag: 'Not done yet: the HTML block kinds are each adapter\'s own list, which `lezer-commonmark.ts` already extends for 0.31.2.'
+    name: 'HTML block kinds'
   },
   {
     behaviour: 'An HTML comment follows CommonMark 0.30: `--` inside one (625), `<!-->` and `<!--->` (626) are text.',
     commonmark: [625, 626],
+    flag: 'htmlComment',
     kind: 'quirk',
-    name: 'HTML comments',
-    notAFlag: 'Not done yet: each adapter reads raw inline HTML with its own construct.'
+    name: 'HTML comments'
   },
   {
     behaviour: 'A code span\'s opening backtick run closes at a shorter run, leaving the rest of the opener as text (347).',
@@ -356,17 +356,17 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'An autolink takes only some schemes (598, 601), an email autolink may hold a backslash (606), and a `mailto:` autolink shows its address without the scheme (597).',
     commonmark: [597, 598, 601, 606],
+    flag: 'autolink',
     kind: 'quirk',
-    name: 'autolinks',
-    notAFlag: 'Not done yet: each adapter reads autolinks with its own construct.'
+    name: 'autolinks'
   },
   {
     behaviour: 'Tables: a delimiter row without edge pipes under a header with them makes none (199), `\\|` in a code span keeps its backslash (200), a line without a pipe ends the table (202), and a delimiter row with fewer cells than the header still makes one (203).',
     commonmark: [],
+    flag: 'gfmTable',
     gfm: [199, 200, 202, 203],
     kind: 'quirk',
-    name: 'tables',
-    notAFlag: 'Not done yet: each adapter takes its table extension from its own package.'
+    name: 'tables'
   },
   {
     behaviour: 'An `ftp://` address is no bare URL, as for `@lezer/markdown`, micromark and github.com today.',

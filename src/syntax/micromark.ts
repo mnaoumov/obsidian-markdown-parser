@@ -44,7 +44,10 @@ import type {
 } from './options.ts';
 import type { CalloutMarker } from './spec.ts';
 
-import { createMicromarkQuirks } from './micromark-quirks.ts';
+import {
+  createMicromarkQuirks,
+  micromarkObsidianTable
+} from './micromark-quirks.ts';
 import {
   OBSIDIAN_SYNTAX_PRESETS,
   resolveObsidianQuirks,
@@ -293,9 +296,10 @@ export type CreateMicromarkObsidianMarkdownOptions = ObsidianSyntaxOptions;
  */
 export function createMicromarkObsidianMarkdown(options: CreateMicromarkObsidianMarkdownOptions = {}): Extension[] {
   const flags = resolveObsidianSyntax(options);
+  const quirks = resolveObsidianQuirks(options);
   const extensions: Extension[] = [];
   if (flags.table) {
-    extensions.push(gfmTable());
+    extensions.push(quirks.gfmTable === 'obsidian' ? micromarkObsidianTable : gfmTable());
   }
   if (flags.strikethrough) {
     extensions.push(gfmStrikethrough({ singleTilde: false }));
@@ -303,7 +307,7 @@ export function createMicromarkObsidianMarkdown(options: CreateMicromarkObsidian
   if (flags.autolinkLiteral) {
     extensions.push(gfmAutolinkLiteral());
   }
-  extensions.push(createMicromarkObsidianSyntax(flags), createMicromarkQuirks(resolveObsidianQuirks(options)));
+  extensions.push(createMicromarkObsidianSyntax(flags), createMicromarkQuirks(quirks, flags));
   return extensions;
 }
 

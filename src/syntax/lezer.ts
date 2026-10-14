@@ -32,8 +32,14 @@ import type {
   ObsidianSyntaxOptions
 } from './options.ts';
 
-import { commonMarkFixes } from './lezer-commonmark.ts';
-import { createLezerQuirks } from './lezer-quirks.ts';
+import {
+  commonMarkFixes,
+  commonMarkFixesWithoutHtmlBlock
+} from './lezer-commonmark.ts';
+import {
+  createLezerQuirks,
+  obsidianTable
+} from './lezer-quirks.ts';
 import {
   resolveObsidianQuirks,
   resolveObsidianSyntax
@@ -292,9 +298,10 @@ export type CreateObsidianParserOptions = ObsidianSyntaxOptions;
  */
 export function createObsidianMarkdown(options: CreateObsidianMarkdownOptions = {}): MarkdownConfig[] {
   const flags = resolveObsidianSyntax(options);
-  const configs: MarkdownConfig[] = [commonMarkFixes];
+  const quirks = resolveObsidianQuirks(options);
+  const configs: MarkdownConfig[] = [quirks.htmlBlock === 'obsidian' ? commonMarkFixesWithoutHtmlBlock : commonMarkFixes];
   if (flags.table) {
-    configs.push(Table);
+    configs.push(quirks.gfmTable === 'obsidian' ? obsidianTable : Table);
   }
   if (flags.strikethrough) {
     configs.push(Strikethrough);
@@ -306,7 +313,7 @@ export function createObsidianMarkdown(options: CreateObsidianMarkdownOptions = 
     defineNodes: obsidianSyntax.defineNodes ?? [],
     parseBlock: (obsidianSyntax.parseBlock ?? []).filter((spec) => isParserOn(spec, flags)),
     parseInline: (obsidianSyntax.parseInline ?? []).filter((spec) => isParserOn(spec, flags))
-  }, ...createLezerQuirks(resolveObsidianQuirks(options)));
+  }, ...createLezerQuirks(quirks));
   return configs;
 }
 

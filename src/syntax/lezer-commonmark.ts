@@ -3,7 +3,8 @@
  *
  * Where `@lezer/markdown` 1.8 reads a document differently from CommonMark 0.31.2, and what this package does about it.
  *
- * {@link commonMarkFixes} corrects three of its rules, and every parser of this package includes it:
+ * {@link commonMarkFixes} corrects three of its rules, and every parser of this package includes it, or, with the
+ * `htmlBlock` quirk, {@link commonMarkFixesWithoutHtmlBlock}:
  *
  * - An ATX heading's `#` sequence may be followed by a tab, not only by a space.
  * - `<textarea>` opens an HTML block of the first kind, beside `<pre>`, `<script>` and `<style>`, and any of their four
@@ -24,8 +25,10 @@
 import type { Tree } from '@lezer/common';
 import type {
   BlockContext,
+  BlockParser,
   Element,
   InlineContext,
+  InlineParser,
   Line,
   MarkdownConfig,
   MarkdownParser
@@ -76,17 +79,20 @@ const BLANK_LINE_RE = /\n[\t >]*\n/u;
 const LINK_LABEL_RE = /^\[(?:[^[\\\]]|\\[^]){0,999}\]/u;
 const LABEL_LINE_BREAK_RE = /\n[\t >]*/gu;
 
+const atxHeadingFix: BlockParser = {
+  before: 'ATXHeading',
+  endLeaf: (_cx, line): boolean => atxTabHeadingSize(line) > 0,
+  name: 'ATXHeadingAfterTab',
+  parse: checkAtxTabHeading
+};
+const rawHtmlFix: InlineParser = { before: 'HTMLTag', name: 'RawHTML', parse: parseRawHtml };
+
 /**
  * Corrections that bring `@lezer/markdown` 1.8 closer to CommonMark 0.31.2.
  */
 export const commonMarkFixes: MarkdownConfig = {
   parseBlock: [
-    {
-      before: 'ATXHeading',
-      endLeaf: (_cx, line): boolean => atxTabHeadingSize(line) > 0,
-      name: 'ATXHeadingAfterTab',
-      parse: checkAtxTabHeading
-    },
+    atxHeadingFix,
     {
       before: 'HTMLBlock',
       endLeaf: (_cx, line): boolean => isHtmlBlock1Start(line),
@@ -94,7 +100,15 @@ export const commonMarkFixes: MarkdownConfig = {
       parse: checkHtmlBlock1
     }
   ],
-  parseInline: [{ before: 'HTMLTag', name: 'RawHTML', parse: parseRawHtml }]
+  parseInline: [rawHtmlFix]
+};
+
+/**
+ * {@link commonMarkFixes} without the HTML block of the first kind, for a parser that reads HTML blocks its own way.
+ */
+export const commonMarkFixesWithoutHtmlBlock: MarkdownConfig = {
+  parseBlock: [atxHeadingFix],
+  parseInline: [rawHtmlFix]
 };
 
 /**
@@ -119,6 +133,16 @@ export function collectLinkReferenceLabels(tree: Tree, text: string): Set<string
     }
   });
   return labels;
+}
+
+/**
+ * Whether text opens with an autolink as CommonMark reads it.
+ *
+ * @param text - The text, from its `<`.
+ * @returns Whether it does.
+ */
+export function isCommonMarkAutolink(text: string): boolean {
+  return URI_AUTOLINK_RE.test(text) || EMAIL_AUTOLINK_RE.test(text);
 }
 
 /**
@@ -262,7 +286,7 @@ function parseRawHtml(cx: InlineContext, next: number, start: number): number {
     return -1;
   }
   const text = cx.slice(start, cx.end);
-  if (URI_AUTOLINK_RE.test(text) || EMAIL_AUTOLINK_RE.test(text)) {
+  if (isCommonMarkAutolink(text)) {
     return -1;
   }
   const comment = COMMENT_RE.exec(text);

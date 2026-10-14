@@ -36,6 +36,7 @@ import { parseWithLinkReferences } from './lezer-commonmark.ts';
 import { renderLezerHtml } from './lezer-html.ts';
 import { createObsidianParser } from './lezer.ts';
 import { createObsidianMarkdownIt } from './markdown-it.ts';
+import { parseMdast } from './mdast.ts';
 import { micromarkQuirksHtml } from './micromark-quirks.ts';
 import { createMicromarkObsidianMarkdown } from './micromark.ts';
 import {
@@ -112,8 +113,10 @@ const FLAG_CHANGES: Readonly<Record<keyof ObsidianSyntaxFlags, readonly number[]
  * The CommonMark examples whose rendering changes when a quirk is turned on, whatever the preset. Each example shows the
  * quirk's behaviour, and Obsidian's reading view differs from the spec on it (`src/oracle/spec-quirks.ts`), except where
  * Obsidian's other quirks hide it: `softLineBreak` shows on every soft line break, including in examples Obsidian
- * parses differently. `@lezer/markdown` keeps the paragraph of example 280 in its list item (`COMMONMARK_FAILURES`),
- * where a blank line before it makes the list loose.
+ * parses differently. `linkDefinition` reads the definitions of 546 and 552, whose labels hold a bracket or only
+ * whitespace; Obsidian differs from the spec there in its links too. `@lezer/markdown` keeps the paragraph of example
+ * 280 in its list item (`COMMONMARK_FAILURES`), where a blank line before it makes the list loose. `listItem` changes
+ * nothing in `@lezer/markdown`, whose list item continuation no extension reaches.
  */
 const SOFT_LINE_BREAK_CHANGES = [
   14,
@@ -186,23 +189,54 @@ const SOFT_LINE_BREAK_CHANGES = [
 ];
 const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>>>> = {
   'lezer': {
+    autolink: [597, 598, 601, 606],
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [],
     looseList: [280, 307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'markdown-it': {
+    autolink: [597, 598, 601, 606],
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [257, 266, 278, 280, 312, 313],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'micromark': {
+    autolink: [597, 598, 601, 606],
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
+    gfmTable: [],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
+    linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [257, 266, 278, 280, 312, 313],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   }
+};
+
+/*
+ * The GFM extension examples whose rendering changes when a quirk is turned on from the gfm preset, in the same way:
+ * `gfmTable` changes the four table examples Obsidian reads differently, and `softLineBreak` the one that GFM reads as a
+ * paragraph of three lines, which Obsidian reads as a table.
+ */
+const GFM_QUIRK_CHANGES: Readonly<Partial<Record<keyof ObsidianQuirkFlags, readonly number[]>>> = {
+  gfmTable: [199, 200, 202, 203],
+  softLineBreak: [203]
 };
 
 function failingExamples(examples: readonly SpecExample[], render: (markdown: string) => string): number[] {
@@ -225,7 +259,7 @@ function renderer(adapter: Adapter, options: ObsidianSyntaxOptions, hasTagFilter
   const renderers: Record<Adapter, () => (markdown: string) => string> = {
     'lezer': () => {
       const parser = createObsidianParser(options);
-      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { looseList: resolveObsidianQuirks(options).looseList, tagFilter: hasTagFilter });
+      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { ...resolveObsidianQuirks(options), tagFilter: hasTagFilter });
     },
     'markdown-it': () => {
       const md = createObsidianMarkdownIt(options);
@@ -279,6 +313,12 @@ describe('the vendored spec suites', () => {
   });
 });
 
+describe('the mdast tree', () => {
+  it.each(PRESETS)('is built for every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+    expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => parseMdast(example.markdown, { ...OBSIDIAN_QUIRKS, preset }))).not.toThrow();
+  });
+});
+
 describe.each(ADAPTERS)('%s', (adapter) => {
   it('passes the CommonMark 0.31.2 spec suite with the commonmark preset', () => {
     expect(failingExamples(COMMONMARK, renderer(adapter, { preset: 'commonmark' }, false))).toEqual(COMMONMARK_FAILURES[adapter]);
@@ -308,6 +348,25 @@ describe.each(ADAPTERS)('%s', (adapter) => {
       changes[quirk] = COMMONMARK.filter((example, index) => quirked(example.markdown) !== baseHtml[index]).map((example) => example.example);
     }
     expect(changes).toEqual(QUIRK_CHANGES[adapter]);
+  });
+
+  it('changes only the GFM extension examples showing a quirk when the quirk is turned on from the gfm preset', () => {
+    const base = renderer(adapter, { preset: 'gfm' }, true);
+    const baseHtml = GFM_EXTENSIONS.map((example) => base(example.markdown));
+    const changes: Partial<Record<keyof ObsidianQuirkFlags, number[]>> = {};
+    for (const quirk of OBSIDIAN_QUIRK_FLAGS) {
+      const quirked = renderer(adapter, { preset: 'gfm', [quirk]: OBSIDIAN_QUIRKS[quirk] }, true);
+      const changed = GFM_EXTENSIONS.filter((example, index) => quirked(example.markdown) !== baseHtml[index]).map((example) => example.example);
+      if (changed.length > 0) {
+        changes[quirk] = changed;
+      }
+    }
+    expect(changes).toEqual(GFM_QUIRK_CHANGES);
+  });
+
+  it.each(PRESETS)('renders every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+    const render = renderer(adapter, { ...OBSIDIAN_QUIRKS, preset }, false);
+    expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => render(example.markdown))).not.toThrow();
   });
 
   it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', () => {
