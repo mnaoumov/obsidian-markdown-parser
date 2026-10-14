@@ -15,6 +15,9 @@
  *   syntax as a markdown-it plugin, and {@link createObsidianMarkdownIt} is a markdown-it configured with it.
  * - {@link ObsidianNode} names the syntax nodes, and {@link CONFORMANCE_CASES} is the corpus every adapter is checked
  *   against.
+ * - {@link createObsidianParser}, {@link createMicromarkObsidianMarkdown} and {@link createObsidianMarkdownIt} take a
+ *   preset (`commonmark`, `gfm` or `obsidian`) with any of its flags overridden, and {@link renderLezerHtml} renders a
+ *   Lezer tree as CommonMark's reference implementation does, so each adapter is checked against the spec suites.
  */
 
 import type { Tree } from '@lezer/common';
@@ -58,10 +61,33 @@ export type {
 export { CONFORMANCE_CASES } from './syntax/conformance.ts';
 
 export {
+  collectLinkReferenceLabels,
+  commonMarkFixes,
+  linkReferenceCheck,
+  parseWithLinkReferences
+} from './syntax/lezer-commonmark.ts';
+
+export type { RenderLezerHtmlOptions } from './syntax/lezer-html.ts';
+
+export { renderLezerHtml } from './syntax/lezer-html.ts';
+
+export type {
+  CreateObsidianMarkdownOptions,
+  CreateObsidianParserOptions
+} from './syntax/lezer.ts';
+
+export {
+  createObsidianMarkdown,
+  createObsidianParser,
   obsidianMarkdown,
   obsidianParser,
   obsidianSyntax
 } from './syntax/lezer.ts';
+
+export type {
+  CreateObsidianMarkdownItOptions,
+  MarkdownItObsidianSyntaxOptions
+} from './syntax/markdown-it.ts';
 
 export {
   createObsidianMarkdownIt,
@@ -93,11 +119,28 @@ export {
   parseMdast
 } from './syntax/mdast.ts';
 
+export type { CreateMicromarkObsidianMarkdownOptions } from './syntax/micromark.ts';
+
 export {
+  createMicromarkObsidianMarkdown,
+  createMicromarkObsidianSyntax,
   micromarkObsidianMarkdown,
   micromarkObsidianSyntax,
   ObsidianToken
 } from './syntax/micromark.ts';
+
+export type {
+  ObsidianSyntaxFlags,
+  ObsidianSyntaxOptions,
+  ObsidianSyntaxPreset,
+  ResolveObsidianSyntaxOptions
+} from './syntax/options.ts';
+
+export {
+  OBSIDIAN_SYNTAX_FLAGS,
+  OBSIDIAN_SYNTAX_PRESETS,
+  resolveObsidianSyntax
+} from './syntax/options.ts';
 
 export type {
   ObsidianNodeName,

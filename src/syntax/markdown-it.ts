@@ -31,11 +31,16 @@ import type {
 import MarkdownItCallable from 'markdown-it';
 
 import type {
+  ObsidianSyntaxFlags,
+  ObsidianSyntaxOptions
+} from './options.ts';
+import type {
   CalloutMarker,
   ObsidianNodeName,
   TextRange
 } from './spec.ts';
 
+import { resolveObsidianSyntax } from './options.ts';
 import {
   canOpenHighlightBefore,
   canOpenTagAfter,
@@ -58,9 +63,19 @@ import {
 } from './spec.ts';
 
 /**
- * The options of {@link createObsidianMarkdownIt}: markdown-it's own.
+ * The options of {@link createObsidianMarkdownIt}: the syntax to read, and markdown-it's own options.
  */
-export type CreateObsidianMarkdownItOptions = MarkdownItOptions;
+export interface CreateObsidianMarkdownItOptions extends ObsidianSyntaxOptions {
+  /**
+   * Markdown-it's own options, applied on top of its `commonmark` preset.
+   */
+  readonly markdownIt?: MarkdownItOptions;
+}
+
+/**
+ * The options of {@link markdownItObsidianSyntax}: the Obsidian syntax to read.
+ */
+export type MarkdownItObsidianSyntaxOptions = ObsidianSyntaxOptions;
 
 // Where a delimited block closes: the line holding the closing delimiter and the delimiter's offset, or `-1` for both.
 interface BlockClose {
@@ -93,6 +108,8 @@ interface HighlightDelimiter {
 }
 
 // The parts of markdown-it's types its package root does not export.
+type InlineRule = ReturnType<MarkdownIt['inline']['ruler']['getRules']>[number];
+
 type Nesting = Token['nesting'];
 
 type RuleBlock = ReturnType<MarkdownIt['block']['ruler']['getRules']>[number];
@@ -113,10 +130,13 @@ const CLOSE_SUFFIX = '_close';
 const DELIMITER_SIZE = 2;
 const EMBED_OPENER_SIZE = 3;
 const CODE_INDENT = 4;
+// The nesting limit of markdown-it's `default` preset, which its `commonmark` preset lowers to 20.
+const MAX_NESTING = 100;
 // A paragraph is three tokens: its opening, its inline content and its closing.
 const PARAGRAPH_TOKENS = 3;
 const LEADING_SPACE_RE = /^[ \t]*/u;
 const CLOSING_SEQUENCE_RE = /[ \t]#+$/u;
+const TEXT_ALIGN_RE = /^text-align:(?<alignment>\w+)$/u;
 const HTML_ESCAPE_RE = /[&<>"]/gu;
 const HTML_ESCAPES: Readonly<Record<string, string>> = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
 // The block rules a footnote definition, a callout and a comment or math block can interrupt, as fenced code can.
@@ -166,14 +186,32 @@ const highlightDelimiters = new WeakMap<Token, HighlightDelimiter>();
 const taskStarts = new WeakMap<Token, TaskStart>();
 
 /**
- * Creates a markdown-it with the Obsidian syntax and the GFM pieces Obsidian supports: tables, strikethrough (`~~`
- * only) and bare URLs, with HTML enabled. The given options are applied on top.
+ * Creates a markdown-it for the syntax the options turn on: by default the Obsidian syntax and the GFM pieces Obsidian
+ * supports, which are tables, strikethrough (`~~` only) and bare URLs. It starts from markdown-it's `commonmark`
+ * preset, which enables HTML, so with the `commonmark` preset it passes the CommonMark spec suite.
  *
- * @param options - markdown-it options.
+ * @param options - The syntax to read, and markdown-it's own options.
  * @returns The markdown-it instance.
  */
 export function createObsidianMarkdownIt(options: CreateObsidianMarkdownItOptions = {}): MarkdownIt {
-  return new MarkdownItCallable({ html: true, linkify: true, ...options }).use(markdownItObsidianSyntax);
+  const { markdownIt: markdownItOptions, ...syntaxOptions } = options;
+  const flags = resolveObsidianSyntax(syntaxOptions);
+  const md = new MarkdownItCallable('commonmark', { linkify: flags.autolinkLiteral, maxNesting: MAX_NESTING, ...markdownItOptions });
+  const gfmRules: string[] = [];
+  if (flags.table) {
+    gfmRules.push('table');
+  }
+  if (flags.strikethrough) {
+    gfmRules.push('strikethrough');
+  }
+  if (flags.autolinkLiteral) {
+    gfmRules.push('linkify');
+  }
+  if (gfmRules.length > 0) {
+    md.enable(gfmRules);
+  }
+  addGfmRenderRules(md);
+  return md.use(markdownItObsidianSyntax, flags);
 }
 
 /**
@@ -189,41 +227,63 @@ export function getObsidianTokenRange(token: Token): null | TextRange {
 }
 
 /**
- * The Obsidian syntax as a markdown-it plugin.
+ * The Obsidian syntax as a markdown-it plugin: `md.use(markdownItObsidianSyntax, options)`.
  *
  * @param md - The markdown-it instance to extend.
+ * @param options - The Obsidian syntax to read. Its GFM flags are markdown-it's own rules, which the plugin leaves as
+ *   they are.
  */
-export function markdownItObsidianSyntax(md: MarkdownIt): void {
+export function markdownItObsidianSyntax(md: MarkdownIt, options: MarkdownItObsidianSyntaxOptions = {}): void {
+  const flags: ObsidianSyntaxFlags = resolveObsidianSyntax(options);
   const blockquote = findBlockRule(md, 'blockquote');
   const reference = findBlockRule(md, 'reference');
 
-  md.block.ruler.before('table', 'obsidian_front_matter', checkFrontMatter);
-  // A `[^label]:` line is a footnote definition before it is a table's header row or a link reference definition.
-  md.block.ruler.before('table', 'obsidian_footnote_definition', checkFootnoteDefinition, { alt: INTERRUPTS });
-  md.block.ruler.before('fence', 'obsidian_math_block', delimitedBlockRule(MATH_BLOCK), { alt: INTERRUPTS });
-  md.block.ruler.before('fence', 'obsidian_comment_block', delimitedBlockRule(COMMENT_BLOCK), { alt: INTERRUPTS });
-  if (blockquote) {
+  if (flags.frontMatter) {
+    md.block.ruler.before('table', 'obsidian_front_matter', checkFrontMatter);
+  }
+  if (flags.footnote) {
+    // A `[^label]:` line is a footnote definition before it is a table's header row or a link reference definition.
+    md.block.ruler.before('table', 'obsidian_footnote_definition', checkFootnoteDefinition, { alt: INTERRUPTS });
+  }
+  if (flags.math) {
+    md.block.ruler.before('fence', 'obsidian_math_block', delimitedBlockRule(MATH_BLOCK), { alt: INTERRUPTS });
+  }
+  if (flags.comment) {
+    md.block.ruler.before('fence', 'obsidian_comment_block', delimitedBlockRule(COMMENT_BLOCK), { alt: INTERRUPTS });
+  }
+  if (blockquote && flags.callout) {
     md.block.ruler.before('blockquote', 'obsidian_callout', calloutRule(blockquote), { alt: INTERRUPTS });
   }
-  if (reference) {
+  if (reference && flags.footnote) {
     // A `[^label]:` is never a link reference definition, even where it is no footnote definition, as in a quote.
     md.block.ruler.at('reference', (state, startLine, endLine, isSilent) => !lineContent(state, startLine).startsWith('[^') && reference(state, startLine, endLine, isSilent));
   }
 
-  md.inline.ruler.before('link', 'obsidian_internal_link', checkInternalLink);
-  md.inline.ruler.before('link', 'obsidian_footnote_reference', checkFootnoteReference);
-  md.inline.ruler.before('link', 'obsidian_inline_footnote', checkInlineFootnote);
-  md.inline.ruler.before('link', 'obsidian_block_id', checkBlockId);
-  md.inline.ruler.before('link', 'obsidian_tag', checkTag);
-  md.inline.ruler.before('link', 'obsidian_comment', checkComment);
-  md.inline.ruler.before('link', 'obsidian_inline_math', checkInlineMath);
-  md.inline.ruler.before('link', 'obsidian_highlight', checkHighlight);
-  md.inline.ruler2.before('fragments_join', 'obsidian_highlight', (state) => {
-    pairHighlights(state);
-    return true;
-  });
+  const inlineRules: readonly (readonly [string, boolean, InlineRule])[] = [
+    ['obsidian_internal_link', flags.internalLink, checkInternalLink],
+    ['obsidian_footnote_reference', flags.footnote, checkFootnoteReference],
+    ['obsidian_inline_footnote', flags.inlineFootnote, checkInlineFootnote],
+    ['obsidian_block_id', flags.blockId, checkBlockId],
+    ['obsidian_tag', flags.tag, checkTag],
+    ['obsidian_comment', flags.comment, checkComment],
+    ['obsidian_inline_math', flags.math, checkInlineMath],
+    ['obsidian_highlight', flags.highlight, checkHighlight]
+  ];
+  for (const [name, isOn, rule] of inlineRules) {
+    if (isOn) {
+      md.inline.ruler.before('link', name, rule);
+    }
+  }
+  if (flags.highlight) {
+    md.inline.ruler2.before('fragments_join', 'obsidian_highlight', (state) => {
+      pairHighlights(state);
+      return true;
+    });
+  }
 
-  md.core.ruler.before('inline', 'obsidian_inline_sources', prepareInlineContent);
+  md.core.ruler.before('inline', 'obsidian_inline_sources', (state) => {
+    prepareInlineContent(state, flags.task);
+  });
   md.core.ruler.after('inline', 'obsidian_ranges', resolveInlineRanges);
 
   addRenderRules(md);
@@ -254,6 +314,20 @@ export function parseMarkdownIt(markdown: string): Token[] {
   return createObsidianMarkdownIt().parse(markdown, {});
 }
 
+// The GFM rendering of strikethrough and of a cell's alignment, which markdown-it renders as `<s>` and as a style.
+function addGfmRenderRules(md: MarkdownIt): void {
+  const { rules } = md.renderer;
+  rules['s_open'] = (): string => '<del>';
+  rules['s_close'] = (): string => '</del>';
+  for (const type of ['th_open', 'td_open']) {
+    rules[type] = (tokens, index, options, _env, self): string => {
+      const token = tokens[index];
+      const style = token?.attrGet('style');
+      const alignment = typeof style === 'string' ? TEXT_ALIGN_RE.exec(style)?.groups?.['alignment'] : undefined;
+      return token && alignment ? `<${token.tag} align="${alignment}">` : self.renderToken(tokens, index, options);
+    };
+  }
+}
 function addRenderRules(md: MarkdownIt): void {
   const { rules } = md.renderer;
   for (const name of HIDDEN_LEAVES) {
@@ -273,6 +347,11 @@ function addRenderRules(md: MarkdownIt): void {
   rules[ObsidianNode.TagName] = renderContent;
   rules[ObsidianNode.Task + OPEN_SUFFIX] = renderTask;
   rules[ObsidianNode.Task + CLOSE_SUFFIX] = renderNothing;
+  // CommonMark puts a line break between the tags of an empty quote, which markdown-it renders on one line.
+  rules['blockquote_open'] = (tokens, index, options, _env, self): string => {
+    const html = self.renderToken(tokens, index, options);
+    return tokens[index + 1]?.type === 'blockquote_close' ? `${html}\n` : html;
+  };
 }
 
 function alignCell(source: string, content: string, start: number, end: number): null | number[] {
@@ -970,7 +1049,7 @@ function pairHighlights(state: StateInline): void {
  * Before the inline rules run: finds where each inline token's content lies in the document, and takes the task marker
  * off the first paragraph of a list item.
  */
-function prepareInlineContent(state: StateCore): void {
+function prepareInlineContent(state: StateCore, hasTasks: boolean): void {
   const lines = sourceLines(state.src);
   // How far the cells of each table row have been found.
   const cellCursors = new Map<number, number>();
@@ -987,7 +1066,7 @@ function prepareInlineContent(state: StateCore): void {
     const isCell = opener?.type === 'th_open' || opener?.type === 'td_open';
     sourceOffsets.set(token, isCell ? locateCell(state.src, token.content, lines[rowLine], cellCursors, rowLine) : locateContent(state.src, token, opener, lines));
     const listItem = state.tokens[index - DELIMITER_SIZE];
-    if (opener?.type === 'paragraph_open' && listItem?.type === 'list_item_open') {
+    if (hasTasks && opener?.type === 'paragraph_open' && listItem?.type === 'list_item_open') {
       takeTaskMarker(token, listItem);
     }
   }

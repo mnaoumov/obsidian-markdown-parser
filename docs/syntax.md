@@ -7,6 +7,7 @@ The semantic tree Phase 2 reads is the `@lezer/markdown` tree with the Obsidian 
 - `src/syntax/lezer.ts`: the `@lezer/markdown` extensions. `obsidianSyntax` is the Obsidian syntax, and `obsidianMarkdown` adds the GFM pieces Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task markers replace GFM's. `parse()` in `src/index.ts` uses them.
 - `src/syntax/micromark.ts` and `src/syntax/mdast.ts`: the micromark syntax extension and its `mdast-util-from-markdown` extension, described [below](#the-micromark-and-mdast-adapter). `parseMdast()` in `src/index.ts` uses them.
 - `src/syntax/markdown-it.ts`: the markdown-it plugin, described [below](#the-markdown-it-plugin). `parseMarkdownIt()` in `src/index.ts` uses it.
+- `src/syntax/options.ts`: the options every adapter takes, a preset with any of its flags overridden, one flag per construct. How each adapter does on the CommonMark and GFM spec suites with them is in [spec-suites.md](spec-suites.md).
 
 ## The rules
 

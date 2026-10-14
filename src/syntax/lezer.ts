@@ -27,6 +27,13 @@ import {
   Table
 } from '@lezer/markdown';
 
+import type {
+  ObsidianSyntaxFlags,
+  ObsidianSyntaxOptions
+} from './options.ts';
+
+import { commonMarkFixes } from './lezer-commonmark.ts';
+import { resolveObsidianSyntax } from './options.ts';
 import {
   canOpenHighlightBefore,
   canOpenTagAfter,
@@ -55,6 +62,10 @@ declare module '@lezer/markdown' {
      */
     readonly depth: number;
   }
+}
+
+interface ParserSpec {
+  readonly name: string;
 }
 
 const CODE_INDENT = 4;
@@ -227,16 +238,84 @@ export const obsidianSyntax: MarkdownConfig = {
   ]
 };
 
+// The flag that turns on each of the syntax's parsers.
+const PARSER_FLAGS: Readonly<Record<string, keyof ObsidianSyntaxFlags>> = {
+  FootnoteLinkReference: 'footnote',
+  [ObsidianNode.BlockId]: 'blockId',
+  [ObsidianNode.Callout]: 'callout',
+  [ObsidianNode.CalloutTitle]: 'callout',
+  [ObsidianNode.Comment]: 'comment',
+  [ObsidianNode.CommentBlock]: 'comment',
+  [ObsidianNode.FootnoteDefinition]: 'footnote',
+  [ObsidianNode.FootnoteReference]: 'footnote',
+  [ObsidianNode.FrontMatter]: 'frontMatter',
+  [ObsidianNode.Highlight]: 'highlight',
+  [ObsidianNode.InlineFootnote]: 'inlineFootnote',
+  [ObsidianNode.InlineMath]: 'math',
+  [ObsidianNode.InternalLink]: 'internalLink',
+  [ObsidianNode.MathBlock]: 'math',
+  [ObsidianNode.Tag]: 'tag',
+  TaskList: 'task'
+};
+
 /**
  * The Obsidian syntax with the GFM extensions Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task
  * markers replace GFM's.
  */
-export const obsidianMarkdown: readonly MarkdownConfig[] = [Table, Strikethrough, Autolink, obsidianSyntax];
+export const obsidianMarkdown: readonly MarkdownConfig[] = [commonMarkFixes, Table, Strikethrough, Autolink, obsidianSyntax];
 
 /**
  * The `@lezer/markdown` parser configured with {@link obsidianMarkdown}.
  */
 export const obsidianParser: MarkdownParser = parser.configure([...obsidianMarkdown]);
+
+/**
+ * The options of {@link createObsidianMarkdown}: the syntax to read.
+ */
+export type CreateObsidianMarkdownOptions = ObsidianSyntaxOptions;
+
+/**
+ * The options of {@link createObsidianParser}: the syntax to read.
+ */
+export type CreateObsidianParserOptions = ObsidianSyntaxOptions;
+
+/**
+ * The `@lezer/markdown` extensions for the syntax the options turn on. Every node of the Obsidian syntax is defined
+ * whatever the flags, so trees from any configuration share one node set.
+ *
+ * @param options - The syntax to read.
+ * @returns The extensions.
+ */
+export function createObsidianMarkdown(options: CreateObsidianMarkdownOptions = {}): MarkdownConfig[] {
+  const flags = resolveObsidianSyntax(options);
+  const configs: MarkdownConfig[] = [commonMarkFixes];
+  if (flags.table) {
+    configs.push(Table);
+  }
+  if (flags.strikethrough) {
+    configs.push(Strikethrough);
+  }
+  if (flags.autolinkLiteral) {
+    configs.push(Autolink);
+  }
+  configs.push({
+    defineNodes: obsidianSyntax.defineNodes ?? [],
+    parseBlock: (obsidianSyntax.parseBlock ?? []).filter((spec) => isParserOn(spec, flags)),
+    parseInline: (obsidianSyntax.parseInline ?? []).filter((spec) => isParserOn(spec, flags))
+  });
+  return configs;
+}
+
+/**
+ * The `@lezer/markdown` parser for the syntax the options turn on. Configure it once and reuse it: incremental parsing
+ * needs the same parser for every edit.
+ *
+ * @param options - The syntax to read.
+ * @returns The parser.
+ */
+export function createObsidianParser(options: CreateObsidianParserOptions = {}): MarkdownParser {
+  return parser.configure(createObsidianMarkdown(options));
+}
 
 /*
  * An indented line continues a footnote definition, and so does a blank line. The editor stops styling a definition's
@@ -358,6 +437,12 @@ function isLeftOpen(text: string, spec: DelimitedBlockSpec): boolean {
     }
   }
   return isOpen;
+}
+
+// Whether a block or inline parser of the syntax is on: one that no flag governs always is.
+function isParserOn(spec: ParserSpec, flags: ObsidianSyntaxFlags): boolean {
+  const flag = PARSER_FLAGS[spec.name];
+  return flag === undefined || flags[flag];
 }
 
 function isSpaceOrTab(ch: number | undefined): boolean {
