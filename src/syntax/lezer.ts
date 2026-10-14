@@ -33,7 +33,11 @@ import type {
 } from './options.ts';
 
 import { commonMarkFixes } from './lezer-commonmark.ts';
-import { resolveObsidianSyntax } from './options.ts';
+import { createLezerQuirks } from './lezer-quirks.ts';
+import {
+  resolveObsidianQuirks,
+  resolveObsidianSyntax
+} from './options.ts';
 import {
   canOpenHighlightBefore,
   canOpenTagAfter,
@@ -280,8 +284,8 @@ export type CreateObsidianMarkdownOptions = ObsidianSyntaxOptions;
 export type CreateObsidianParserOptions = ObsidianSyntaxOptions;
 
 /**
- * The `@lezer/markdown` extensions for the syntax the options turn on. Every node of the Obsidian syntax is defined
- * whatever the flags, so trees from any configuration share one node set.
+ * The `@lezer/markdown` extensions for the syntax the options turn on, and for the quirks they ask for. Every node of
+ * the Obsidian syntax is defined whatever the flags, so trees from any configuration share one node set.
  *
  * @param options - The syntax to read.
  * @returns The extensions.
@@ -302,7 +306,7 @@ export function createObsidianMarkdown(options: CreateObsidianMarkdownOptions = 
     defineNodes: obsidianSyntax.defineNodes ?? [],
     parseBlock: (obsidianSyntax.parseBlock ?? []).filter((spec) => isParserOn(spec, flags)),
     parseInline: (obsidianSyntax.parseInline ?? []).filter((spec) => isParserOn(spec, flags))
-  });
+  }, ...createLezerQuirks(resolveObsidianQuirks(options)));
   return configs;
 }
 

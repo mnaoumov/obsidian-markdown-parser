@@ -9,10 +9,44 @@
  * preset, with every flag off, passes the CommonMark spec suite, and `gfm` passes the GFM spec's extension examples as
  * well.
  *
- * Behaviour that changes how valid CommonMark parses (an Obsidian quirk, such as a list item child that is indented
- * less than CommonMark requires) is not here yet: each one is to be measured against Obsidian first, and added as a flag
- * that is off in every preset.
+ * A quirk is different: it changes how valid CommonMark parses. Each quirk Obsidian has, measured against its reading
+ * view and its metadata worker (`docs/spec-suites.md`), is a flag of {@link ObsidianQuirkFlags} named after the
+ * behaviour. Every preset leaves every quirk at its CommonMark behaviour, so a quirk only applies when it is asked for.
  */
+
+/**
+ * The quirks: where Obsidian reads valid CommonMark differently. Each flag takes two values, the CommonMark behaviour
+ * ({@link COMMONMARK_QUIRKS}), which every preset keeps, and Obsidian's ({@link OBSIDIAN_QUIRKS}).
+ */
+export interface ObsidianQuirkFlags {
+  /**
+   * Whether an empty list item can interrupt a paragraph. CommonMark: it cannot, so `foo\n*` is one paragraph.
+   * Obsidian: `*`, `+`, `-` and `1.` with nothing after them end the paragraph and open a list, wherever the line is not
+   * a setext heading's underline.
+   */
+  readonly emptyListItem: 'cannot-interrupt' | 'interrupts-paragraph';
+
+  /**
+   * When a list is loose, its items' paragraphs rendered in `<p>`. CommonMark: when a blank line separates two of its
+   * items, or two blocks directly inside one item. Obsidian: when a blank line anywhere inside it is followed by more of
+   * it, in a nested list or in fenced code as well.
+   */
+  readonly looseList: 'between-blocks' | 'blank-line-anywhere';
+
+  /**
+   * How a setext heading is written. CommonMark: its text may run over several lines, and its underline may be indented
+   * up to three spaces and followed by whitespace. Obsidian: its text is one line, and its underline starts its line
+   * and has nothing after it. A paragraph of more lines keeps a `===` line as text, and a `---` line after it is a
+   * thematic break.
+   */
+  readonly setextHeading: 'multi-line' | 'single-line';
+
+  /**
+   * What a line ending inside a paragraph is. CommonMark: a soft line break, rendered as a line ending. Obsidian, with
+   * its default `strictLineBreaks: false`: a hard line break.
+   */
+  readonly softLineBreak: 'hard-break' | 'line-ending';
+}
 
 /**
  * The constructs a parser can read, each turned on or off.
@@ -91,9 +125,9 @@ export interface ObsidianSyntaxFlags {
 }
 
 /**
- * The syntax a parser reads: a preset, `obsidian` by default, with any of its flags overridden.
+ * The syntax a parser reads: a preset, `obsidian` by default, with any of its flags overridden, and any of the quirks.
  */
-export interface ObsidianSyntaxOptions extends Partial<ObsidianSyntaxFlags> {
+export interface ObsidianSyntaxOptions extends Partial<ObsidianQuirkFlags>, Partial<ObsidianSyntaxFlags> {
   /**
    * The preset the flags start from.
    */
@@ -105,6 +139,11 @@ export interface ObsidianSyntaxOptions extends Partial<ObsidianSyntaxFlags> {
  * Obsidian reads.
  */
 export type ObsidianSyntaxPreset = 'commonmark' | 'gfm' | 'obsidian';
+
+/**
+ * The options of {@link resolveObsidianQuirks}.
+ */
+export type ResolveObsidianQuirksOptions = ObsidianSyntaxOptions;
 
 /**
  * The options of {@link resolveObsidianSyntax}.
@@ -166,6 +205,46 @@ export const OBSIDIAN_SYNTAX_PRESETS: Readonly<Record<ObsidianSyntaxPreset, Obsi
  * The names of the flags, in a fixed order.
  */
 export const OBSIDIAN_SYNTAX_FLAGS = Object.keys(COMMONMARK) as readonly (keyof ObsidianSyntaxFlags)[];
+
+/**
+ * The CommonMark behaviour of every quirk, which every preset keeps.
+ */
+export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
+  emptyListItem: 'cannot-interrupt',
+  looseList: 'between-blocks',
+  setextHeading: 'multi-line',
+  softLineBreak: 'line-ending'
+};
+
+/**
+ * Obsidian's behaviour for every quirk, as its reading view and its metadata worker show it.
+ */
+export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
+  emptyListItem: 'interrupts-paragraph',
+  looseList: 'blank-line-anywhere',
+  setextHeading: 'single-line',
+  softLineBreak: 'hard-break'
+};
+
+/**
+ * The names of the quirks, in a fixed order.
+ */
+export const OBSIDIAN_QUIRK_FLAGS = Object.keys(COMMONMARK_QUIRKS) as readonly (keyof ObsidianQuirkFlags)[];
+
+/**
+ * Resolves options to the quirks they ask for: the CommonMark behaviour, with the overrides applied.
+ *
+ * @param options - The options.
+ * @returns The quirks.
+ */
+export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}): ObsidianQuirkFlags {
+  return {
+    emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
+    looseList: options.looseList ?? COMMONMARK_QUIRKS.looseList,
+    setextHeading: options.setextHeading ?? COMMONMARK_QUIRKS.setextHeading,
+    softLineBreak: options.softLineBreak ?? COMMONMARK_QUIRKS.softLineBreak
+  };
+}
 
 /**
  * Resolves options to the flags they turn on: the preset's flags, with the overrides applied.
