@@ -28,11 +28,17 @@ import { sanitizeUri } from 'micromark-util-sanitize-uri';
 import type { ObsidianQuirkFlags } from './options.ts';
 
 import { hasBlankLineInside } from './loose-list.ts';
+import { matchObsidianCharacterReference } from './quirk-rules.ts';
 
 /**
  * Options of {@link renderLezerHtml}.
  */
 export interface RenderLezerHtmlOptions {
+  /**
+   * How a character reference is decoded (see `ObsidianQuirkFlags`): Obsidian's references need no `;`.
+   */
+  readonly characterReference?: ObsidianQuirkFlags['characterReference'] | undefined;
+
   /**
    * When a list is loose (see `ObsidianQuirkFlags`). The tree does not say, so the renderer applies the quirk.
    */
@@ -70,6 +76,7 @@ interface Range {
 }
 
 interface RenderContext {
+  readonly characterReference: ObsidianQuirkFlags['characterReference'];
   readonly definitions: Map<string, Definition>;
   readonly hasTagFilter: boolean;
   readonly lineStarts: readonly number[];
@@ -132,12 +139,13 @@ const DELIMITED_TAGS: Readonly<Record<string, string>> = {
  * @returns The HTML.
  */
 export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHtmlOptions = {}): string {
-  const { looseList = 'between-blocks', tagFilter = false } = options;
+  const { characterReference = 'commonmark', looseList = 'between-blocks', tagFilter = false } = options;
   const lineStarts = [0];
   for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
     lineStarts.push(index + 1);
   }
   const cx: RenderContext = {
+    characterReference,
     definitions: new Map(),
     hasTagFilter: tagFilter,
     lineStarts,
@@ -581,7 +589,9 @@ function renderInlineNode(cx: RenderContext, node: SyntaxNode, mode: InlineMode)
       return renderDelimited(cx, node, mode);
     }
     case 'Entity': {
-      return encode(decodeString(cx.text.slice(node.from, node.to)));
+      const source = cx.text.slice(node.from, node.to);
+      const reference = cx.characterReference === 'obsidian' ? matchObsidianCharacterReference(source) : null;
+      return encode(reference?.value ?? decodeString(source));
     }
     case 'Escape': {
       return encode(cx.text.slice(node.from + 1, node.to));

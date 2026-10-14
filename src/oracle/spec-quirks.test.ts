@@ -59,6 +59,7 @@ const BETWEEN_TAGS_RE = />\s+</gu;
  *   552: links; 625: HTML comments.
  */
 const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>> = {
+  characterReference: [],
   emptyListItem: [],
   htmlBlock: [148, 171],
   htmlComment: [],
@@ -100,7 +101,7 @@ function render(adapter: Adapter, quirk: keyof ObsidianQuirkFlags): (markdown: s
   switch (adapter) {
     case 'lezer': {
       const parser = createObsidianParser(options);
-      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { looseList: resolveObsidianQuirks(options).looseList });
+      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), resolveObsidianQuirks(options));
     }
     case 'markdown-it': {
       const md = createObsidianMarkdownIt(options);

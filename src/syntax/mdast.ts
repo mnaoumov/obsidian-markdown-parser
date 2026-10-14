@@ -38,6 +38,7 @@ import type { ObsidianSyntaxOptions } from './options.ts';
 import type { ObsidianNodeName } from './spec.ts';
 
 import { hasBlankLineInside } from './loose-list.ts';
+import { characterReferenceValue } from './micromark-quirks.ts';
 import {
   createMicromarkObsidianMarkdown,
   micromarkObsidianMarkdown,
@@ -447,12 +448,29 @@ export type ParseMdastOptions = ObsidianSyntaxOptions;
  */
 export function parseMdast(markdown: string, options?: ParseMdastOptions): Root {
   const extensions = options === undefined ? [...micromarkObsidianMarkdown] : createMicromarkObsidianMarkdown(options);
-  const root = fromMarkdown(markdown, { extensions, mdastExtensions: [...mdastObsidianMarkdown] });
+  const root = fromMarkdown(markdown, { extensions, mdastExtensions: [...mdastObsidianMarkdown, mdastQuirks] });
   if (options !== undefined && resolveObsidianQuirks(options).looseList === 'blank-line-anywhere') {
     spreadListItems(root, markdown, 0);
   }
   return root;
 }
+
+/*
+ * A character reference the `characterReference` quirk read stands for the text its token carries. Any other is decoded
+ * as `mdast-util-from-markdown` decodes it.
+ */
+const mdastQuirks: FromMarkdownExtension = {
+  exit: {
+    characterReferenceValue(this: CompileContext, token: Token): undefined {
+      const type = this.data.characterReferenceType;
+      this.data.characterReferenceType = undefined;
+      const tail = this.stack.at(-1);
+      if (tail && 'value' in tail) {
+        tail.value += characterReferenceValue(this.sliceSerialize(token), type, token);
+      }
+    }
+  }
+};
 
 function enterNode(create: () => Nodes): Handle {
   return function enter(this: CompileContext, token: Token): undefined {

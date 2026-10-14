@@ -186,6 +186,7 @@ const SOFT_LINE_BREAK_CHANGES = [
 ];
 const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>>>> = {
   'lezer': {
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
@@ -194,6 +195,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'markdown-it': {
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
@@ -202,6 +204,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'micromark': {
+    characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
@@ -231,7 +234,7 @@ function renderer(adapter: Adapter, options: ObsidianSyntaxOptions, hasTagFilter
   const renderers: Record<Adapter, () => (markdown: string) => string> = {
     'lezer': () => {
       const parser = createObsidianParser(options);
-      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { looseList: resolveObsidianQuirks(options).looseList, tagFilter: hasTagFilter });
+      return (markdown) => renderLezerHtml(markdown, parseWithLinkReferences(parser, markdown), { ...resolveObsidianQuirks(options), tagFilter: hasTagFilter });
     },
     'markdown-it': () => {
       const md = createObsidianMarkdownIt(options);

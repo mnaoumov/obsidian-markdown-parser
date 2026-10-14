@@ -184,9 +184,9 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'A named character reference needs no `;` (`&nbsp`, `&copy`), and a numeric one past the last code point is U+FFFD.',
     commonmark: [28, 29],
+    flag: 'characterReference',
     kind: 'quirk',
-    name: 'character references',
-    notAFlag: 'Not done yet: each adapter can read references with an inline parser of its own.'
+    name: 'character references'
   },
   {
     behaviour: 'A paragraph keeps the whitespace its first line starts with (222, 224, 252, 255, 275, 276), also after a list marker (278, 280).',

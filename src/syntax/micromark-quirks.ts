@@ -28,9 +28,11 @@ import type {
   State,
   Token,
   TokenizeContext,
-  Tokenizer
+  Tokenizer,
+  TokenType
 } from 'micromark-util-types';
 
+import { decodeNamedCharacterReference } from 'decode-named-character-reference';
 import { micromark } from 'micromark';
 import {
   htmlFlow,
@@ -39,14 +41,20 @@ import {
   list,
   setextUnderline
 } from 'micromark-core-commonmark';
+import { decodeNumericCharacterReference } from 'micromark-util-decode-numeric-character-reference';
+import { encode } from 'micromark-util-encode';
 import { codes } from 'micromark-util-symbol';
 
 import type { ObsidianQuirkFlags } from './options.ts';
-import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
+import type {
+  ObsidianCharacterReference,
+  ObsidianHtmlBlockKind
+} from './quirk-rules.ts';
 
 import {
   COMMENT_OPEN,
   isObsidianHtmlComment,
+  matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
@@ -56,6 +64,11 @@ declare module 'micromark-util-types' {
      * On a list: whether the `looseList` quirk made it loose.
      */
     _obsidianLoose?: boolean;
+
+    /**
+     * On a character reference's value: the text it stands for, when the `characterReference` quirk read it.
+     */
+    _obsidianValue?: string | undefined;
   }
 }
 
@@ -94,6 +107,8 @@ const LINE_BREAK_RE = /\r\n|\r|\n/u;
 const BLANK_LINE_RE = /^[\t ]*(?:\r\n|\r|\n)?$/u;
 const DEFINITION_START_RE = /^ {0,3}\[/u;
 const DIGIT_COUNT = 10;
+const DECIMAL = 10;
+const HEXADECIMAL = 16;
 const DIGIT_CODES = Array.from({ length: DIGIT_COUNT }, (_, digit) => codeOf('0') + digit);
 const BULLET_CODES: ReadonlySet<Code> = new Set([Char.Asterisk, Char.Dash, Char.Plus]);
 const LIST_START_CODES = [Char.Asterisk, Char.Plus, Char.Dash, ...DIGIT_CODES];
@@ -107,6 +122,8 @@ const softLineEndings = new WeakSet<Token>();
 // The comment is decided at its first `-->` after the opener, or at the end of the content.
 const COMMENT_MIN_LENGTH = COMMENT_OPEN.length + 1;
 const COMMENT_CLOSE = '-->';
+// What a character reference holds after its `&`, read ahead until anything else.
+const CHARACTER_REFERENCE_CHAR_RE = /^[#;\dA-Za-z]$/u;
 
 const bareUnderline: Construct = { partial: true, tokenize: tokenizeBareUnderline };
 const emptyNextLine: Construct = { partial: true, tokenize: tokenizeEmptyNextLine };
@@ -170,6 +187,9 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
     extension.flow = { ...extension.flow, [codes.lessThan]: { ...htmlFlow, name: 'obsidianHtmlFlow', tokenize: withContext(tokenizeObsidianHtmlFlow) } };
     disabled.push('htmlFlow');
   }
+  if (quirks.characterReference === 'obsidian') {
+    text[codes.ampersand] = [{ name: 'obsidianCharacterReference', tokenize: tokenizeObsidianCharacterReference }];
+  }
   if (quirks.htmlComment === 'obsidian') {
     text[codes.lessThan] = [{ ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
     disabled.push('htmlText');
@@ -192,8 +212,36 @@ export const micromarkQuirksHtml: HtmlExtension = {
   enter: {
     listOrdered: listEnterHandler('ol'),
     listUnordered: listEnterHandler('ul')
+  },
+  exit: {
+    characterReferenceValue(this: CompileContext, token: Token): undefined {
+      const type = this.getData('characterReferenceType');
+      this.setData('characterReferenceType');
+      const value = characterReferenceValue(this.sliceSerialize(token), type, token);
+      this.raw(encode(value));
+    }
   }
 };
+
+/**
+ * The text a character reference's value token stands for: what the `characterReference` quirk read, or what micromark
+ * decodes, as its HTML compiler and `mdast-util-from-markdown` do.
+ *
+ * @param source - The value's source.
+ * @param markerType - The type of the marker before the value, for a numeric reference.
+ * @param token - The value token.
+ * @returns The text.
+ */
+export function characterReferenceValue(source: string, markerType: string | undefined, token: Token): string {
+  if (token._obsidianValue !== undefined) {
+    return token._obsidianValue;
+  }
+  if (markerType) {
+    return decodeNumericCharacterReference(source, markerType === 'characterReferenceMarkerNumeric' ? DECIMAL : HEXADECIMAL);
+  }
+  const named = decodeNamedCharacterReference(source);
+  return named === false ? source : named;
+}
 
 function codeOf(ch: string): number {
   return ch.codePointAt(0) ?? -1;
@@ -522,6 +570,78 @@ function tokenizeNextLineInContainers(context: TokenizeContext, effects: Effects
 
   function after(code: Code): State | undefined {
     return code === null || context.parser.lazy[context.now().line] === true ? nok(code) : ok(code);
+  }
+}
+
+/*
+ * A character reference as Obsidian reads it, with the tokens of micromark's own. Its value token carries the text it
+ * stands for, which `micromarkQuirksHtml` and `parseMdast` read.
+ */
+function tokenizeObsidianCharacterReference(effects: Effects, ok: State, nok: State): State {
+  let reference: null | ObsidianCharacterReference = null;
+  let source = '';
+  let index = 0;
+  const ahead = scanAhead((text, next) => {
+    if (next !== null && (text === '' || (CHARACTER_REFERENCE_CHAR_RE.test(textOf(next)) && !text.endsWith(';')))) {
+      return null;
+    }
+    reference = matchObsidianCharacterReference(text);
+    source = text.slice(0, reference?.length ?? 0);
+    return reference !== null;
+  });
+  return start;
+
+  function start(code: Code): State | undefined {
+    return effects.check(ahead, open, nok)(code);
+  }
+
+  function open(code: Code): State | undefined {
+    effects.enter('characterReference');
+    marker(code, 'characterReferenceMarker');
+    return source.charAt(index) === '#' ? numeric : value;
+  }
+
+  function numeric(code: Code): State | undefined {
+    marker(code, 'characterReferenceMarkerNumeric');
+    return source.charAt(index).toLowerCase() === 'x' ? hexadecimal : value;
+  }
+
+  function hexadecimal(code: Code): State | undefined {
+    marker(code, 'characterReferenceMarkerHexadecimal');
+    return value;
+  }
+
+  function value(code: Code): State | undefined {
+    const token = effects.enter('characterReferenceValue');
+    token._obsidianValue = reference?.value;
+    return inValue(code);
+  }
+
+  function inValue(code: Code): State | undefined {
+    const isSemicolon = source.charAt(index) === ';';
+    if (!isSemicolon && index < source.length) {
+      effects.consume(code);
+      index++;
+      return inValue;
+    }
+    effects.exit('characterReferenceValue');
+    if (isSemicolon) {
+      marker(code, 'characterReferenceMarker');
+      return done;
+    }
+    return done(code);
+  }
+
+  function done(code: Code): State | undefined {
+    effects.exit('characterReference');
+    return ok(code);
+  }
+
+  function marker(code: Code, type: TokenType): void {
+    effects.enter(type);
+    effects.consume(code);
+    effects.exit(type);
+    index++;
   }
 }
 

@@ -33,6 +33,7 @@ import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
 import {
   COMMENT_OPEN,
   isObsidianHtmlComment,
+  matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
@@ -45,6 +46,7 @@ interface ParserInternals {
 const CODE_INDENT = 4;
 
 const Char = {
+  Ampersand: codeOf('&'),
   Dash: codeOf('-'),
   Equals: codeOf('='),
   LessThan: codeOf('<'),
@@ -128,6 +130,9 @@ export function createLezerQuirks(quirks: ObsidianQuirkFlags): MarkdownConfig[] 
       }],
       remove: ['HTMLBlock']
     });
+  }
+  if (quirks.characterReference === 'obsidian') {
+    configs.push({ parseInline: [{ before: 'Entity', name: 'ObsidianCharacterReference', parse: parseObsidianCharacterReference }] });
   }
   if (quirks.htmlComment === 'obsidian') {
     configs.push({ parseInline: [{ before: 'RawHTML', name: 'ObsidianHTMLComment', parse: parseObsidianHtmlComment }] });
@@ -215,6 +220,15 @@ function isThematicDashes(line: Line): boolean {
 
 function obsidianHtmlBlockKindAt(line: Line): null | ObsidianHtmlBlockKind {
   return line.next === Char.LessThan && line.indent - line.baseIndent < CODE_INDENT ? obsidianHtmlBlockKind(line.text.slice(line.pos)) : null;
+}
+
+// A character reference as Obsidian reads it is an `Entity` node.
+function parseObsidianCharacterReference(cx: InlineContext, next: number, start: number): number {
+  if (next !== Char.Ampersand) {
+    return -1;
+  }
+  const reference = matchObsidianCharacterReference(cx.slice(start, cx.end));
+  return reference ? cx.addElement(cx.elt('Entity', start, start + reference.length)) : -1;
 }
 
 // A `<!--` that opens no comment of CommonMark 0.30 is text.

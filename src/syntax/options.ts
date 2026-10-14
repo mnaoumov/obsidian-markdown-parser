@@ -20,6 +20,14 @@
  */
 export interface ObsidianQuirkFlags {
   /**
+   * Which character references inline content holds. CommonMark: a `;` ends each, a name must be one HTML defines, and
+   * a numeric reference takes up to seven decimal or six hexadecimal digits. Obsidian: a numeric reference takes any
+   * number of digits and needs no `;`, and a named one without its `;` takes the longest of HTML's legacy names it
+   * starts with (`&copy`, `&nbsp`). A numeric reference past the last code point is U+FFFD.
+   */
+  readonly characterReference: 'commonmark' | 'obsidian';
+
+  /**
    * Whether an empty list item can interrupt a paragraph. CommonMark: it cannot, so `foo\n*` is one paragraph.
    * Obsidian: `*`, `+`, `-` and `1.` with nothing after them end the paragraph and open a list, wherever the line is not
    * a setext heading's underline.
@@ -225,6 +233,7 @@ export const OBSIDIAN_SYNTAX_FLAGS = Object.keys(COMMONMARK) as readonly (keyof 
  * The CommonMark behaviour of every quirk, which every preset keeps.
  */
 export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
+  characterReference: 'commonmark',
   emptyListItem: 'cannot-interrupt',
   htmlBlock: 'commonmark',
   htmlComment: 'commonmark',
@@ -237,6 +246,7 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
  * Obsidian's behaviour for every quirk, as its reading view and its metadata worker show it.
  */
 export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
+  characterReference: 'obsidian',
   emptyListItem: 'interrupts-paragraph',
   htmlBlock: 'obsidian',
   htmlComment: 'obsidian',
@@ -258,6 +268,7 @@ export const OBSIDIAN_QUIRK_FLAGS = Object.keys(COMMONMARK_QUIRKS) as readonly (
  */
 export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}): ObsidianQuirkFlags {
   return {
+    characterReference: options.characterReference ?? COMMONMARK_QUIRKS.characterReference,
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
     htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
     htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,

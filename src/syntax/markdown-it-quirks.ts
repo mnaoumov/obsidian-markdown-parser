@@ -29,6 +29,7 @@ import { hasBlankLineInside } from './loose-list.ts';
 import {
   COMMENT_OPEN,
   isObsidianHtmlComment,
+  matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
@@ -64,12 +65,34 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   if (quirks.looseList === 'blank-line-anywhere') {
     md.core.ruler.after('block', 'obsidian_loose_lists', loosenLists);
   }
+  if (quirks.characterReference === 'obsidian') {
+    md.inline.ruler.before('entity', 'obsidian_character_reference', checkObsidianCharacterReference);
+  }
   if (quirks.htmlBlock === 'obsidian') {
     md.block.ruler.at('html_block', checkObsidianHtmlBlock, { alt: ['paragraph', 'reference', 'blockquote'] });
   }
   if (quirks.htmlComment === 'obsidian') {
     md.inline.ruler.before('html_inline', 'obsidian_html_comment', checkObsidianHtmlComment);
   }
+}
+
+// A character reference as Obsidian reads it, as markdown-it's `entity` rule gives one.
+function checkObsidianCharacterReference(state: StateInline, isSilent: boolean): boolean {
+  if (state.src.charAt(state.pos) !== '&') {
+    return false;
+  }
+  const reference = matchObsidianCharacterReference(state.src.slice(state.pos, state.posMax));
+  if (!reference) {
+    return false;
+  }
+  if (!isSilent) {
+    const token = state.push('text_special', '', 0);
+    token.content = reference.value;
+    token.markup = state.src.slice(state.pos, state.pos + reference.length);
+    token.info = 'entity';
+  }
+  state.pos += reference.length;
+  return true;
 }
 
 /*
