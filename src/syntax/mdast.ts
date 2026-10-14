@@ -456,10 +456,22 @@ export function parseMdast(markdown: string, options?: ParseMdastOptions): Root 
 }
 
 /*
- * A character reference the `characterReference` quirk read stands for the text its token carries. Any other is decoded
- * as `mdast-util-from-markdown` decodes it.
+ * An autolink the `autolink` quirk read shows the text and links to the address its target token carries. A character
+ * reference the `characterReference` quirk read stands for the text its token carries. Any other is decoded as
+ * `mdast-util-from-markdown` decodes it.
  */
 const mdastQuirks: FromMarkdownExtension = {
+  enter: {
+    obsidianAutolinkTarget(this: CompileContext, token: Token): undefined {
+      const link = this.stack.at(-1);
+      const target = token._obsidianAutolink;
+      if (!target || link?.type !== 'link') {
+        return;
+      }
+      link.url = target.url;
+      this.enter({ type: 'text', value: target.text }, token);
+    }
+  },
   exit: {
     characterReferenceValue(this: CompileContext, token: Token): undefined {
       const type = this.data.characterReferenceType;
@@ -467,6 +479,11 @@ const mdastQuirks: FromMarkdownExtension = {
       const tail = this.stack.at(-1);
       if (tail && 'value' in tail) {
         tail.value += characterReferenceValue(this.sliceSerialize(token), type, token);
+      }
+    },
+    obsidianAutolinkTarget(this: CompileContext, token: Token): undefined {
+      if (token._obsidianAutolink) {
+        this.exit(token);
       }
     }
   }

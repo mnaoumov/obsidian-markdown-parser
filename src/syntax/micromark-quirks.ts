@@ -43,23 +43,32 @@ import {
 } from 'micromark-core-commonmark';
 import { decodeNumericCharacterReference } from 'micromark-util-decode-numeric-character-reference';
 import { encode } from 'micromark-util-encode';
+import { sanitizeUri } from 'micromark-util-sanitize-uri';
 import { codes } from 'micromark-util-symbol';
 
 import type { ObsidianQuirkFlags } from './options.ts';
 import type {
+  ObsidianAutolink,
   ObsidianCharacterReference,
   ObsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
 import {
   COMMENT_OPEN,
+  decodeObsidianCharacterReferences,
   isObsidianHtmlComment,
+  matchObsidianAutolink,
   matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
 declare module 'micromark-util-types' {
   interface Token {
+    /**
+     * On an `obsidianAutolinkTarget`: what the autolink shows and where it links to, decoded.
+     */
+    _obsidianAutolink?: ObsidianLinkTarget | undefined;
+
     /**
      * On a list: whether the `looseList` quirk made it loose.
      */
@@ -70,6 +79,25 @@ declare module 'micromark-util-types' {
      */
     _obsidianValue?: string | undefined;
   }
+
+  interface TokenTypeMap {
+    obsidianAutolinkTarget: 'obsidianAutolinkTarget';
+  }
+}
+
+/**
+ * What an autolink the `autolink` quirk read shows, and where it links to, with their character references decoded.
+ */
+export interface ObsidianLinkTarget {
+  /**
+   * The text it shows.
+   */
+  readonly text: string;
+
+  /**
+   * Where it links to.
+   */
+  readonly url: string;
 }
 
 type ContextTokenizer = (context: TokenizeContext, effects: Effects, ok: State, nok: State) => State;
@@ -123,6 +151,12 @@ const softLineEndings = new WeakSet<Token>();
 const COMMENT_MIN_LENGTH = COMMENT_OPEN.length + 1;
 const COMMENT_CLOSE = '-->';
 // What a character reference holds after its `&`, read ahead until anything else.
+// The `<` and `>` around an autolink.
+const AUTOLINK_MARKERS = 2;
+const MAX_BMP_CODE_POINT = 0xFF_FF;
+const SURROGATE_PAIR = 2;
+// The schemes micromark links an autolink to unless dangerous protocols are allowed, as its HTML compiler does.
+const PROTOCOL_HREF_RE = /^(?:https?|ircs?|mailto|xmpp)$/iu;
 const CHARACTER_REFERENCE_CHAR_RE = /^[#;\dA-Za-z]$/u;
 
 const bareUnderline: Construct = { partial: true, tokenize: tokenizeBareUnderline };
@@ -190,8 +224,12 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
   if (quirks.characterReference === 'obsidian') {
     text[codes.ampersand] = [{ name: 'obsidianCharacterReference', tokenize: tokenizeObsidianCharacterReference }];
   }
+  if (quirks.autolink === 'obsidian') {
+    text[codes.lessThan] = [{ name: 'obsidianAutolink', tokenize: tokenizeObsidianAutolink }];
+    disabled.push('autolink');
+  }
   if (quirks.htmlComment === 'obsidian') {
-    text[codes.lessThan] = [{ ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
+    text[codes.lessThan] = [...text[codes.lessThan] ?? [], { ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
     disabled.push('htmlText');
   }
   if (Object.keys(text).length > 0) {
@@ -211,7 +249,17 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
 export const micromarkQuirksHtml: HtmlExtension = {
   enter: {
     listOrdered: listEnterHandler('ol'),
-    listUnordered: listEnterHandler('ul')
+    listUnordered: listEnterHandler('ul'),
+    obsidianAutolinkTarget(this: CompileContext, token: Token): undefined {
+      const target = token._obsidianAutolink;
+      if (!target) {
+        return;
+      }
+
+      this.tag(`<a href="${sanitizeUri(target.url, this.options.allowDangerousProtocol === true ? undefined : PROTOCOL_HREF_RE)}">`);
+      this.raw(encode(target.text));
+      this.tag('</a>');
+    }
   },
   exit: {
     characterReferenceValue(this: CompileContext, token: Token): undefined {
@@ -570,6 +618,55 @@ function tokenizeNextLineInContainers(context: TokenizeContext, effects: Effects
 
   function after(code: Code): State | undefined {
     return code === null || context.parser.lazy[context.now().line] === true ? nok(code) : ok(code);
+  }
+}
+
+/*
+ * An autolink as Obsidian reads it: its markers as micromark's own, and an `obsidianAutolinkTarget` between them that
+ * carries what it shows and where it links to, which `micromarkQuirksHtml` and `parseMdast` read. A CommonMark
+ * autolink that is no autolink in Obsidian is left to raw HTML, which reads it as text.
+ */
+function tokenizeObsidianAutolink(effects: Effects, ok: State, nok: State): State {
+  let autolink: null | ObsidianAutolink = null;
+  let left = 0;
+  const ahead = scanAhead((text, next) => {
+    if (next !== null && !isLineEnding(next) && !SPACE_OR_TAB_CODES.has(next) && !text.endsWith('>')) {
+      return null;
+    }
+    autolink = matchObsidianAutolink(text);
+    return autolink !== null;
+  });
+  return start;
+
+  function start(code: Code): State | undefined {
+    return effects.check(ahead, open, nok)(code);
+  }
+
+  function open(code: Code): State | undefined {
+    effects.enter('autolink');
+    effects.enter('autolinkMarker');
+    effects.consume(code);
+    effects.exit('autolinkMarker');
+    const target = effects.enter('obsidianAutolinkTarget');
+    if (autolink) {
+      target._obsidianAutolink = { text: decodeObsidianCharacterReferences(autolink.text), url: decodeObsidianCharacterReferences(autolink.url, true) };
+      left = autolink.length - AUTOLINK_MARKERS;
+    }
+    return inside;
+  }
+
+  function inside(code: Code): State | undefined {
+    if (left > 0) {
+      effects.consume(code);
+      left -= code !== null && code > MAX_BMP_CODE_POINT ? SURROGATE_PAIR : 1;
+      return inside;
+    }
+    effects.exit('obsidianAutolinkTarget');
+    effects.enter('autolinkMarker');
+    effects.consume(code);
+    effects.exit('autolinkMarker');
+    effects.exit('autolink');
+    return ok;
   }
 }
 

@@ -28,7 +28,9 @@ import type { ObsidianQuirkFlags } from './options.ts';
 import { hasBlankLineInside } from './loose-list.ts';
 import {
   COMMENT_OPEN,
+  decodeObsidianCharacterReferences,
   isObsidianHtmlComment,
+  matchObsidianAutolink,
   matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
@@ -65,6 +67,9 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   if (quirks.looseList === 'blank-line-anywhere') {
     md.core.ruler.after('block', 'obsidian_loose_lists', loosenLists);
   }
+  if (quirks.autolink === 'obsidian') {
+    md.inline.ruler.at('autolink', checkObsidianAutolink);
+  }
   if (quirks.characterReference === 'obsidian') {
     md.inline.ruler.before('entity', 'obsidian_character_reference', checkObsidianCharacterReference);
   }
@@ -74,6 +79,34 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   if (quirks.htmlComment === 'obsidian') {
     md.inline.ruler.before('html_inline', 'obsidian_html_comment', checkObsidianHtmlComment);
   }
+}
+
+// An autolink as Obsidian reads it, as markdown-it's `autolink` rule gives one.
+function checkObsidianAutolink(state: StateInline, isSilent: boolean): boolean {
+  if (state.src.charAt(state.pos) !== '<') {
+    return false;
+  }
+  const autolink = matchObsidianAutolink(state.src.slice(state.pos, state.posMax));
+  if (!autolink) {
+    return false;
+  }
+  const url = state.md.normalizeLink(decodeObsidianCharacterReferences(autolink.url, true));
+  if (!state.md.validateLink(url)) {
+    return false;
+  }
+  if (!isSilent) {
+    const open = state.push('link_open', 'a', 1);
+    open.attrSet('href', url);
+    open.markup = 'autolink';
+    open.info = 'auto';
+    const text = state.push('text', '', 0);
+    text.content = decodeObsidianCharacterReferences(autolink.text);
+    const close = state.push('link_close', 'a', -1);
+    close.markup = 'autolink';
+    close.info = 'auto';
+  }
+  state.pos += autolink.length;
+  return true;
 }
 
 // A character reference as Obsidian reads it, as markdown-it's `entity` rule gives one.

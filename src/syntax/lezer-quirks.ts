@@ -30,9 +30,11 @@ import { parser } from '@lezer/markdown';
 import type { ObsidianQuirkFlags } from './options.ts';
 import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
 
+import { isCommonMarkAutolink } from './lezer-commonmark.ts';
 import {
   COMMENT_OPEN,
   isObsidianHtmlComment,
+  matchObsidianAutolink,
   matchObsidianCharacterReference,
   obsidianHtmlBlockKind
 } from './quirk-rules.ts';
@@ -131,6 +133,9 @@ export function createLezerQuirks(quirks: ObsidianQuirkFlags): MarkdownConfig[] 
       remove: ['HTMLBlock']
     });
   }
+  if (quirks.autolink === 'obsidian') {
+    configs.push({ parseInline: [{ before: 'RawHTML', name: 'ObsidianAutolink', parse: parseObsidianAutolink }] });
+  }
   if (quirks.characterReference === 'obsidian') {
     configs.push({ parseInline: [{ before: 'Entity', name: 'ObsidianCharacterReference', parse: parseObsidianCharacterReference }] });
   }
@@ -220,6 +225,27 @@ function isThematicDashes(line: Line): boolean {
 
 function obsidianHtmlBlockKindAt(line: Line): null | ObsidianHtmlBlockKind {
   return line.next === Char.LessThan && line.indent - line.baseIndent < CODE_INDENT ? obsidianHtmlBlockKind(line.text.slice(line.pos)) : null;
+}
+
+/*
+ * An autolink as Obsidian reads it is an `Autolink` node, as `@lezer/markdown` gives one. A CommonMark autolink that is
+ * no autolink in Obsidian is text, since it is no raw HTML either.
+ */
+function parseObsidianAutolink(cx: InlineContext, next: number, start: number): number {
+  if (next !== Char.LessThan) {
+    return -1;
+  }
+  const text = cx.slice(start, cx.end);
+  const autolink = matchObsidianAutolink(text);
+  if (!autolink) {
+    return isCommonMarkAutolink(text) ? start + 1 : -1;
+  }
+  const end = start + autolink.length;
+  return cx.addElement(cx.elt('Autolink', start, end, [
+    cx.elt('LinkMark', start, start + 1),
+    cx.elt('URL', start + 1, end - 1),
+    cx.elt('LinkMark', end - 1, end)
+  ]));
 }
 
 // A character reference as Obsidian reads it is an `Entity` node.

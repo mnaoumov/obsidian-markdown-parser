@@ -135,6 +135,16 @@ export function collectLinkReferenceLabels(tree: Tree, text: string): Set<string
 }
 
 /**
+ * Whether text opens with an autolink as CommonMark reads it.
+ *
+ * @param text - The text, from its `<`.
+ * @returns Whether it does.
+ */
+export function isCommonMarkAutolink(text: string): boolean {
+  return URI_AUTOLINK_RE.test(text) || EMAIL_AUTOLINK_RE.test(text);
+}
+
+/**
  * Makes link references links only when their label is defined: a `[text]`, `[text][]` or `[text][label]` whose label
  * is not among `labels` stays text, with its brackets.
  *
@@ -275,7 +285,7 @@ function parseRawHtml(cx: InlineContext, next: number, start: number): number {
     return -1;
   }
   const text = cx.slice(start, cx.end);
-  if (URI_AUTOLINK_RE.test(text) || EMAIL_AUTOLINK_RE.test(text)) {
+  if (isCommonMarkAutolink(text)) {
     return -1;
   }
   const comment = COMMENT_RE.exec(text);

@@ -47,6 +47,7 @@ const TAG_RE = /<(?<name>[a-z][\da-z]*)(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")
 const TAG_PARTS_RE = /<(?<name>[a-z][\da-z]*)(?<attributes>(?:\s+[^\s/=>]+(?:="[^"]*")?)*)\s*\/?>/u;
 const ATTRIBUTE_RE = /[^\s/=>]+(?:="[^"]*")?/gu;
 const BETWEEN_TAGS_RE = />\s+</gu;
+const TARGET_ATTRIBUTE_RE = /^(?<name>href|src)="(?<value>[^"]*)"$/u;
 
 /*
  * The examples of each flag on which the flag alone does not give Obsidian's reading view, because another of its
@@ -59,6 +60,7 @@ const BETWEEN_TAGS_RE = />\s+</gu;
  *   552: links; 625: HTML comments.
  */
 const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>> = {
+  autolink: [],
   characterReference: [],
   emptyListItem: [],
   htmlBlock: [148, 171],
@@ -72,6 +74,19 @@ function compareKeys(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
+function decodeTarget(attribute: string): string {
+  const groups = TARGET_ATTRIBUTE_RE.exec(attribute)?.groups;
+  if (!groups) {
+    return attribute;
+  }
+  try {
+    return `{groups['name'] ?? ''}="${decodeURI(groups['value'] ?? '')}"`;
+  } catch {
+    // A target that is not valid percent-encoding is compared as it is, as the oracle compares it.
+    return attribute;
+  }
+}
+
 function exampleRead(example: number): SpecOracleRead {
   const read = ORACLE.examples.find((candidate) => candidate.suite === 'commonmark' && candidate.example === example);
   if (!read) {
@@ -81,6 +96,7 @@ function exampleRead(example: number): SpecOracleRead {
 }
 
 // HTML as the DOM serializes it: tags without their `/`, attributes in name order, and text quotes and spaces as such.
+// Link targets are decoded, as the oracle decodes them.
 function normalizeHtml(html: string): string {
   return html
     .replaceAll(TAG_RE, (tag) => normalizeTag(tag))
@@ -92,7 +108,7 @@ function normalizeHtml(html: string): string {
 
 function normalizeTag(tag: string): string {
   const groups = TAG_PARTS_RE.exec(tag)?.groups;
-  const attributes = groups?.['attributes']?.match(ATTRIBUTE_RE) ?? [];
+  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => decodeTarget(attribute));
   return `<${[groups?.['name'] ?? '', ...attributes.toSorted(compareKeys)].join(' ')}>`;
 }
 

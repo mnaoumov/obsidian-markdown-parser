@@ -186,6 +186,7 @@ const SOFT_LINE_BREAK_CHANGES = [
 ];
 const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>>>> = {
   'lezer': {
+    autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
@@ -195,6 +196,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'markdown-it': {
+    autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],
@@ -204,6 +206,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'micromark': {
+    autolink: [597, 598, 601, 606],
     characterReference: [28, 29],
     emptyListItem: [285, 367],
     htmlBlock: [148, 171],

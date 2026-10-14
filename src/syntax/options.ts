@@ -20,6 +20,14 @@
  */
 export interface ObsidianQuirkFlags {
   /**
+   * Which autolinks there are. CommonMark: a scheme of 2 to 32 letters, digits, `+`, `.` and `-`, then a `:`, or an email
+   * address of the characters HTML allows. Obsidian: a `<`, then a scheme of any characters but whitespace and `@` with
+   * `://` and more after it, or any non-whitespace with an `@` in it, then a `>`. A `mailto:` address shows without its
+   * scheme.
+   */
+  readonly autolink: 'commonmark' | 'obsidian';
+
+  /**
    * Which character references inline content holds. CommonMark: a `;` ends each, a name must be one HTML defines, and
    * a numeric reference takes up to seven decimal or six hexadecimal digits. Obsidian: a numeric reference takes any
    * number of digits and needs no `;`, and a named one without its `;` takes the longest of HTML's legacy names it
@@ -233,6 +241,7 @@ export const OBSIDIAN_SYNTAX_FLAGS = Object.keys(COMMONMARK) as readonly (keyof 
  * The CommonMark behaviour of every quirk, which every preset keeps.
  */
 export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
+  autolink: 'commonmark',
   characterReference: 'commonmark',
   emptyListItem: 'cannot-interrupt',
   htmlBlock: 'commonmark',
@@ -246,6 +255,7 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
  * Obsidian's behaviour for every quirk, as its reading view and its metadata worker show it.
  */
 export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
+  autolink: 'obsidian',
   characterReference: 'obsidian',
   emptyListItem: 'interrupts-paragraph',
   htmlBlock: 'obsidian',
@@ -268,6 +278,7 @@ export const OBSIDIAN_QUIRK_FLAGS = Object.keys(COMMONMARK_QUIRKS) as readonly (
  */
 export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}): ObsidianQuirkFlags {
   return {
+    autolink: options.autolink ?? COMMONMARK_QUIRKS.autolink,
     characterReference: options.characterReference ?? COMMONMARK_QUIRKS.characterReference,
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
     htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,

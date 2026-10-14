@@ -356,9 +356,9 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'An autolink takes only some schemes (598, 601), an email autolink may hold a backslash (606), and a `mailto:` autolink shows its address without the scheme (597).',
     commonmark: [597, 598, 601, 606],
+    flag: 'autolink',
     kind: 'quirk',
-    name: 'autolinks',
-    notAFlag: 'Not done yet: each adapter reads autolinks with its own construct.'
+    name: 'autolinks'
   },
   {
     behaviour: 'Tables: a delimiter row without edge pipes under a header with them makes none (199), `\\|` in a code span keeps its backslash (200), a line without a pipe ends the table (202), and a delimiter row with fewer cells than the header still makes one (203).',

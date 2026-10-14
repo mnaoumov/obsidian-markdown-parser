@@ -28,12 +28,21 @@ import { sanitizeUri } from 'micromark-util-sanitize-uri';
 import type { ObsidianQuirkFlags } from './options.ts';
 
 import { hasBlankLineInside } from './loose-list.ts';
-import { matchObsidianCharacterReference } from './quirk-rules.ts';
+import {
+  decodeObsidianCharacterReferences,
+  matchObsidianAutolink,
+  matchObsidianCharacterReference
+} from './quirk-rules.ts';
 
 /**
  * Options of {@link renderLezerHtml}.
  */
 export interface RenderLezerHtmlOptions {
+  /**
+   * Which autolinks there are (see `ObsidianQuirkFlags`): where an Obsidian autolink links to, and what it shows.
+   */
+  readonly autolink?: ObsidianQuirkFlags['autolink'] | undefined;
+
   /**
    * How a character reference is decoded (see `ObsidianQuirkFlags`): Obsidian's references need no `;`.
    */
@@ -76,6 +85,7 @@ interface Range {
 }
 
 interface RenderContext {
+  readonly autolink: ObsidianQuirkFlags['autolink'];
   readonly characterReference: ObsidianQuirkFlags['characterReference'];
   readonly definitions: Map<string, Definition>;
   readonly hasTagFilter: boolean;
@@ -139,12 +149,13 @@ const DELIMITED_TAGS: Readonly<Record<string, string>> = {
  * @returns The HTML.
  */
 export function renderLezerHtml(text: string, tree: Tree, options: RenderLezerHtmlOptions = {}): string {
-  const { characterReference = 'commonmark', looseList = 'between-blocks', tagFilter = false } = options;
+  const { autolink = 'commonmark', characterReference = 'commonmark', looseList = 'between-blocks', tagFilter = false } = options;
   const lineStarts = [0];
   for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
     lineStarts.push(index + 1);
   }
   const cx: RenderContext = {
+    autolink,
     characterReference,
     definitions: new Map(),
     hasTagFilter: tagFilter,
@@ -440,6 +451,11 @@ function referenceLabel(cx: RenderContext, node: SyntaxNode, label: null | Synta
 }
 
 function renderAutolink(cx: RenderContext, node: SyntaxNode, mode: InlineMode): string {
+  const obsidian = cx.autolink === 'obsidian' && node.name === 'Autolink' ? matchObsidianAutolink(cx.text.slice(node.from, node.to)) : null;
+  if (obsidian) {
+    const shown = encode(decodeObsidianCharacterReferences(obsidian.text));
+    return mode === InlineMode.Plain ? shown : `<a href="${sanitizeUri(decodeObsidianCharacterReferences(obsidian.url, true))}">${shown}</a>`;
+  }
   const url = node.name === 'URL' ? node : node.getChild('URL');
   const target = url ? cx.text.slice(url.from, url.to) : '';
   let href = target;
