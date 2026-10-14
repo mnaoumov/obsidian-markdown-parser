@@ -1,5 +1,5 @@
 /* eslint-disable import-x/no-nodejs-modules -- The suite runs in Node and reads an oracle fixture from disk. */
-import type Token from 'markdown-it/lib/token.mjs';
+import type { Token } from 'markdown-it';
 
 import { readFileSync } from 'node:fs';
 import {

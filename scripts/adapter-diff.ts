@@ -11,7 +11,7 @@
  * - `jiti scripts/adapter-diff.ts --construct <name> --examples <n>`: the first `n` disagreements of one construct.
  */
 
-import type Token from 'markdown-it/lib/token.mjs';
+import type { Token } from 'markdown-it';
 
 import {
   parse,

@@ -16,6 +16,11 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
+    "paths": {
+      "markdownlint-rule-relative-links": [
+        "./scripts/@types/markdownlint-rule-relative-links.d.ts"
+      ]
+    },
     "skipLibCheck": false,
     "target": "ES2024",
     "types": [
