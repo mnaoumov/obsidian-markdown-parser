@@ -40,6 +40,7 @@ export interface MarkdownHtmlConfig {
  */
 export interface MarkdownMode {
   blankLine: (state: MarkdownState) => null;
+  blockNormal: TokenFunction;
   copyState: (state: MarkdownState) => MarkdownState;
   getType: (state: MarkdownState) => null | string;
   htmlBlock: TokenFunction;
@@ -110,6 +111,7 @@ export interface MarkdownState {
   prevLine: LineInfo;
   quote: number;
   quoteFence: number;
+  quoteOpen: boolean;
   setext: number;
   strikethrough: boolean;
   strong: false | string;
@@ -191,7 +193,8 @@ export const URL_RE =
 // CSpell:enable
 const ATX_HEADER_RE = /^(#+)(?: |$)/u;
 const SETEXT_HEADER_RE = /^ {0,3}(?:={1,}|-{2,})\s*$/u;
-const TEXT_RE = /^[^#![\]*_\\<>` "'(~:=%^]+/u;
+// Obsidian: a run of text also stops at `|` and `$`, the table and math marks.
+const TEXT_RE = /^[^#![\]*_\\<>` "'(~:=|$%^]+/u;
 const FENCED_CODE_RE = /^(~~~+|```+)[ \t]*([\w/+#-]*)[^\n`]*$/u;
 const LINK_DEF_RE = /^\s*\[[^\]]+?\]:.*$/u;
 const PUNCTUATION = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~\p{P}]/u;
@@ -304,14 +307,20 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
     if (state.indentation <= maxNonCodeIndentation && stream.eat('>')) {
       state.quote = isFirstTokenOnLine ? 1 : state.quote + 1;
+      state.quoteOpen = true;
       state.formatting = 'quote';
       stream.eatSpace();
       // Obsidian: a callout marker joins the quote mark.
       // A callout opens a quote: on a line's first mark only when the line above is not a quote line.
       return !state.quoteFence && (!isFirstTokenOnLine || state.lineStartQuote === 0) && matchRe(stream, /^\[![^\]]+\][+-]?\s*/u) ? `${getType(state) ?? ''} hmd-callout line-HyperMD-callout` : getType(state);
     }
-    if (state.quote && />\s*$/u.test(stream.string.slice(0, stream.start)) && (match = matchRe(stream, FENCED_CODE_RE))) {
-      // Obsidian: a fence inside a quote toggles an inline-code state instead of opening a code block.
+    /*
+     * Obsidian: a fence inside a quote toggles an inline-code state instead of opening a code block. It must be the
+     * first inline token after a quote mark, which may be on an earlier line when nothing followed that mark; a fence
+     * that could open a code block is read as one first.
+     */
+    const isAfterQuoteMark = />\s*$/u.test(stream.string.slice(0, stream.start)) || (state.quoteOpen && state.indentation > maxNonCodeIndentation);
+    if (state.quote && isAfterQuoteMark && (match = matchRe(stream, FENCED_CODE_RE))) {
       state.quoteFence = state.quoteFence ? 0 : (match[1] ?? '').length;
       return `${getType(state) ?? ''} inline-code`;
     }
@@ -530,6 +539,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
   }
 
   function inlineNormal(stream: Stream, state: MarkdownState): null | string {
+    state.quoteOpen = false;
     if (state.extensionsAllowed) {
       const hooked = config.inlineHook(stream, state);
       if (hooked !== undefined) {
@@ -993,6 +1003,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
   return {
     blankLine,
+    blockNormal,
     copyState(s: MarkdownState): MarkdownState {
       return {
         ...s,
@@ -1042,6 +1053,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         prevLine: { stream: null },
         quote: 0,
         quoteFence: 0,
+        quoteOpen: false,
         setext: 0,
         strikethrough: false,
         strong: false,

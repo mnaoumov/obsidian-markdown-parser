@@ -206,7 +206,12 @@ try {
     }
   });
 
-  const WARM_UP = '---\na: 1\n---\n$x$ and $$y$$\n$$\n\\frac{a}{b}\n$$\n<div class="a">b</div>\n```js\nconst a = 1;\n```\n%% c %%\n';
+  const WARM_UP_LANGUAGES = ['js', 'ts', 'python', 'css', 'html', 'json', 'yaml', 'bash', 'sql', 'java', 'c', 'cpp', 'csharp', 'rust', 'go', 'diff', 'markdown', 'xml', 'php', 'ruby'];
+  const WARM_UP = [
+    '---\na: 1\n---\n$x$ and $$y$$\n$$\n\\frac{a}{b}\n$$\n<div class="a">b</div>\n',
+    ...WARM_UP_LANGUAGES.map((language) => `\`\`\`${language}\na = 1;\n\`\`\`\n`),
+    '%% c %%\n'
+  ].join('');
 
   const results: OracleDocument[] = [];
   for (let start = -BATCH_SIZE; start < corpus.length; start += BATCH_SIZE) {

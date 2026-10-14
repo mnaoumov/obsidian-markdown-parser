@@ -16,7 +16,7 @@ describe('buildCorpus', () => {
     const corpus = buildCorpus({ perSet: 5 });
     expect(corpus).toHaveLength(HAND_WRITTEN + PIECE_SETS.size * 5);
     expect(corpus[0]?.id).toBe('hand-0');
-    expect(corpus.at(-1)?.id).toBe('rich-4');
+    expect(corpus.at(-1)?.id).toBe('table-4');
   });
 
   it('should give the same documents for the same seed and different ones for another', () => {
