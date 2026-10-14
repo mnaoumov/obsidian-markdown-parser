@@ -31,12 +31,17 @@ export type BlockTokenizer = (parser: RemarkParser, eat: Eat, value: string, isS
 export type BlockTokenizerName =
   | 'atxHeading'
   | 'blankLine'
+  | 'blockId'
   | 'blockquote'
+  | 'comment'
   | 'definition'
   | 'fencedCode'
+  | 'footnoteDefinition'
+  | 'frontmatter'
   | 'html'
   | 'indentedCode'
   | 'list'
+  | 'math'
   | 'paragraph'
   | 'setextHeading'
   | 'table'
@@ -117,32 +122,65 @@ export interface InlineTokenizer {
  */
 export type InlineTokenizerName =
   | 'autoLink'
+  | 'blockId'
   | 'break'
   | 'code'
+  | 'comment'
   | 'deletion'
   | 'email'
   | 'emphasis'
   | 'escape'
+  | 'footnoteReference'
+  | 'highlight'
   | 'html'
+  | 'inlineFootnote'
+  | 'inlineMath'
+  | 'internalLink'
   | 'link'
   | 'reference'
   | 'strong'
+  | 'tag'
   | 'text'
   | 'url';
 
 /**
- * The tokenizers of a parser.
+ * The tokenizers of a parser, the order they are tried in, and the blocks that interrupt others.
  */
 export interface RemarkTokenizers {
   /**
    * The block tokenizers.
    */
-  readonly block: Readonly<Record<BlockTokenizerName, BlockTokenizer>>;
+  readonly block: Readonly<Partial<Record<BlockTokenizerName, BlockTokenizer>>>;
+
+  /**
+   * The block tokenizers, in the order they are tried.
+   */
+  readonly blockMethods: readonly BlockTokenizerName[];
 
   /**
    * The inline tokenizers.
    */
-  readonly inline: Readonly<Record<InlineTokenizerName, InlineTokenizer>>;
+  readonly inline: Readonly<Partial<Record<InlineTokenizerName, InlineTokenizer>>>;
+
+  /**
+   * The inline tokenizers, in the order they are tried.
+   */
+  readonly inlineMethods: readonly InlineTokenizerName[];
+
+  /**
+   * The blocks that interrupt a blockquote.
+   */
+  readonly interruptBlockquote: readonly BlockTokenizerName[];
+
+  /**
+   * The blocks that interrupt a list.
+   */
+  readonly interruptList: readonly BlockTokenizerName[];
+
+  /**
+   * The blocks that interrupt a paragraph.
+   */
+  readonly interruptParagraph: readonly BlockTokenizerName[];
 }
 
 /**
@@ -162,7 +200,7 @@ interface TokenizeMethod {
 }
 
 /**
- * The block tokenizers, in the order they are tried.
+ * The block tokenizers of `remark-parse` 8, in the order they are tried.
  */
 export const BLOCK_METHODS: readonly BlockTokenizerName[] = [
   'blankLine',
@@ -180,7 +218,7 @@ export const BLOCK_METHODS: readonly BlockTokenizerName[] = [
 ];
 
 /**
- * The inline tokenizers, in the order they are tried.
+ * The inline tokenizers of `remark-parse` 8, in the order they are tried.
  */
 export const INLINE_METHODS: readonly InlineTokenizerName[] = [
   'escape',
@@ -198,10 +236,20 @@ export const INLINE_METHODS: readonly InlineTokenizerName[] = [
   'text'
 ];
 
-// The blocks that interrupt a paragraph, a list and a blockquote, in `commonmark` mode.
-const INTERRUPT_PARAGRAPH: Interruptors = ['thematicBreak', 'list', 'atxHeading', 'fencedCode', 'blockquote', 'html'];
-const INTERRUPT_LIST: Interruptors = ['atxHeading', 'fencedCode', 'thematicBreak'];
-const INTERRUPT_BLOCKQUOTE: Interruptors = ['indentedCode', 'fencedCode', 'atxHeading', 'setextHeading', 'thematicBreak', 'html', 'list'];
+/**
+ * The blocks that interrupt a paragraph in `remark-parse` 8's `commonmark` mode.
+ */
+export const INTERRUPT_PARAGRAPH: Interruptors = ['thematicBreak', 'list', 'atxHeading', 'fencedCode', 'blockquote', 'html'];
+
+/**
+ * The blocks that interrupt a list in `remark-parse` 8's `commonmark` mode.
+ */
+export const INTERRUPT_LIST: Interruptors = ['atxHeading', 'fencedCode', 'thematicBreak'];
+
+/**
+ * The blocks that interrupt a blockquote in `remark-parse` 8's `commonmark` mode.
+ */
+export const INTERRUPT_BLOCKQUOTE: Interruptors = ['indentedCode', 'fencedCode', 'atxHeading', 'setextHeading', 'thematicBreak', 'html', 'list'];
 
 // The characters a backslash escapes in `commonmark` mode (`markdown-escapes`).
 const ESCAPES = '\\`*{}[]()#+-.!_>~|\n"$%&\',/:;<=?@^';
@@ -214,7 +262,7 @@ const BYTE_ORDER_MARK = 0xFE_FF;
  */
 export class RemarkParser {
   /**
-   * Whether nothing has been tokenized yet.
+   * Whether nothing has been eaten yet. Front matter is read only here.
    */
   public atStart = true;
 
@@ -338,6 +386,18 @@ export class RemarkParser {
   }
 
   /**
+   * Whether one of the named blocks starts `value`.
+   *
+   * @param interruptors - The blocks.
+   * @param eat - The eat function.
+   * @param value - The text.
+   * @returns Whether one does.
+   */
+  public interrupts(interruptors: Interruptors, eat: Eat, value: string): boolean {
+    return interruptors.some((name) => Boolean(this.tokenizers.block[name]?.(this, eat, value, true)));
+  }
+
+  /**
    * Whether a block that would interrupt a blockquote starts `value`.
    *
    * @param eat - The eat function.
@@ -345,7 +405,7 @@ export class RemarkParser {
    * @returns Whether one does.
    */
   public interruptsBlockquote(eat: Eat, value: string): boolean {
-    return this.interrupts(INTERRUPT_BLOCKQUOTE, eat, value);
+    return this.interrupts(this.tokenizers.interruptBlockquote, eat, value);
   }
 
   /**
@@ -356,7 +416,7 @@ export class RemarkParser {
    * @returns Whether one does.
    */
   public interruptsList(eat: Eat, value: string): boolean {
-    return this.interrupts(INTERRUPT_LIST, eat, value);
+    return this.interrupts(this.tokenizers.interruptList, eat, value);
   }
 
   /**
@@ -367,7 +427,7 @@ export class RemarkParser {
    * @returns Whether one does.
    */
   public interruptsParagraph(eat: Eat, value: string): boolean {
-    return this.interrupts(INTERRUPT_PARAGRAPH, eat, value);
+    return this.interrupts(this.tokenizers.interruptParagraph, eat, value);
   }
 
   /**
@@ -399,7 +459,14 @@ export class RemarkParser {
    */
   public tokenizeBlock(value: string, location: RemarkPoint): RemarkNode[] {
     const tokenizers = this.tokenizers.block;
-    return this.tokenize(value, location, BLOCK_METHODS.map((name) => ({ tokenize: tokenizers[name] })));
+    const methods: TokenizeMethod[] = [];
+    for (const name of this.tokenizers.blockMethods) {
+      const tokenizer = tokenizers[name];
+      if (tokenizer) {
+        methods.push({ tokenize: tokenizer });
+      }
+    }
+    return this.tokenize(value, location, methods);
   }
 
   /**
@@ -412,7 +479,7 @@ export class RemarkParser {
   public tokenizeInline(value: string, location: RemarkPoint): RemarkNode[] {
     const tokenizers = this.inlineTokenizers;
     const methods: InlineTokenizer[] = [];
-    for (const name of INLINE_METHODS) {
+    for (const name of this.tokenizers.inlineMethods) {
       const tokenizer = tokenizers[name];
       if (tokenizer) {
         methods.push(tokenizer);
@@ -475,10 +542,6 @@ export class RemarkParser {
     }
 
     return result;
-  }
-
-  private interrupts(interruptors: Interruptors, eat: Eat, value: string): boolean {
-    return interruptors.some((name) => Boolean(this.tokenizers.block[name](this, eat, value, true)));
   }
 
   private tokenize(
@@ -629,10 +692,6 @@ export class RemarkParser {
         children.push(result);
       }
 
-      if (parser.atStart && tokens.length > 0) {
-        parser.atStart = false;
-      }
-
       return result as Node;
     }
 
@@ -649,6 +708,12 @@ export class RemarkParser {
 
       updatePosition(subvalue);
 
+      // Obsidian's copy leaves the start at the first text eaten, where upstream leaves it at the first node added.
+      const wasAtStart = parser.atStart;
+      if (subvalue) {
+        parser.atStart = false;
+      }
+
       const indentation = indent();
 
       return Object.assign(apply, { reset, test });
@@ -663,6 +728,7 @@ export class RemarkParser {
         line = current.line;
         column = current.column;
         value = subvalue + value;
+        parser.atStart = wasAtStart;
 
         return result;
       }

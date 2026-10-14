@@ -57,6 +57,28 @@ describe('renderRemarkHtml', () => {
     expect(render('<div>\n\na & b < c > d\u{A0}"e"\n\n</div>')).toBe('<div>\n<p>a &amp; b &lt; c &gt; d&nbsp;"e"</p>\n</div>\n');
   });
 
+  it('renders the Obsidian syntax as Obsidian\'s handlers do, and comments and block ids as nothing', () => {
+    expect(render('#tag [[a#b|c]] [[d#e]] ==🔴x== ==y== $m$ $$n$$ %%c%% ^id')).toBe(
+      '<p><a class="tag" href="#tag">#tag</a> <a class="internal-link" data-href="a#b" href="a#b" aria-label="a > b" data-tooltip-position="top">c</a> <a class="internal-link" data-href="d#e" href="d#e">d &gt; e</a> <mark data-highlight="red">x</mark> <mark>y</mark> <span class="math math-inline">m</span> <span class="math math-block">n</span>  </p>\n'
+    );
+    expect(render('---\nk: v\n---\n$$\nx\n$$\n\n%%\nz\n%%')).toBe(
+      '<pre class="frontmatter" style="display: none;"><code class="language-yaml">k: v</code></pre>\n<div class="math math-block">x</div>\n'
+    );
+  });
+
+  it('sizes an embed by its alias, alone or after its last pipe, and shows the rest as its alternative text', () => {
+    expect(render('![[i.png|200]] ![[j.png|a|100x50]] ![[k.png|b]] ![[l.png|]]')).toBe(
+      '<p><span alt="i.png" class="internal-embed" src="i.png" width="200">200</span> <span alt="a" class="internal-embed" src="j.png" width="100" height="50">a|100x50</span> <span alt="b" class="internal-embed" src="k.png">b</span> <span alt="" class="internal-embed" src="l.png"></span></p>\n'
+    );
+  });
+
+  it('numbers footnotes by first reference, links each reference back, and leaves a reference to no definition as text', () => {
+    expect(render('a[^1] b[^1] c^[note] d[^2]\n\n[^1]: one\n\n[^2]: two')).toBe(
+      '<p>a<sup class="footnote-ref" data-footnote-id="fnref-1"><a class="footnote-link" data-footref="1" href="#fn-1">[1]</a></sup> b<sup class="footnote-ref" data-footnote-id="fnref-1-1"><a class="footnote-link" data-footref="1" href="#fn-1">[1-1]</a></sup> c<sup class="footnote-ref" data-footnote-id="fnref-2"><a class="footnote-link" data-footref="[inline1" href="#fn-2">[2]</a></sup> d<sup class="footnote-ref" data-footnote-id="fnref-3"><a class="footnote-link" data-footref="2" href="#fn-3">[3]</a></sup></p>\n\n\n<section class="footnotes">\n<hr>\n<ol>\n<li data-footnote-id="fn-1"><p><p>one</p><a class="footnote-backref footnote-link" href="#fnref-1">↩︎</a><a class="footnote-backref footnote-link" href="#fnref-1-1">↩︎</a></p></li>\n<li data-footnote-id="fn-2"><p>note<a class="footnote-backref footnote-link" href="#fnref-2">↩︎</a></p></li>\n<li data-footnote-id="fn-3"><p><p>two</p><a class="footnote-backref footnote-link" href="#fnref-3">↩︎</a></p></li>\n</ol>\n</section>\n'
+    );
+    expect(render('u [^none]')).toBe('<p>u none</p>\n');
+  });
+
   it('renders the rest of the block and inline nodes', () => {
     expect(render('# h\n\n> q\n\n***\n\n~~d~~ **s** `c\nd`')).toBe(
       '<h1>h</h1>\n<blockquote>\n<p>q</p>\n</blockquote>\n<hr>\n<p><del>d</del> <strong>s</strong> <code>c d</code></p>\n'

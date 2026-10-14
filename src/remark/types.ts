@@ -2,8 +2,19 @@
  * @file
  *
  * The tree the `remark-parse` 8 engine gives: mdast as `remark-parse` 8.0.3 builds it, with the fields Obsidian's
- * edits to its `blockquote`, `list` and `table` tokenizers add.
+ * edits to its `blockquote`, `list` and `table` tokenizers add, and the nodes of the Obsidian syntax. Those take the
+ * names `src/syntax/mdast.ts` gives them where the shapes agree.
  */
+
+/**
+ * A block id, `^id`. One that ends a block is attached to it as its {@link RemarkNodeBase.id}.
+ */
+export interface RemarkBlockId extends RemarkNodeBase<'blockId'> {
+  /**
+   * The id, without its `^`.
+   */
+  value: string;
+}
 
 /**
  * A blockquote, with the callout Obsidian reads off its first line.
@@ -91,9 +102,44 @@ export interface RemarkDefinition extends RemarkNodeBase<'definition'> {
 export type RemarkDelete = RemarkParentBase<'delete'>;
 
 /**
+ * An embed, `![[target|alias]]`.
+ */
+export type RemarkEmbed = RemarkInternalLinkBase<'embed'>;
+
+/**
  * Emphasis.
  */
 export type RemarkEmphasis = RemarkParentBase<'emphasis'>;
+
+/**
+ * A footnote definition, `[^label]: content`.
+ */
+export interface RemarkFootnoteDefinition extends RemarkParentBase<'footnoteDefinition'> {
+  /**
+   * The label, lowercased.
+   */
+  identifier: string;
+
+  /**
+   * The label as written.
+   */
+  label: string;
+}
+
+/**
+ * A footnote reference, `[^label]`, to a definition the document holds.
+ */
+export interface RemarkFootnoteReference extends RemarkNodeBase<'footnoteReference'> {
+  /**
+   * The label, lowercased.
+   */
+  identifier: string;
+
+  /**
+   * The label as written.
+   */
+  label: string;
+}
 
 /**
  * A heading.
@@ -103,6 +149,16 @@ export interface RemarkHeading extends RemarkParentBase<'heading'> {
    * The level, 1 to 6.
    */
   depth: number;
+}
+
+/**
+ * A highlight, `==text==`.
+ */
+export interface RemarkHighlight extends RemarkParentBase<'highlight'> {
+  /**
+   * The color a colored square or circle emoji opening the text names, which is no part of the content, or `null`.
+   */
+  color: null | string;
 }
 
 /**
@@ -168,6 +224,52 @@ export interface RemarkInlineCode extends RemarkNodeBase<'inlineCode'> {
    * The code.
    */
   value: string;
+}
+
+/**
+ * An inline footnote, `^[text]`.
+ */
+export type RemarkInlineFootnote = RemarkParentBase<'inlineFootnote'>;
+
+/**
+ * Inline math, `$tex$`, or `$$tex$$` inside a paragraph.
+ */
+export interface RemarkInlineMath extends RemarkNodeBase<'inlineMath'> {
+  /**
+   * Whether it is written `$$tex$$`, which shows as a block.
+   */
+  display: boolean;
+
+  /**
+   * The TeX.
+   */
+  value: string;
+}
+
+/**
+ * An internal link, `[[target|alias]]`.
+ */
+export type RemarkInternalLink = RemarkInternalLinkBase<'internalLink'>;
+
+/**
+ * The fields of an internal link and an embed.
+ */
+export interface RemarkInternalLinkBase<Type extends string> extends RemarkNodeBase<Type> {
+  /**
+   * The text after the first `|`, trimmed, or `null` without one.
+   */
+  alias: null | string;
+
+  /**
+   * The text it shows: the alias, or else the target with each run of `#` made ` > `.
+   */
+  displayText: string;
+
+  /**
+   * The link text before the first `|`, trimmed, with a final backslash taken off, no-break spaces made spaces, and in
+   * Unicode normal form C: the path with its subpath.
+   */
+  target: string;
 }
 
 /**
@@ -246,37 +348,65 @@ export interface RemarkListItem extends RemarkParentBase<'listItem'> {
 }
 
 /**
+ * A math block, `$$` lines.
+ */
+export interface RemarkMath extends RemarkNodeBase<'math'> {
+  /**
+   * The TeX.
+   */
+  value: string;
+}
+
+/**
  * Any node of the tree.
  */
 export type RemarkNode =
+  | RemarkBlockId
   | RemarkBlockquote
   | RemarkBreak
   | RemarkCode
   | RemarkDefinition
   | RemarkDelete
+  | RemarkEmbed
   | RemarkEmphasis
+  | RemarkFootnoteDefinition
+  | RemarkFootnoteReference
   | RemarkHeading
+  | RemarkHighlight
   | RemarkHtml
   | RemarkImage
   | RemarkImageReference
   | RemarkInlineCode
+  | RemarkInlineFootnote
+  | RemarkInlineMath
+  | RemarkInternalLink
   | RemarkLink
   | RemarkLinkReference
   | RemarkList
   | RemarkListItem
+  | RemarkMath
+  | RemarkObsidianComment
+  | RemarkObsidianCommentBlock
   | RemarkParagraph
   | RemarkRoot
   | RemarkStrong
   | RemarkTable
   | RemarkTableCell
   | RemarkTableRow
+  | RemarkTag
   | RemarkText
-  | RemarkThematicBreak;
+  | RemarkThematicBreak
+  | RemarkYaml;
 
 /**
  * The fields every node has.
  */
 export interface RemarkNodeBase<Type extends string> {
+  /**
+   * The block id attached to it: on a block of the document and a list item, the id of a {@link RemarkBlockId} in it.
+   */
+  id?: string;
+
   /**
    * Where it is in the document.
    */
@@ -286,6 +416,27 @@ export interface RemarkNodeBase<Type extends string> {
    * The node type.
    */
   type: Type;
+}
+
+/**
+ * An inline comment, `%%text%%`. The text is tokenized as inline content too, as Obsidian reads it.
+ */
+export interface RemarkObsidianComment extends RemarkParentBase<'obsidianComment'> {
+  /**
+   * The text between the delimiters.
+   */
+  value: string;
+}
+
+/**
+ * A comment block, from a line opening with `%%` to the next `%%`. The text is tokenized as inline content too, from
+ * the block's start, as Obsidian reads it.
+ */
+export interface RemarkObsidianCommentBlock extends RemarkParentBase<'obsidianCommentBlock'> {
+  /**
+   * The text between the delimiters.
+   */
+  value: string;
 }
 
 /**
@@ -409,6 +560,16 @@ export interface RemarkTableCellPadding {
 export type RemarkTableRow = RemarkParentBase<'tableRow'>;
 
 /**
+ * A tag, `#name`.
+ */
+export interface RemarkTag extends RemarkNodeBase<'tag'> {
+  /**
+   * The name, without its `#`.
+   */
+  name: string;
+}
+
+/**
  * Text.
  */
 export interface RemarkText extends RemarkNodeBase<'text'> {
@@ -422,3 +583,13 @@ export interface RemarkText extends RemarkNodeBase<'text'> {
  * A thematic break.
  */
 export type RemarkThematicBreak = RemarkNodeBase<'thematicBreak'>;
+
+/**
+ * Front matter, from a first line `---` to the next line opening with `---`.
+ */
+export interface RemarkYaml extends RemarkNodeBase<'yaml'> {
+  /**
+   * The lines between the delimiters.
+   */
+  value: string;
+}

@@ -167,7 +167,7 @@ const HTML_SEQUENCES: readonly HtmlSequence[] = [
 /**
  * The block tokenizers.
  */
-export const BLOCK_TOKENIZERS: Readonly<Record<BlockTokenizerName, BlockTokenizer>> = {
+export const BLOCK_TOKENIZERS: Readonly<Partial<Record<BlockTokenizerName, BlockTokenizer>>> = {
   atxHeading,
   blankLine,
   blockquote,
