@@ -9,6 +9,7 @@
  */
 
 import type { ObsidianState } from './obsidian-mode.ts';
+import type { LineReader } from './string-stream.ts';
 
 import { createObsidianMode } from './obsidian-mode.ts';
 import { StringStream } from './string-stream.ts';
@@ -90,6 +91,46 @@ export interface HighlightLinesParams {
  */
 export type LineState = ObsidianState;
 
+/**
+ * The classes of one line, with offsets relative to the line's start.
+ */
+export interface TokenizedLine {
+  /**
+   * The line classes (rendered on `.cm-line`).
+   */
+  readonly classes: readonly string[];
+
+  /**
+   * The token spans, relative to the line's start.
+   */
+  readonly spans: readonly ClassSpan[];
+}
+
+/**
+ * Parameters of {@link tokenizeLine}.
+ */
+export interface TokenizeLineParams {
+  /**
+   * The line, without its newline.
+   */
+  readonly line: string;
+
+  /**
+   * The index of the line in the document, for error messages.
+   */
+  readonly lineIndex: number;
+
+  /**
+   * Reads the line `offset` lines after this one, or `undefined` past the end of the document.
+   */
+  readonly readLine: LineReader;
+
+  /**
+   * The state before the line. The call advances it past the line.
+   */
+  readonly state: LineState;
+}
+
 const LINE_CLASS_RE = /^line-(?:background-)?(?<name>.+)$/u;
 const MAX_TOKENS_PER_POSITION = 10;
 const mode = createObsidianMode();
@@ -145,8 +186,24 @@ export function highlightLines(params: HighlightLinesParams): HighlightedLine[] 
   return out;
 }
 
-function highlightLine(params: HighlightLineParams): HighlightedLine {
-  const { line, lineIndex, lines, offset, state } = params;
+/**
+ * Creates the tokenizer state at the start of a document.
+ *
+ * @returns The state.
+ */
+export function startLineState(): LineState {
+  return mode.startState();
+}
+
+/**
+ * Tokenizes one line, the way the editor does: an empty line goes to `blankLine`, any other line is read token by
+ * token. The caller decides whether to tokenize an empty last line, which the editor never does.
+ *
+ * @param params - The line, the state before it and how to read the lines after it.
+ * @returns The line's classes, with offsets relative to its start.
+ */
+export function tokenizeLine(params: TokenizeLineParams): TokenizedLine {
+  const { line, lineIndex, readLine, state } = params;
   const lineClasses: string[] = [];
   const spans: ClassSpan[] = [];
   function addStyle(style: null | string, from: number, to: number): void {
@@ -167,22 +224,34 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
       }
     }
     if (to > from) {
-      spans.push({ classes: tokenClasses, from: offset + from, to: offset + to });
+      spans.push({ classes: tokenClasses, from, to });
     }
   }
   if (line.length === 0) {
-    // The editor never parses an empty last line: its parse ends at the document's length.
-    if (lineIndex < lines.length - 1) {
-      addStyle(mode.blankLine(state), 0, 0);
-    }
+    addStyle(mode.blankLine(state), 0, 0);
   } else {
-    const stream = new StringStream({ line, lineIndex, readLine: (n): string | undefined => lines[lineIndex + n] });
+    const stream = new StringStream({ line, lineIndex, readLine });
     while (!stream.eol()) {
       stream.start = stream.pos;
       addStyle(readToken(stream, state), stream.start, stream.pos);
     }
   }
-  return { classes: lineClasses, from: offset, spans, to: offset + line.length };
+  return { classes: lineClasses, spans };
+}
+
+function highlightLine(params: HighlightLineParams): HighlightedLine {
+  const { line, lineIndex, lines, offset, state } = params;
+  // The editor never parses an empty last line: its parse ends at the document's length.
+  if (line.length === 0 && lineIndex === lines.length - 1) {
+    return { classes: [], from: offset, spans: [], to: offset };
+  }
+  const { classes, spans } = tokenizeLine({ line, lineIndex, readLine: (n): string | undefined => lines[lineIndex + n], state });
+  return {
+    classes,
+    from: offset,
+    spans: spans.map((span) => ({ classes: span.classes, from: offset + span.from, to: offset + span.to })),
+    to: offset + line.length
+  };
 }
 
 // Like the editor, a token may be empty while it changes the state, but the mode must advance within a few calls.

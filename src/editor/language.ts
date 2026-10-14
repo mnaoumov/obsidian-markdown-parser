@@ -1,0 +1,372 @@
+/**
+ * @file
+ *
+ * Hosts the editor-class tokenizer in CodeMirror 6 as a {@link Language}, the way Obsidian's editor hosts its mode.
+ *
+ * CodeMirror 6's `StreamLanguage` cannot run the tokenizer: it gives a mode no way to read the lines after the current
+ * one, and setext headings and tables need them. This host reads the document through the parser's `Input`, so the
+ * mode's `lookAhead` reads the real next lines.
+ *
+ * The tree has the shape of the editor's: a line with line classes is a node named by them, holding its tokens, and
+ * every token is a node named by its classes, sorted and joined by `_`. Lines are grouped into chunks, anonymous nodes
+ * a tree cursor steps through, and each chunk records the state after its last line and how far its lines read,
+ * lookahead included. A new parse after an edit resumes from the last chunk whose reads all lie before the edit.
+ */
+
+import type {
+  Input,
+  PartialParse,
+  TreeFragment
+} from '@lezer/common';
+
+import {
+  defineLanguageFacet,
+  Language,
+  languageDataProp,
+  ParseContext
+} from '@codemirror/language';
+import {
+  NodeProp,
+  NodeSet,
+  NodeType,
+  Parser,
+  Tree
+} from '@lezer/common';
+
+import type { LineState } from './highlight.ts';
+
+import { compareCodeUnits } from '../oracle/score.ts';
+import {
+  copyLineState,
+  startLineState,
+  tokenizeLine
+} from './highlight.ts';
+
+/**
+ * Options of {@link createEditorClassLanguage}.
+ */
+export interface CreateEditorClassLanguageOptions {
+  /**
+   * How many characters a chunk spans before it is closed, at a line end. A chunk is the unit of reuse after an edit and
+   * of work per `advance` call.
+   *
+   * @default 512
+   */
+  readonly chunkSize?: number;
+}
+
+interface ChunkInfo {
+  // The index of the line after the chunk.
+  readonly lineIndex: number;
+  // How far past the chunk's start its lines read: their own newlines and any line read ahead.
+  readonly readLength: number;
+  readonly state: LineState;
+}
+
+interface FoundState {
+  readonly info: ChunkInfo;
+  readonly pos: number;
+}
+
+interface ParseRange {
+  readonly from: number;
+  readonly to: number;
+}
+
+interface ParseStart {
+  readonly lineIndex: number;
+  readonly state: LineState;
+  readonly tree: Tree;
+}
+
+/**
+ * The classes of a token node's type.
+ */
+export const tokenClassesProperty = new NodeProp<readonly string[]>();
+
+/**
+ * The classes of a line node's type, rendered on `.cm-line`.
+ */
+export const lineClassesProperty = new NodeProp<readonly string[]>();
+
+const DEFAULT_CHUNK_SIZE = 512;
+// Like `StreamLanguage`, keep this far from a fragment's open end, where the edit was.
+const OPEN_EDGE_MARGIN = 25;
+// Like `StreamLanguage`, parse a viewport this far past the parsed text from a fresh state instead.
+const MAX_DISTANCE_BEFORE_VIEWPORT = 100_000;
+const NODE_SIZE = 4;
+
+const chunkProperty = new NodeProp<ChunkInfo>({ perNode: true });
+// As in `StreamLanguage`, node types are added as new class sets appear, so the set's array grows after it is made.
+const typeArray: NodeType[] = [NodeType.none];
+const nodeSet = new NodeSet(typeArray);
+const typeIds = new Map<string, number>();
+
+class EditorClassHost {
+  public readonly topNode: NodeType;
+
+  public constructor(public readonly chunkSize: number, data: ReturnType<typeof defineLanguageFacet>) {
+    // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
+    this.topNode = NodeType.define({ id: typeArray.length, name: 'Document', props: [[languageDataProp, data]], top: true });
+    typeArray.push(this.topNode);
+  }
+}
+
+/* eslint-disable unicorn/consistent-class-member-order -- perfectionist/sort-classes orders public members first, and the two rules disagree. */
+class EditorClassParse implements PartialParse {
+  public parsedPos: number;
+  public stoppedAt: null | number = null;
+  private buffer: number[] = [];
+  private readonly chunkPositions: number[] = [];
+  private chunkReadTo: number;
+  private readonly chunks: Tree[] = [];
+  private chunkStart: number;
+  private readonly from: number;
+  private lineIndex: number;
+  private readonly lineTexts = new Map<number, string>();
+  private readonly state: LineState;
+  private readonly to: number;
+
+  public constructor(
+    private readonly host: EditorClassHost,
+    private readonly input: Input,
+    fragments: readonly TreeFragment[],
+    ranges: readonly ParseRange[]
+  ) {
+    const [first, ...rest] = ranges;
+    if (!first || rest.length > 0) {
+      throw new Error('The editor-class language parses exactly one range');
+    }
+    this.from = first.from;
+    this.to = first.to;
+    const start = this.findStartInFragments(fragments);
+    this.state = start.state;
+    this.lineIndex = start.lineIndex;
+    this.parsedPos = this.from + start.tree.length;
+    for (const [index, child] of start.tree.children.entries()) {
+      this.chunks.push(child as Tree);
+      this.chunkPositions.push(start.tree.positions[index] ?? 0);
+    }
+    const context = ParseContext.get();
+    if (context && this.parsedPos < context.viewport.from - MAX_DISTANCE_BEFORE_VIEWPORT && this.to >= context.viewport.from) {
+      const line = context.state.doc.lineAt(context.viewport.from);
+      context.skipUntilInView(this.parsedPos, line.from);
+      this.state = startLineState();
+      this.lineIndex = line.number - 1;
+      this.parsedPos = line.from;
+    }
+    this.chunkStart = this.parsedPos;
+    this.chunkReadTo = this.parsedPos;
+  }
+
+  public advance(): null | Tree {
+    const context = ParseContext.get();
+    const parseEnd = this.stoppedAt === null ? this.to : Math.min(this.to, this.stoppedAt);
+    let end = Math.min(parseEnd, this.chunkStart + this.host.chunkSize);
+    if (context) {
+      end = Math.min(end, context.viewport.to);
+    }
+    while (this.parsedPos < end) {
+      this.parseLine();
+    }
+    if (this.chunkStart < this.parsedPos) {
+      this.finishChunk();
+    }
+    if (this.parsedPos >= parseEnd) {
+      return this.finish();
+    }
+    if (context && this.parsedPos >= context.viewport.to) {
+      context.skipUntilInView(this.parsedPos, parseEnd);
+      return this.finish();
+    }
+    return null;
+  }
+
+  public stopAt(pos: number): void {
+    this.stoppedAt = pos;
+  }
+
+  private cutTree(tree: Tree, from: number, to: number, isInside: boolean): null | Tree {
+    if (isInside && from <= 0 && to >= tree.length) {
+      return tree;
+    }
+    const isInsideHere = isInside || (from === 0 && tree.type === this.host.topNode);
+    for (let index = tree.children.length - 1; index >= 0; index--) {
+      const pos = tree.positions[index] ?? 0;
+      const child = tree.children[index];
+      if (pos < to && child instanceof Tree) {
+        const inner = this.cutTree(child, from - pos, to - pos, isInsideHere);
+        if (!inner) {
+          break;
+        }
+        return isInsideHere
+          ? new Tree(tree.type, [...tree.children.slice(0, index), inner], tree.positions.slice(0, index + 1), pos + inner.length)
+          : inner;
+      }
+    }
+    return null;
+  }
+
+  private findStartInFragments(fragments: readonly TreeFragment[]): ParseStart {
+    for (const fragment of fragments) {
+      const fragmentFrom = fragment.from + (fragment.openStart ? OPEN_EDGE_MARGIN : 0);
+      const fragmentTo = fragment.to - (fragment.openEnd ? OPEN_EDGE_MARGIN : 0);
+      if (fragmentFrom > this.from || fragmentTo <= this.from) {
+        continue;
+      }
+      const found = findState(fragment.tree, -fragment.offset, this.from, fragmentTo);
+      if (!found || found.pos > this.to) {
+        continue;
+      }
+      const tree = this.cutTree(fragment.tree, this.from + fragment.offset, found.pos + fragment.offset, false);
+      if (tree) {
+        return { lineIndex: found.info.lineIndex, state: copyLineState(found.info.state), tree };
+      }
+    }
+    return { lineIndex: 0, state: startLineState(), tree: Tree.empty };
+  }
+
+  private finish(): Tree {
+    return new Tree(this.host.topNode, this.chunks, this.chunkPositions, this.parsedPos - this.from).balance();
+  }
+
+  private finishChunk(): void {
+    const built = Tree.build({
+      buffer: this.buffer,
+      length: this.parsedPos - this.chunkStart,
+      nodeSet,
+      start: this.chunkStart,
+      topID: 0
+    });
+    const info: ChunkInfo = { lineIndex: this.lineIndex, readLength: this.chunkReadTo - this.chunkStart, state: copyLineState(this.state) };
+    this.chunks.push(new Tree(built.type, built.children, built.positions, built.length, [[chunkProperty, info]]));
+    this.chunkPositions.push(this.chunkStart - this.from);
+    this.buffer = [];
+    this.chunkStart = this.parsedPos;
+    this.chunkReadTo = this.parsedPos;
+  }
+
+  private parseLine(): void {
+    const lineFrom = this.parsedPos;
+    const line = this.readLineAt(lineFrom);
+    this.lineTexts.delete(lineFrom);
+    const lineEnd = lineFrom + line.length;
+    // A line depends on its own newline: without one it is the last line, and an empty last line is never parsed.
+    let readTo = lineEnd + 1;
+    const readLine = (n: number): string | undefined => {
+      let pos = lineEnd;
+      let text: string | undefined = line;
+      for (let step = 0; step < n; step++) {
+        if (pos >= this.to) {
+          readTo = Math.max(readTo, this.to + 1);
+          return undefined;
+        }
+        text = this.readLineAt(pos + 1);
+        this.lineTexts.set(pos + 1, text);
+        pos += 1 + text.length;
+      }
+      readTo = Math.max(readTo, pos + 1);
+      return text;
+    };
+    const { classes, spans } = tokenizeLine({ line, lineIndex: this.lineIndex, readLine, state: this.state });
+    let childCount = 0;
+    for (const span of spans) {
+      if (span.classes.length === 0) {
+        continue;
+      }
+
+      this.buffer.push(typeId(tokenClassesProperty, span.classes), lineFrom + span.from, lineFrom + span.to, NODE_SIZE);
+      childCount++;
+    }
+    if (classes.length > 0) {
+      this.buffer.push(typeId(lineClassesProperty, classes), lineFrom, lineEnd, NODE_SIZE * (childCount + 1));
+    }
+    this.chunkReadTo = Math.max(this.chunkReadTo, readTo);
+    this.lineIndex++;
+    this.parsedPos = lineEnd < this.to ? lineEnd + 1 : lineEnd;
+  }
+
+  private readLineAt(from: number): string {
+    const cached = this.lineTexts.get(from);
+    if (cached !== undefined) {
+      return cached;
+    }
+    let text = '';
+    let pos = from;
+    while (pos < this.to) {
+      const chunk = this.input.chunk(pos);
+      if (chunk.length === 0 || (chunk === '\n' && this.input.lineChunks)) {
+        break;
+      }
+      const eol = chunk.indexOf('\n');
+      if (eol !== -1) {
+        text += chunk.slice(0, eol);
+        break;
+      }
+      text += chunk;
+      pos += chunk.length;
+    }
+    return text.slice(0, this.to - from);
+  }
+}
+/* eslint-enable unicorn/consistent-class-member-order -- The rule is off for EditorClassParse only. */
+
+class EditorClassParser extends Parser {
+  public constructor(private readonly host: EditorClassHost) {
+    super();
+  }
+
+  public override createParse(input: Input, fragments: readonly TreeFragment[], ranges: readonly ParseRange[]): PartialParse {
+    return new EditorClassParse(this.host, input, fragments, ranges);
+  }
+}
+
+/**
+ * Creates the editor-class tokenizer as a CodeMirror 6 language.
+ *
+ * @param options - The options.
+ * @returns The language.
+ */
+export function createEditorClassLanguage(options: CreateEditorClassLanguageOptions = {}): Language {
+  const data = defineLanguageFacet();
+  const host = new EditorClassHost(options.chunkSize ?? DEFAULT_CHUNK_SIZE, data);
+  return new Language(data, new EditorClassParser(host), [], 'obsidian-markdown');
+}
+
+// Finds the last chunk whose reads end before `before`, starting at or after `startPos`.
+function findState(tree: Tree, offset: number, startPos: number, before: number): FoundState | null {
+  const info = tree.prop(chunkProperty);
+  if (info && offset >= startPos && offset + info.readLength <= before) {
+    return { info, pos: offset + tree.length };
+  }
+  for (let index = tree.children.length - 1; index >= 0; index--) {
+    const child = tree.children[index];
+    const pos = offset + (tree.positions[index] ?? 0);
+    if (!(child instanceof Tree) || pos >= before) {
+      continue;
+    }
+    const found = findState(child, pos, startPos, before);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+function typeId(property: NodeProp<readonly string[]>, classes: readonly string[]): number {
+  const sorted = classes.toSorted(compareCodeUnits);
+  const key = `${property === lineClassesProperty ? 'line' : 'token'}:${JSON.stringify(sorted)}`;
+  let id = typeIds.get(key);
+  if (id === undefined) {
+    id = typeArray.length;
+    // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
+    typeArray.push(NodeType.define({ id, name: sorted.join('_'), props: [[property, sorted]] }));
+    typeIds.set(key, id);
+  }
+  return id;
+}
+
+/**
+ * The editor-class tokenizer as a CodeMirror 6 language.
+ */
+export const editorClassLanguage = createEditorClassLanguage();
