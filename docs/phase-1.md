@@ -104,7 +104,7 @@ Obsidian reads two tokens that start a line before the markdown mode runs. The m
 
 - A ```` ```markdown ```` block runs CodeMirror 5's stock markdown mode, because that is the `markdown` mode the `codemirror` package registers. Obsidian registers its own fork under that name. The fork gives a nested fence with an unknown language a mode that styles nothing, and the stock mode falls back to `comment`. That one difference is `lang-163` of seed 9001.
 - CodeMirror 6's `StreamLanguage` cannot host this tokenizer as it stands, because it gives modes no way to read the next line. Setext headings and tables need that lookahead. Obsidian's editor has its own host that provides it.
-- The Obsidian syntax extensions for `@lezer/markdown`, which Phase 2's `CachedMetadata` projection needs, are not written yet.
+- The Obsidian syntax extensions for `@lezer/markdown`, which Phase 2's `CachedMetadata` projection needs, are in [syntax.md](syntax.md).
 
 ## Decision - 2026-10-14
 
