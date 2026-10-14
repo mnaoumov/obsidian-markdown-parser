@@ -168,7 +168,7 @@ With every quirk at its CommonMark behaviour, each adapter passes the CommonMark
 
 Obsidian's reading view and its metadata worker parse with `remark-parse` 8 (`commonmark: true`), whose own rules give most of these quirks. So the rules of `characterReference`, `autolink`, `htmlComment`, `htmlBlock` and `linkDefinition` are re-expressed from `remark-parse` 8 and `parse-entities` 2, under their MIT licenses (`THIRD-PARTY-NOTICES.md`), and the definition parser was fuzzed against `remark-parse` 8 itself: on 300,000 random one-block documents, about 22,000 of them definitions, the two found the same definitions, ending in the same place.
 
-Obsidian's table and list rules were measured on the live app, on documents beyond the spec examples. `scripts/quirk-probe-oracle.ts` reads the documents of `src/oracle/quirk-probes.ts` from the reading view and the metadata worker into `oracle/quirk-probes-obsidian-1.14.4.json`, as `scripts/spec-oracle.ts` reads the spec examples, and `src/oracle/quirk-probes.test.ts` checks every flag against them. The 101 probes show:
+Obsidian's table and list rules were measured on the live app, on documents beyond the spec examples. `scripts/quirk-probe-oracle.ts` reads the documents of `src/oracle/quirk-probes.ts` from the reading view and the metadata worker into `oracle/quirk-probes-obsidian-1.14.4.json`, as `scripts/spec-oracle.ts` reads the spec examples, and `src/oracle/quirk-probes.test.ts` checks every flag against them. The 101 probes of the flags show:
 
 - **Tables**: a row starts with a pipe, or does not, as the header does, and one that disagrees ends the table; whitespace before the first pipe is a start without one, and makes an empty first cell. The delimiter row gives the columns: a `:` alone aligns left, and no cell but the first may be empty. A line with no pipe after its first character ends the table, and nothing else does, so `> q|x` and `# h|x` are rows. A table interrupts no paragraph.
 - **Lists**: the rules of `listItem`, as the flag describes them, over markers of 10 and 14 digits, siblings indented up to five columns, and items whose first line is empty.
@@ -181,16 +181,40 @@ Every probe reproduces the reading view with its flag in every adapter, except f
 - in `@lezer/markdown` and micromark, a row of a table without a leading pipe that opens a container (`- | -`, `> q|x`), which ends the table: both read containers before the table can see the line. `@lezer/markdown` also ends one at any block that interrupts a paragraph, such as `# h|x`;
 - in `@lezer/markdown`, `listItem`.
 
-### The quirks that are no flag yet
+### The quirks that are no flag
 
 - **Inline algorithms**: emphasis, links, code span runs. Each adapter reads inline content with its own delimiter and bracket algorithm, which no extension point changes. Reproducing them needs Obsidian's inline algorithm in place of the adapter's, not a flag.
 - **Tabs and lazy quote lines**: each adapter measures indentation and decides lazy continuation inside its own container handling, which no extension point reaches.
 - **Leading and trailing whitespace, unclosed fenced code, image descriptions**: the trees agree with CommonMark on these. Only the text a renderer takes from the source differs.
 - **Rendering and comparison**: the sanitizer, embeds and the spec's unclosed tags are not the parser's.
 
+#### Measured beyond the spec examples
+
+The 68 other probes of `src/oracle/quirk-probes.ts` show these quirks on documents the spec examples do not hold, each tagged with an `UnflaggedQuirk`: 20 of emphasis, 16 of links, 5 of code spans, 3 of image descriptions, 8 of tabs, 10 of lazy quote lines and 6 of paragraph whitespace. With every quirk flag on, each adapter gives the reading view on 34 of them, the same 34 in all three, and `quirk-probes.test.ts` pins the other 34. They show:
+
+- **Emphasis**: a `_` run inside a word opens and closes (`foo_bar_baz __a__b` has `<strong>a</strong>b`), whitespace on either side of a run does not stop it (`a ** b ** c`), and a run pairs with the first run that can close it, before code spans, raw HTML, autolinks and link brackets are read (``` `` *a `*` b* `` ``` is ``` `` <em>a `</em>` b* `` ```). `***a***` is `<strong><em>a</em></strong>`.
+- **Links**: a link may hold one (`[a [b](c)](d)` is one link, whose text is `a [b](c)`). A code span, raw HTML or an autolink does not stop a `]`, which makes them text, not a link (``` `` [a `]` b](c) `` ``` stays text). Reference labels are not trimmed or collapsed: `[ a ]` matches no `[a]:` definition, and `[a]` matches no `[ a ]:` one.
+- **Code spans**: an opening run closes at a shorter run: ```` ``` a `` ```` is a backtick and a code span `a`.
+- **Image descriptions**: the description is its source text, ``` `` *a* `b` [c](d) `` ``` as it stands.
+- **Tabs**: a tab after `>` opens indented code (`>\ta`), indented code takes no remainder of a tab as spaces (`-\t\ta` is the code `a`), and a line indented by a space and a tab does not go on indented code.
+- **Lazy quote lines**: an empty `>` line does not end the paragraph, so the next line is a lazy paragraph in the quote, an indented line after a quote is indented code outside it, a lazy line goes on fenced code in a quote, and a line after indented code in a quote is a paragraph in the quote.
+- **Paragraph whitespace**: a paragraph keeps the whitespace that starts its first line and ends its last.
+
+#### Where these come from, and the decision
+
+All of them are `remark-parse` 8's own rules. Stock `remark-parse` 8.0.3 with `commonmark: true` and `gfm: true`, with Obsidian's edits to three of its block tokenizers (`blockquote`, `list` and `table`, as the [Where the rules come from](#where-the-rules-come-from) section says), was rendered with `remark-html` 13, put through a DOM, and compared with the reading view as the tests compare an adapter. On the spec oracle it gives the reading view's HTML on 171 of the 211 examples where the reading view differs from the spec: every example of every `quirk` row of [the differences](#the-differences) but 187 and 494, whose spec HTML holds an unclosed tag. The other 40 examples are the `obsidian` preset's syntax (not loaded in the measurement), the sanitizer, embeds and the spec's unclosed tags. It changes 2 of the 463 examples where the reading view and the spec agree, 154 and 627, an attribute's line ending and a `<?php` tag, which the reading view's HTML handling and the measurement's DOM treat differently: the parses agree. On the probes it gives the reading view on 159 of the 169, all 68 of these and all of the flags' but the 10 the sanitizer or the DOM changes. The measurement took the three edited tokenizers from the app, so it is not in this repository, which takes no code from the app.
+
+So the choice was:
+
+1. **A fourth parser, built on `remark-parse` 8 with Obsidian's three block edits, re-expressed in this package.** It gives an mdast tree that reads every quirk as Obsidian does by construction, and it is the parser the `CachedMetadata` projection of phase 2 needs.
+2. An `inline: 'commonmark' | 'obsidian'` flag in each adapter, a port of `remark-parse` 8's inline tokenizers into each one's inline model. It would leave out tabs, lazy quote lines and paragraph whitespace, which are container handling that no extension point reaches, and it would be three ports of one algorithm.
+3. Leaving them out of scope, with this measurement as the record.
+
+**Decided (2026-10-14): the first.** The three adapters keep their own inline algorithm and container handling, which is what each one's ecosystem expects, and get no `inline` flag. The quirk flags stay what they are: the block and syntax rules an adapter's extension points reach. A reader that wants Obsidian's parse exactly uses the fourth parser.
+
 ## What is left
 
-- **The quirks that are no flag yet**, listed above.
+- **The fourth parser**: `remark-parse` 8 with Obsidian's block edits and the Obsidian syntax, re-expressed in this package and checked against the spec oracle and the probes, as decided above.
 - **`listItem` in `@lezer/markdown`**, and **example 280** there, which both need a change to its list item continuation.
 - **Pipe-less table rows that open a container** in `@lezer/markdown` and micromark, and other paragraph-interrupting blocks in `@lezer/markdown`.
 - **The edges of the flags' rules**: a link title's lenient character references; a definition that runs over a blank line, which Obsidian reads and no adapter does, since none reads a paragraph over one; an HTML block's empty line read after whitespace a container took; and an item whose empty first line has trailing spaces.
