@@ -1,0 +1,28 @@
+{
+  "version": "0.2",
+  "ignorePaths": [
+    ".husky",
+    "coverage",
+    "dist",
+    "scripts/helpers/@types/markdownlint-cli2-config-schema.d.ts"
+  ],
+  "words": [
+    "behaviour",
+    "bivariant",
+    "flavoured",
+    "globstars",
+    "Jsdocs",
+    "lezer",
+    "linkinator",
+    "lockfiles",
+    "mnaoumov",
+    "Naumov",
+    "nvmrc",
+    "paperio",
+    "TSES",
+    "Tsdocs",
+    "ungated",
+    "uppercased",
+    "wikilinks"
+  ]
+}
