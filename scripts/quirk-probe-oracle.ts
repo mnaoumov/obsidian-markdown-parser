@@ -30,6 +30,7 @@ import type {
   QuirkProbeFile,
   QuirkProbeRead
 } from '../src/oracle/quirk-probes.ts';
+import type { SpecOracleMeta } from '../src/oracle/spec-oracle-file.ts';
 
 import { QUIRK_PROBES } from '../src/oracle/quirk-probes.ts';
 
@@ -108,6 +109,11 @@ interface OitModule {
   connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
+interface ProbeBatch {
+  readonly meta: SpecOracleMeta;
+  readonly reads: readonly ProbeRead[];
+}
+
 interface ProbeRead {
   readonly html: string;
   readonly sections: readonly string[];
@@ -133,6 +139,7 @@ interface Workspace {
   getMostRecentLeaf: () => Leaf | null;
 }
 
+const BATCH_SIZE = 40;
 const JSON_INDENT = 2;
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -149,8 +156,9 @@ const oit = await import(pathToFileURL(oitPath).href) as OitModule;
 
 // The connection is disposed by hand: `await using` needs a tslib helper this repo does not install.
 const conn = await oit.connectToCdp(obsidianVersion === undefined ? {} : { obsidianVersion });
-try {
-  const result = await conn.evalInObsidian({
+
+async function readProbes(markdowns: readonly string[]): Promise<ProbeBatch> {
+  return await conn.evalInObsidian({
     callback: async ({ app, docs, obsidianModule }) => {
       const SETTLE_MS = 30;
       async function sleep(ms: number): Promise<void> {
@@ -230,11 +238,22 @@ try {
       const { electron } = globalThis as ElectronGlobal & typeof globalThis;
       return { meta: { appVersion: electron?.ipcRenderer?.sendSync?.('version') ?? null, userAgent: navigator.userAgent }, reads };
     },
-    input: { docs: QUIRK_PROBES.map((probe) => probe.markdown) }
+    input: { docs: markdowns }
   });
+}
+
+try {
+  // In batches, since one eval may run for only 30 seconds.
+  const reads: ProbeRead[] = [];
+  let meta: SpecOracleMeta = { appVersion: null, userAgent: '' };
+  for (let start = 0; start < QUIRK_PROBES.length; start += BATCH_SIZE) {
+    const batch = await readProbes(QUIRK_PROBES.slice(start, start + BATCH_SIZE).map((probe) => probe.markdown));
+    reads.push(...batch.reads);
+    meta = batch.meta;
+  }
 
   const probes: QuirkProbeRead[] = QUIRK_PROBES.map((probe, index) => {
-    const read = result.reads[index];
+    const read = reads[index];
     if (!read) {
       throw new Error(`No oracle result for probe ${String(index)}`);
     }
@@ -242,8 +261,8 @@ try {
   });
   const outDirectory = join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
-  const outFile = join(outDirectory, `quirk-probes-obsidian-${result.meta.appVersion ?? 'unknown'}.json`);
-  const oracleFile: QuirkProbeFile = { meta: result.meta, probes };
+  const outFile = join(outDirectory, `quirk-probes-obsidian-${meta.appVersion ?? 'unknown'}.json`);
+  const oracleFile: QuirkProbeFile = { meta, probes };
   // Indented as dprint formats it.
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
   console.log(`quirk-probe-oracle: ${String(probes.length)} probes written to ${outFile}`);
