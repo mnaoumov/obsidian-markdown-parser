@@ -12,9 +12,17 @@
  * - `looseList: 'blank-line-anywhere'`: the HTML compiler decides whether a list is loose, from the events. A resolver
  *   marks each list the quirk makes loose, and {@link micromarkQuirksHtml} reads the mark. `parseMdast` applies the
  *   quirk to the mdast tree itself.
+ * - `htmlBlock`, `htmlComment`, `characterReference`, `autolink` and `linkDefinition`: constructs in place of
+ *   micromark's `htmlFlow`, `htmlText`, `autolink` and `definition` (and beside its `characterReference`, in inline
+ *   content), with micromark's tokens. A character reference's and an autolink's tokens carry what Obsidian reads, which
+ *   {@link micromarkQuirksHtml} and `parseMdast` render. A probe at setext underlines leaves a one-line definition that
+ *   one underlines to the paragraph.
+ * - `gfmTable`: {@link micromarkObsidianTable} replaces `micromark-extension-gfm-table`, with its tokens.
+ * - `listItem`: `obsidianList` (`micromark-list.ts`) replaces micromark's list construct, and the other list quirks build
+ *   on it.
  *
- * The list handler of {@link micromarkQuirksHtml} is adapted from micromark's HTML compiler, under its MIT license (see
- * `THIRD-PARTY-NOTICES.md`).
+ * The list handler of {@link micromarkQuirksHtml} is adapted from micromark's HTML compiler, and its table handlers from
+ * `micromark-extension-gfm-table`'s, under their MIT license (see `THIRD-PARTY-NOTICES.md`).
  */
 
 import type {

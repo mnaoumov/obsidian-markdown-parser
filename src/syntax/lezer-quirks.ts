@@ -12,7 +12,21 @@
  * - `softLineBreak: 'hard-break'`: a line ending inside inline content is a `HardBreak` node, with the whitespace
  *   before it.
  *
- * `looseList` has no node in the tree, which does not say whether a list is loose; `renderLezerHtml` applies it.
+ * - `htmlBlock: 'obsidian'`: an HTML block parser in place of `@lezer/markdown`'s reads Obsidian's kinds (see
+ *   `obsidianHtmlBlockKind`), adapted from `@lezer/markdown`'s own under its MIT license (see `THIRD-PARTY-NOTICES.md`).
+ *   The parser leaves out the `<textarea>` fix of `commonMarkFixes`.
+ * - `htmlComment: 'obsidian'`: a `<!--` that opens no comment of CommonMark 0.30 is text.
+ * - `characterReference: 'obsidian'`: an inline parser before `Entity` reads Obsidian's references as `Entity` nodes.
+ * - `autolink: 'obsidian'`: an inline parser before `RawHTML` reads Obsidian's autolinks as `Autolink` nodes.
+ * - `linkDefinition: 'obsidian'`: a `LinkReference` leaf parser in place of `@lezer/markdown`'s reads Obsidian's
+ *   definitions.
+ * - `gfmTable: 'obsidian'`: {@link obsidianTable} replaces `@lezer/markdown`'s `Table`. A row of a table without a
+ *   leading pipe that another block interrupts a paragraph with ends the table, as `@lezer/markdown` ends the
+ *   paragraph before a leaf parser sees the line.
+ *
+ * `looseList` has no node in the tree, which does not say whether a list is loose; `renderLezerHtml` applies it, as it
+ * decodes Obsidian's character references, shows Obsidian's autolinks and reads Obsidian's table cells. `listItem` has
+ * no extension: `@lezer/markdown` keeps list item continuation internal.
  */
 
 import type {

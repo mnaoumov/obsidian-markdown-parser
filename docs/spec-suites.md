@@ -103,20 +103,20 @@ The reading view's DOM is compared with the spec's HTML put through the same DOM
 | A list is loose when a blank line anywhere inside it, in a nested list or in fenced code, is followed by more of it. | quirk | 307, 318, 319 | `looseList: 'blank-line-anywhere'` |
 | With `strictLineBreaks: false`, a line ending inside a paragraph is a hard line break. | quirk | 65 CommonMark examples and GFM 199 | `softLineBreak: 'hard-break'` |
 | A tab is not expanded to its tab stop. | quirk | 2, 5, 6, 7, 9, 11 | none |
-| A named character reference needs no `;`, and a numeric one past the last code point is U+FFFD. | quirk | 28, 29 | none |
+| A named character reference needs no `;`, and a numeric one past the last code point is U+FFFD. | quirk | 28, 29 | `characterReference: 'obsidian'` |
 | A paragraph keeps its leading whitespace, and its trailing whitespace. | quirk | 82, 84, 222, 224, 226, 241, 252, 255, 275, 276, 278, 280, 645 | none |
 | Fenced code that runs to the end of the document keeps its last line ending as an empty line. | quirk | 127, 137, 139 | none |
 | A lazy line continues a quote after an empty `>` line and inside fenced code, and ends it when indented. | quirk | 93, 237, 238, 249 | none |
-| A definition's title is on its line or none, `<>` is no destination, and a setext underline makes a definition a heading. | quirk | 196, 200, 202, 210, 216 | none |
-| List item structure: a marker indented four or more columns opens a sibling, a paragraph indented less than the content column stays in the item after a blank line, ordered markers take ten digits. | quirk | 257, 266, 278, 280, 312, 313 | none |
-| `<textarea>` opens no raw HTML block, and `</pre>` ends a paragraph. | quirk | 148, 171 | none |
-| HTML comments follow CommonMark 0.30. | quirk | 625, 626 | none |
+| A definition's title is on its line or none, `<>` is no destination, and a setext underline makes a definition a heading. | quirk | 196, 200, 202, 210, 216 | `linkDefinition: 'obsidian'` |
+| List item structure: a marker indented four or more columns opens a sibling, a paragraph indented less than the content column stays in the item after a blank line, ordered markers take ten digits. | quirk | 257, 266, 278, 280, 312, 313 | `listItem: 'obsidian'`, not in `@lezer/markdown` |
+| `<textarea>` opens no raw HTML block, and `</pre>` ends a paragraph. | quirk | 148, 171 | `htmlBlock: 'obsidian'` |
+| HTML comments follow CommonMark 0.30. | quirk | 625, 626 | `htmlComment: 'obsidian'` |
 | Emphasis has its own delimiter rules, and is matched before code spans, raw HTML, autolinks and link brackets. | quirk | 79 examples and GFM 631 | none |
 | A link may hold a link, link brackets are matched before code spans, raw HTML and autolinks, and reference labels and destinations have their own rules. | quirk | 19 examples | none |
 | A code span's opening run closes at a shorter run. | quirk | 347 | none |
 | An image's description is its source text. | quirk | 520, 573, 574, 575, 576, 577, 585, 589 | none |
-| An autolink takes only some schemes, and a `mailto:` one shows no scheme. | quirk | 597, 598, 601, 606 | none |
-| Tables: edge pipes, escaped pipes in code, rows without a pipe, short delimiter rows. | quirk | GFM 199, 200, 202, 203 | none |
+| An autolink takes only some schemes, and a `mailto:` one shows no scheme. | quirk | 597, 598, 601, 606 | `autolink: 'obsidian'` |
+| Tables: edge pipes, escaped pipes in code, rows without a pipe, short delimiter rows. | quirk | GFM 199, 200, 202, 203 | `gfmTable: 'obsidian'` |
 | No bare `ftp://` URL, and no tag filter. | quirk | GFM 628, 652 | none |
 | The `obsidian` preset's syntax: tags, front matter, internal links, bare URLs. | syntax | 64, 96, 98, 548, 559, 590, 602, 608, 611, 612 | `ObsidianSyntaxFlags` |
 | The reading view's HTML sanitizer, and its embeds of vault files. | rendering | 27 examples and GFM 652 | none |
@@ -126,7 +126,7 @@ The reading view's DOM is compared with the spec's HTML put through the same DOM
 
 ### The flags
 
-`src/syntax/options.ts` defines one flag per quirk in `ObsidianQuirkFlags`. Each takes the CommonMark behaviour (`COMMONMARK_QUIRKS`), which every preset keeps, or Obsidian's (`OBSIDIAN_QUIRKS`). Options take them beside the syntax flags, for example `{ preset: 'obsidian', setextHeading: 'single-line' }`.
+`src/syntax/options.ts` defines one flag per quirk in `ObsidianQuirkFlags`. Each takes the CommonMark behaviour (`COMMONMARK_QUIRKS`), which every preset keeps, or Obsidian's (`OBSIDIAN_QUIRKS`). Options take them beside the syntax flags, for example `{ preset: 'obsidian', setextHeading: 'single-line' }`. The first four name the behaviour; the others swap a construct's rules for Obsidian's, so they take `'commonmark'` or `'obsidian'`.
 
 | Flag | `@lezer/markdown` | micromark and mdast | markdown-it |
 | --- | --- | --- | --- |
@@ -134,30 +134,63 @@ The reading view's DOM is compared with the spec's HTML put through the same DOM
 | `emptyListItem` | an `endLeaf` check | a list construct that lets an empty item interrupt | a rule in the paragraph's terminator chain |
 | `looseList` | `renderLezerHtml`'s `looseList` option, since the tree does not say whether a list is loose | a resolver marks each list the quirk makes loose, `micromarkQuirksHtml` renders it, and `parseMdast` spreads its items | a core rule shows the list's paragraphs |
 | `softLineBreak` | a `HardBreak` node for each line ending of inline content | a `hardBreakTrailing` token before each one, which mdast reads as a `break` | a core rule turns each `softbreak` into a `hardbreak` |
+| `characterReference` | an inline parser before `Entity`, and `renderLezerHtml` decodes the reference as Obsidian does | a construct beside micromark's in inline content, whose value token carries the text, which `micromarkQuirksHtml` and `parseMdast` read | an inline rule before `entity` |
+| `autolink` | an inline parser before `RawHTML`, and `renderLezerHtml` shows the link as Obsidian does | a construct in place of `autolink`, whose target token carries the text and the address | a rule in place of `autolink` |
+| `htmlComment` | an inline parser before `RawHTML` | a construct in place of `htmlText` that checks the comment first | an inline rule before `html_inline` |
+| `htmlBlock` | an HTML block parser in place of `HTMLBlock`, without the `<textarea>` fix | a construct in place of `htmlFlow` | a rule in place of `html_block` |
+| `linkDefinition` | a `LinkReference` leaf parser in place of `@lezer/markdown`'s | a construct in place of `definition`, and a probe at setext underlines | a rule in place of `reference` |
+| `gfmTable` | `obsidianTable` in place of `Table` | `micromarkObsidianTable` in place of `micromark-extension-gfm-table`, with its tokens | a rule in place of `table`, after every other block |
+| `listItem` | none: list item continuation is internal | `obsidianList`, a port of micromark's list construct, in place of `list` | a port of the `list` rule |
 
-`spec-suites.test.ts` turns each quirk on alone from each preset, and checks the CommonMark examples whose rendering changes. They are the same for every preset and every adapter:
+The rules every adapter shares are in `src/syntax/quirk-rules.ts`.
+
+`spec-suites.test.ts` turns each quirk on alone from each preset, and checks the CommonMark examples whose rendering changes, and the GFM extension examples from the `gfm` preset. They are the same for every preset and every adapter, but where the table says otherwise:
 
 | Flag | Examples it changes |
 | --- | --- |
 | `setextHeading` | 81, 82, 84, 86, 95 |
 | `emptyListItem` | 285, 367 |
 | `looseList` | 307, 318, 319, and 280 in `@lezer/markdown`, which keeps that example's paragraph in its list item (its one failing example) |
-| `softLineBreak` | every example with a soft line break, 67 of them |
+| `softLineBreak` | every example with a soft line break, 67 of them, and GFM 203, which GFM reads as a paragraph |
+| `characterReference` | 28, 29 |
+| `autolink` | 597, 598, 601, 606 |
+| `htmlComment` | 625, 626 |
+| `htmlBlock` | 148, 171 |
+| `linkDefinition` | 196, 200, 202, 210, 216, and 546 and 552, whose labels hold a bracket or only whitespace: Obsidian reads those definitions too, and differs from the spec on their links as well |
+| `gfmTable` | GFM 199, 200, 202, 203 |
+| `listItem` | 257, 266, 278, 280, 312, 313 in micromark and markdown-it, none in `@lezer/markdown` |
 
-With every quirk at its CommonMark behaviour, each adapter passes the CommonMark suite as before.
+With every quirk at its CommonMark behaviour, each adapter passes the CommonMark suite as before, and with all of them on, every adapter renders both suites, and `parseMdast` builds their trees.
 
-`src/oracle/spec-quirks.test.ts` checks the flags against Obsidian itself: with one quirk on, each adapter renders the quirk's examples as the reading view does, except where another of Obsidian's quirks shows in the same example. `setextHeading` misses 82 and 84, whose paragraphs keep their leading whitespace. `softLineBreak` misses 16 of its examples, each for another quirk in the table above, and its examples differ from Obsidian's own list where Obsidian parses the example differently: 84, 196, 210, 241 and 625 have a soft line break only in Obsidian's parse, and 93, 148, 216, 238, 285, 312 and 367 only in CommonMark's.
+`src/oracle/spec-quirks.test.ts` checks the flags against Obsidian itself: with one quirk on, each adapter renders the quirk's examples as the reading view does, except where another of Obsidian's quirks shows in the same example. `setextHeading` misses 82 and 84, and `listItem` 278 and 280, whose paragraphs keep their leading whitespace. `htmlBlock` misses 148 and 171, whose raw HTML the reading view's DOM rewrites: it adds `<tbody>`, drops the line ending after `<pre>`, and holds the HTML after `<textarea>` as its text. `listItem` misses all six in `@lezer/markdown`. `softLineBreak` misses 16 of its CommonMark examples and GFM 199, each for another quirk in the table above, and its examples differ from Obsidian's own list where Obsidian parses the example differently: 84, 196, 210, 241 and 625 have a soft line break only in Obsidian's parse, and 93, 148, 216, 238, 285, 312 and 367 only in CommonMark's.
+
+### Where the rules come from
+
+Obsidian's reading view and its metadata worker parse with `remark-parse` 8 (`commonmark: true`), whose own rules give most of these quirks. So the rules of `characterReference`, `autolink`, `htmlComment`, `htmlBlock` and `linkDefinition` are re-expressed from `remark-parse` 8 and `parse-entities` 2, under their MIT licenses (`THIRD-PARTY-NOTICES.md`), and the definition parser was fuzzed against `remark-parse` 8 itself: on 300,000 random one-block documents, about 22,000 of them definitions, the two found the same definitions, ending in the same place.
+
+Obsidian's table and list rules were measured on the live app, on documents beyond the spec examples. `scripts/quirk-probe-oracle.ts` reads the documents of `src/oracle/quirk-probes.ts` from the reading view and the metadata worker into `oracle/quirk-probes-obsidian-1.14.4.json`, as `scripts/spec-oracle.ts` reads the spec examples, and `src/oracle/quirk-probes.test.ts` checks every flag against them. The 101 probes show:
+
+- **Tables**: a row starts with a pipe, or does not, as the header does, and one that disagrees ends the table; whitespace before the first pipe is a start without one, and makes an empty first cell. The delimiter row gives the columns: a `:` alone aligns left, and no cell but the first may be empty. A line with no pipe after its first character ends the table, and nothing else does, so `> q|x` and `# h|x` are rows. A table interrupts no paragraph.
+- **Lists**: the rules of `listItem`, as the flag describes them, over markers of 10 and 14 digits, siblings indented up to five columns, and items whose first line is empty.
+
+Every probe reproduces the reading view with its flag in every adapter, except for:
+
+- what the reading view's sanitizer and DOM do to the parser's HTML: comments, `<meta>`, a `javascript:` target and stray end tags;
+- a link title's character references, which Obsidian reads as inline content's and the flag leaves to CommonMark;
+- paragraphs that keep their leading whitespace (see [the differences](#the-differences));
+- in `@lezer/markdown` and micromark, a row of a table without a leading pipe that opens a container (`- | -`, `> q|x`), which ends the table: both read containers before the table can see the line. `@lezer/markdown` also ends one at any block that interrupts a paragraph, such as `# h|x`;
+- in `@lezer/markdown`, `listItem`.
 
 ### The quirks that are no flag yet
 
 - **Inline algorithms**: emphasis, links, code span runs. Each adapter reads inline content with its own delimiter and bracket algorithm, which no extension point changes. Reproducing them needs Obsidian's inline algorithm in place of the adapter's, not a flag.
 - **Tabs and lazy quote lines**: each adapter measures indentation and decides lazy continuation inside its own container handling, which no extension point reaches.
-- **List item structure**: list item continuation is internal to `@lezer/markdown`, as for example 280 below. micromark and markdown-it need their list constructs replaced.
 - **Leading and trailing whitespace, unclosed fenced code, image descriptions**: the trees agree with CommonMark on these. Only the text a renderer takes from the source differs.
-- **Character references, definitions, HTML block kinds, HTML comments, autolinks, tables**: each adapter can express them, with its own construct or rule for the syntax. They are not done yet.
 - **Rendering and comparison**: the sanitizer, embeds and the spec's unclosed tags are not the parser's.
 
 ## What is left
 
 - **The quirks that are no flag yet**, listed above.
-- **Example 280** in `@lezer/markdown`, which needs a change to its list item continuation.
+- **`listItem` in `@lezer/markdown`**, and **example 280** there, which both need a change to its list item continuation.
+- **Pipe-less table rows that open a container** in `@lezer/markdown` and micromark, and other paragraph-interrupting blocks in `@lezer/markdown`.
+- **The edges of the flags' rules**: a link title's lenient character references; a definition that runs over a blank line, which Obsidian reads and no adapter does, since none reads a paragraph over one; an HTML block's empty line read after whitespace a container took; and an item whose empty first line has trailing spaces.

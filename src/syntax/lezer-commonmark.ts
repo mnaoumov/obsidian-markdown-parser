@@ -3,7 +3,8 @@
  *
  * Where `@lezer/markdown` 1.8 reads a document differently from CommonMark 0.31.2, and what this package does about it.
  *
- * {@link commonMarkFixes} corrects three of its rules, and every parser of this package includes it:
+ * {@link commonMarkFixes} corrects three of its rules, and every parser of this package includes it, or, with the
+ * `htmlBlock` quirk, {@link commonMarkFixesWithoutHtmlBlock}:
  *
  * - An ATX heading's `#` sequence may be followed by a tab, not only by a space.
  * - `<textarea>` opens an HTML block of the first kind, beside `<pre>`, `<script>` and `<style>`, and any of their four

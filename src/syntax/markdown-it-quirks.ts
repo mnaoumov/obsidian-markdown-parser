@@ -10,10 +10,13 @@
  * - `softLineBreak: 'hard-break'`: a core rule turns every `softbreak` token into a `hardbreak`.
  * - `looseList: 'blank-line-anywhere'`: a core rule shows the paragraphs of a list the quirk makes loose, as the list
  *   rule does for a loose list.
+ * - `htmlBlock`, `linkDefinition`, `gfmTable` and `listItem`: Obsidian's `html_block`, `reference`, `table` and
+ *   `list` rules replace markdown-it's. The table rule runs after every other block, as Obsidian tries a table last.
+ * - `htmlComment`, `characterReference` and `autolink`: inline rules before `html_inline` and `entity`, and in place
+ *   of `autolink`, read Obsidian's comments, references and autolinks.
  *
- * The single-line `lheading` rule, and the `html_block`, `reference`, `table` and `list` rules of the other quirks, are
- * adapted from markdown-it's own, under its MIT license (see
- * `THIRD-PARTY-NOTICES.md`).
+ * The single-line `lheading` rule, and the `html_block`, `reference`, `table` and `list` rules of the other quirks,
+ * are adapted from markdown-it's own, under its MIT license (see `THIRD-PARTY-NOTICES.md`).
  */
 
 import type {
