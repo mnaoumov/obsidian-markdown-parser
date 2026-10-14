@@ -58,6 +58,7 @@ import type {
   ObsidianHtmlBlockKind
 } from './quirk-rules.ts';
 
+import { obsidianList } from './micromark-list.ts';
 import {
   COMMENT_OPEN,
   decodeObsidianCharacterReferences,
@@ -251,54 +252,23 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags, flags: Pick<Ob
     extension.flow = { [Char.Dash]: singleLineSetextUnderline, [Char.Equals]: singleLineSetextUnderline };
     extension.disable = { null: ['setextUnderline'] };
   }
-  const listStarts: Construct[] = [];
-  if (quirks.emptyListItem === 'interrupts-paragraph') {
-    listStarts.push({
-      ...list,
-      name: 'obsidianEmptyListItem',
-      tokenize: withContext((context, effects, ok, nok) => tokenizeEmptyListItem(context, effects, ok, nok, isSingleLine))
-    });
-  }
-  if (quirks.looseList === 'blank-line-anywhere') {
-    // Starts every list micromark starts, so that its resolver sees the document's lists.
-    listStarts.push({ ...list, name: 'obsidianLooseList', resolveAll: resolveLooseLists });
-  }
+  const listStarts = listStartConstructs(quirks, isSingleLine);
   if (listStarts.length > 0) {
     extension.document = Object.fromEntries(LIST_START_CODES.map((code) => [code, listStarts]));
   }
   const text: Record<number, Construct[]> = {};
-  const disabled: string[] = [];
+  const disabled: string[] = quirks.listItem === 'obsidian' ? ['list'] : [];
   if (quirks.linkDefinition === 'obsidian') {
     const headingProbe: Construct = { name: 'obsidianDefinitionHeadingProbe', tokenize: withContext((context, effects, _ok, nok) => tokenizeDefinitionHeadingProbe(context, effects, nok, isSingleLine)) };
     extension.flow = { ...extension.flow, [Char.Dash]: [headingProbe, ...asList(extension.flow?.[Char.Dash])], [Char.Equals]: [headingProbe, ...asList(extension.flow?.[Char.Equals])] };
     extension.contentInitial = { [codes.leftSquareBracket]: { name: 'obsidianDefinition', tokenize: withContext((context, effects, ok, nok) => tokenizeObsidianDefinition(context, effects, ok, nok, flags.footnote)) } };
     disabled.push('definition', 'obsidianLinkDefinition');
   }
-  if (quirks.softLineBreak === 'hard-break') {
-    const softLineBreak: Construct = {
-      name: 'obsidianSoftLineBreak',
-      resolveAll: resolveSoftLineBreaks,
-      tokenize: withContext(tokenizeSoftLineBreak)
-    };
-    for (const code of [codes.carriageReturn, codes.carriageReturnLineFeed, codes.lineFeed]) {
-      text[code] = [softLineBreak];
-    }
-  }
   if (quirks.htmlBlock === 'obsidian') {
     extension.flow = { ...extension.flow, [codes.lessThan]: { ...htmlFlow, name: 'obsidianHtmlFlow', tokenize: withContext(tokenizeObsidianHtmlFlow) } };
     disabled.push('htmlFlow');
   }
-  if (quirks.characterReference === 'obsidian') {
-    text[codes.ampersand] = [{ name: 'obsidianCharacterReference', tokenize: tokenizeObsidianCharacterReference }];
-  }
-  if (quirks.autolink === 'obsidian') {
-    text[codes.lessThan] = [{ name: 'obsidianAutolink', tokenize: tokenizeObsidianAutolink }];
-    disabled.push('autolink');
-  }
-  if (quirks.htmlComment === 'obsidian') {
-    text[codes.lessThan] = [...text[codes.lessThan] ?? [], { ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
-    disabled.push('htmlText');
-  }
+  addTextConstructs(quirks, text, disabled);
   if (Object.keys(text).length > 0) {
     extension.text = text;
   }
@@ -310,10 +280,10 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags, flags: Pick<Ob
 
 /**
  * The micromark HTML extension for the quirks: a list the `looseList` quirk made loose renders loose, a character
- * reference or an autolink a quirk read renders as Obsidian reads it, and the code spans of a table the `gfmTable`
- * quirk read keep their escapes, so it goes after `gfmTableHtml`. The compiler
- * decides whether a list is loose, so its list handlers are replaced by ones that also read the quirk's mark. Without
- * the quirk, it renders as the compiler does.
+ * reference or an autolink a quirk read renders as Obsidian reads it, and a table the `gfmTable` quirk read keeps the
+ * escapes of its code spans and has its header row cut or padded to its columns, so it goes after `gfmTableHtml`. The
+ * compiler decides whether a list is loose, so its list handlers are replaced by ones that also read the quirk's mark.
+ * Without the quirks, it renders as the compiler does.
  */
 export const micromarkQuirksHtml: HtmlExtension = {
   enter: {
@@ -416,6 +386,33 @@ export function characterReferenceValue(source: string, markerType: string | und
   return named === false ? source : named;
 }
 
+// The text constructs of the inline quirks, and the constructs of micromark's they disable.
+function addTextConstructs(quirks: ObsidianQuirkFlags, text: Record<number, Construct[]>, disabled: string[]): void {
+  if (quirks.softLineBreak === 'hard-break') {
+    const softLineBreak: Construct = {
+      name: 'obsidianSoftLineBreak',
+      resolveAll: resolveSoftLineBreaks,
+      tokenize: withContext(tokenizeSoftLineBreak)
+    };
+    for (const code of [codes.carriageReturn, codes.carriageReturnLineFeed, codes.lineFeed]) {
+      text[code] = [softLineBreak];
+    }
+  }
+  if (quirks.characterReference === 'obsidian') {
+    text[codes.ampersand] = [{ name: 'obsidianCharacterReference', tokenize: tokenizeObsidianCharacterReference }];
+  }
+  if (quirks.autolink === 'obsidian') {
+    text[codes.lessThan] = [{ name: 'obsidianAutolink', tokenize: tokenizeObsidianAutolink }];
+    disabled.push('autolink');
+  }
+  if (quirks.htmlComment !== 'obsidian') {
+    return;
+  }
+
+  text[codes.lessThan] = [...text[codes.lessThan] ?? [], { ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
+  disabled.push('htmlText');
+}
+
 function asList(constructs: Construct | Construct[] | undefined): Construct[] {
   if (constructs === undefined) {
     return [];
@@ -507,6 +504,27 @@ function listEnterHandler(tag: string): (this: CompileContext, token: Token) => 
     this.tag(`<${tag}`);
     this.setData('expectFirstItem', true);
   };
+}
+
+// The list constructs of the list quirks, on Obsidian's list structure or micromark's.
+function listStartConstructs(quirks: ObsidianQuirkFlags, isSingleLine: boolean): Construct[] {
+  const baseList = quirks.listItem === 'obsidian' ? obsidianList : list;
+  const listStarts: Construct[] = [];
+  if (quirks.emptyListItem === 'interrupts-paragraph') {
+    listStarts.push({
+      ...baseList,
+      name: 'obsidianEmptyListItem',
+      tokenize: withContext((context, effects, ok, nok) => tokenizeEmptyListItem(context, effects, ok, nok, isSingleLine, baseList))
+    });
+  }
+  if (quirks.looseList === 'blank-line-anywhere') {
+    // Starts every list micromark starts, so that its resolver sees the document's lists.
+    listStarts.push({ ...baseList, name: 'obsidianLooseList', resolveAll: resolveLooseLists });
+  }
+  if (quirks.listItem === 'obsidian') {
+    listStarts.push(obsidianList);
+  }
+  return listStarts;
 }
 
 function nodeOps(type: TokenType, children: TokenOp[]): TokenOp[] {
@@ -788,8 +806,8 @@ function tokenizeDefinitionHeadingProbe(context: TokenizeContext, effects: Effec
  * An empty list item opens a list where it interrupts a paragraph: the list construct runs as if it did not interrupt.
  * A line the paragraph takes as its setext underline is left to it.
  */
-function tokenizeEmptyListItem(context: TokenizeContext, effects: Effects, ok: State, nok: State, isSingleLine: boolean): State {
-  const startList = list.tokenize.call(context, effects, ok, nok);
+function tokenizeEmptyListItem(context: TokenizeContext, effects: Effects, ok: State, nok: State, isSingleLine: boolean, baseList: Construct): State {
+  const startList = baseList.tokenize.call(context, effects, ok, nok);
   return start;
 
   function start(code: Code): State | undefined {

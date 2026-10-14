@@ -76,6 +76,16 @@ export interface ObsidianQuirkFlags {
   readonly linkDefinition: 'commonmark' | 'obsidian';
 
   /**
+   * How list items are structured. CommonMark: an ordered marker has at most nine digits, an item whose first line is
+   * empty has its content a column after its marker and ends at a blank line, a line indented less than an item's
+   * content ends it, and a marker indented four or more columns opens no item. Obsidian: an ordered marker has any
+   * number of digits; an item whose first line is empty has its content right after its marker, and a blank line does
+   * not end it; a line indented more than four columns, though less than the item's content, continues the item; and a
+   * marker of the same list indented less than the item's content opens the next item, however far it is indented.
+   */
+  readonly listItem: 'commonmark' | 'obsidian';
+
+  /**
    * When a list is loose, its items' paragraphs rendered in `<p>`. CommonMark: when a blank line separates two of its
    * items, or two blocks directly inside one item. Obsidian: when a blank line anywhere inside it is followed by more of
    * it, in a nested list or in fenced code as well.
@@ -266,6 +276,7 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
   htmlBlock: 'commonmark',
   htmlComment: 'commonmark',
   linkDefinition: 'commonmark',
+  listItem: 'commonmark',
   looseList: 'between-blocks',
   setextHeading: 'multi-line',
   softLineBreak: 'line-ending'
@@ -282,6 +293,7 @@ export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
   htmlBlock: 'obsidian',
   htmlComment: 'obsidian',
   linkDefinition: 'obsidian',
+  listItem: 'obsidian',
   looseList: 'blank-line-anywhere',
   setextHeading: 'single-line',
   softLineBreak: 'hard-break'
@@ -307,6 +319,7 @@ export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}
     htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
     htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,
     linkDefinition: options.linkDefinition ?? COMMONMARK_QUIRKS.linkDefinition,
+    listItem: options.listItem ?? COMMONMARK_QUIRKS.listItem,
     looseList: options.looseList ?? COMMONMARK_QUIRKS.looseList,
     setextHeading: options.setextHeading ?? COMMONMARK_QUIRKS.setextHeading,
     softLineBreak: options.softLineBreak ?? COMMONMARK_QUIRKS.softLineBreak

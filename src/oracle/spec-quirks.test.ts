@@ -58,6 +58,7 @@ const TARGET_ATTRIBUTE_RE = /^(?<name>href|src)="(?<value>[^"]*)"$/u;
  * quirks shows there too.
  * - htmlBlock 148, 171: the reading view's DOM reads the raw HTML: it adds `<tbody>`, drops the line ending after `<pre>`,
  *   and holds the HTML after `<textarea>` as its text. The blocks are the reading view's.
+ * - listItem 278, 280: the paragraph keeps its leading whitespace.
  * - setextHeading 82, 84: the paragraph keeps its leading whitespace.
  * - softLineBreak 28: character references; 81, 82, 84, 95: setext headings; 187, 494: unclosed tags in the spec;
  *   196, 210: link reference definitions; 222, 224: leading whitespace; 241: trailing whitespace; 384, 432: emphasis;
@@ -71,10 +72,16 @@ const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly string[
   htmlBlock: ['commonmark:148', 'commonmark:171'],
   htmlComment: [],
   linkDefinition: [],
+  listItem: ['commonmark:278', 'commonmark:280'],
   looseList: [],
   setextHeading: ['commonmark:82', 'commonmark:84'],
   softLineBreak: [...[28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625].map((example) => `commonmark:${String(example)}`), 'gfm:199']
 };
+// The quirks an adapter cannot express: its flag changes nothing there.
+const NOT_EXPRESSIBLE: Readonly<Partial<Record<Adapter, readonly (keyof ObsidianQuirkFlags)[]>>> = {
+  lezer: ['listItem']
+};
+
 function compareKeys(a: string, b: string): number {
   return a.localeCompare(b);
 }
@@ -171,6 +178,6 @@ describe.each(ADAPTERS)('%s with a quirk flag', (adapter) => {
       const obsidian = quirk === 'softLineBreak' ? read.html : read.htmlStrict;
       return normalizeHtml(toHtml(read.markdown)) !== normalizeHtml(obsidian);
     });
-    expect(differing).toEqual(NOT_REPRODUCED[quirk]);
+    expect(differing).toEqual(NOT_EXPRESSIBLE[adapter]?.includes(quirk) === true ? specDifferenceKeys(difference) : NOT_REPRODUCED[quirk]);
   });
 });

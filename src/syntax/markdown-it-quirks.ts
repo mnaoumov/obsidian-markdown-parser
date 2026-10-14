@@ -11,7 +11,8 @@
  * - `looseList: 'blank-line-anywhere'`: a core rule shows the paragraphs of a list the quirk makes loose, as the list
  *   rule does for a loose list.
  *
- * The single-line `lheading` rule is adapted from markdown-it's own, under its MIT license (see
+ * The single-line `lheading` rule, and the `html_block`, `reference`, `table` and `list` rules of the other quirks, are
+ * adapted from markdown-it's own, under its MIT license (see
  * `THIRD-PARTY-NOTICES.md`).
  */
 
@@ -41,6 +42,28 @@ import {
   parseObsidianDefinition
 } from './quirk-rules.ts';
 
+// What tokenizing a list item tells its list.
+interface ListItemEnd {
+  readonly isTight: boolean;
+}
+
+// A list item as its marker line opens it: where its content starts, and at which column.
+interface ListItemStart {
+  readonly contentStart: number;
+  readonly indent: number;
+  readonly isOrdered: boolean;
+  readonly lines: [number, number];
+  readonly offset: number;
+}
+
+// A list marker: where it starts and ends, and the number of an ordered one.
+interface ListMarker {
+  readonly end: number;
+  readonly isOrdered: boolean;
+  readonly start: number;
+  readonly value: number;
+}
+
 // The link reference definitions markdown-it collects in its environment.
 interface ReferenceEnvironment {
   references?: Record<string, ReferenceTarget>;
@@ -54,6 +77,10 @@ interface ReferenceTarget {
 type RuleBlock = ReturnType<MarkdownIt['block']['ruler']['getRules']>[number];
 
 const CODE_INDENT = 4;
+const TAB_SIZE = 4;
+// An item's empty first line and the blank line after it.
+const EMPTY_LINE_AND_BLANK = 2;
+const ORDERED_DIGITS_RE = /^\d*/u;
 const EQUALS_LEVEL = 1;
 const DASH_LEVEL = 2;
 const SETEXT_LEVELS: Readonly<Record<string, number>> = { '-': DASH_LEVEL, '=': EQUALS_LEVEL };
@@ -145,6 +172,9 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   }
   if (quirks.characterReference === 'obsidian') {
     md.inline.ruler.before('entity', 'obsidian_character_reference', checkObsidianCharacterReference);
+  }
+  if (quirks.listItem === 'obsidian') {
+    md.block.ruler.at('list', checkObsidianList, { alt: ['paragraph', 'reference', 'blockquote'] });
   }
   if (quirks.gfmTable === 'obsidian') {
     // In place of markdown-it's table rule, when it is on, and after every other block, as Obsidian tries a table last.
@@ -261,6 +291,53 @@ function checkObsidianHtmlComment(state: StateInline, isSilent: boolean): boolea
 }
 
 /*
+ * A list as Obsidian structures it (see `ObsidianQuirkFlags.listItem`), adapted from markdown-it's `list` rule. An
+ * ordered marker takes any number of digits; an item whose first line is empty has its content right after its marker,
+ * and runs on over blank lines; a line indented more than four columns past the list continues an item whose content
+ * is further right; and a marker of the list indented less than an item's content opens the next item, and ends a
+ * paragraph of the item before it.
+ */
+function checkObsidianList(state: StateBlock, startLine: number, endLine: number, isSilent: boolean): boolean {
+  let marker = (state.sCount[startLine] ?? 0) - state.blkIndent < CODE_INDENT ? readListMarker(state, startLine) : null;
+  // A marker short of the paragraph's container ends the paragraph however far it is indented, as the next item.
+  const isTerminatingParagraph = isSilent && state.parentType === 'paragraph' && (state.sCount[startLine] ?? 0) >= state.blkIndent;
+  if (!marker || (isTerminatingParagraph && (marker.value !== 1 || state.skipSpaces(marker.end) >= (state.eMarks[startLine] ?? 0)))) {
+    return false;
+  }
+  if (isSilent) {
+    return true;
+  }
+  const { isOrdered } = marker;
+  const delimiter = state.src.charAt(marker.end - 1);
+  const listTokenIndex = state.tokens.length;
+  const listLines = openList(state, startLine, marker, delimiter);
+  let nextLine = startLine;
+  let isTight = true;
+  let isPreviousEmptyEnd = false;
+  const parentIndent = state.blkIndent;
+  const oldParentType = state.parentType;
+  state.parentType = 'list';
+  while (marker) {
+    const item = openListItem(state, nextLine, marker, delimiter);
+    const isItemTight = tokenizeListItem(state, nextLine, endLine, item, parentIndent).isTight;
+    isTight &&= isItemTight && !isPreviousEmptyEnd;
+    isPreviousEmptyEnd = state.line - nextLine > 1 && state.isEmpty(state.line - 1);
+    state.push('list_item_close', 'li', -1).markup = delimiter;
+    nextLine = state.line;
+    item.lines[1] = nextLine;
+    marker = nextSiblingMarker(state, nextLine, endLine, item, delimiter);
+  }
+  state.push(isOrdered ? 'ordered_list_close' : 'bullet_list_close', isOrdered ? 'ol' : 'ul', -1).markup = delimiter;
+  listLines[1] = nextLine;
+  state.line = nextLine;
+  state.parentType = oldParentType;
+  if (isTight) {
+    markTightParagraphs(state, listTokenIndex);
+  }
+  return true;
+}
+
+/*
  * A table as Obsidian reads it (see `ObsidianQuirkFlags.gfmTable`), with the tokens of markdown-it's own `table` rule.
  * It interrupts no paragraph, and its cells are inline content as written.
  */
@@ -344,7 +421,6 @@ function hardenLineBreaks(state: StateCore): void {
     }
   }
 }
-
 // A line with nothing after its container markup but whitespace those containers take.
 function isEmptyLine(state: StateBlock, line: number): boolean {
   return state.isEmpty(line) && (state.sCount[line] ?? 0) <= state.blkIndent;
@@ -352,6 +428,11 @@ function isEmptyLine(state: StateBlock, line: number): boolean {
 
 function isEmptyListItem(state: StateBlock, line: number): boolean {
   return (state.sCount[line] ?? 0) - state.blkIndent < CODE_INDENT && EMPTY_LIST_ITEM_RE.test(lineText(state, line));
+}
+
+// Whether a block another rule opens there ends the list.
+function isListTerminatedAt(state: StateBlock, line: number, endLine: number): boolean {
+  return state.md.block.ruler.getRules('list').some((rule) => rule(state, line, endLine, true));
 }
 
 function isObsidianTableRowOf(text: string, hasLeadingPipe: boolean): boolean {
@@ -382,6 +463,15 @@ function isSetextUnderlineAt(state: StateBlock, line: number, isSingleLineSetext
   return isSingleLineSetext ? state.sCount[line] === state.blkIndent && BARE_UNDERLINE_RE.test(text) : (state.sCount[line] ?? 0) - state.blkIndent < CODE_INDENT && SETEXT_UNDERLINE_RE.test(text);
 }
 
+// The block tokenizer's tightness, read after it ran.
+function isStateTight(state: StateBlock): boolean {
+  return state.tight;
+}
+
+function lineContentStart(state: StateBlock, line: number): number {
+  return (state.bMarks[line] ?? 0) + (state.tShift[line] ?? 0);
+}
+
 function lineText(state: StateBlock, line: number): string {
   return state.src.slice((state.bMarks[line] ?? 0) + (state.tShift[line] ?? 0), state.eMarks[line]);
 }
@@ -408,6 +498,75 @@ function loosenLists(state: StateCore): void {
   }
 }
 
+// As markdown-it's list rule does: hides the paragraphs of a tight list.
+function markTightParagraphs(state: StateBlock, listIndex: number): void {
+  const level = state.level + PARAGRAPH_LEVEL_IN_LIST;
+  for (let index = listIndex + PARAGRAPH_LEVEL_IN_LIST; index < state.tokens.length - PARAGRAPH_LEVEL_IN_LIST; index++) {
+    const token = state.tokens[index];
+    if (token?.level !== level || token.type !== 'paragraph_open') {
+      continue;
+    }
+    const close = state.tokens[index + PARAGRAPH_LEVEL_IN_LIST];
+    if (close) {
+      close.hidden = true;
+    }
+    token.hidden = true;
+    index += PARAGRAPH_LEVEL_IN_LIST;
+  }
+}
+
+// The marker of the next item of a list, after the item before it: one of the same kind, indented short of its content.
+function nextSiblingMarker(state: StateBlock, line: number, endLine: number, item: ListItemStart, delimiter: string): ListMarker | null {
+  const sCount = state.sCount[line] ?? 0;
+  if (line >= endLine || sCount < state.blkIndent || (sCount - state.blkIndent >= CODE_INDENT && sCount >= item.indent) || isListTerminatedAt(state, line, endLine)) {
+    return null;
+  }
+  const marker = readListMarker(state, line);
+  return marker?.isOrdered === item.isOrdered && state.src.charAt(marker.end - 1) === delimiter ? marker : null;
+}
+
+// Opens a list at its first marker, and gives the range of its lines, to be closed.
+function openList(state: StateBlock, line: number, marker: ListMarker, delimiter: string): [number, number] {
+  const open = state.push(marker.isOrdered ? 'ordered_list_open' : 'bullet_list_open', marker.isOrdered ? 'ol' : 'ul', 1);
+  if (marker.isOrdered && marker.value !== 1) {
+    open.attrSet('start', String(marker.value));
+  }
+  const lines: [number, number] = [line, 0];
+  open.map = lines;
+  open.markup = delimiter;
+  return lines;
+}
+
+// Opens a list item at its marker: its content starts after the marker's whitespace, or right after an empty line's marker.
+function openListItem(state: StateBlock, line: number, marker: ListMarker, markup: string): ListItemStart {
+  const max = state.eMarks[line] ?? 0;
+  const initial = (state.sCount[line] ?? 0) + marker.end - marker.start;
+  let offset = initial;
+  let pos = marker.end;
+  for (; pos < max; pos++) {
+    const char = state.src.charAt(pos);
+    if (char === '\t') {
+      offset += TAB_SIZE - ((offset + (state.bsCount[line] ?? 0)) % TAB_SIZE);
+    } else if (char === ' ') {
+      offset++;
+    } else {
+      break;
+    }
+  }
+  let indentAfterMarker = pos >= max ? 0 : offset - initial;
+  if (indentAfterMarker > CODE_INDENT) {
+    indentAfterMarker = 1;
+  }
+  const token = state.push('list_item_open', 'li', 1);
+  token.markup = markup;
+  const lines: [number, number] = [line, 0];
+  token.map = lines;
+  if (marker.isOrdered) {
+    token.info = state.src.slice(marker.start, marker.end - 1);
+  }
+  return { contentStart: pos, indent: initial + indentAfterMarker, isOrdered: marker.isOrdered, lines, offset };
+}
+
 // A table row's cells, cut or padded to the columns of its delimiter row.
 function pushTableRow(state: StateBlock, line: number, text: string, tag: 'td' | 'th', alignments: readonly ObsidianTableAlignment[]): void {
   const cells = obsidianTableCells(text);
@@ -425,6 +584,16 @@ function pushTableRow(state: StateBlock, line: number, text: string, tag: 'td' |
     state.push(`${tag}_close`, tag, -1);
   }
   state.push('tr_close', 'tr', -1);
+}
+
+function readListMarker(state: StateBlock, line: number): ListMarker | null {
+  const ordered = skipOrderedListMarker(state, line);
+  const start = lineContentStart(state, line);
+  if (ordered >= 0) {
+    return { end: ordered, isOrdered: true, start, value: Number(state.src.slice(start, ordered - 1)) };
+  }
+  const bullet = skipBulletListMarker(state, line);
+  return bullet >= 0 ? { end: bullet, isOrdered: false, start, value: 1 } : null;
 }
 
 // A line's text after the markup of its containers, as a table row reads it.
@@ -447,4 +616,65 @@ function showListParagraphs(tokens: readonly Token[], listIndex: number): void {
       token.hidden = false;
     }
   }
+}
+
+function skipBulletListMarker(state: StateBlock, line: number): number {
+  const pos = lineContentStart(state, line);
+  const marker = state.src.charAt(pos);
+  if (marker !== '*' && marker !== '-' && marker !== '+') {
+    return -1;
+  }
+  return pos + 1 < (state.eMarks[line] ?? 0) && !state.md.utils.isSpace(state.src.codePointAt(pos + 1) ?? 0) ? -1 : pos + 1;
+}
+
+// An ordered marker: any number of digits, then `.` or `)`.
+function skipOrderedListMarker(state: StateBlock, line: number): number {
+  const start = lineContentStart(state, line);
+  const max = state.eMarks[line] ?? 0;
+  const digits = ORDERED_DIGITS_RE.exec(state.src.slice(start, max))?.[0].length ?? 0;
+  const pos = start + digits + 1;
+  const delimiter = state.src.charAt(start + digits);
+  if (digits === 0 || (delimiter !== '.' && delimiter !== ')')) {
+    return -1;
+  }
+  return pos < max && !state.md.utils.isSpace(state.src.codePointAt(pos) ?? 0) ? -1 : pos;
+}
+
+/*
+ * Tokenizes a list item's content, and says whether it is tight. A line indented more than four columns past the list,
+ * but short of the item's content, is read as if it reached the content, unless it is a marker of the list, which opens
+ * the next item.
+ */
+function tokenizeListItem(state: StateBlock, line: number, endLine: number, item: ListItemStart, parentIndent: number): ListItemEnd {
+  const isOldTight = state.tight;
+  const oldTShift = state.tShift[line] ?? 0;
+  const oldSCount = state.sCount[line] ?? 0;
+  const oldListIndent = state.listIndent;
+  const raised: [number, number][] = [];
+  for (let next = line + 1; next < endLine; next++) {
+    const sCount = state.sCount[next] ?? 0;
+    if (!(!state.isEmpty(next) && sCount - parentIndent > CODE_INDENT && sCount < item.indent && skipBulletListMarker(state, next) < 0 && skipOrderedListMarker(state, next) < 0)) {
+      continue;
+    }
+
+    raised.push([next, sCount]);
+    state.sCount[next] = item.indent;
+  }
+  state.listIndent = state.blkIndent;
+  state.blkIndent = item.indent;
+  state.tight = true;
+  state.tShift[line] = item.contentStart - (state.bMarks[line] ?? 0);
+  state.sCount[line] = item.offset;
+  state.md.block.tokenize(state, line, endLine);
+  // An item whose first line is empty and whose content follows a blank line is loose.
+  const isTight = isStateTight(state) && !(item.contentStart >= (state.eMarks[line] ?? 0) && state.line - line > EMPTY_LINE_AND_BLANK && state.isEmpty(line + 1));
+  state.blkIndent = state.listIndent;
+  state.listIndent = oldListIndent;
+  state.tShift[line] = oldTShift;
+  state.sCount[line] = oldSCount;
+  state.tight = isOldTight;
+  for (const [next, sCount] of raised) {
+    state.sCount[next] = sCount;
+  }
+  return { isTight };
 }

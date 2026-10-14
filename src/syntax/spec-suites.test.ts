@@ -36,6 +36,7 @@ import { parseWithLinkReferences } from './lezer-commonmark.ts';
 import { renderLezerHtml } from './lezer-html.ts';
 import { createObsidianParser } from './lezer.ts';
 import { createObsidianMarkdownIt } from './markdown-it.ts';
+import { parseMdast } from './mdast.ts';
 import { micromarkQuirksHtml } from './micromark-quirks.ts';
 import { createMicromarkObsidianMarkdown } from './micromark.ts';
 import {
@@ -114,7 +115,8 @@ const FLAG_CHANGES: Readonly<Record<keyof ObsidianSyntaxFlags, readonly number[]
  * Obsidian's other quirks hide it: `softLineBreak` shows on every soft line break, including in examples Obsidian
  * parses differently. `linkDefinition` reads the definitions of 546 and 552, whose labels hold a bracket or only
  * whitespace; Obsidian differs from the spec there in its links too. `@lezer/markdown` keeps the paragraph of example
- * 280 in its list item (`COMMONMARK_FAILURES`), where a blank line before it makes the list loose.
+ * 280 in its list item (`COMMONMARK_FAILURES`), where a blank line before it makes the list loose. `listItem` changes
+ * nothing in `@lezer/markdown`, whose list item continuation no extension reaches.
  */
 const SOFT_LINE_BREAK_CHANGES = [
   14,
@@ -194,6 +196,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [],
     looseList: [280, 307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
@@ -206,6 +209,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [257, 266, 278, 280, 312, 313],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
@@ -218,6 +222,7 @@ const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuir
     htmlBlock: [148, 171],
     htmlComment: [625, 626],
     linkDefinition: [196, 200, 202, 210, 216, 546, 552],
+    listItem: [257, 266, 278, 280, 312, 313],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
@@ -308,6 +313,12 @@ describe('the vendored spec suites', () => {
   });
 });
 
+describe('the mdast tree', () => {
+  it.each(PRESETS)('is built for every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+    expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => parseMdast(example.markdown, { ...OBSIDIAN_QUIRKS, preset }))).not.toThrow();
+  });
+});
+
 describe.each(ADAPTERS)('%s', (adapter) => {
   it('passes the CommonMark 0.31.2 spec suite with the commonmark preset', () => {
     expect(failingExamples(COMMONMARK, renderer(adapter, { preset: 'commonmark' }, false))).toEqual(COMMONMARK_FAILURES[adapter]);
@@ -351,6 +362,11 @@ describe.each(ADAPTERS)('%s', (adapter) => {
       }
     }
     expect(changes).toEqual(GFM_QUIRK_CHANGES);
+  });
+
+  it.each(PRESETS)('renders every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+    const render = renderer(adapter, { ...OBSIDIAN_QUIRKS, preset }, false);
+    expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => render(example.markdown))).not.toThrow();
   });
 
   it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', () => {

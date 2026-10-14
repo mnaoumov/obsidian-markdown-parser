@@ -226,9 +226,9 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: 'List items: a marker indented four or more columns, but less than the item\'s content, opens a sibling item (312, 313); a paragraph indented less than the content column after a blank line stays in the item (257); an ordered marker takes ten or more digits (266); an item that starts with an empty line keeps an indented paragraph after a blank line (280), and its content starts a column further left (278).',
     commonmark: [257, 266, 278, 280, 312, 313],
+    flag: 'listItem',
     kind: 'quirk',
-    name: 'list item structure',
-    notAFlag: 'List item continuation is internal to `@lezer/markdown`, as for example 280 in the CommonMark suite. micromark and markdown-it need their list constructs replaced. Not done yet.'
+    name: 'list item structure'
   },
   {
     behaviour: '`<textarea>` opens no raw HTML block (171), as in CommonMark 0.30, and a `</pre>` line ends a paragraph (148).',
