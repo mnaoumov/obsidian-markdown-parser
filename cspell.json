@@ -1,5 +1,8 @@
 {
   "version": "0.2",
+  "ignoreRegExpList": [
+    "GHSA(-[0-9a-z]{4}){3}"
+  ],
   "ignorePaths": [
     ".husky",
     "coverage",
@@ -26,6 +29,7 @@
     "Haverbeke",
     "htmlmixed",
     "Jsdocs",
+    "katex",
     "laobubu",
     "lezer",
     "linkify",
@@ -43,6 +47,7 @@
     "runmode",
     "Ryzen",
     "Setext",
+    "smol",
     "stex",
     "subtokenizer",
     "streamparser",

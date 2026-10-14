@@ -18,7 +18,7 @@ import stylistic from '@stylistic/eslint-plugin';
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import { flatConfigs as eslintPluginImportXFlatConfigs } from 'eslint-plugin-import-x';
 // eslint-disable-next-line import-x/no-rename-default, import-x/no-named-as-default -- The default export name `index` is too confusing.
-import jsdoc from 'eslint-plugin-jsdoc';
+import jsdoc, { configs as jsdocConfigs } from 'eslint-plugin-jsdoc';
 import { configs as perfectionistConfigs } from 'eslint-plugin-perfectionist';
 /* v8 ignore start -- Declarative ESLint rule/plugin configuration; correctness is verified by running ESLint, not unit tests. */
 import eslintPluginTsdoc from 'eslint-plugin-tsdoc';
@@ -359,7 +359,7 @@ function getImportXConfigs(): Linter.Config[] {
 function getJsdocsConfigs(): Linter.Config[] {
   return defineConfig([
     {
-      ...jsdoc.configs['flat/recommended-typescript-error'],
+      ...jsdocConfigs['flat/recommended-typescript-error'],
       files: sourceFiles,
       ignores: testFiles
     },
@@ -838,9 +838,14 @@ function getUnicornConfigs(): Linter.Config[] {
        * `unicorn/name-replacements`, which upstream DOES answer with inline disables. Keeping them on is what
        * makes those three directives used rather than unused, and so what lets this repo take upstream's bytes
        * whole instead of stripping the lines — see the transform arms in `scripts/check-vendored-eslint-rules.ts`.
+       *
+       * `@typescript-eslint/no-unsafe-enum-assignment` is new in typescript-eslint 8.71 and upstream still lints
+       * with 8.70, so it has never seen it: the copies' `node as TSESTree.<Node>` narrowing of ESLint's own
+       * `Rule.Node` trips it twice. The answer belongs upstream; drop this line once the copies carry it.
        */
       files: ['scripts/helpers/eslint-rules/**/*.ts'],
       rules: {
+        '@typescript-eslint/no-unsafe-enum-assignment': 'off',
         'unicorn/no-break-in-nested-loop': 'off',
         'unicorn/no-unreadable-for-of-expression': 'off'
       }
