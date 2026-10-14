@@ -29,7 +29,7 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 
 ## Measured against the live editor
 
-`scripts/syntax-diff.ts` scores the tree against the classes the live editor gave the five oracle corpora of Phase 1, construct by construct. For each one it compares the characters the editor marks with the characters the tree's nodes cover. Whitespace is not compared, nor is the inside of a comment, where the editor still styles markdown and the tree has none. A callout is compared per line, on the editor's `HyperMD-callout` line class. A footnote definition is compared on its `[^label]:` alone, since the editor gives a link reference definition's label the same classes.
+`scripts/syntax-diff.ts` scores the tree against the classes the live editor gave the first five oracle corpora of Phase 1, construct by construct. For each one it compares the characters the editor marks with the characters the tree's nodes cover. Whitespace is not compared, nor is the inside of a comment, where the editor still styles markdown and the tree has none. A callout is compared per line, on the editor's `HyperMD-callout` line class. A footnote definition is compared on its `[^label]:` alone, since the editor gives a link reference definition's label the same classes.
 
 | Construct | Documents using it | Agreeing | Disagreeing, by piece set |
 | --- | ---: | ---: | --- |

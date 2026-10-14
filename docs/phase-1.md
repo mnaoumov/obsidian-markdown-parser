@@ -4,7 +4,7 @@ Measured on 2026-10-14 against Obsidian 1.14.4 (installer 1.14.4), on a harness-
 
 ## Result
 
-The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on 13,039 of the 13,040 oracle documents.
+The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on 20,295 of the 20,296 oracle documents.
 
 | Oracle corpus                               | Documents | Exact |
 | ------------------------------------------- | --------: | ----: |
@@ -12,11 +12,15 @@ The tokenizer gives every character and every line of a document the same classe
 | seed 777 (first read after tuning)          |     2,128 | 2,128 |
 | seed 4242 (read once, at the end)           |     2,128 | 2,128 |
 | seed 2026 (wider corpus, tuned against)     |     3,328 | 3,328 |
-| seed 9001 (wider corpus, validation)        |     3,328 | 3,327 |
+| seed 9001 (wider corpus, validation)        |     3,328 | 3,328 |
+| seed 31337 (markdown blocks, tuned against) |     3,628 | 3,628 |
+| seed 2718 (markdown blocks, validation)     |     3,628 | 3,627 |
 
 Seed 777 scored 2,110 the first time it was read, which measured how well rules found on seed 12345 carry to documents nobody looked at. The rules it then taught carried to seed 4242, which scored 2,122 on its first read and 2,126 after two fixes found there. The last 4 documents (`inline-83`, `inline-280`, `inline-34`, `inline-206`) were closed by the two rules under [Line starts the markdown mode never sees](#line-starts-the-markdown-mode-never-sees) and by the CodeMirror 5 release under [Tables and front matter](#tables-and-front-matter).
 
-The last two corpora add four piece sets the first three lacked: `table` (tables with and without outer pipes, after paragraphs, lists and headings, with code, links, math and HTML in cells), `html` (blocks, inline tags, scripts, styles, comments, declarations, HTML in quotes and lists), `lang` (30 fenced languages and their code lines) and `nest` (nested and mixed lists with fences, quotes, math and tables). Seed 2026 scored 3,268 of 3,328 on its first read. Seed 9001 was first read once seed 2026 was exact, and scored 3,289. Both were read again after a last change to the corpus, which only reordered the sets. The one document left, `lang-163`, is under [What is left](#what-is-left).
+Seeds 2026 and 9001 add four piece sets the first three corpora lacked: `table` (tables with and without outer pipes, after paragraphs, lists and headings, with code, links, math and HTML in cells), `html` (blocks, inline tags, scripts, styles, comments, declarations, HTML in quotes and lists), `lang` (30 fenced languages and their code lines) and `nest` (nested and mixed lists with fences, quotes, math and tables). Seed 2026 scored 3,268 of 3,328 on its first read. Seed 9001 was first read once seed 2026 was exact, and scored 3,289. Both were read again after a last change to the corpus, which only reordered the sets. Its one document left, `lang-163`, was a ```` ```markdown ```` block, and the rules under [Markdown blocks](#markdown-blocks) fixed it.
+
+Seeds 31337 and 2718 add the `mdlang` piece set: markdown nested in a markdown fence, opened by ```` ```markdown ````, ````` ````markdown `````, `~~~markdown` or ```` ```text/x-markdown ````, at a line start, in a list item or after a quote mark. Seed 31337 scored 3,605 of 3,628 on its first read. Its other misses taught the editor rules at the end of [Markdown blocks](#markdown-blocks). Seed 2718 was then read once and scored 3,627. Its one document left, `rich-41`, has no markdown block and is under [What is left](#what-is-left).
 
 From this round on, a rule the oracle could not settle was read from the editor's own code, as AGENTS.md L3 allows: the HyperMD-derived mode in Obsidian's `app.js` and Obsidian's fork of the CodeMirror 5 markdown mode in `lib/codemirror/markdown.js`. The rules were then written in this port's own code and checked against all five corpora.
 
@@ -28,9 +32,9 @@ Every line start is a resume point. Highlighting from a copy of the state after 
 
 The classes are the output of a CodeMirror 5 line tokenizer, not of a tree. So the class layer is a tokenizer:
 
-- `src/editor/markdown-mode.ts` ports the CodeMirror 5 `markdown` mode (MIT). Obsidian's additions to the inline flow live here: `%%` comments, `==highlights==`, `[[internal links]]` and embeds, footnote references, inline footnotes, block ids, callouts, fences in list items and in quotes.
+- `src/editor/markdown-mode.ts` ports the CodeMirror 5 `markdown` mode (MIT), as Obsidian forks it. Its editor layer carries HyperMD's options and token types, and Obsidian's additions to the inline flow: `%%` comments, `==highlights==`, `[[internal links]]` and embeds, footnote references, inline footnotes, block ids, callouts, fences in list items and in quotes.
 - `src/editor/obsidian-mode.ts` ports HyperMD (MIT), which wraps the markdown mode. It adds math, tables, footnote definitions, front matter, hashtags and the `line-*` classes, plus the Obsidian rules that act on whole lines.
-- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror` package, pinned to 5.64.0, the release Obsidian 1.14.4 bundles: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`.
+- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror` package, pinned to 5.64.0, the release Obsidian 1.14.4 bundles: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`. It also registers this port, without its editor layer, as the `markdown` mode, as Obsidian registers its fork.
 - `src/editor/highlight.ts` runs the mode the way the editor does. It reads one line at a time, calls `blankLine` for empty lines, and never parses an empty last line.
 
 The oracle harness from Phase 0 is now TypeScript:
@@ -39,7 +43,7 @@ The oracle harness from Phase 0 is now TypeScript:
 - `src/oracle/corpus.ts` builds the corpus: Phase 0's hand-written documents and piece sets, and four more piece sets.
 - `src/oracle/score.ts` scores per character and per line, through the same `_`-joined encoding the editor's node names use.
 - `scripts/oracle-diff.ts` prints the score, the classes that disagree most, and a line-by-line diff of chosen documents.
-- `oracle/obsidian-<version>-seed-<seed>.json` holds the five corpora. Each file keeps its documents' text, so the test does not rebuild them. A seed rebuilds a file's documents only with the piece sets of the commit that read it. They are the test oracle: `src/editor/highlight.test.ts` fails when a document's agreement changes in either direction.
+- `oracle/obsidian-<version>-seed-<seed>.json` holds the seven corpora. Each file keeps its documents' text, so the test does not rebuild them. A seed rebuilds a file's documents only with the piece sets of the commit that read it. They are the test oracle: `src/editor/highlight.test.ts` fails when a document's agreement changes in either direction.
 
 ## What the editor does that CodeMirror 5 and HyperMD do not
 
@@ -100,9 +104,32 @@ Obsidian reads two tokens that start a line before the markdown mode runs. The m
 - A block id that is the whole line.
 - Math at the line's start, once an earlier line has started with math. Obsidian keeps this memory across lines and clears it only at a `$` that does not open math. The first line in a document to start with math still goes through the markdown mode.
 
+### Markdown blocks
+
+Obsidian registers its fork of the CodeMirror 5 markdown mode under the name `markdown`. So a fenced block whose language resolves to that mode (`markdown` in any case, or the MIME type `text/markdown` or `text/x-markdown`) runs the fork itself. It runs without HyperMD and without the editor's layer, with the options the fork defaults to. `src/editor/sub-modes.ts` registers this port under that name in the same way, and the stock `markdown.js` is never loaded. `md` resolves to no mode at all.
+
+Inside such a block, the fork's defaults apply:
+
+- No mark gets a `formatting-*` class.
+- The token types are the fork's own: `comment` for code, `variable-2`, `variable-3` and `keyword` for list levels 1 to 3, and `hr` for a rule.
+- There are no task markers, strikethrough, highlights, `%%` comments, internal links, footnote references, block ids, callouts, tags or math. HyperMD and Obsidian's editor layer add those.
+- A fence with a language that has no mode gets CodeMirror's null mode, which styles nothing. An empty language does the same. Outside a markdown block, such a fence's lines are `inline-code`.
+- A fence as the first inline token after a quote mark toggles a code span (`comment`). A backtick run of the same length closes it too.
+- A footnote definition may open after other tokens on its line. Its label is `link`, and the next word after `]:` is `string url`, with an optional title that the fork does not style.
+- An escape takes only a character CommonMark lets it escape, and it adds no class.
+- An autolink's address is only `link`.
+
+The fork resets link text and an unfinished image at every line start, and it styles a link's address like the text around it. Both hold in the editor too: the editor layer runs the same code.
+
+The `mdlang` set also reached three editor rules that no corpus had touched before. A ```` ```markdown ```` line after a quote mark is a quote fence, not a code block, so its lines are read by the editor:
+
+- Obsidian clears a link's type at every line start and at a blank line. Without that, link text left open at the end of a line carried `hmd-barelink` into the next one.
+- A footnote definition's marks wear `formatting formatting-link link` and nothing else, not even the code style of a quote fence they sit in. After a URL, a quoted or bracketed title is `hmd-footnote-url-title`.
+- Inside a quote-fence span, text is read one character at a time after its runs, so a heading's closing marks are still `formatting-header`.
+
 ## What is left
 
-- A ```` ```markdown ```` block runs CodeMirror 5's stock markdown mode, because that is the `markdown` mode the `codemirror` package registers. Obsidian registers its own fork under that name. The fork gives a nested fence with an unknown language a mode that styles nothing, and the stock mode falls back to `comment`. That one difference is `lang-163` of seed 9001.
+- `rich-41` of seed 2718: a list item, an indented `%%` line, a deeper list item, then ```` > ``` ````. The editor opens a real code block at the quote fence, and the tokenizer reads a quote-fence code span. The tokenizer before the markdown-block rules reads it the same way, so this is an older rule that had not been measured.
 - CodeMirror 6's `StreamLanguage` cannot host this tokenizer, because it gives modes no way to read the next line, which setext headings and tables need. `src/editor/language.ts` is a host that can, with the editor's tree shape and incremental re-parsing. Its design and cost are in [cm6-host.md](cm6-host.md).
 - The Obsidian syntax extensions for `@lezer/markdown`, which Phase 2's `CachedMetadata` projection needs, are in [syntax.md](syntax.md).
 

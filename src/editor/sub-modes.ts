@@ -14,7 +14,11 @@ import { createRequire } from 'node:module';
 
 import type { AnyMode } from './mode.ts';
 
+import { createMarkdownMode } from './markdown-mode.ts';
+
 interface CodeMirror5 {
+  defineMIME: (mime: string, spec: string) => void;
+  defineMode: (name: string, factory: (options: object, spec: MarkdownSpec) => object) => void;
   findModeByName: (name: string) => ModeInfo | undefined;
   getMode: (options: object, spec: object | string) => AnyMode;
   innerMode: (mode: AnyMode, state: object) => InnerMode;
@@ -23,6 +27,13 @@ interface CodeMirror5 {
 interface InnerMode {
   mode: AnyMode;
   state: object;
+}
+
+// The options a spec for the markdown mode may carry.
+interface MarkdownSpec {
+  readonly highlightFormatting?: boolean;
+  readonly strikethrough?: boolean;
+  readonly taskLists?: boolean;
 }
 
 interface ModeInfo {
@@ -75,24 +86,36 @@ export const TEX_MODE = codeMirror5.getMode(MODE_OPTIONS, { name: 'stex' });
  */
 export const YAML_MODE = codeMirror5.getMode(MODE_OPTIONS, 'yaml');
 
+// CodeMirror's null mode, which styles nothing.
+const NULL_MODE = codeMirror5.getMode(MODE_OPTIONS, 'text/plain');
+
+/*
+ * Obsidian registers its own fork of the CodeMirror 5 markdown mode under the name `markdown`, so a block whose
+ * language resolves to that mode runs the fork with the options its spec gives. This port stands in for the fork, and
+ * the stock `markdown.js` is never loaded.
+ */
+// eslint-disable-next-line unicorn/no-top-level-side-effects -- The mode registers itself on CodeMirror 5's object, as the fork does.
+codeMirror5.defineMode('markdown', (_options, spec) =>
+  createMarkdownMode({
+    getCodeMode: findCodeMode,
+    highlightFormatting: spec.highlightFormatting === true,
+    html: { isInText: isHtmlInText, mode: HTML_MODE },
+    strikethrough: spec.strikethrough === true,
+    taskLists: spec.taskLists === true
+  }));
+// eslint-disable-next-line unicorn/no-top-level-side-effects -- The fork registers these MIME types for itself.
+codeMirror5.defineMIME('text/markdown', 'markdown');
+// eslint-disable-next-line unicorn/no-top-level-side-effects -- The fork registers these MIME types for itself.
+codeMirror5.defineMIME('text/x-markdown', 'markdown');
+
 /**
- * Finds the mode for a fenced code block's info string, the way the CodeMirror 5 markdown mode does.
+ * Finds the mode for a fenced code block's info string, the way the editor's markdown mode does.
  *
  * @param name - The language name from the info string.
  * @returns The mode, or `null` when the language has none.
  */
 export function getCodeMode(name: string): AnyMode | null {
-  const info = codeMirror5.findModeByName(name);
-  const spec = info ? info.mime ?? info.mimes?.[0] ?? name : name;
-  if (info && info.mode !== 'null') {
-    try {
-      // eslint-disable-next-line import-x/no-dynamic-require -- A fenced block's language mode is a CommonJS/UMD file found by name at run time.
-      require(`codemirror/mode/${info.mode}/${info.mode}.js`);
-    } catch {
-      return null;
-    }
-  }
-  const mode = codeMirror5.getMode(MODE_OPTIONS, spec);
+  const mode = findCodeMode(name);
   return mode.name === 'null' ? null : mode;
 }
 
@@ -107,4 +130,25 @@ export function isHtmlInText(state: object): boolean {
   const inner = codeMirror5.innerMode(HTML_MODE, state);
   const xmlState = inner.state as XmlState;
   return inner.mode.name === 'xml' && xmlState.tagStart === null && !xmlState.context && xmlState.tokenize.isInText === true;
+}
+
+/**
+ * Finds the mode for a fenced code block's info string, the way Obsidian's fork of the CodeMirror 5 markdown mode
+ * does: a language with no mode gets CodeMirror's null mode, which styles nothing.
+ *
+ * @param name - The language name from the info string.
+ * @returns The mode.
+ */
+function findCodeMode(name: string): AnyMode {
+  const info = codeMirror5.findModeByName(name);
+  const spec = info ? info.mime ?? info.mimes?.[0] ?? name : name;
+  if (info && info.mode !== 'null' && info.mode !== 'markdown') {
+    try {
+      // eslint-disable-next-line import-x/no-dynamic-require -- A fenced block's language mode is a CommonJS/UMD file found by name at run time.
+      require(`codemirror/mode/${info.mode}/${info.mode}.js`);
+    } catch {
+      return NULL_MODE;
+    }
+  }
+  return codeMirror5.getMode(MODE_OPTIONS, spec);
 }

@@ -129,9 +129,9 @@ interface EnterModeOptions {
  */
 export function createObsidianMode(): ObsidianMode {
   const rawMode = createMarkdownMode({
+    editor: { inlineHook: (stream, state) => enterMath(stream, state as ObsidianState) },
     getCodeMode,
-    html: { isInText: isHtmlInText, mode: HTML_MODE },
-    inlineHook: (stream, state) => enterMath(stream, state as ObsidianState)
+    html: { isInText: isHtmlInText, mode: HTML_MODE }
   });
 
   function modeOverride(stream: Stream, state: ObsidianState): null | string {
@@ -266,6 +266,8 @@ export function createObsidianMode(): ObsidianMode {
     const wasLinkText = state.linkText;
     const wasLinkHref = state.linkHref;
     if (isBol) {
+      // Obsidian: a link's type does not carry over to the next line.
+      state.hmdLinkType = LinkType.None;
       state.hmdWasHeading = state.hmdIsHeading;
       state.hmdIsHeading = false;
     }
@@ -597,6 +599,7 @@ export function createObsidianMode(): ObsidianMode {
       if (state.hmdNextMaybe === NextMaybe.FrontMatter) {
         state.hmdNextMaybe = NextMaybe.None;
       }
+      state.hmdLinkType = LinkType.None;
       // Obsidian: a blank line inside a footnote definition stays in it.
       if (state.hmdFootnote) {
         style += ' line-HyperMD-footnote';

@@ -33,10 +33,12 @@ const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'or
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
   ['obsidian-1.14.4-seed-12345.json', []],
   ['obsidian-1.14.4-seed-2026.json', []],
+  // A quote fence after a list item and a comment line opens a code block in the editor, and a code span here.
+  ['obsidian-1.14.4-seed-2718.json', ['rich-41']],
+  ['obsidian-1.14.4-seed-31337.json', []],
   ['obsidian-1.14.4-seed-4242.json', []],
   ['obsidian-1.14.4-seed-777.json', []],
-  // A ```` ```markdown ```` block runs CodeMirror 5's stock markdown mode, where Obsidian runs its own fork.
-  ['obsidian-1.14.4-seed-9001.json', ['lang-163']]
+  ['obsidian-1.14.4-seed-9001.json', []]
 ]);
 
 function readOracle(name: string): OracleFile {
@@ -60,6 +62,23 @@ describe('highlight', () => {
       [2, 7, 'header header-1']
     ]);
     expect(quote?.classes).toEqual(['HyperMD-quote', 'HyperMD-quote-1']);
+  });
+
+  it('should run a markdown block through the fork of the markdown mode with its default options', () => {
+    const lines = highlight('```markdown\n# H **b** ==h==\n- [ ] t\n```md\nx\n````');
+    function classesAt(lineIndex: number, offset: number): string {
+      const line = lines[lineIndex];
+      const position = (line?.from ?? 0) + offset;
+      return line?.spans.find((s) => s.from <= position && position < s.to)?.classes.toSorted(compareCodeUnits).join(' ') ?? '';
+    }
+    // No formatting classes, no highlights and no task markers, and the fork's own token types.
+    expect(classesAt(1, 0)).toBe('header header-1 hmd-codeblock');
+    expect(classesAt(1, 4)).toBe('header header-1 hmd-codeblock strong');
+    expect(classesAt(1, 11)).toBe('header header-1 hmd-codeblock');
+    expect(classesAt(2, 0)).toBe('hmd-codeblock variable-2');
+    expect(classesAt(2, 2)).toBe('hmd-codeblock link variable-2');
+    // A language with no mode gets CodeMirror's null mode, which styles nothing.
+    expect(classesAt(4, 0)).toBe('hmd-codeblock');
   });
 
   it('should resume from the state after any line with the same result', () => {
