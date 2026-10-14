@@ -133,6 +133,7 @@ interface Workspace {
   getMostRecentLeaf: () => Leaf | null;
 }
 
+const JSON_INDENT = 2;
 const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
@@ -243,7 +244,8 @@ try {
   mkdirSync(outDirectory, { recursive: true });
   const outFile = join(outDirectory, `quirk-probes-obsidian-${result.meta.appVersion ?? 'unknown'}.json`);
   const oracleFile: QuirkProbeFile = { meta: result.meta, probes };
-  writeFileSync(outFile, `${JSON.stringify(oracleFile, null, 1)}\n`);
+  // Indented as dprint formats it.
+  writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
   console.log(`quirk-probe-oracle: ${String(probes.length)} probes written to ${outFile}`);
 } finally {
   await conn[Symbol.asyncDispose]();
