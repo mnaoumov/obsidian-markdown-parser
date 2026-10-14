@@ -233,16 +233,16 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {
     behaviour: '`<textarea>` opens no raw HTML block (171), as in CommonMark 0.30, and a `</pre>` line ends a paragraph (148).',
     commonmark: [148, 171],
+    flag: 'htmlBlock',
     kind: 'quirk',
-    name: 'HTML block kinds',
-    notAFlag: 'Not done yet: the HTML block kinds are each adapter\'s own list, which `lezer-commonmark.ts` already extends for 0.31.2.'
+    name: 'HTML block kinds'
   },
   {
     behaviour: 'An HTML comment follows CommonMark 0.30: `--` inside one (625), `<!-->` and `<!--->` (626) are text.',
     commonmark: [625, 626],
+    flag: 'htmlComment',
     kind: 'quirk',
-    name: 'HTML comments',
-    notAFlag: 'Not done yet: each adapter reads raw inline HTML with its own construct.'
+    name: 'HTML comments'
   },
   {
     behaviour: 'A code span\'s opening backtick run closes at a shorter run, leaving the rest of the opener as text (347).',

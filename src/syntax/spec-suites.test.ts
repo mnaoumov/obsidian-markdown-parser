@@ -187,18 +187,24 @@ const SOFT_LINE_BREAK_CHANGES = [
 const QUIRK_CHANGES: Readonly<Record<Adapter, Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>>>> = {
   'lezer': {
     emptyListItem: [285, 367],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
     looseList: [280, 307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'markdown-it': {
     emptyListItem: [285, 367],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES
   },
   'micromark': {
     emptyListItem: [285, 367],
+    htmlBlock: [148, 171],
+    htmlComment: [625, 626],
     looseList: [307, 318, 319],
     setextHeading: [81, 82, 84, 86, 95],
     softLineBreak: SOFT_LINE_BREAK_CHANGES

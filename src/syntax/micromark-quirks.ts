@@ -33,6 +33,8 @@ import type {
 
 import { micromark } from 'micromark';
 import {
+  htmlFlow,
+  htmlText,
   lineEnding,
   list,
   setextUnderline
@@ -40,6 +42,13 @@ import {
 import { codes } from 'micromark-util-symbol';
 
 import type { ObsidianQuirkFlags } from './options.ts';
+import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
+
+import {
+  COMMENT_OPEN,
+  isObsidianHtmlComment,
+  obsidianHtmlBlockKind
+} from './quirk-rules.ts';
 
 declare module 'micromark-util-types' {
   interface Token {
@@ -95,7 +104,21 @@ const LINE_ENDING_CODES: ReadonlySet<Code> = new Set([codes.carriageReturn, code
 // The line endings the soft line break construct read, which are the ones of inline content.
 const softLineEndings = new WeakSet<Token>();
 
+// The comment is decided at its first `-->` after the opener, or at the end of the content.
+const COMMENT_MIN_LENGTH = COMMENT_OPEN.length + 1;
+const COMMENT_CLOSE = '-->';
+
 const bareUnderline: Construct = { partial: true, tokenize: tokenizeBareUnderline };
+const emptyNextLine: Construct = { partial: true, tokenize: tokenizeEmptyNextLine };
+const nextLineInContainers: Construct = { partial: true, tokenize: withContext(tokenizeNextLineInContainers) };
+// Whether a `<` opens anything but a comment CommonMark 0.30 does not read.
+const obsidianHtmlCommentAhead = scanAhead((text, next) => {
+  if (text.length <= COMMENT_OPEN.length && !COMMENT_OPEN.startsWith(text)) {
+    return true;
+  }
+  const isDecided = next === null || (text.length >= COMMENT_MIN_LENGTH && text.endsWith(COMMENT_CLOSE));
+  return isDecided ? text.length < COMMENT_OPEN.length || isObsidianHtmlComment(text) : null;
+});
 const emptyListItemLine: Construct = { partial: true, tokenize: tokenizeEmptyListItemLine };
 
 /**
@@ -131,17 +154,31 @@ export function createMicromarkQuirks(quirks: ObsidianQuirkFlags): Extension {
   if (listStarts.length > 0) {
     extension.document = Object.fromEntries(LIST_START_CODES.map((code) => [code, listStarts]));
   }
+  const text: Record<number, Construct[]> = {};
+  const disabled: string[] = [];
   if (quirks.softLineBreak === 'hard-break') {
     const softLineBreak: Construct = {
       name: 'obsidianSoftLineBreak',
       resolveAll: resolveSoftLineBreaks,
       tokenize: withContext(tokenizeSoftLineBreak)
     };
-    extension.text = {
-      [codes.carriageReturn]: softLineBreak,
-      [codes.carriageReturnLineFeed]: softLineBreak,
-      [codes.lineFeed]: softLineBreak
-    };
+    for (const code of [codes.carriageReturn, codes.carriageReturnLineFeed, codes.lineFeed]) {
+      text[code] = [softLineBreak];
+    }
+  }
+  if (quirks.htmlBlock === 'obsidian') {
+    extension.flow = { ...extension.flow, [codes.lessThan]: { ...htmlFlow, name: 'obsidianHtmlFlow', tokenize: withContext(tokenizeObsidianHtmlFlow) } };
+    disabled.push('htmlFlow');
+  }
+  if (quirks.htmlComment === 'obsidian') {
+    text[codes.lessThan] = [{ ...htmlText, name: 'obsidianHtmlText', tokenize: withContext(tokenizeObsidianHtmlText) }];
+    disabled.push('htmlText');
+  }
+  if (Object.keys(text).length > 0) {
+    extension.text = text;
+  }
+  if (disabled.length > 0) {
+    extension.disable = { null: [...extension.disable?.null ?? [], ...disabled] };
   }
   return extension;
 }
@@ -277,6 +314,38 @@ function resolveSoftLineBreaks(events: Event[], context: TokenizeContext): Event
   return events;
 }
 
+/*
+ * Reads the text ahead a code at a time, without consuming it, until `decide` answers `true` for `ok` or `false` for
+ * `nok`, where `null` reads on. At the end of the content, where `next` is `null`, it must answer.
+ */
+function scanAhead(decide: (text: string, next: Code) => boolean | null): Construct {
+  return {
+    partial: true,
+    tokenize(effects: Effects, ok: State, nok: State): State {
+      let text = '';
+      let isEntered = false;
+      return step;
+
+      function step(code: Code): State | undefined {
+        const answer = decide(text, code);
+        if (answer !== null) {
+          if (isEntered) {
+            effects.exit(PEEK);
+          }
+          return answer ? ok(code) : nok(code);
+        }
+        if (!isEntered) {
+          effects.enter(PEEK);
+          isEntered = true;
+        }
+        text += textOf(code);
+        effects.consume(code);
+        return step;
+      }
+    }
+  };
+}
+
 // Ends a line of the scan: a blank one opens a gap in the lists it belongs to, and any other closes the gaps open.
 function scanListLine(scan: LooseListsScan, isBlankChunk: boolean): void {
   for (const open of scan.lists) {
@@ -321,6 +390,19 @@ function scanLooseListEvent(scan: LooseListsScan, isEnter: boolean, token: Token
     }
     default:
   }
+}
+
+function textOf(code: Code): string {
+  if (code === null) {
+    return '';
+  }
+  if (isLineEnding(code)) {
+    return '\n';
+  }
+  if (code === codes.virtualSpace) {
+    return ' ';
+  }
+  return code === codes.horizontalTab ? '\t' : String.fromCodePoint(code);
 }
 
 // A setext underline with nothing after its sequence of `=` or `-`.
@@ -409,6 +491,115 @@ function tokenizeEmptyListItemLine(effects: Effects, ok: State, nok: State): Sta
     effects.exit(PEEK);
     return code === null || isLineEnding(code) ? ok(code) : nok(code);
   }
+}
+
+// The next line is empty: nothing follows the prefixes of its containers.
+function tokenizeEmptyNextLine(effects: Effects, ok: State, nok: State): State {
+  return start;
+
+  function start(code: Code): State | undefined {
+    effects.enter('lineEnding');
+    effects.consume(code);
+    effects.exit('lineEnding');
+    return after;
+  }
+
+  function after(code: Code): State | undefined {
+    return code === null || isLineEnding(code) ? ok(code) : nok(code);
+  }
+}
+
+// The next line continues the containers of this one: it is no lazy line.
+function tokenizeNextLineInContainers(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
+  return start;
+
+  function start(code: Code): State | undefined {
+    effects.enter('lineEnding');
+    effects.consume(code);
+    effects.exit('lineEnding');
+    return after;
+  }
+
+  function after(code: Code): State | undefined {
+    return code === null || context.parser.lazy[context.now().line] === true ? nok(code) : ok(code);
+  }
+}
+
+/*
+ * An HTML block as Obsidian reads it (see `obsidianHtmlBlockKind`), with the tokens of micromark's own. It runs to the
+ * line that holds its end, or to the line before an empty one, or to the end of its containers.
+ */
+function tokenizeObsidianHtmlFlow(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
+  let kind: null | ObsidianHtmlBlockKind = null;
+  let lineText = '';
+  const firstLine = scanAhead((text, next) => {
+    if (next !== null && !isLineEnding(next)) {
+      return null;
+    }
+    kind = obsidianHtmlBlockKind(text);
+    return kind !== null && (context.interrupt !== true || kind.canInterrupt);
+  });
+  return start;
+
+  function start(code: Code): State | undefined {
+    return effects.check(firstLine, opened, nok)(code);
+  }
+
+  function opened(code: Code): State | undefined {
+    // An interrupting construct only has to show that it starts.
+    if (context.interrupt) {
+      return ok(code);
+    }
+    effects.enter('htmlFlow');
+    return lineStart(code);
+  }
+
+  function lineStart(code: Code): State | undefined {
+    if (code === null || isLineEnding(code)) {
+      return lineEnd(code);
+    }
+    effects.enter('htmlFlowData');
+    lineText = '';
+    return inLine(code);
+  }
+
+  function inLine(code: Code): State | undefined {
+    if (code === null || isLineEnding(code)) {
+      effects.exit('htmlFlowData');
+      return kind?.end?.test(lineText) === true ? done(code) : lineEnd(code);
+    }
+    lineText += textOf(code);
+    effects.consume(code);
+    return inLine;
+  }
+
+  function lineEnd(code: Code): State | undefined {
+    if (code === null) {
+      return done(code);
+    }
+    return kind?.end === null ? effects.check(emptyNextLine, done, nextLine)(code) : nextLine(code);
+  }
+
+  function nextLine(code: Code): State | undefined {
+    return effects.check(nextLineInContainers, atNextLine, done)(code);
+  }
+
+  function atNextLine(code: Code): State | undefined {
+    effects.enter('lineEnding');
+    effects.consume(code);
+    effects.exit('lineEnding');
+    return lineStart;
+  }
+
+  function done(code: Code): State | undefined {
+    effects.exit('htmlFlow');
+    return ok(code);
+  }
+}
+
+// Raw inline HTML as micromark reads it, except a `<!--` that opens no comment of CommonMark 0.30, which is text.
+function tokenizeObsidianHtmlText(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
+  return effects.check(obsidianHtmlCommentAhead, htmlText.tokenize.call(context, effects, ok, nok), nok);
 }
 
 /*

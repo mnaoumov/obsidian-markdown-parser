@@ -19,12 +19,18 @@ import type {
   MarkdownIt,
   StateBlock,
   StateCore,
+  StateInline,
   Token
 } from 'markdown-it';
 
 import type { ObsidianQuirkFlags } from './options.ts';
 
 import { hasBlankLineInside } from './loose-list.ts';
+import {
+  COMMENT_OPEN,
+  isObsidianHtmlComment,
+  obsidianHtmlBlockKind
+} from './quirk-rules.ts';
 
 const CODE_INDENT = 4;
 const EQUALS_LEVEL = 1;
@@ -58,6 +64,63 @@ export function markdownItQuirks(md: MarkdownIt, quirks: ObsidianQuirkFlags): vo
   if (quirks.looseList === 'blank-line-anywhere') {
     md.core.ruler.after('block', 'obsidian_loose_lists', loosenLists);
   }
+  if (quirks.htmlBlock === 'obsidian') {
+    md.block.ruler.at('html_block', checkObsidianHtmlBlock, { alt: ['paragraph', 'reference', 'blockquote'] });
+  }
+  if (quirks.htmlComment === 'obsidian') {
+    md.inline.ruler.before('html_inline', 'obsidian_html_comment', checkObsidianHtmlComment);
+  }
+}
+
+/*
+ * An HTML block as Obsidian reads it, adapted from markdown-it's `html_block` rule. It runs to the line that holds its
+ * end, or to the line before an empty one, or to the end of its container.
+ */
+function checkObsidianHtmlBlock(state: StateBlock, startLine: number, endLine: number, isSilent: boolean): boolean {
+  if ((state.sCount[startLine] ?? 0) - state.blkIndent >= CODE_INDENT || !state.md.options.html) {
+    return false;
+  }
+  const firstLine = lineText(state, startLine);
+  const kind = firstLine.startsWith('<') ? obsidianHtmlBlockKind(firstLine) : null;
+  if (!kind) {
+    return false;
+  }
+  if (isSilent) {
+    return kind.canInterrupt;
+  }
+  let nextLine = startLine + 1;
+  if (!kind.end?.test(firstLine)) {
+    for (; nextLine < endLine; nextLine++) {
+      if (kind.end === null && isEmptyLine(state, nextLine)) {
+        break;
+      }
+      if ((state.sCount[nextLine] ?? 0) < state.blkIndent && (kind.end === null || !state.isEmpty(nextLine))) {
+        break;
+      }
+      if (kind.end?.test(lineText(state, nextLine))) {
+        nextLine++;
+        break;
+      }
+    }
+  }
+  state.line = nextLine;
+  const token = state.push('html_block', '', 0);
+  token.map = [startLine, nextLine];
+  token.content = state.getLines(startLine, nextLine, state.blkIndent, true);
+  return true;
+}
+
+// A `<!--` that opens no comment of CommonMark 0.30 is text.
+function checkObsidianHtmlComment(state: StateInline, isSilent: boolean): boolean {
+  const rest = state.src.slice(state.pos, state.posMax);
+  if (!state.md.options.html || !rest.startsWith(COMMENT_OPEN) || isObsidianHtmlComment(rest)) {
+    return false;
+  }
+  if (!isSilent) {
+    state.pending += '<';
+  }
+  state.pos++;
+  return true;
 }
 
 /*
@@ -104,6 +167,11 @@ function hardenLineBreaks(state: StateCore): void {
       }
     }
   }
+}
+
+// A line with nothing after its container markup but whitespace those containers take.
+function isEmptyLine(state: StateBlock, line: number): boolean {
+  return state.isEmpty(line) && (state.sCount[line] ?? 0) <= state.blkIndent;
 }
 
 function isEmptyListItem(state: StateBlock, line: number): boolean {

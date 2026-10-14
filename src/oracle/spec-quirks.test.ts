@@ -51,6 +51,8 @@ const BETWEEN_TAGS_RE = />\s+</gu;
 /*
  * The examples of each flag on which the flag alone does not give Obsidian's reading view, because another of its
  * quirks shows there too.
+ * - htmlBlock 148, 171: the reading view's DOM reads the raw HTML: it adds `<tbody>`, drops the line ending after `<pre>`,
+ *   and holds the HTML after `<textarea>` as its text. The blocks are the reading view's.
  * - setextHeading 82, 84: the paragraph keeps its leading whitespace.
  * - softLineBreak 28: character references; 81, 82, 84, 95: setext headings; 187, 494: unclosed tags in the spec;
  *   196, 210: link reference definitions; 222, 224: leading whitespace; 241: trailing whitespace; 384, 432: emphasis;
@@ -58,6 +60,8 @@ const BETWEEN_TAGS_RE = />\s+</gu;
  */
 const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly number[]>> = {
   emptyListItem: [],
+  htmlBlock: [148, 171],
+  htmlComment: [],
   looseList: [],
   setextHeading: [82, 84],
   softLineBreak: [28, 81, 82, 84, 95, 187, 196, 210, 222, 224, 241, 384, 432, 494, 552, 625]

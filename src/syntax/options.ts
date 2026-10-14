@@ -27,6 +27,21 @@ export interface ObsidianQuirkFlags {
   readonly emptyListItem: 'cannot-interrupt' | 'interrupts-paragraph';
 
   /**
+   * Which lines open an HTML block, and what ends it. CommonMark 0.31.2: its seven kinds. Obsidian: the first kind is
+   * `<script>`, `<pre>` and `<style>`, with no `<textarea>`; the sixth kind's tags have no `search` and add `hgroup`,
+   * `meta`, `pre` and `source`, so `</pre>` interrupts a paragraph; and the sixth and seventh kinds end at an empty line,
+   * not at a line of whitespace.
+   */
+  readonly htmlBlock: 'commonmark' | 'obsidian';
+
+  /**
+   * Which raw inline HTML comments there are. CommonMark 0.31.2: `<!-->`, `<!--->`, and any text between `<!--` and the
+   * first `-->`. Obsidian, as CommonMark 0.30: the text does not start with `>` or `->`, does not end with `-`, and holds
+   * no `--`. Any other `<!--` is text.
+   */
+  readonly htmlComment: 'commonmark' | 'obsidian';
+
+  /**
    * When a list is loose, its items' paragraphs rendered in `<p>`. CommonMark: when a blank line separates two of its
    * items, or two blocks directly inside one item. Obsidian: when a blank line anywhere inside it is followed by more of
    * it, in a nested list or in fenced code as well.
@@ -211,6 +226,8 @@ export const OBSIDIAN_SYNTAX_FLAGS = Object.keys(COMMONMARK) as readonly (keyof 
  */
 export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
   emptyListItem: 'cannot-interrupt',
+  htmlBlock: 'commonmark',
+  htmlComment: 'commonmark',
   looseList: 'between-blocks',
   setextHeading: 'multi-line',
   softLineBreak: 'line-ending'
@@ -221,6 +238,8 @@ export const COMMONMARK_QUIRKS: ObsidianQuirkFlags = {
  */
 export const OBSIDIAN_QUIRKS: ObsidianQuirkFlags = {
   emptyListItem: 'interrupts-paragraph',
+  htmlBlock: 'obsidian',
+  htmlComment: 'obsidian',
   looseList: 'blank-line-anywhere',
   setextHeading: 'single-line',
   softLineBreak: 'hard-break'
@@ -240,6 +259,8 @@ export const OBSIDIAN_QUIRK_FLAGS = Object.keys(COMMONMARK_QUIRKS) as readonly (
 export function resolveObsidianQuirks(options: ResolveObsidianQuirksOptions = {}): ObsidianQuirkFlags {
   return {
     emptyListItem: options.emptyListItem ?? COMMONMARK_QUIRKS.emptyListItem,
+    htmlBlock: options.htmlBlock ?? COMMONMARK_QUIRKS.htmlBlock,
+    htmlComment: options.htmlComment ?? COMMONMARK_QUIRKS.htmlComment,
     looseList: options.looseList ?? COMMONMARK_QUIRKS.looseList,
     setextHeading: options.setextHeading ?? COMMONMARK_QUIRKS.setextHeading,
     softLineBreak: options.softLineBreak ?? COMMONMARK_QUIRKS.softLineBreak

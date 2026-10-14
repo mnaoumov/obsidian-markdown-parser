@@ -24,8 +24,10 @@
 import type { Tree } from '@lezer/common';
 import type {
   BlockContext,
+  BlockParser,
   Element,
   InlineContext,
+  InlineParser,
   Line,
   MarkdownConfig,
   MarkdownParser
@@ -76,17 +78,20 @@ const BLANK_LINE_RE = /\n[\t >]*\n/u;
 const LINK_LABEL_RE = /^\[(?:[^[\\\]]|\\[^]){0,999}\]/u;
 const LABEL_LINE_BREAK_RE = /\n[\t >]*/gu;
 
+const atxHeadingFix: BlockParser = {
+  before: 'ATXHeading',
+  endLeaf: (_cx, line): boolean => atxTabHeadingSize(line) > 0,
+  name: 'ATXHeadingAfterTab',
+  parse: checkAtxTabHeading
+};
+const rawHtmlFix: InlineParser = { before: 'HTMLTag', name: 'RawHTML', parse: parseRawHtml };
+
 /**
  * Corrections that bring `@lezer/markdown` 1.8 closer to CommonMark 0.31.2.
  */
 export const commonMarkFixes: MarkdownConfig = {
   parseBlock: [
-    {
-      before: 'ATXHeading',
-      endLeaf: (_cx, line): boolean => atxTabHeadingSize(line) > 0,
-      name: 'ATXHeadingAfterTab',
-      parse: checkAtxTabHeading
-    },
+    atxHeadingFix,
     {
       before: 'HTMLBlock',
       endLeaf: (_cx, line): boolean => isHtmlBlock1Start(line),
@@ -94,7 +99,15 @@ export const commonMarkFixes: MarkdownConfig = {
       parse: checkHtmlBlock1
     }
   ],
-  parseInline: [{ before: 'HTMLTag', name: 'RawHTML', parse: parseRawHtml }]
+  parseInline: [rawHtmlFix]
+};
+
+/**
+ * {@link commonMarkFixes} without the HTML block of the first kind, for a parser that reads HTML blocks its own way.
+ */
+export const commonMarkFixesWithoutHtmlBlock: MarkdownConfig = {
+  parseBlock: [atxHeadingFix],
+  parseInline: [rawHtmlFix]
 };
 
 /**

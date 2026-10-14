@@ -17,6 +17,7 @@
 
 import type {
   BlockContext,
+  Element,
   InlineContext,
   LeafBlock,
   LeafBlockParser,
@@ -27,6 +28,13 @@ import type {
 import { parser } from '@lezer/markdown';
 
 import type { ObsidianQuirkFlags } from './options.ts';
+import type { ObsidianHtmlBlockKind } from './quirk-rules.ts';
+
+import {
+  COMMENT_OPEN,
+  isObsidianHtmlComment,
+  obsidianHtmlBlockKind
+} from './quirk-rules.ts';
 
 // The parts of `MarkdownParser` its typings leave out: the leaf parser factories, in the order of the block names.
 interface ParserInternals {
@@ -39,10 +47,17 @@ const CODE_INDENT = 4;
 const Char = {
   Dash: codeOf('-'),
   Equals: codeOf('='),
+  LessThan: codeOf('<'),
   LineFeed: codeOf('\n'),
   Space: codeOf(' '),
   Tab: codeOf('\t')
 } as const;
+
+const HTML_BLOCK_NODES: Readonly<Record<ObsidianHtmlBlockKind['type'], string>> = {
+  comment: 'CommentBlock',
+  html: 'HTMLBlock',
+  processingInstruction: 'ProcessingInstructionBlock'
+};
 
 const EMPTY_LIST_ITEM_RE = /^(?:[*+-]|1[).])[\t ]*$/u;
 const BARE_UNDERLINE_RE = /^(?:=+|-+)$/u;
@@ -103,7 +118,47 @@ export function createLezerQuirks(quirks: ObsidianQuirkFlags): MarkdownConfig[] 
   if (quirks.softLineBreak === 'hard-break') {
     configs.push({ parseInline: [{ after: 'HardBreak', name: 'SoftLineBreakAsHardBreak', parse: parseSoftLineBreak }] });
   }
+  if (quirks.htmlBlock === 'obsidian') {
+    configs.push({
+      parseBlock: [{
+        before: 'HTMLBlock',
+        endLeaf: (_cx, line): boolean => obsidianHtmlBlockKindAt(line)?.canInterrupt === true,
+        name: 'ObsidianHTMLBlock',
+        parse: checkObsidianHtmlBlock
+      }],
+      remove: ['HTMLBlock']
+    });
+  }
+  if (quirks.htmlComment === 'obsidian') {
+    configs.push({ parseInline: [{ before: 'RawHTML', name: 'ObsidianHTMLComment', parse: parseObsidianHtmlComment }] });
+  }
   return configs;
+}
+
+/*
+ * An HTML block as Obsidian reads it, adapted from `@lezer/markdown`'s own HTML block parser. It runs to the line that
+ * holds its end, or to the line before an empty one, or to the end of its container.
+ */
+function checkObsidianHtmlBlock(cx: BlockContext, line: Line): boolean {
+  const kind = obsidianHtmlBlockKindAt(line);
+  if (!kind) {
+    return false;
+  }
+  const from = cx.lineStart + line.pos;
+  const marks: Element[] = [];
+  let isClosed = kind.end?.test(line.text.slice(line.pos)) ?? false;
+  while (!isClosed && cx.nextLine() && line.depth >= cx.depth) {
+    if (kind.end === null && isEmptyLine(line)) {
+      break;
+    }
+    marks.push(...line.markers);
+    isClosed = kind.end?.test(line.text.slice(line.basePos)) ?? false;
+  }
+  if (isClosed) {
+    cx.nextLine();
+  }
+  cx.addElement(cx.elt(HTML_BLOCK_NODES[kind.type], from, cx.prevLineEnd(), marks));
+  return true;
 }
 
 function codeOf(ch: string): number {
@@ -122,6 +177,11 @@ function findSetextHeadingParserClass(): (abstract new () => LeafBlockParser) | 
 
 function hasParserInternals(value: unknown): value is ParserInternals {
   return typeof value === 'object' && value !== null && 'blockNames' in value && 'leafBlockParsers' in value;
+}
+
+// A line with nothing after its container markup but whitespace those containers take.
+function isEmptyLine(line: Line): boolean {
+  return line.next === -1 && line.indent <= line.baseIndent;
 }
 
 function isEmptyListItem(line: Line): boolean {
@@ -151,6 +211,18 @@ function isTakenAsSetextUnderline(cx: BlockContext, line: Line, leaf: LeafBlock,
 
 function isThematicDashes(line: Line): boolean {
   return THEMATIC_DASHES_RE.test(line.text.slice(line.pos));
+}
+
+function obsidianHtmlBlockKindAt(line: Line): null | ObsidianHtmlBlockKind {
+  return line.next === Char.LessThan && line.indent - line.baseIndent < CODE_INDENT ? obsidianHtmlBlockKind(line.text.slice(line.pos)) : null;
+}
+
+// A `<!--` that opens no comment of CommonMark 0.30 is text.
+function parseObsidianHtmlComment(cx: InlineContext, next: number, start: number): number {
+  if (next !== Char.LessThan || cx.slice(start, start + COMMENT_OPEN.length) !== COMMENT_OPEN) {
+    return -1;
+  }
+  return isObsidianHtmlComment(cx.slice(start, cx.end)) ? -1 : start + 1;
 }
 
 // A line ending inside inline content, with any spaces and tabs before it, is a hard line break.
