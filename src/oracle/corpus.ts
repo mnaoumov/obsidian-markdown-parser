@@ -2,7 +2,8 @@
  * @file
  *
  * The oracle corpus: hand-written documents for Obsidian syntax, and deterministic fuzzed documents. A fuzzed
- * document is 1 to 6 line fragments from one piece set, joined by newlines, with frontmatter added to one in 8.
+ * document is 1 to 6 line fragments from one piece set, joined by newlines, with frontmatter added to one in 8. A set
+ * may give its documents a first line of their own.
  */
 
 /**
@@ -52,11 +53,18 @@ const RICH = ['- A', '- B', '  - C', '    - D', '1. E', '10. F', '  1. G', '   -
 const ORD = ['1. A', '2. B', '9. C', '10. D', '1) E', '  1. F', ' 1. G', '- H', '* I', '    - J', '   - K', '     - L', '       - M', '\t- N', '\t\t- O', '  text', '    text', '   text', ' text', 'lazy', '', '', '\t', '\ttext', '1.  P', '1.     Q', '    1. R', '- [ ] T', '1. [x] U', '      text'];
 const QUOTE = [...RICH.map((p) => `> ${p}`), ...RICH.map((p) => `>${p}`), '>', '> ', 'lazy', '', '1. A', '1) E', '- H', '* I', '9. C', '  text'];
 const INLINE = ['a [[Note]] b', '![[img.png|200]]', '[[A#B|c]]', '[x](y.md)', '[x](<a b.md>)', '![i](p.png)', '#tag x', 'a #t/b', '#123', 'x[^1] y', '[^1]: def', '[^a]: d ^bid', '^[inline]', '^[]', 'p ^abc', '^abc', 'a *b ^x* c', '`code ^x`', '==hi==', '~~del~~', '%%c ^q%%', '$x$', '[a]: /u "t"', '[a][]', 'https://x.y', '<http://a>', 'x@y.z^ab', '- [ ] [a]: /u', '> [^2]: z', '- item ^li', '  - sub ^ls', '# H ^h', '| a ^c |', '', '', 'text', '---', 'k: [[L]]', 'tags: [a]'];
-const EMPH = ['*a*', '**b**', '***c***', '_d_', '__e__', 'a*b*c', 'a_b_c', '*a **b** c*', '**a *b* c**', '*a', 'b*', '** x **', '*`c`*', '~~s~~', '==h==', '==*e*==', '`a`', '``a`b``', '` a `', String.raw`\*x\*`, '&amp;', '&#35;', 'a  ', 'a\\', '<b>x</b>', '<!-- c -->', 'x<br>y', '[*l*](u)', '**[[W]]**', '*#t*', 'text', '', '# *H*', '> *q*', '- **L**'];
+const EMPH = ['*a*', '**b**', '***c***', '_d_', '__e__', 'a*b*c', 'a_b_c', '*a **b** c*', '**a *b* c**', '*a', 'b*', '** x **', '*`c`*', '~~s~~', '==h==', '==*e*==', '`a`', '``a`b``', '` a `', String.raw`\*x\*`, '&amp;', '&#35;', 'a  ', 'a\\', '<b>x</b>', '<!-- c -->', 'x<br>y', '[*l*](u)', '**a [b](c) d**', '*[l](u "t") x*', '[a', 'b](u)', '**[[W]]**', '*#t*', 'text', '', '# *H*', '> *q*', '- **L**'];
 const TABLE = ['| a | b |', '| - | - |', '|---|---|', '| :-- | --: |', '|:-:|', '| 1 | 2 |', '| `c|d` | e |', String.raw`| a \| b | c |`, '| **b** | [[L|x]] |', '| ==h== | #t |', '| $x$ | %%c%% |', '|a|b|c|', '| one |', '| x | y | z |', 'a | b', '- | -', '--- | ---', ':-- | --:', '1 | 2', 'a|b', '-|-', 'x | y', '  | i | j |', '    | c | d |', 'para', 'text', '', '', '- item', '1. item', '> | q | r |', '> | - | - |', '| <b>x</b> | y |', '| ^id |', '|', '||', '| - |', 'a | b |', '| a | b', '| $x | y$ |', '| $$ | x |', '| *a | b* |', '| <b>x | y</b> |', '# H', '| #t/a | é |'];
 const HTML = ['<div>', '</div>', '<div class="a">', '<div class="a">b</div>', '<span>x</span> y', 'a <b>c</b> d', 'a <i class="x">i</i>', '<br>', '<br/>', '<hr />', '<img src="a.png">', '<p>', '</p>', '<script>', 'var a = "s"; // c', 'if (a < b) { f(); }', '</script>', '<script src="x.js"></script>', '<style>', '.a { color: red; }', 'p > b::after { content: "x" }', '</style>', '<style>.b{margin:0}</style>', '<!-- c', 'c -->', '<!-- c -->', 'x <!-- c --> y', '<pre>', '</pre>', '<textarea>', '</textarea>', '<details>', '<summary>S</summary>', '</details>', '<a href="x">l</a>', '<a', 'href="y">', '<table><tr><td>1</td></tr></table>', '<?php echo 1; ?>', '<!DOCTYPE html>', '<![CDATA[ x ]]>', '<x-y z>', '<div', '>', 'text', '**b**', '', '', '- <b>l</b>', '> <div>q</div>', '    <div>', '</span>', '<span', '&lt;b&gt;', '<u>[[L]]</u>', '> <div>', '> </div>', '> text <b>x</b>', '> <!-- c', '- <div>x</div>', '#тег <i>x</i>'];
 // eslint-disable-next-line no-template-curly-in-string -- A JavaScript template literal is one of the code lines the fenced-language pieces exercise.
 const LANG = ['```js', '```javascript', '```ts', '```typescript', '```python', '```py', '```css', '```html', '```json', '```yaml', '```bash', '```sh', '```sql', '```java', '```c', '```cpp', '```csharp', '```rust', '```go', '```diff', '```markdown', '```md', '```xml', '```php', '```ruby', '```dataview', '```mermaid', '```unknownlang', '``` python', '```js title', '~~~python', '~~~', '```', '```', '```', 'const a = 1; // c', 'let s = "str', 'x = `t ${y}`', '/* block', 'end */', 'def f(x):', '    return "s"', '"""doc', '# comment', '.a { color: #fff; }', '{"k": [1, true, null]}', 'key: value', '- item', 'echo $HOME | grep x', 'SELECT * FROM t WHERE a = 1;', 'int main() { return 0; }', '+ added', '- removed', '@@ -1 +1 @@', '<div class="x">', '# Heading', '**not bold**', '[[not link]]', 'fn main() {}', 'graph TD; A-->B', 'TABLE file.name', 'text', '', ''];
+// Markdown nested in a markdown fence, which runs the fork of the markdown mode with its default options.
+// eslint-disable-next-line unicorn/prefer-https -- An http URL after a footnote definition is one of the shapes measured.
+const MD_LANG = ['# H', '## H2 ##', 'Setext', '===', '---', '***', '*em*', '**strong**', '_u_', '~~del~~', '==hi==', '%%c%%', '%%', '[[L]]', '![[e.png]]', '[[L|a]]', '#tag', 'x[^1] y', '[^1]: def', '^[inline]', 'p ^bid', '^bid', '$x$', '$$', '[l](u)', '**a [b](c) d**', '*[l](u "t")*', '![i](p.png)', '<http://a>', 'https://x.y', '<b>x</b>', '<div>', '</div>', '<!-- c -->', '- a', '  - b', '1. n', '- [ ] t', '- [x] u', '> q', '> > qq', '> [!note]', '> ```', '>', '`code`', '``a`b``', String.raw`\*x\*`, String.raw`\a b`, 'a\\', '| a | b |', '| - | - |', `${CODE_INDENT}indented`, '\tcode', '[a]: /u "t"', '[a]: /u', '"title"', '[a][]', '[x][a]', '[^n]: http://u.v "t"', 'text', 'a  ', '', '', '```', '```js', 'const a = 1;', '```unknownlang', '```md', '```markdown', '```python', 'def f(): pass', '~~~', '````', '- ```', '  ```', '> ```js', '[a', 'b](u)', '**a', 'b**', '<span', 'x">', '#тег'];
+// The first line of each document of a set listed here: the fence its other lines sit in.
+const LEADS = new Map<string, readonly string[]>([
+  ['mdlang', ['```markdown', '```markdown', '````markdown', '~~~markdown', '```Markdown', '```text/x-markdown', '- ```markdown', '> ```markdown']]
+]);
 const NEST = ['- a', '  - b', '    - c', '      - d', '        - e', '1. a', '   1. b', '      1. c', '   - b', '  1. b', '- [ ] t', '  - [x] u', '* s', '  + t', '\t- tab', '\t\t- tab2', '\t1. tab', '  text', '    text', '      text', '        code', '  ```', '    ```', '  ```js', '    ```py', '  ~~~', '  const a = 1;', '    x = 1', '  > q', '    > q', '  > - lq', '- > q', '1. > q', '  >', '- ```', '1. ```', '  $$', '  x^2', '  %%', '- # H', '  - # H', '- ', '-', '1.', '', '', 'lazy', '> - a', '>   - b', '>     - c', '> 1. a', '>    - b', '  | a | b |', '  | - | - |', '  <div>', '  </div>'];
 const OBSIDIAN = ['> [!note]', '> [!tip]- Title', '> [!warning]+ **T**', '> body', '>> [!info]', 'lazy', '', '[[Note]]', '[[Note|alias]]', '[[Note#Heading]]', '[[Note#^block]]', '![[embed.png]]', '![[Note#H|x]]', '#tag', '#nested/tag', '#t-a_b', 'a#nottag', '#1', '%%comment%%', '%%', 'multi', '%%', '$e=mc^2$', '$$', 'x^2', '$$', 'p ^block-id', '==mark==', '[^1]', '[^1]: note', '^[inline note]', '- [ ] todo', '- [x] done', '- [?] odd', '1. [ ] n', '| a | b |', '|---|---|', '| 1 | 2 |', '<div>', 'html', '</div>', '---', 'title: x', '---'];
 
@@ -69,6 +77,7 @@ export const PIECE_SETS: ReadonlyMap<string, readonly string[]> = new Map([
   ['html', HTML],
   ['inline', INLINE],
   ['lang', LANG],
+  ['mdlang', MD_LANG],
   ['nest', NEST],
   ['obsidian', OBSIDIAN],
   ['ord', ORD],
@@ -134,7 +143,8 @@ export function buildCorpus(options: BuildCorpusOptions = {}): CorpusDocument[] 
   for (const [name, pieces] of PIECE_SETS) {
     for (let index = 0; index < perSet; index++) {
       const length = 1 + rand(MAX_LINES);
-      const lines: string[] = [];
+      const lead = LEADS.get(name);
+      const lines: string[] = lead ? [lead[rand(lead.length)] ?? ''] : [];
       for (let index_ = 0; index_ < length; index_++) {
         lines.push(pieces[rand(pieces.length)] ?? '');
       }

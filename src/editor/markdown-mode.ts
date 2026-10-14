@@ -2,8 +2,10 @@
  * @file
  *
  * The markdown line mode underneath the editor's classes: a TypeScript port of the CodeMirror 5 `markdown` mode
- * (MIT, copyright Marijn Haverbeke and others), configured the way HyperMD configures it. The Obsidian layer in
- * `obsidian-mode.ts` wraps it.
+ * (MIT, copyright Marijn Haverbeke and others), as Obsidian forks it. With its editor layer, it is configured the
+ * way HyperMD configures it and carries the rules Obsidian adds, and the Obsidian layer in `obsidian-mode.ts` wraps
+ * it. Without that layer, it is the fork with its own default options, which is what a ```` ```markdown ```` block
+ * runs.
  *
  * The port keeps the original's control flow on purpose: the editor's quirks are this tokenizer's behaviour, so the
  * structure is what makes them reproducible.
@@ -19,6 +21,16 @@ import {
   copyState,
   startState
 } from './mode.ts';
+
+/**
+ * The editor layer of the markdown mode: HyperMD's token types and options, and the rules Obsidian adds.
+ */
+export interface MarkdownEditorConfig {
+  /**
+   * Reads an Obsidian inline construct at the start of an inline token, when the layer above allows them.
+   */
+  readonly inlineHook: (stream: Stream, state: MarkdownState) => string | undefined;
+}
 
 /**
  * The HTML mode the markdown mode switches to.
@@ -54,9 +66,19 @@ export interface MarkdownMode {
  */
 export interface MarkdownModeConfig {
   /**
+   * The editor layer. Without it, the mode is Obsidian's fork with the options below.
+   */
+  readonly editor?: MarkdownEditorConfig;
+
+  /**
    * Finds the mode for a fenced code block's info string.
    */
   readonly getCodeMode: (name: string) => AnyMode | null;
+
+  /**
+   * Whether formatting marks get `formatting-*` classes. Always on with the editor layer.
+   */
+  readonly highlightFormatting?: boolean;
 
   /**
    * The HTML mode, and whether a state of it sits in plain text outside every tag.
@@ -64,9 +86,14 @@ export interface MarkdownModeConfig {
   readonly html: MarkdownHtmlConfig;
 
   /**
-   * Reads an Obsidian inline construct at the start of an inline token, when the layer above allows them.
+   * Whether `~~` marks strikethrough. Always on with the editor layer.
    */
-  readonly inlineHook: (stream: Stream, state: MarkdownState) => string | undefined;
+  readonly strikethrough?: boolean;
+
+  /**
+   * Whether a list item may open with a task marker. Always on with the editor layer.
+   */
+  readonly taskLists?: boolean;
 }
 
 /**
@@ -158,7 +185,30 @@ interface LineInfo {
   stream: null | Stream;
 }
 
-const TOKEN_TYPES = {
+// The fork's own token types, which HyperMD overrides for the editor.
+const DEFAULT_TOKEN_TYPES = {
+  code: 'comment',
+  em: 'em',
+  emoji: 'builtin',
+  formatting: 'formatting',
+  header: 'header',
+  hr: 'hr',
+  image: 'image',
+  imageAltText: 'image-alt-text',
+  imageMarker: 'image-marker',
+  linkEmail: 'link',
+  linkHref: 'string',
+  linkInline: 'link',
+  linkText: 'link',
+  list1: 'variable-2',
+  list2: 'variable-3',
+  list3: 'keyword',
+  quote: 'quote',
+  strikethrough: 'strikethrough',
+  strong: 'strong'
+} as const;
+
+const EDITOR_TOKEN_TYPES = {
   code: 'inline-code',
   em: 'em',
   emoji: 'builtin',
@@ -199,6 +249,10 @@ const FENCED_CODE_RE = /^(~~~+|```+)[ \t]*([\w/+#-]*)[^\n`]*$/u;
 const LINK_DEF_RE = /^\s*\[[^\]]+?\]:.*$/u;
 const PUNCTUATION = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~\p{P}]/u;
 const EXPANDED_TAB = ' '.repeat(4);
+// Obsidian: the marks of a footnote definition, which wear no other style.
+const FOOTNOTE_MARK = 'formatting formatting-link link';
+// The fork: the characters a backslash escapes, as CommonMark defines them.
+const ESCAPABLE_RE = /^[\\`*{}[\]()#+\-.!_>~|\n"$%&',/:;<=?@^]/u;
 
 const LINK_RE = {
   ')': /^(?:[^\\()]|\\.|\((?:[^\\()]|\\.)*\))*?(?=\))/u,
@@ -208,11 +262,23 @@ const LINK_RE = {
 /**
  * Creates the markdown mode.
  *
- * @param config - The sub-modes it switches to.
+ * @param config - The sub-modes it switches to, and its options.
  * @returns The mode.
  */
 export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
   const htmlMode = config.html.mode;
+  const editor = config.editor;
+  const isEditor = editor !== undefined;
+  const isHighlightFormatting = isEditor || config.highlightFormatting === true;
+  const isStrikethrough = isEditor || config.strikethrough === true;
+  const isTaskLists = isEditor || config.taskLists === true;
+  const TOKEN_TYPES = isEditor ? EDITOR_TOKEN_TYPES : DEFAULT_TOKEN_TYPES;
+
+  function setFormatting(state: MarkdownState, formatting: Formatting): void {
+    if (isHighlightFormatting) {
+      state.formatting = formatting;
+    }
+  }
 
   function switchInline(stream: Stream, state: MarkdownState, f: TokenFunction): null | string {
     state.f = f;
@@ -301,26 +367,28 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.quote = 0;
       state.header = (match[1] ?? '').length;
       state.thisLine.header = true;
-      state.formatting = 'header';
+      setFormatting(state, 'header');
       state.f = state.inline;
       return getType(state);
     }
     if (state.indentation <= maxNonCodeIndentation && stream.eat('>')) {
       state.quote = isFirstTokenOnLine ? 1 : state.quote + 1;
       state.quoteOpen = true;
-      state.formatting = 'quote';
+      setFormatting(state, 'quote');
       stream.eatSpace();
       // Obsidian: a callout marker joins the quote mark.
       // A callout opens a quote: on a line's first mark only when the line above is not a quote line.
-      return !state.quoteFence && (!isFirstTokenOnLine || state.lineStartQuote === 0) && matchRe(stream, /^\[![^\]]+\][+-]?\s*/u) ? `${getType(state) ?? ''} hmd-callout line-HyperMD-callout` : getType(state);
+      return isEditor && !state.quoteFence && (!isFirstTokenOnLine || state.lineStartQuote === 0) && matchRe(stream, /^\[![^\]]+\][+-]?\s*/u)
+        ? `${getType(state) ?? ''} hmd-callout line-HyperMD-callout`
+        : getType(state);
     }
     /*
      * Obsidian: a fence inside a quote toggles an inline-code state instead of opening a code block. It must be the
      * first inline token after a quote mark, which may be on an earlier line when nothing followed that mark; a fence
-     * that could open a code block is read as one first.
+     * that could open a code block is read as one first. The fork alone reads such a fence in `inlineNormal`.
      */
     const isAfterQuoteMark = />\s*$/u.test(stream.string.slice(0, stream.start)) || (state.quoteOpen && state.indentation > maxNonCodeIndentation);
-    if (state.quote && isAfterQuoteMark && (match = matchRe(stream, FENCED_CODE_RE))) {
+    if (isEditor && state.quote && isAfterQuoteMark && (match = matchRe(stream, FENCED_CODE_RE))) {
       state.quoteFence = state.quoteFence ? 0 : (match[1] ?? '').length;
       return `${getType(state) ?? ''} inline-code`;
     }
@@ -338,11 +406,11 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.quoteFence = 0;
       state.strikethrough = false;
 
-      if (matchRe(stream, TASK_LIST_RE, false)) {
+      if (isTaskLists && matchRe(stream, TASK_LIST_RE, false)) {
         state.taskList = true;
       }
       state.f = state.inline;
-      state.formatting = ['list', `list-${listType}`];
+      setFormatting(state, ['list', `list-${listType}`]);
       return getType(state);
     }
     if (isFirstTokenOnLine && state.indentation <= maxNonCodeIndentation && (match = matchRe(stream, FENCED_CODE_RE))) {
@@ -360,7 +428,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         state.header = state.setext;
         state.setext = 0;
         stream.skipToEnd();
-        state.formatting = 'header';
+        setFormatting(state, 'header');
       } else {
         state.header = match?.[0].startsWith('=') ? 1 : 2;
         state.setext = state.header;
@@ -375,7 +443,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.thisLine.hr = true;
       return TOKEN_TYPES.hr;
     }
-    return switchInline(stream, state, isFirstTokenOnLine && stream.peek() === '[' ? footnoteLink : state.inline);
+    // Obsidian: a footnote definition opens only at the start of its line.
+    return switchInline(stream, state, (isFirstTokenOnLine || !isEditor) && stream.peek() === '[' ? footnoteLink : state.inline);
   }
 
   function openFence(stream: Stream, state: MarkdownState, match: RegExpMatchArray): null | string {
@@ -390,7 +459,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
     state.f = local;
     state.block = local;
-    state.formatting = 'code-block';
+    setFormatting(state, 'code-block');
     state.code = -1;
     return getType(state);
   }
@@ -417,7 +486,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     // Obsidian: a closing fence is indented like the opening line, or at least as far in a list item.
     const isIndentFits = state.fenceInList ? state.indentation >= state.fenceIndent : state.indentation === state.fenceIndent;
     if (state.fencedEndRE && stream.sol() && state.indentation <= maxFencedEndInd && isIndentFits && matchRe(stream, state.fencedEndRE)) {
-      state.formatting = 'code-block';
+      setFormatting(state, 'code-block');
       const returnType = getType(state);
       state.localMode = null;
       state.localState = null;
@@ -441,7 +510,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (state.formatting) {
       styles.push(TOKEN_TYPES.formatting);
       if (typeof state.formatting === 'string') {
-        state.formatting = [state.formatting];
+        setFormatting(state, [state.formatting]);
       }
       for (const formatting of state.formatting) {
         styles.push(`${TOKEN_TYPES.formatting}-${formatting}`);
@@ -464,38 +533,38 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
     if (state.linkHref) {
       styles.push(TOKEN_TYPES.linkHref, 'url');
-    } else {
-      if (state.strong) {
-        styles.push(TOKEN_TYPES.strong);
-      }
-      if (state.em) {
-        styles.push(TOKEN_TYPES.em);
-      }
-      if (state.strikethrough) {
-        styles.push(TOKEN_TYPES.strikethrough);
-      }
-      if (state.highlight) {
-        styles.push('highlight');
-      }
-      if (state.emoji) {
-        styles.push(TOKEN_TYPES.emoji);
-      }
-      if (state.linkText) {
-        styles.push(TOKEN_TYPES.linkText);
-      }
-      // Obsidian: a quote mark never wears the code style of a span it sits in.
-      if ((state.code || state.quoteFence) && !styles.includes('formatting-quote')) {
-        styles.push(TOKEN_TYPES.code);
-      }
-      if (state.image) {
-        styles.push(TOKEN_TYPES.image);
-      }
-      if (state.imageAltText) {
-        styles.push(TOKEN_TYPES.imageAltText, 'link');
-      }
-      if (state.imageMarker) {
-        styles.push(TOKEN_TYPES.imageMarker);
-      }
+    }
+    // The fork styles a link's address like the text around it.
+    if (state.strong) {
+      styles.push(TOKEN_TYPES.strong);
+    }
+    if (state.em) {
+      styles.push(TOKEN_TYPES.em);
+    }
+    if (state.strikethrough) {
+      styles.push(TOKEN_TYPES.strikethrough);
+    }
+    if (state.highlight) {
+      styles.push('highlight');
+    }
+    if (state.emoji) {
+      styles.push(TOKEN_TYPES.emoji);
+    }
+    if (state.linkText) {
+      styles.push(TOKEN_TYPES.linkText);
+    }
+    // Obsidian: a quote mark never wears the code style of a span it sits in.
+    if ((state.code || state.quoteFence) && !styles.includes('formatting-quote')) {
+      styles.push(TOKEN_TYPES.code);
+    }
+    if (state.image) {
+      styles.push(TOKEN_TYPES.image);
+    }
+    if (state.imageAltText) {
+      styles.push(TOKEN_TYPES.imageAltText, 'link');
+    }
+    if (state.imageMarker) {
+      styles.push(TOKEN_TYPES.imageMarker);
     }
 
     if (state.header) {
@@ -526,25 +595,17 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     return styles.length > 0 ? styles.join(' ') : null;
   }
 
-  function getTypeWithoutQuote(state: MarkdownState): null | string {
-    const quote = state.quote;
-    state.quote = 0;
-    const type = getType(state);
-    state.quote = quote;
-    return type;
-  }
-
   function handleText(stream: Stream, state: MarkdownState): null | string | undefined {
     return matchRe(stream, TEXT_RE) ? getType(state) : undefined;
   }
 
   function inlineNormal(stream: Stream, state: MarkdownState): null | string {
+    const isFirstTokenInQuote = state.quoteOpen;
     state.quoteOpen = false;
-    if (state.extensionsAllowed) {
-      const hooked = config.inlineHook(stream, state);
-      if (hooked !== undefined) {
-        return hooked;
-      }
+    const isExtensionsAllowed = isEditor && state.extensionsAllowed;
+    const hooked = isExtensionsAllowed ? editor.inlineHook(stream, state) : undefined;
+    if (hooked !== undefined) {
+      return hooked;
     }
 
     const style = state.text(stream, state);
@@ -559,10 +620,10 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       if (fence) {
         return openFence(stream, state, fence);
       }
-      const heading = matchRe(stream, ATX_HEADER_RE);
+      const heading = isEditor ? matchRe(stream, ATX_HEADER_RE) : null;
       if (heading && (heading[1] ?? '').length <= 6) {
         state.header = (heading[1] ?? '').length;
-        state.formatting = 'header';
+        setFormatting(state, 'header');
         // The heading mark itself does not wear the list style.
         const list = state.list;
         state.list = false;
@@ -573,6 +634,35 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       return getType(state);
     }
 
+    if (state.taskList) {
+      const task = matchRe(stream, TASK_LIST_RE);
+      state.taskList = false;
+      if (task || isEditor) {
+        if (task?.[1] === ' ') {
+          state.taskOpen = true;
+        } else {
+          state.taskClosed = true;
+        }
+        setFormatting(state, 'task');
+        return isEditor ? `${getType(state) ?? ''} line-HyperMD-task-line` : getType(state);
+      }
+    }
+
+    state.taskOpen = false;
+    state.taskClosed = false;
+
+    // The fork: a fence as the first inline token after a quote mark toggles a code span.
+    if (!isEditor && isFirstTokenInQuote && matchRe(stream, FENCED_CODE_RE)) {
+      const t = getType(state);
+      state.code = state.code === 3 ? 0 : 3;
+      return state.code ? getType(state) : t;
+    }
+
+    if (state.header && matchRe(stream, /^#+$/u)) {
+      setFormatting(state, 'header');
+      return getType(state);
+    }
+
     if (state.quoteFence) {
       // A backtick run as long as the fence closes the state, like a code span.
       const run = matchRe(stream, /^`+/u);
@@ -580,30 +670,11 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         state.quoteFence = 0;
         return `${getType(state) ?? ''} formatting formatting-code inline-code`;
       }
+      // Anything else is read one character at a time, so a closing heading mark is still seen.
       if (!run) {
-        matchRe(stream, /^[^`]+/u);
+        stream.next();
       }
       return `${getType(state) ?? ''} inline-code`;
-    }
-
-    if (state.taskList) {
-      const isTaskOpen = matchRe(stream, TASK_LIST_RE)?.[1] === ' ';
-      if (isTaskOpen) {
-        state.taskOpen = true;
-      } else {
-        state.taskClosed = true;
-      }
-      state.formatting = 'task';
-      state.taskList = false;
-      return `${getType(state) ?? ''} line-HyperMD-task-line`;
-    }
-
-    state.taskOpen = false;
-    state.taskClosed = false;
-
-    if (state.header && matchRe(stream, /^#+$/u)) {
-      state.formatting = 'header';
-      return getType(state);
     }
 
     const ch = stream.next() ?? '';
@@ -620,7 +691,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
     if (ch === '`') {
       const previousFormatting = state.formatting;
-      state.formatting = 'code';
+      setFormatting(state, 'code');
       stream.eatWhile('`');
       const count = stream.current().length;
       if (state.code === 0 && (!state.quote || count === 1)) {
@@ -640,15 +711,21 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       return getType(state);
     }
 
-    if (ch === '\\' && !stream.eol()) {
+    if (ch === '\\' && isEditor && !stream.eol()) {
       stream.next();
+      const type = getType(state);
+      const formattingEscape = `${TOKEN_TYPES.formatting}-escape`;
+      return type ? `${type} ${formattingEscape}` : formattingEscape;
+    }
+    // The fork: a backslash takes the character after it only when CommonMark lets it escape that character.
+    if (ch === '\\' && !isEditor && matchRe(stream, ESCAPABLE_RE) && isHighlightFormatting) {
       const type = getType(state);
       const formattingEscape = `${TOKEN_TYPES.formatting}-escape`;
       return type ? `${type} ${formattingEscape}` : formattingEscape;
     }
 
     // Obsidian: `%%` comments.
-    if (ch === '%' && state.extensionsAllowed && stream.eat('%')) {
+    if (ch === '%' && isExtensionsAllowed && stream.eat('%')) {
       if (state.comment) {
         const t = getType(state);
         state.comment = false;
@@ -659,27 +736,27 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
 
     // Obsidian: `==highlight==`.
-    if (ch === '=' && stream.eat('=')) {
+    if (ch === '=' && isEditor && stream.eat('=')) {
       if (stream.peek() === '=') {
         stream.eatWhile('=');
         return getType(state);
       }
       if (state.highlight) {
-        state.formatting = ['highlight', 'highlight-end'];
+        setFormatting(state, ['highlight', 'highlight-end']);
         const t = getType(state);
         state.highlight = false;
         return t;
       }
       if (matchRe(stream, /^[^\s]/u, false)) {
         state.highlight = true;
-        state.formatting = 'highlight';
+        setFormatting(state, 'highlight');
         return getType(state);
       }
       stream.backUp(1);
     }
 
     // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them.
-    if ((ch === '[' || ch === '!') && !state.linkText && !state.image) {
+    if ((ch === '[' || ch === '!') && isEditor && !state.linkText && !state.image) {
       const isEmbed = ch === '!';
       const linkMatch = matchRe(stream, isEmbed ? /^\[\[([^\]]*?)\]\]/u : /^\[([^\]]*?)\]\]/u, false);
       if (linkMatch) {
@@ -692,7 +769,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
 
     // Obsidian: `[^footnote]` references and `^[inline footnotes]`.
-    if (!state.linkText && !state.image && ((ch === '[' && stream.peek() === '^') || (ch === '^' && stream.peek() === '['))) {
+    if (isEditor && !state.linkText && !state.image && ((ch === '[' && stream.peek() === '^') || (ch === '^' && stream.peek() === '['))) {
       const isInline = ch === '^';
       const body = matchRe(stream, isInline ? /^\[([^\]]*)\]/u : /^\^([^\]]+)\]/u, false);
       if (body) {
@@ -706,26 +783,26 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
 
     // Obsidian: a `^block-id` ending the line.
-    if (ch === '^' && matchRe(stream, /^[A-Za-z0-9-]+$/u)) {
+    if (ch === '^' && isEditor && matchRe(stream, /^[A-Za-z0-9-]+$/u)) {
       return 'blockid';
     }
 
     if (ch === '!' && matchRe(stream, /^\[[^\]]*\] ?(?:\(|\[)/u, false)) {
       state.imageMarker = true;
       state.image = true;
-      state.formatting = 'image';
+      setFormatting(state, 'image');
       return getType(state);
     }
 
     if (ch === '[' && state.imageMarker && matchRe(stream, /^[^\]]*\](\(.*?\)| ?\[.*?\])/u, false)) {
       state.imageMarker = false;
       state.imageAltText = true;
-      state.formatting = 'image';
+      setFormatting(state, 'image');
       return getType(state);
     }
 
     if (ch === ']' && state.imageAltText) {
-      state.formatting = 'image';
+      setFormatting(state, 'image');
       const type = getType(state);
       state.imageAltText = false;
       state.image = false;
@@ -739,12 +816,12 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         return getType(state);
       }
       state.linkText = true;
-      state.formatting = 'link';
+      setFormatting(state, 'link');
       return getType(state);
     }
 
     if (ch === ']' && state.linkText) {
-      state.formatting = 'link';
+      setFormatting(state, 'link');
       const type = getType(state);
       state.linkText = false;
       // Obsidian: a reference label must follow the link text with no space.
@@ -757,7 +834,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (ch === '<' && matchRe(stream, /^(https?|ftps?):\/\/(?:[^\\>]|\\.)+>/u, false)) {
       state.f = linkInline;
       state.inline = linkInline;
-      state.formatting = 'link';
+      setFormatting(state, 'link');
       const type = getType(state);
       return `${type ? `${type} ` : ''}${TOKEN_TYPES.linkInline}`;
     }
@@ -765,7 +842,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (ch === '<' && matchRe(stream, /^[^> \\]+@(?:[^\\>]|\\.)+>/u, false)) {
       state.f = linkInline;
       state.inline = linkInline;
-      state.formatting = 'link';
+      setFormatting(state, 'link');
       const type = getType(state);
       return `${type ? `${type} ` : ''}${TOKEN_TYPES.linkEmail}`;
     }
@@ -814,11 +891,11 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       }
       if (nextStrong !== null || nextEm !== null) {
         if (nextEm === null) {
-          state.formatting = 'strong';
+          setFormatting(state, 'strong');
         } else if (nextStrong === null) {
-          state.formatting = 'em';
+          setFormatting(state, 'em');
         } else {
-          state.formatting = 'strong em';
+          setFormatting(state, 'strong em');
         }
         if (nextEm === true) {
           state.em = ch;
@@ -842,19 +919,19 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       stream.backUp(1);
     }
 
-    if (ch === '~' && stream.eatWhile(ch)) {
+    if (ch === '~' && isStrikethrough && stream.eatWhile(ch)) {
       if (state.strikethrough) {
-        state.formatting = 'strikethrough';
+        setFormatting(state, 'strikethrough');
         const t = getType(state);
         state.strikethrough = false;
         return t;
       }
       if (matchRe(stream, /^[^\s]/u, false)) {
         state.strikethrough = true;
-        state.formatting = 'strikethrough';
+        setFormatting(state, 'strikethrough');
         return getType(state);
       }
-    } else if (ch === ' ' && stream.match('~~', true)) {
+    } else if (ch === ' ' && isStrikethrough && stream.match('~~', true)) {
       if (stream.peek() === ' ') {
         return getType(state);
       }
@@ -914,7 +991,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (ch === '>') {
       state.f = inlineNormal;
       state.inline = inlineNormal;
-      state.formatting = 'link';
+      setFormatting(state, 'link');
       const type = getType(state);
       return `${type ? `${type} ` : ''}${TOKEN_TYPES.linkInline}`;
     }
@@ -922,7 +999,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     matchRe(stream, /^[^>]+/u);
 
     // Obsidian: an autolink's address is also a URL.
-    return `${TOKEN_TYPES.linkInline} url`;
+    return isEditor ? `${TOKEN_TYPES.linkInline} url` : TOKEN_TYPES.linkInline;
   }
 
   function linkHref(stream: Stream, state: MarkdownState): null | string {
@@ -934,7 +1011,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       const inside = getLinkHrefInside(ch === '(' ? ')' : ']');
       state.f = inside;
       state.inline = inside;
-      state.formatting = 'link-string';
+      setFormatting(state, 'link-string');
       state.linkHref = true;
       return getType(state);
     }
@@ -948,7 +1025,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       if (ch === endChar) {
         state.f = inlineNormal;
         state.inline = inlineNormal;
-        state.formatting = 'link-string';
+        setFormatting(state, 'link-string');
         const returnState = getType(state);
         state.linkHref = false;
         return returnState;
@@ -964,13 +1041,15 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (matchRe(stream, /^(?:[^\]\\]|\\.)*\]:/u, false)) {
       state.f = footnoteLinkInside;
       stream.next();
+      setFormatting(state, 'link');
+      state.linkText = true;
+      if (!isEditor) {
+        return getType(state);
+      }
       // Obsidian: the `^` of a footnote definition belongs to the opening mark.
       stream.eat('^');
-      state.formatting = 'link';
-      state.linkText = true;
-      const type = getTypeWithoutQuote(state) ?? '';
       // Obsidian joins the comment class onto this mark without a space.
-      return state.comment ? type.replace(/^formatting\b/u, 'commentformatting') : type;
+      return state.comment ? `comment${FOOTNOTE_MARK}` : FOOTNOTE_MARK;
     }
     return switchInline(stream, state, inlineNormal);
   }
@@ -979,16 +1058,16 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     if (stream.match(']:', true)) {
       state.f = footnoteUrl;
       state.inline = footnoteUrl;
-      state.formatting = 'link';
-      const returnType = getTypeWithoutQuote(state);
+      setFormatting(state, 'link');
+      const returnType = isEditor ? FOOTNOTE_MARK : getType(state);
       state.linkText = false;
       return returnType;
     }
 
     matchRe(stream, /^(?:[^\]\\]|\\.)+/u);
 
-    // Obsidian: a definition's label wears the context styles, while its marks do not wear the quote.
-    return getType(state);
+    // Obsidian: a definition's label wears the context styles, while its marks wear none.
+    return isEditor ? getType(state) : TOKEN_TYPES.linkText;
   }
 
   function footnoteUrl(stream: Stream, state: MarkdownState): null | string {
@@ -997,8 +1076,30 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
     state.f = inlineNormal;
     state.inline = inlineNormal;
-    // Obsidian: only a URL is marked after a definition's `]:`; anything else is plain text.
-    return matchRe(stream, URL_RE) ? 'url hmd-footnote-url' : inlineNormal(stream, state);
+    if (!isEditor) {
+      // The fork: the next word is the URL, and a title may follow it, on this line or the next.
+      matchRe(stream, /^[^\s]+/u);
+      if (stream.peek() === undefined) {
+        state.linkTitle = true;
+      } else {
+        matchRe(stream, /^(?:\s+(?:"(?:[^"\\]|\\.)+"|'(?:[^'\\]|\\.)+'|\((?:[^)\\]|\\.)+\)))?/u);
+      }
+      return `${TOKEN_TYPES.linkHref} url`;
+    }
+    // Obsidian: only a URL is marked after a definition's `]:`; anything else is plain text. A title may follow the URL.
+    if (matchRe(stream, URL_RE)) {
+      state.f = footnoteUrlTitle;
+      return 'url hmd-footnote-url';
+    }
+    return inlineNormal(stream, state);
+  }
+
+  function footnoteUrlTitle(stream: Stream, state: MarkdownState): null | string {
+    if (stream.eatSpace()) {
+      return null;
+    }
+    state.f = inlineNormal;
+    return matchRe(stream, /^(["']).*?\1/u) || matchRe(stream, /^\([^)]*?\)/u) ? 'hmd-footnote-url-title' : inlineNormal(stream, state);
   }
 
   return {
@@ -1080,11 +1181,16 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         state.thisLine = { stream };
         state.lineStartQuote = state.quote;
         // Obsidian: a code span opened inside a quote does not run past the end of its line.
-        if (state.code > 0 && state.codeOpenedInQuote) {
+        if (isEditor && state.code > 0 && state.codeOpenedInQuote) {
           state.code = 0;
         }
 
         state.taskList = false;
+        // The fork: link text and an unfinished image do not run past the end of their line.
+        state.linkText = false;
+        state.image = false;
+        state.imageMarker = false;
+        state.imageAltText = false;
 
         state.trailingSpace = 0;
         state.trailingSpaceNewLine = false;
