@@ -68,6 +68,8 @@ const LEADS = new Map<string, readonly string[]>([
 const NEST = ['- a', '  - b', '    - c', '      - d', '        - e', '1. a', '   1. b', '      1. c', '   - b', '  1. b', '- [ ] t', '  - [x] u', '* s', '  + t', '\t- tab', '\t\t- tab2', '\t1. tab', '  text', '    text', '      text', '        code', '  ```', '    ```', '  ```js', '    ```py', '  ~~~', '  const a = 1;', '    x = 1', '  > q', '    > q', '  > - lq', '- > q', '1. > q', '  >', '- ```', '1. ```', '  $$', '  x^2', '  %%', '- # H', '  - # H', '- ', '-', '1.', '', '', 'lazy', '> - a', '>   - b', '>     - c', '> 1. a', '>    - b', '  | a | b |', '  | - | - |', '  <div>', '  </div>'];
 // Code spans left open at the end of a line, outside and inside quotes and list items, and what may close them below.
 const CODESPAN = ['a `b', '``x', 'a ``x', 'a ```x', '`', '``', '`a` `b', '**a `b', '*a ``b', '==a `b', 'text', 'text', 'c` d', 'c`` d', 'c``` d', 'x `y` z', '', '', '> a `b', '> ``x', '> a ``x', '> c` d', '> c`` d', '> text', '>', '- a `b', '- ``x', '  c` d', '  c`` d', '  text', '1. a ``x', '   c`` d', '> - a `b', '> - ``x', '>   c` d', '- > a `b', 'lazy', '# H `x', '| a `b | c |', '| - | - |', '[^1]: a `b', '    c` d', '%% `x', '$ `x', '[[a `b', '[l `x](u)'];
+// Highlights opened with a color marker, which the fork of the markdown mode reads, and marks around them.
+const MARK = ['==🔴red==', '==🟥r==', '==🟠o==', '==🟧o==', '==🟡y==', '==🟨y==', '==🟢g==', '==🟩g==', '==🔵b==', '==🟦blue== x', '==🟣p==', '==🟪p==', '==🔴 x==', '==🔴==', '==🔴', '🔴 x==', '==⚪w==', '==❤️h==', '==>x==', '==> x==', '== x==', 'a == b == c', 'a ==🔵b== c', 'x==🔴y==z', '===x===', '===🔴x===', '====🟢x==', '==x', 'y==', '**==🔴b==**', '==🔴**b**==', '*==🟡e*==', '> ==🔵q==', '> ==🔴q', '- ==🟢l==', '- ==🟢l', '# ==🟣h==', '==🔴a ==🔵b== c==', '==🔴`c`==', '==🔴[[L]]==', '==🔴#t==', '%%==🔴c==%%', '$==🔴x$', '| ==🔴c== | d |', '| - | - |', 'text', '', ''];
 const OBSIDIAN = ['> [!note]', '> [!tip]- Title', '> [!warning]+ **T**', '> body', '>> [!info]', 'lazy', '', '[[Note]]', '[[Note|alias]]', '[[Note#Heading]]', '[[Note#^block]]', '![[embed.png]]', '![[Note#H|x]]', '#tag', '#nested/tag', '#t-a_b', 'a#nottag', '#1', '%%comment%%', '%%', 'multi', '%%', '$e=mc^2$', '$$', 'x^2', '$$', 'p ^block-id', '==mark==', '[^1]', '[^1]: note', '^[inline note]', '- [ ] todo', '- [x] done', '- [?] odd', '1. [ ] n', '| a | b |', '|---|---|', '| 1 | 2 |', '<div>', 'html', '</div>', '---', 'title: x', '---'];
 
 /**
@@ -80,6 +82,7 @@ export const PIECE_SETS: ReadonlyMap<string, readonly string[]> = new Map([
   ['html', HTML],
   ['inline', INLINE],
   ['lang', LANG],
+  ['mark', MARK],
   ['mdlang', MD_LANG],
   ['nest', NEST],
   ['obsidian', OBSIDIAN],

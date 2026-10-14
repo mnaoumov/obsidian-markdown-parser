@@ -115,6 +115,7 @@ export interface MarkdownState {
   hashtag: boolean;
   header: number;
   highlight: boolean;
+  highlightColor: string;
   hr: boolean;
   htmlState: null | object;
   image?: boolean;
@@ -250,6 +251,21 @@ const PUNCTUATION = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~\p{P}]/u;
 const EXPANDED_TAB = ' '.repeat(4);
 // Obsidian: the marks of a footnote definition, which wear no other style.
 const FOOTNOTE_MARK = 'formatting formatting-link link';
+// Obsidian: the color markers a highlight may open with, each two UTF-16 code units long.
+const HIGHLIGHT_COLORS: ReadonlyMap<string, string> = new Map([
+  ['🔴', 'red'],
+  ['🔵', 'blue'],
+  ['🟠', 'orange'],
+  ['🟡', 'yellow'],
+  ['🟢', 'green'],
+  ['🟣', 'purple'],
+  ['🟥', 'red'],
+  ['🟦', 'blue'],
+  ['🟧', 'orange'],
+  ['🟨', 'yellow'],
+  ['🟩', 'green'],
+  ['🟪', 'purple']
+]);
 // The fork: the characters a backslash escapes, as CommonMark defines them.
 const ESCAPABLE_RE = /^[\\`*{}[\]()#+\-.!_>~|\n"$%&',/:;<=?@^]/u;
 
@@ -298,6 +314,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     state.em = false;
     state.strong = false;
     state.strikethrough = false;
+    state.highlight = false;
     state.quote = 0;
     state.indentedCode = false;
     if (state.f === htmlBlock && state.htmlState && config.html.isInText(state.htmlState)) {
@@ -550,6 +567,9 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
     if (state.highlight) {
       styles.push('highlight');
+      if (state.highlightColor) {
+        styles.push(`highlight-${state.highlightColor}`);
+      }
     }
     if (state.emoji) {
       styles.push(TOKEN_TYPES.emoji);
@@ -740,22 +760,31 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
     // Obsidian: `==highlight==`.
     if (ch === '=' && isEditor && stream.eat('=')) {
-      if (stream.peek() === '=') {
-        stream.eatWhile('=');
-        return getType(state);
-      }
+      const runStart = stream.pos - 2;
+      stream.eatWhile('=');
       if (state.highlight) {
         setFormatting(state, ['highlight', 'highlight-end']);
         const t = getType(state);
         state.highlight = false;
         return t;
       }
-      if (matchRe(stream, /^[^\s]/u, false)) {
+      if (matchRe(stream, /^[^\s>]/u, false)) {
         state.highlight = true;
+        // A color marker right after the mark is part of it.
+        state.highlightColor = HIGHLIGHT_COLORS.get(stream.string.slice(stream.pos, stream.pos + 2)) ?? '';
+        if (state.highlightColor) {
+          stream.pos += 2;
+        }
         setFormatting(state, 'highlight');
         return getType(state);
       }
-      stream.backUp(1);
+      stream.pos = runStart + 1;
+    } else if (ch === ' ' && isEditor && stream.match('==', true)) {
+      // A mark with a space on each side neither opens nor closes.
+      if (stream.peek() === ' ') {
+        return getType(state);
+      }
+      stream.backUp(2);
     }
 
     // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them.
@@ -1137,6 +1166,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         hashtag: false,
         header: 0,
         highlight: false,
+        highlightColor: '',
         hr: false,
         htmlState: null,
         indentation: 0,
