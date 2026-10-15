@@ -20,6 +20,8 @@ The tooling follows the owner's TypeScript template: `npm install`, then `npm ru
 
 Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, as in `createObsidianParser({ preset: 'commonmark', tag: true })`, `createMicromarkObsidianMarkdown(options)` and `createObsidianMarkdownIt(options)`. With the `commonmark` preset each adapter is checked against the CommonMark 0.31.2 spec suite, and with `gfm` against the GFM spec's extension examples, both vendored in `spec/`. The results, the examples still failing and what each flag changes are in [docs/spec-suites.md](docs/spec-suites.md).
 
+`parseRemark(text)` parses as Obsidian's reading view and metadata worker do, and `parseMetadata(text)` gives the `CachedMetadata` the metadata worker posts for a document, equal to it as JSON. The engine is in [docs/remark.md](docs/remark.md) and the projection in [docs/metadata.md](docs/metadata.md). To re-read the worker oracle, run `npx jiti scripts/worker-oracle.ts`, which runs the metadata worker of the `obsidian-versions` checkout beside this repository.
+
 To read a new oracle from a live Obsidian, run `npx jiti scripts/oracle.ts --seed <n>` (this needs a global `obsidian-integration-testing` install). To score the tokenizer against an oracle, run `npx jiti scripts/oracle-diff.ts [--oracle <file>]`, and add `--show <id>...` to see where documents differ.
 
 The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.
