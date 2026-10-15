@@ -13,6 +13,11 @@ import type { Linter } from 'eslint';
 
 import commentsConfigs from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import eslint from '@eslint/js';
+import {
+  IN_HOUSE_ESLINT_PLUGIN_NAME,
+  inHouseEslintPlugin
+} from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/in-house-plugin';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import stylistic from '@stylistic/eslint-plugin';
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
@@ -32,9 +37,6 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path/posix';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `_default` is too confusing.
 import tseslint from 'typescript-eslint';
-
-import { obsidianDevUtilsPlugin } from './helpers/eslint-rules/obsidian-dev-utils-plugin.ts';
-import { getRootFolder } from './helpers/root.ts';
 
 const rootConfigFiles = [
   'commitlint.config.ts',
@@ -75,7 +77,7 @@ function getCustomPluginConfigs(): Linter.Config[] {
     {
       files: allFiles,
       plugins: {
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        [IN_HOUSE_ESLINT_PLUGIN_NAME]: inHouseEslintPlugin
       },
       rules: {
         'obsidian-dev-utils/no-unused-params-members': 'error',
@@ -517,12 +519,6 @@ function getNoRestrictedSyntaxRulesConfigs(): Linter.Config[] {
           }
         ]
       }
-    },
-    {
-      files: ['scripts/helpers/@types/**/*.d.ts'],
-      rules: {
-        'no-restricted-syntax': 'off'
-      }
     }
   ]);
 }
@@ -670,8 +666,7 @@ function getUnicornConfigs(): Linter.Config[] {
          * is still rejected. Only the two the repo actually needs are added, rather than the longer list the
          * sibling configs carry: the list is bidirectional, so every prefix added also asserts that anything
          * named with it IS a boolean, and an entry no report asks for buys that assertion for nothing. `check`
-         * answers `checkProjectTypes`, and `contains` answers `containsPromiseReference` in a vendored rule
-         * source, which cannot be renamed here at all.
+         * answers `checkProjectTypes`, and `contains` answers `containsBlockId` in `src/oracle/remark-outline.ts`.
          */
         'unicorn/consistent-boolean-name': [
           'error',
@@ -698,11 +693,7 @@ function getUnicornConfigs(): Linter.Config[] {
           }
         ],
         /*
-         * `checkProperties` is load-bearing rather than a preference: the two inline `unicorn/name-replacements`
-         * disables that `scripts/helpers/eslint-rules/require-method-template.ts` takes from upstream sit on the
-         * object property `paramName:`, and the rule's default never reaches a property — so with the default
-         * they would be UNUSED directives, which `lint:fix` deletes, rewriting a file
-         * `check:vendored-eslint-rules` asserts byte-identity on.
+         * `checkProperties` holds object property names to the same vocabulary as every other name.
          *
          * Each disabled replacement below is established vocabulary here, and each answers a report that was
          * measured rather than anticipated:
@@ -710,9 +701,9 @@ function getUnicornConfigs(): Linter.Config[] {
          * - `params` is the parameter-bag convention that `obsidian-dev-utils/params-options-name-match` above
          *   ENFORCES — bag types must be named `<Owner>Params` / `<Owner>Options` — so expanding it would put
          *   the two rules in direct contradiction.
-         * - `docs` is ESLint's own `meta.docs` key, which every rule source here declares.
-         * - `dev` and `utils` spell the `obsidian-dev-utils` plugin namespace these custom rules are registered
+         * - `dev` and `utils` spell the `obsidian-dev-utils` plugin namespace the in-house rules are registered
          *   under, so expanding them would rename the plugin after nothing.
+         * - docs is the oracle scripts' name for a corpus of markdown documents, which documents would only lengthen.
          * - `env` and `lib` name foreign surfaces: environment variables, and TypeScript's `skipLibCheck`.
          *
          * NOTE: this rule's autofix is NOT reference-aware for declarations that participate in a contract —
@@ -734,9 +725,9 @@ function getUnicornConfigs(): Linter.Config[] {
           }
         ],
         /*
-         * `null` is the absent-value convention this repo's helpers are typed on: `getRootFolder`,
-         * `readIndexContent` and `fetchUpstreamText` all declare `null | T` and are read through `=== null`, and
-         * the Node APIs beneath them (`spawn`'s `stdio` slots, `execSync`'s `encoding`) hand back `null` too.
+         * `null` is the absent-value convention this repo is typed on: `getRootFolder` from
+         * `@mnaoumov/typescript-dev-toolkit` declares `null | string` and is read through `=== null`, and
+         * the Node APIs beneath the scripts (`spawn`'s `stdio` slots, `execSync`'s `encoding`) hand back `null` too.
          * The rule cannot tell that convention from an accidental `null`, and following it would mean retyping
          * the surface rather than annotating a site.
          */
@@ -783,66 +774,6 @@ function getUnicornConfigs(): Linter.Config[] {
       files: testFiles,
       rules: {
         'unicorn/no-top-level-assignment-in-function': 'off'
-      }
-    },
-    {
-      /*
-       * A generated declaration file, reproduced from `markdownlint-cli2`'s own JSON schema. Its union member
-       * order and its type names both come from the generator, so neither is ours to change: renaming a type
-       * here would just be undone the next time the schema is regenerated, and the three repos that carry this
-       * file carry it byte-identically.
-       */
-      files: ['scripts/helpers/@types/markdownlint-cli2-config-schema.d.ts'],
-      rules: {
-        'unicorn/name-replacements': 'off',
-        'unicorn/prefer-type-literal-last': 'off'
-      }
-    },
-    {
-      /*
-       * `toArray` is shared byte-for-byte with `obsidian-test-mocks` and `obsidian-typings-crawler`, which
-       * compile on an ES2022 floor where `Array.fromAsync` does not exist. It is reachable here (`lib: ES2024`),
-       * but following the rule would collapse a generic helper into a one-line wrapper and make this the only
-       * copy of an otherwise identical file. Scoped to the one file rather than turned off outright, so the rest
-       * of the repo keeps the check.
-       */
-      files: ['scripts/helpers/markdownlint.ts'],
-      rules: {
-        'unicorn/prefer-array-from-async': 'off'
-      }
-    },
-    {
-      /*
-       * Shared byte-for-byte with `obsidian-test-mocks`, whose config raises this rule's limit to 4 across the
-       * repo, so the peer lints its copy at a depth this repo's default of 3 reports: the binary-index case nests
-       * `readFileSync(join(...))` inside `equals(...)` inside `expect(...)`. Matching the peer's limit on this one
-       * file keeps it takeable whole; the rest of the repo keeps the default.
-       */
-      files: ['scripts/helpers/git-content.test.ts'],
-      rules: {
-        'unicorn/max-nested-calls': [
-          'error',
-          {
-            max: 4
-          }
-        ]
-      }
-    },
-    {
-      /*
-       * These are VENDORED byte-identical copies of `obsidian-dev-utils`' rule sources, asserted by
-       * `npm run check:vendored-eslint-rules` — so a report here can never be answered by editing the file, and
-       * upstream carries no inline disable for either rule because it turns both off in its own config.
-       *
-       * What is deliberately NOT turned off here is `unicorn/no-useless-recursion` and
-       * `unicorn/name-replacements`, which upstream DOES answer with inline disables. Keeping them on is what
-       * makes those three directives used rather than unused, and so what lets this repo take upstream's bytes
-       * whole instead of stripping the lines — see the transform arms in `scripts/check-vendored-eslint-rules.ts`.
-       */
-      files: ['scripts/helpers/eslint-rules/**/*.ts'],
-      rules: {
-        'unicorn/no-break-in-nested-loop': 'off',
-        'unicorn/no-unreadable-for-of-expression': 'off'
       }
     }
   ]);
