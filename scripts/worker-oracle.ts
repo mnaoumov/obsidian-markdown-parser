@@ -3,8 +3,12 @@
  *
  * The metadata worker oracle: runs Obsidian's own metadata worker, its `worker.js`, offline in a Node `vm` context, on
  * fuzzed documents built from piece sets of block and inline markdown and the Obsidian syntax, and on every document of
- * the conformance corpus. It writes the fields of each document's `CachedMetadata` the syntax makes
- * (`src/oracle/worker-syntax.ts`) to `oracle/worker-syntax-obsidian-<version>.json`.
+ * the conformance corpus, and writes each document's whole `CachedMetadata`, or the `null` the worker posts where it
+ * throws, to `oracle/worker-metadata-obsidian-<version>.json` (`src/oracle/worker-metadata.ts`). Besides the syntax,
+ * piece sets of headings, markdown links and images, and YAML front matter cover the rest of the metadata.
+ *
+ * The worker runs with `atob` and `btoa`, as a browser worker has them: the YAML parser it bundles reads a `!!binary`
+ * value with `atob`, and fails the front matter without it.
  *
  * The worker is read from the Obsidian install it names, at run time; nothing of it is kept here. It defaults to the
  * `obsidian-versions` checkout beside this repository, whose tag gives the version.
@@ -30,13 +34,12 @@ import {
   runInContext
 } from 'node:vm';
 
+import type { CachedMetadata } from '../src/metadata/types.ts';
 import type {
-  WorkerMetadata,
-  WorkerSyntaxDocument,
-  WorkerSyntaxOracleFile
-} from '../src/oracle/worker-syntax.ts';
+  WorkerMetadataDocument,
+  WorkerMetadataOracleFile
+} from '../src/oracle/worker-metadata.ts';
 
-import { workerSyntaxOf } from '../src/oracle/worker-syntax.ts';
 import { CONFORMANCE_CASES } from '../src/syntax/conformance.ts';
 import { format } from './helpers/format.ts';
 
@@ -58,6 +61,7 @@ const DEFAULT_PER_SET = 400;
 const DEFAULT_SEED = 12_345;
 const MAX_LINES = 6;
 const FRONTMATTER_ODDS = 8;
+const MAX_FRONTMATTER_LINES = 4;
 const FINAL_LINE_BREAK_ODDS = 2;
 const LCG_MULTIPLIER = 1_103_515_245;
 const LCG_INCREMENT = 12_345;
@@ -69,12 +73,21 @@ const RICH = ['- A', '- B', '  - C', '    - D', '1. E', '10. F', '  1. G', '   -
 const INLINE = ['a [[Note]] b', '![[img.png|200]]', '[[A#B|c]]', '[x](y.md)', '[x](<a b.md>)', '![i](p.png)', '#tag x', 'a #t/b', '#123', 'x[^1] y', '[^1]: def', '[^a]: d ^bid', '^[inline]', '^[]', 'p ^abc', '^abc', 'a *b ^x* c', '`code ^x`', '==hi==', '~~del~~', '%%c ^q%%', '$x$', '[a]: /u "t"', '[a][]', 'https://x.y', '<http://a>', 'x@y.z^ab', '- [ ] [a]: /u', '> [^2]: z', '- item ^li', '  - sub ^ls', '# H ^h', '| a ^c |', '', '', 'text', '---', 'k: [[L]]', 'tags: [a]'];
 const SYNTAX = ['[[a|]]', '[[|a]]', String.raw`[[ a \]]`, '![[x.png|100x20]]', '![[a#b^c|d]]', '[[a]]]]', '[[[[a]]', '[[a\nb]]', 'x[[a]]y', '#a#b', '#-x', '#_', '#1a', '# x #t', '*#em*', '(#p)', '#日本', '#a.b', '==a==b==', '====', '== a==', '==a ==', '==🔴red==', '==🟦==', '$ x$', '$x $', '$x$1', '$$x$$', '$$ $$', String.raw`\$x$`, String.raw`$a\$b$`, '$$a$$  ', '^[a [b] c]', '^[a `]` b]', '^[^[n]]', '^[[[L]]]', '[^x]', '[^ x]', '[^]', '[^1]:', '[^1]: a\n    b', '[^1]:\n\n    c', '    [^1]: d', '[^A]: up', 'ref [^A]', '%%a%%', '%%%%', '%% a', 'b %%', '%%[[l]]%%', '%%\n#t\n%%', '$$\nx\n$$', '  $$', '$$$\nx\n$$', 'x ^id', '^id', '^a-b', 'a\n^id', '> ^q', '- ^li', '^[x ^in]', '[a](./b c.md)', '[a](%zz)', '[^1]: x ^d', '[^2]: y', 'a [^2] b [^1]', '%% x %% y', '| [[a|b]] | c |', '- [?] task', '- [/] t ^tid', '\n', '---\nk: v\n---'];
 const GAP = ['para', '   para', '    code', '\tcode', '', '', '  ', '> q', '>', '> [!note]', '```', '~~~', '%%', '%% x %%', 'x %%', '%% end', '$$', '$$ x $$', 'x $$', '$$$', '***', '---', '===', '# H', '<div>', '</div>', '<!-- c', 'c -->', '| a | b |', '| - | - |', 'a|b', '-|-', '> ```', '> $$', 'lazy', '\t', '    '];
+const HEADING = ['# H', '## a *b* c', '###### x ##', '# a [[l]] ^id', '#', '# ', '#  x  ', '# x #', '# a ^[n] b', '# [t](a.md)', '# #tag', 'text', 'Setext', '===', '---', '  # in', '> # q', '- # li', '    # code', '# a\\', '# a  ', '#\ta', '# `c`', '# $m$', '# ==h==', '# %%c%%', '# a [^1]', '[^1]: d', '', '', '# a ^b', 'x\n===', '# <b>h</b>', '# &amp; e', '# a\u{A0}', '# ![i](p.png)'];
+const LINK = ['[t](a.md)', '[t](a%20b.md)', '[t](%zz)', '[t](a%E2.md)', '[t](./x)', '[t](../x:y)', '[t](x:y)', '[t](http://a)', '[t](#h)', '[t](<a b.md>)', '[t](a.md "T")', '[t](a.md \'T\')', '[t]()', '[](a.md)', '[*e* `c` [[w]] #g](a.md)', '[a\nb](c.md)', '[a  \nb](c.md)', '[a\\\nb](c.md)', '[![i](p.png)](a.md)', '[![i|100](http://x/p.png)](a.md)', '[![i](http://p)](a.md)', '![i](p.png)', '![](p.png)', '![i|100](p.png)', '![i|a|20x30](p.png)', '![i](p%20q.png)', '![i](%zz.png)', '![i](http://x/p.png)', '![i](<p q.png>)', '![i](p.png "T")', '[t](a&amp;b.md)', String.raw`[t](a\_b.md)`, '[t](\u{A0}a.md)', '[t](e\u{301}.md)', '[a ^[n] b](x.md)', '[a [^1] b](x.md)', '[^1]: d', '[l]: a.md', '[t][l]', '![i][l]', '<a.md>', '<x:y>', 'www.a.b', 'a@b.c', '[t](a.md) [u](b.md)', '[==h== ~~d~~ $m$](x.md)', '[%%c%%](x.md)', '[a&#10;](x.md)', '[x ^id](y.md)', 'text', '', '', '> [t](a.md)', '- [t](a.md)', '# [t](a.md)', '| [t](a.md) | b |', '|-|-|'];
+const YAML = ['a: 1', 'b: [x, y]', 'c: {d: e}', 'k: "[[L|x]]"', 'k: "[[ |a]]"', 'k: "[[a#b#c]]"', String.raw`k: "[[a\\]]"`, 'k: [[L]]', 'x: !!str 1', 'n: 0o17', 'h: 0x1F', 'f: .inf', 'nan: .nan', 'y: yes', 't: 2024-01-02', 'a: &A {p: 1}', 'b: *A', '<<: *A', '%YAML 1.1', '- item', 'm: |\n  block', 'e:', 'e: ~', 'b: !!binary aGVsbG8=', 'b: !!binary a#b', 's: !!set {a, b}', 'o: !!omap [{a: 1}]', 'bad: [', 'tab:\tx', '? complex\n: v', '[a, b]: c', '__proto__: 1', 'hasOwnProperty: 1', 'l: ["[[x]]", "[t](a b.md)"]', 'k: "[t](a b.md)"', 'k: "[t](./a%20b.md)"', 'k: "[t](http://x)"', 'k: "![i](<a b.png>)"', 'k: "[t](%zz)"', 'k: "[t]()"', 'k: "[t]( )"', String.raw`k: "[t](a.md \"T\")"`, 'k: {n: "[[a]]"}', '"": {x: "[[e]]"}', 'k: "[[a]] and [[b]]"', 'x: 9007199254740993', 'x: 1e3', '...', '# c', '---x'];
 /* eslint-enable unicorn/prefer-string-repeat -- The piece sets end here. */
 
-// The piece sets: syntax alone, syntax among blocks and lists, and syntax inside quotes.
+/*
+ * The piece sets: syntax alone, syntax among blocks and lists, syntax inside quotes, headings, markdown links and
+ * images, and inline content under front matter built from YAML pieces.
+ */
 const SETS: Readonly<Record<string, readonly string[]>> = {
+  frontmatter: [...INLINE, ...LINK],
+  heading: HEADING,
   inline: INLINE,
-  mixed: [...GAP, ...RICH, ...INLINE, ...SYNTAX],
+  link: LINK,
+  mixed: [...GAP, ...RICH, ...INLINE, ...SYNTAX, ...HEADING, ...LINK],
   quote: [...SYNTAX, ...INLINE].map((piece) => `> ${piece.replaceAll('\n', '\n> ')}`),
   rich: [...RICH, ...SYNTAX],
   syntax: SYNTAX
@@ -108,24 +121,39 @@ function createRandom(initialSeed: number): (limit: number) => number {
   };
 }
 
-function loadWorker(path: string): (text: string) => WorkerMetadata {
-  let last: unknown;
+// Front matter: a line of the default `a: 1`, now and then, or, in the `frontmatter` set, lines of YAML pieces.
+function frontmatterOf(set: string): string {
+  if (set === 'frontmatter') {
+    const lines = Array.from({ length: 1 + random(MAX_FRONTMATTER_LINES) }, () => YAML[random(YAML.length)] ?? '');
+    return `---\n${lines.join('\n')}\n---\n`;
+  }
+  return random(FRONTMATTER_ODDS) === 0 ? '---\na: 1\n---\n' : '';
+}
+
+function loadWorker(path: string): (text: string) => CachedMetadata | null {
+  let last: CachedMetadata | null = null;
   const scope: WorkerScope = {
     postMessage(message) {
-      last = message;
+      last = message as CachedMetadata | null;
     }
   };
-  const context = createContext({ ArrayBuffer, clearTimeout, console, self: scope, setTimeout, TextDecoder, TextEncoder, Uint8Array, URL });
+  // The worker logs a warning for some YAML and an error where it throws; the oracle records the outcome instead.
+  const quietConsole = { ...console, error: noop, warn: noop };
+  const context = createContext({ ArrayBuffer, atob, btoa, clearTimeout, console: quietConsole, self: scope, setTimeout, TextDecoder, TextEncoder, Uint8Array, URL });
   runInContext('globalThis.window = globalThis;', context);
   runInContext(readFileSync(path, 'utf-8'), context);
   return (text) => {
-    last = undefined;
+    last = null;
     scope.onmessage?.({ data: { metadataCache: new TextEncoder().encode(text).buffer } });
-    return (last ?? {});
+    return last;
   };
 }
 
-const docs: WorkerSyntaxDocument[] = Array.from(CONFORMANCE_CASES, (testCase) => ({ set: 'conformance', syntax: workerSyntaxOf(runWorker(testCase.markdown)), text: testCase.markdown }));
+function noop(): void {
+  // Nothing to log.
+}
+
+const docs: WorkerMetadataDocument[] = Array.from(CONFORMANCE_CASES, (testCase) => ({ metadata: runWorker(testCase.markdown), set: 'conformance', text: testCase.markdown }));
 
 for (const [set, pieces] of Object.entries(SETS)) {
   for (let index = 0; index < perSet; index++) {
@@ -134,14 +162,13 @@ for (const [set, pieces] of Object.entries(SETS)) {
     for (let line = 0; line < count; line++) {
       lines.push(pieces[random(pieces.length)] ?? '');
     }
-    const frontmatter = random(FRONTMATTER_ODDS) === 0 ? '---\na: 1\n---\n' : '';
-    const text = `${frontmatter}${lines.join('\n')}${random(FINAL_LINE_BREAK_ODDS) === 0 ? '' : '\n'}`;
-    docs.push({ set, syntax: workerSyntaxOf(runWorker(text)), text });
+    const text = `${frontmatterOf(set)}${lines.join('\n')}${random(FINAL_LINE_BREAK_ODDS) === 0 ? '' : '\n'}`;
+    docs.push({ metadata: runWorker(text), set, text });
   }
 }
 
-const oracleFile: WorkerSyntaxOracleFile = { docs, meta: { appVersion, perSet, seed } };
-const outFile = join(repoRoot, 'oracle', `worker-syntax-obsidian-${appVersion}.json`);
+const oracleFile: WorkerMetadataOracleFile = { docs, meta: { appVersion, perSet, seed } };
+const outFile = join(repoRoot, 'oracle', `worker-metadata-obsidian-${appVersion}.json`);
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, `${JSON.stringify(oracleFile)}\n`);
 // The repository's dprint check covers `oracle/`, and its layout is not `JSON.stringify`'s.
