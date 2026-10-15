@@ -14,6 +14,7 @@ import { BLOCK_TOKENIZERS } from './block.ts';
 import { INLINE_TOKENIZERS } from './inline.ts';
 import {
   OBSIDIAN_TOKENIZERS,
+  SOFT_BREAK_AS_HARD_TOKENIZER,
   transformObsidianTree
 } from './obsidian.ts';
 import {
@@ -35,6 +36,13 @@ export interface ParseRemarkOptions {
    * three of its tokenizers alone. Defaults to `true`.
    */
   readonly shouldReadObsidianSyntax?: boolean;
+
+  /**
+   * Whether every line break in inline content is a hard one, as the metadata worker reads them: Obsidian's `breaks`
+   * option, which turns a line feed after any spaces into a `break`. Defaults to `false`, `remark-parse` 8's strict line
+   * breaks.
+   */
+  readonly shouldReadSoftLineBreaksAsHard?: boolean;
 }
 
 const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
@@ -56,7 +64,11 @@ const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
  */
 export function parseRemark(markdown: string, options?: ParseRemarkOptions): RemarkRoot {
   const shouldReadObsidianSyntax = options?.shouldReadObsidianSyntax ?? true;
-  const root = new RemarkParser(markdown, shouldReadObsidianSyntax ? OBSIDIAN_TOKENIZERS : MARKDOWN_TOKENIZERS).parse();
+  let tokenizers = shouldReadObsidianSyntax ? OBSIDIAN_TOKENIZERS : MARKDOWN_TOKENIZERS;
+  if (options?.shouldReadSoftLineBreaksAsHard) {
+    tokenizers = { ...tokenizers, inline: { ...tokenizers.inline, break: SOFT_BREAK_AS_HARD_TOKENIZER } };
+  }
+  const root = new RemarkParser(markdown, tokenizers).parse();
   if (shouldReadObsidianSyntax) {
     transformObsidianTree(root);
   }

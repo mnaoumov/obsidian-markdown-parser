@@ -24,6 +24,8 @@
  *   edits and the Obsidian syntax as the worker reads it, giving its mdast tree, and {@link renderRemarkHtml} renders
  *   that tree as `remark-html` does. Obsidian's inline algorithm, tabs, lazy quote lines and paragraph whitespace come
  *   from it by construction.
+ * - {@link parseMetadata} gives the `CachedMetadata` Obsidian's metadata worker posts for a document, built from that
+ *   tree, equal to the worker's as JSON.
  */
 
 import type { Tree } from '@lezer/common';
@@ -58,6 +60,28 @@ export {
   editorClassDecorations,
   editorClasses
 } from './editor/view.ts';
+
+export { parseMetadata } from './metadata/metadata.ts';
+
+export type {
+  BlockCache,
+  CachedMetadata,
+  CacheItem,
+  EmbedCache,
+  FootnoteCache,
+  FootnoteReferenceCache,
+  FrontMatterCache,
+  FrontmatterLinkCache,
+  HeadingCache,
+  LinkCache,
+  ListItemCache,
+  Loc,
+  Pos,
+  ReferenceCache,
+  ReferenceLinkCache,
+  SectionCache,
+  TagCache
+} from './metadata/types.ts';
 
 export { renderRemarkHtml } from './remark/html.ts';
 
