@@ -1,7 +1,9 @@
 /**
  * @file
  *
- * The one helper the vendored `eslint-rules/ts-estree-node.ts` needs from `obsidian-dev-utils`' `object-utils.ts`.
+ * The one member of `@mnaoumov/typescript-lib/object-utils` the vendored ESLint rules use, kept local because
+ * this repo resolves no dependency on that package. The vendored `eslint-rules/ts-estree-node.ts` reaches it by
+ * `../object-utils.ts`, which is the import `check:vendored-eslint-rules` maps the package specifier to.
  */
 
 /**
