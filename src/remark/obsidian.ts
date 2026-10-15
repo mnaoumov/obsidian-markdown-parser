@@ -14,6 +14,7 @@
 import type {
   BlockTokenizerName,
   Eat,
+  InlineTokenizer,
   InlineTokenizerName,
   RemarkParser,
   RemarkTokenizers,
@@ -35,6 +36,26 @@ import {
   INTERRUPT_LIST,
   INTERRUPT_PARAGRAPH
 } from './parser.ts';
+
+/**
+ * What {@link parseInternalLink} reads from the content of an internal link.
+ */
+export interface InternalLinkParts {
+  /**
+   * The text after the first `|`, trimmed, or `null` without one.
+   */
+  readonly alias: null | string;
+
+  /**
+   * The text it shows.
+   */
+  readonly displayText: string;
+
+  /**
+   * The target, normalized.
+   */
+  readonly target: string;
+}
 
 interface FootnoteLine {
   readonly contentEnd: number;
@@ -168,6 +189,47 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
   interruptList: insertAll(INTERRUPT_LIST, [['math', 'fencedCode', true], ['comment', 'fencedCode', true]]),
   interruptParagraph: insertAll(INTERRUPT_PARAGRAPH, [['math', 'fencedCode', true], ['comment', 'fencedCode', true]])
 };
+
+/**
+ * The `break` tokenizer with Obsidian's `breaks` option, which the metadata worker runs: a line feed after any spaces
+ * is a hard break, however few the spaces.
+ */
+export const SOFT_BREAK_AS_HARD_TOKENIZER: InlineTokenizer = {
+  locator: INLINE_TOKENIZERS.break?.locator ?? locateNothing,
+  tokenize: softBreakAsHard
+};
+
+/**
+ * Normalizes a link path as Obsidian does: no-break spaces made spaces, trimmed, and in Unicode normal form C.
+ *
+ * @param path - The path.
+ * @returns The normalized path.
+ */
+export function normalizeLinkPath(path: string): string {
+  return path.replaceAll(NO_BREAK_SPACE, ' ').trim().normalize('NFC');
+}
+
+/**
+ * Reads the content of an internal link, between its brackets: the alias starts at the first `|` that is not the
+ * first character, and is trimmed; the target is the text before it, trimmed, with a final backslash taken off and
+ * normalized; the text it shows is the alias, or else the target with each run of `#` made ` > `.
+ *
+ * @param content - The content.
+ * @returns The alias, the text it shows and the target.
+ */
+export function parseInternalLink(content: string): InternalLinkParts {
+  const pipe = content.indexOf('|');
+  const hasAlias = pipe > 0;
+  let target = hasAlias ? content.slice(0, pipe).trim() : content.trim();
+  const alias = hasAlias ? content.slice(pipe + 1).trim() : null;
+  const displayText = alias ?? target.split('#').filter(Boolean).join(' > ').trim();
+
+  if (target.endsWith('\\')) {
+    target = target.slice(0, -1);
+  }
+
+  return { alias, displayText, target: normalizeLinkPath(target) };
+}
 
 /**
  * Applies the transforms Obsidian runs on the tree that change what it holds: a footnote reference to no definition
@@ -530,6 +592,12 @@ function highlight(parser: RemarkParser, eat: Eat, value: string, isSilent: bool
   return add(node);
 }
 
+/*
+ * `$tex$` and `$$tex$$`. A single `$` opens before a character that is no space or tab, and closes at a `$` after one,
+ * not before a digit; a backslash escapes the character after it. `$$` closes at the next `$$`, and takes the
+ * whitespace after it up to and including a line feed. `\$` is the text `$`.
+ */
+
 // The content of a highlight `value` opens: up to the first `==` after a character that is no whitespace.
 function highlightContent(value: string): string | undefined {
   // The content read so far lags one character behind the cursor, so the `=` before a closing one is not in it.
@@ -618,12 +686,6 @@ function inlineFootnote(parser: RemarkParser, eat: Eat, value: string, isSilent:
   return add({ children: parser.tokenizeInline(value.slice(DELIMITER_LENGTH, contentEnd), start), type: 'inlineFootnote' });
 }
 
-/*
- * `$tex$` and `$$tex$$`. A single `$` opens before a character that is no space or tab, and closes at a `$` after one,
- * not before a digit; a backslash escapes the character after it. `$$` closes at the next `$$`, and takes the
- * whitespace after it up to and including a line feed. `\$` is the text `$`.
- */
-
 function inlineMath(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   const length = value.length;
   const isEscaped = value.charCodeAt(0) === BACKSLASH;
@@ -708,18 +770,7 @@ function internalLink(_parser: RemarkParser, eat: Eat, value: string, isSilent: 
     return true;
   }
 
-  const pipe = content.indexOf('|');
-  const hasAlias = pipe > 0;
-  let target = hasAlias ? content.slice(0, pipe).trim() : content;
-  const alias = hasAlias ? content.slice(pipe + 1).trim() : null;
-  const displayText = alias ?? target.split('#').filter(Boolean).join(' > ').trim();
-
-  if (target.endsWith('\\')) {
-    target = target.slice(0, -1);
-  }
-  target = target.replaceAll(NO_BREAK_SPACE, ' ').trim().normalize('NFC');
-
-  return eat(match[0])({ alias, displayText, target, type: match.groups?.['embed'] ? 'embed' : 'internalLink' });
+  return eat(match[0])({ ...parseInternalLink(content), type: match.groups?.['embed'] ? 'embed' : 'internalLink' });
 }
 
 function isBlankLine(line: FootnoteLine | undefined): boolean {
@@ -946,6 +997,14 @@ function skipWhitespace(value: string, from: number): number {
     index++;
   }
   return index;
+}
+
+function softBreakAsHard(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+  const index = skip(value, 0, SPACE);
+  if (value.charCodeAt(index) !== LINE_FEED) {
+    return;
+  }
+  return isSilent || eat(value.slice(0, index + 1))({ type: 'break' });
 }
 
 /*
