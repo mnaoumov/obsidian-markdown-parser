@@ -9,8 +9,7 @@
     "dist",
     "oracle",
     "phase0/out",
-    "spec",
-    "scripts/helpers/@types/markdownlint-cli2-config-schema.d.ts"
+    "spec"
   ],
   "words": [
     "artefacts",

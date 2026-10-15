@@ -17,6 +17,7 @@
  * [--seed <n>]`.
  */
 
+import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
 import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -41,7 +42,6 @@ import type {
 } from '../src/oracle/worker-metadata.ts';
 
 import { CONFORMANCE_CASES } from '../src/syntax/conformance.ts';
-import { format } from './helpers/format.ts';
 
 // The message the app posts to its metadata worker: the document, encoded.
 interface WorkerMessage {

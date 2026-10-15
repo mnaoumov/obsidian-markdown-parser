@@ -11,6 +11,7 @@
 
 /// <reference lib="dom.iterable" />
 
+import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
 import { execSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -33,7 +34,6 @@ import type {
 import type { SpecOracleMeta } from '../src/oracle/spec-oracle-file.ts';
 
 import { QUIRK_PROBES } from '../src/oracle/quirk-probes.ts';
-import { format } from './helpers/format.ts';
 
 interface App {
   metadataCache: MetadataCache;

@@ -17,6 +17,7 @@
 
 /// <reference lib="dom.iterable" />
 
+import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
 import { execSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -38,8 +39,6 @@ import type {
   SpecOracleFile,
   SpecOracleRead
 } from '../src/oracle/spec-oracle-file.ts';
-
-import { format } from './helpers/format.ts';
 
 interface AbstractFile {
   path: string;
