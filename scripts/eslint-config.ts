@@ -80,11 +80,11 @@ function getCustomPluginConfigs(): Linter.Config[] {
         [IN_HOUSE_ESLINT_PLUGIN_NAME]: inHouseEslintPlugin
       },
       rules: {
-        'obsidian-dev-utils/no-unused-params-members': 'error',
-        'obsidian-dev-utils/no-used-underscore-variables': 'error',
-        'obsidian-dev-utils/params-options-name-match': 'error',
-        'obsidian-dev-utils/readonly-params-options-result-members': 'error',
-        'obsidian-dev-utils/require-method-template': 'error'
+        'typescript-dev-toolkit/no-unused-params-members': 'error',
+        'typescript-dev-toolkit/no-used-underscore-variables': 'error',
+        'typescript-dev-toolkit/params-options-name-match': 'error',
+        'typescript-dev-toolkit/readonly-params-options-result-members': 'error',
+        'typescript-dev-toolkit/require-method-template': 'error'
       }
     }
   ]);
@@ -647,8 +647,8 @@ function getTseslintConfigs(): Linter.Config[] {
           }
         ],
         '@typescript-eslint/prefer-readonly': 'error',
-        'obsidian-dev-utils/no-async-callback-to-unsafe-return': 'error',
-        'obsidian-dev-utils/no-used-underscore-variables': 'error'
+        'typescript-dev-toolkit/no-async-callback-to-unsafe-return': 'error',
+        'typescript-dev-toolkit/no-used-underscore-variables': 'error'
       }
     }
   ]);
@@ -698,11 +698,9 @@ function getUnicornConfigs(): Linter.Config[] {
          * Each disabled replacement below is established vocabulary here, and each answers a report that was
          * measured rather than anticipated:
          *
-         * - `params` is the parameter-bag convention that `obsidian-dev-utils/params-options-name-match` above
+         * - `params` is the parameter-bag convention that `typescript-dev-toolkit/params-options-name-match` above
          *   ENFORCES — bag types must be named `<Owner>Params` / `<Owner>Options` — so expanding it would put
          *   the two rules in direct contradiction.
-         * - `dev` and `utils` spell the `obsidian-dev-utils` plugin namespace the in-house rules are registered
-         *   under, so expanding them would rename the plugin after nothing.
          * - docs is the oracle scripts' name for a corpus of markdown documents, which documents would only lengthen.
          * - `env` and `lib` name foreign surfaces: environment variables, and TypeScript's `skipLibCheck`.
          *
@@ -715,12 +713,10 @@ function getUnicornConfigs(): Linter.Config[] {
           {
             checkProperties: true,
             replacements: {
-              dev: false,
               docs: false,
               env: false,
               lib: false,
-              params: false,
-              utils: false
+              params: false
             }
           }
         ],
