@@ -21,10 +21,10 @@
     },
     "eslint-plugin-unicorn": {
       "section": "devDependencies",
-      "why": "eslint.config.mts is copied by hand from obsidian-dev-utils, which declares eslint-plugin-unicorn ^76.0.0. Version 78 adds unicorn/no-asterisk-prefix-in-documentation-comments, which reports 751 findings here, plus a few from other new rules. Exact so a sweep cannot lift it to 78 ahead of obsidian-dev-utils.",
-      "check": "npm view obsidian-dev-utils dependencies.eslint-plugin-unicorn",
+      "why": "The ESLint config follows @mnaoumov/typescript-dev-toolkit, which declares eslint-plugin-unicorn ^76.0.0. Version 78 adds unicorn/no-asterisk-prefix-in-documentation-comments, which reports 751 findings here, plus a few from other new rules. Exact so a sweep cannot lift it to 78 ahead of @mnaoumov/typescript-dev-toolkit.",
+      "check": "npm view @mnaoumov/typescript-dev-toolkit dependencies.eslint-plugin-unicorn",
       "expect": "^76.0.0",
-      "manualCheck": "When obsidian-dev-utils moves to a newer major, move this to its range, copy any config change it made to eslint.config.mts, run `npx eslint --fix` for the new rules, fix what remains by hand, and update this entry."
+      "manualCheck": "When @mnaoumov/typescript-dev-toolkit moves to a newer major, move this to its range, copy any config change it made to scripts/eslint-config.ts, run `npx eslint --fix` for the new rules, fix what remains by hand, and update this entry."
     },
     "katex": {
       "section": "overrides",
@@ -32,13 +32,6 @@
       "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/micromark-extension-math/package.json','utf8')).dependencies.katex)\"",
       "expect": "^0.16.0",
       "manualCheck": "When micromark-extension-math's range admits a patched katex (>= 0.18.2) on its own, delete this override and this entry."
-    },
-    "smol-toml": {
-      "section": "overrides",
-      "why": "Clears GHSA-r4xh-jqrq-34v2 (quadratic parse() on key lines) and GHSA-7w5x-hrqm-74c2 (DoS on malformed TOML), smol-toml <= 1.8.0. markdownlint-cli2 0.23.3 pins smol-toml 1.8.0 exactly and is already the latest release; 1.9.1 is a minor bump within the same API.",
-      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/markdownlint-cli2/package.json','utf8')).dependencies['smol-toml'])\"",
-      "expect": "1.8.0",
-      "manualCheck": "When markdownlint-cli2 depends on smol-toml >= 1.9.0 on its own, delete this override and this entry."
     },
     "typescript": {
       "section": "devDependencies",
