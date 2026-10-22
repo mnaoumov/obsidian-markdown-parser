@@ -186,22 +186,22 @@ try {
   });
   progress(`wrote ${LONG_NOTE} and enabled the plugin`);
   // The metadata cache fills as the worker reads each new note; the wait runs in Node, one short eval per poll.
-  for (let poll = 0;; poll++) {
-    const cached = await conn.evalInObsidian({
+  let cached = 0;
+  for (let poll = 0; poll < MAX_POLLS && cached < notes.length + 1; poll++) {
+    if (poll > 0) {
+      await sleep(POLL_MS);
+    }
+    cached = await conn.evalInObsidian({
       callback: async ({ app }) => {
         await Promise.resolve();
         return app.vault.getMarkdownFiles().filter((file) => app.metadataCache.getFileCache(file) !== null).length;
       }
     });
-    if (cached >= notes.length + 1) {
-      progress('the metadata cache holds every note');
-      break;
-    }
-    if (poll >= MAX_POLLS) {
-      throw new Error(`The metadata cache holds ${String(cached)} of ${String(notes.length + 1)} notes`);
-    }
-    await sleep(POLL_MS);
   }
+  if (cached < notes.length + 1) {
+    throw new Error(`The metadata cache holds ${String(cached)} of ${String(notes.length + 1)} notes`);
+  }
+  progress('the metadata cache holds every note');
   const classes = await runCommand('compareClasses', `${SAMPLE_FOLDER}/${longest.path}`, true);
   progress('compared the editor classes');
   const metadata = await runCommand('compareMetadata', `${SAMPLE_FOLDER}/${longest.path}`, true);
@@ -286,7 +286,7 @@ function readNotes(vault: string): Note[] {
   return found.toSorted((a, b) => compareCodeUnits(a.path, b.path));
 }
 
-// Opens a note in the editor, runs one of the plugin's commands on it and closes the report's modal.
+// Opens a note in the editor and runs one of the plugin's commands on it; each report replaces the last one's modal.
 async function runCommand<Name extends keyof DemoPlugin>(command: Name, path: string, isSource: boolean): Promise<CommandResult<Name>> {
   return conn.evalInObsidian({
     callback: async ({ app, commandName, notePath, pluginId, source }): Promise<CommandResult<Name>> => {
@@ -295,11 +295,7 @@ async function runCommand<Name extends keyof DemoPlugin>(command: Name, path: st
         throw new Error('The demo plugin did not load');
       }
       await app.workspace.getLeaf(false).setViewState({ state: { file: notePath, mode: 'source', source }, type: 'markdown' });
-      const result = await plugin[commandName]() as CommandResult<Name>;
-      for (const button of document.querySelectorAll<HTMLElement>('.modal-close-button')) {
-        button.click();
-      }
-      return result;
+      return await plugin[commandName]() as CommandResult<Name>;
     },
     input: { commandName: command, notePath: path, pluginId: PLUGIN_ID, source: isSource }
   });

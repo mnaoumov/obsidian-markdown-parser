@@ -236,6 +236,8 @@ const REPORT_INDENT = 2;
 const MAX_LISTED_DIFFERENCES = 20;
 const HALF = 0.5;
 const MODE_LOAD_MS = 1000;
+// The pause between keystrokes: a frame at 60 Hz. `requestAnimationFrame` hardly fires in a hidden window, which a test instance is.
+const FRAME_MS = 16;
 // At 25,000 lines (900,000 characters) `parseMetadata` peaks at 360 MB, and at 100,000 lines at 2.5 GB.
 const MAX_METADATA_CHARACTERS = 1_000_000;
 
@@ -272,6 +274,7 @@ export default class MarkdownParserDemoPlugin extends Plugin {
   private readonly editorExtensions: Extension[] = [];
   private isParserOn = false;
   private readonly liveViews = new Set<EditorView>();
+  private reportModal: null | ReportModal = null;
   private statusBarElement: HTMLElement | null = null;
   private stockLanguage: Language | null = null;
 
@@ -479,8 +482,11 @@ export default class MarkdownParserDemoPlugin extends Plugin {
     this.statusBarElement?.setText(`Markdown parser: ${this.isParserOn ? 'on' : 'off'}`);
   }
 
+  // Shows one report at a time: a report replaces the one before it.
   private showReport(title: string, report: object): void {
-    new ReportModal(this.app, title, report).open();
+    this.reportModal?.close();
+    this.reportModal = new ReportModal(this.app, title, report);
+    this.reportModal.open();
   }
 
   private trackView(view: EditorView): PluginValue {
@@ -504,12 +510,6 @@ function fullParse(parser: Language, text: string): Tree {
   return tree;
 }
 
-async function nextFrame(): Promise<void> {
-  await new Promise((resolve) => {
-    requestAnimationFrame(resolve);
-  });
-}
-
 // Lists at most the first few notes of each list in the modal; the kept report has them all.
 function shortenReport(report: object): object {
   return Object.fromEntries(
@@ -530,14 +530,14 @@ function time(action: () => unknown): number {
 
 /*
  * Types characters one after another in the middle of the note, each as its own transaction, and times each with the
- * parse to the end of the viewport after it, then removes them.
+ * parse to the end of the viewport after it, a frame apart, then removes them.
  */
 async function typeKeystrokes(view: EditorView): Promise<number[]> {
   const initial: Text = view.state.doc;
   const at = initial.line(Math.ceil(initial.lines * HALF)).from;
   view.dispatch({ effects: EditorView.scrollIntoView(at, { y: 'center' }), selection: { anchor: at } });
   ensureSyntaxTree(view.state, view.state.doc.length, PARSE_TIMEOUT_MS);
-  await nextFrame();
+  await sleep(FRAME_MS);
   const times: number[] = [];
   for (let index = 0; index < KEYSTROKES; index++) {
     times.push(time(() => {
@@ -545,7 +545,7 @@ async function typeKeystrokes(view: EditorView): Promise<number[]> {
       view.dispatch({ changes: { from: pos, insert: 'x' }, selection: { anchor: pos + 1 }, userEvent: 'input.type' });
       ensureSyntaxTree(view.state, view.viewport.to, PARSE_TIMEOUT_MS);
     }));
-    await nextFrame();
+    await sleep(FRAME_MS);
   }
   view.dispatch({ changes: { from: at, to: at + KEYSTROKES } });
   return times;
