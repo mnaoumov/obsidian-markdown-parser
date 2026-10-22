@@ -199,7 +199,7 @@ export function createObsidianMode(): ObsidianMode {
       // Obsidian: in a table, math also ends before a pipe.
       exitChecker: (s, st) => st.hmdTable && s.string.charAt(s.start) === '|' ? { endPos: s.start, style: endStyle } : endAtTag(s, st),
       fallbackMode: () => createDummyMode(endTag),
-      style: 'math'
+      style: mathLevel === 1 ? ['math', ...openSpanStyles(state)].join(' ') : 'math'
     });
     ans += ` formatting formatting-math formatting-math-begin${mathLevel === 2 ? ' math-block' : ''}`;
     if (mathLevel === 2 && /^\s*\$\$\s*$/u.test(stream.string)) {
@@ -703,6 +703,27 @@ function createSimpleInnerModeExitChecker(endTag: string, returnValueInfo: ExitI
 function isMathAt(stream: Stream): boolean {
   const rest = stream.string.slice(stream.pos);
   return rest.startsWith('$$') || (/^\$[^\s$]/u.test(rest) && /[^\s\\]\$/u.test(rest.slice(1)));
+}
+
+/*
+ * Obsidian: every token of `$` math, from either mark to the other, wears the emphasis, strikethrough and highlight
+ * spans open around it, even from an earlier line, but not a highlight's color. `$$` math wears none of them.
+ */
+function openSpanStyles(state: ObsidianState): string[] {
+  const styles: string[] = [];
+  if (state.strong) {
+    styles.push('strong');
+  }
+  if (state.em) {
+    styles.push('em');
+  }
+  if (state.strikethrough) {
+    styles.push('strikethrough');
+  }
+  if (state.highlight) {
+    styles.push('highlight');
+  }
+  return styles;
 }
 
 function resetTable(state: ObsidianState): void {

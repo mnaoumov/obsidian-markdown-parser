@@ -29,6 +29,12 @@ import {
  */
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>(CLASS_ORACLE_SEEDS.map((seed) => [classOracleFileName(seed), []]));
 
+// The distinct class sets of a document's math spans, without the classes every math token wears.
+function mathClasses(text: string): string[] {
+  const sets = highlight(text).flatMap((line) => line.spans).filter((s) => s.classes.includes('math')).map((s) => s.classes.filter((c) => !/^(?:formatting|keyword$|variable-2$|math-)/u.test(c)).toSorted(compareCodeUnits).join(' '));
+  return [...new Set(sets)];
+}
+
 function readOracle(name: string): OracleFile {
   return readOracleFile(name) as OracleFile;
 }
@@ -50,6 +56,16 @@ describe('highlight', () => {
       [2, 7, 'header header-1']
     ]);
     expect(quote?.classes).toEqual(['HyperMD-quote', 'HyperMD-quote-1']);
+  });
+
+  // The classes the live editor of Obsidian 1.14.4 gave these documents.
+  it('should give `$` math the emphasis, strikethrough and highlight open around it, but not `$$` math', () => {
+    expect(mathClasses('==🔴\n$==🔴x$')).toEqual(['highlight math', 'error highlight math']);
+    expect(mathClasses('***a $x$')).toEqual(['em math strong']);
+    expect(mathClasses('~~==a $x$')).toEqual(['highlight math strikethrough']);
+    expect(mathClasses('# ==a $x$')).toEqual(['highlight math']);
+    expect(mathClasses('**a $$x$$')).toEqual(['math']);
+    expect(mathClasses('==a\n\n$x$')).toEqual(['math']);
   });
 
   it('should run a markdown block through the fork of the markdown mode with its default options', () => {

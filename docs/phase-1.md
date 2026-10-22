@@ -85,7 +85,7 @@ Each rule below was read off the oracle and checked against all three corpora.
 - A tag token carries `tag-<name>`, keeping only ASCII letters, digits, `_` and `-`. The `#` token takes the whole name, and the last token takes its own text. The tokens after the `#` drop `em`.
 - A `<!` declaration, `<?` instruction or `<![CDATA[` section in inline markdown is a comment. Its first token also carries the class `null`: HyperMD appends the inner mode's first style as a string, and that style is `null`. The line after indented code is not inline markdown when its first token is read, so a declaration there has no classes.
 - A block id is a `^id` that ends its line, after any character.
-- Inline `$` math opens before a non-space and closes after one. A line holding only `$$` opens a math block whose lines carry `HyperMD-math`. Math opens inside the markdown inline flow, after the line's block structure is read.
+- Inline `$` math opens before a non-space and closes after one. A line holding only `$$` opens a math block whose lines carry `HyperMD-math`. Math opens inside the markdown inline flow, after the line's block structure is read. Every token of `$` math, both marks included, wears the `strong`, `em`, `strikethrough` and `highlight` spans open around it, even from an earlier line of the paragraph, but not a highlight's color class. `$$` math wears none of them.
 - A reference label must follow the link text with no space.
 - An autolink's address is also a URL, and a bare URL wears the classes of its context.
 - A backslash escapes only a character CommonMark lets it escape, as in the fork: `\a` is plain text. A backslash at the end of a line escapes nothing.
