@@ -4,6 +4,8 @@
 
 Unofficial: not affiliated with or endorsed by Obsidian. See [AGENTS.md](AGENTS.md) for status, goals and method.
 
+The whole picture for the Obsidian team, with what each goal reached, the known gaps and the terms, is in [docs/write-up.md](docs/write-up.md).
+
 It is three engines, not one: the editor's classes come from a ported CodeMirror 5 line tokenizer hosted as a Lezer parser, the Obsidian syntax tree from `@lezer/markdown`, and the reading view's parse and the metadata from a port of `remark-parse` 8. Why each output needs its engine, what each is measured against, and what a single Lezer engine would take are in [docs/architecture.md](docs/architecture.md).
 
 ## Development
