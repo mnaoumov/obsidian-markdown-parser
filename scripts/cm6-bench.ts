@@ -2,7 +2,8 @@
  * @file
  *
  * Measures the CodeMirror 6 host's parse cost on large documents: a full parse, and the re-parse after a one-character
- * edit at the start, the middle and the end, to a viewport after the edit and to the document's end.
+ * edit at the start, the middle and the end, to a viewport after the edit and to the document's end, and how many
+ * characters the re-parse tokenized again rather than reused.
  *
  * The documents are the oracle corpora's texts, repeated to the requested line counts.
  *
@@ -23,8 +24,10 @@ import { parseArgs } from 'node:util';
 import type { OracleFile } from '../src/oracle/oracle-file.ts';
 
 import { editorClassLanguage } from '../src/editor/language.ts';
+import { reusedLength } from '../src/editor/tree-reuse.ts';
 
 interface EditCost {
+  readonly parsedAgain: number;
   readonly resumedAt: number;
   readonly toEnd: number;
   readonly toViewport: number;
@@ -72,6 +75,7 @@ function measureEdit(document: Text, tree: Tree, at: number): EditCost {
     return editorClassLanguage.parser.startParse(new DocInput(changed), fragments);
   }
   const { parsedPos: resumedAt } = startParse();
+  const parsedAgain = changed.length - reusedLength(tree, parseUntil(startParse(), Infinity) ?? tree);
   for (let run = 0; run < runs; run++) {
     const toViewport = timed(() => {
       const parse = startParse();
@@ -81,7 +85,7 @@ function measureEdit(document: Text, tree: Tree, at: number): EditCost {
     viewport.push(toViewport.ms);
     end.push(toViewport.ms + timed(() => parseUntil(toViewport.value, Infinity)).ms);
   }
-  return { resumedAt, toEnd: median(end), toViewport: median(viewport) };
+  return { parsedAgain, resumedAt, toEnd: median(end), toViewport: median(viewport) };
 }
 
 // Types characters one after another in the middle, each re-parse resuming from the tree before it and stopping at the viewport.
@@ -146,8 +150,8 @@ function timed<T>(run: () => T): Timed<T> {
 // Warm the tokenizer and its sub-modes up before timing anything.
 fullParse(repeatToLines(corpusLines.length));
 
-console.log('| Lines | Characters | Full parse | Edit at | Resumed from | To viewport | To end |');
-console.log('| ----: | ---------: | ---------: | :------ | -----------: | ----------: | -----: |');
+console.log('| Lines | Characters | Full parse | Edit at | Resumed from | Re-parsed | To viewport | To end |');
+console.log('| ----: | ---------: | ---------: | :------ | -----------: | --------: | ----------: | -----: |');
 for (const lineCount of values.lines) {
   const count = Number(lineCount);
   const document = repeatToLines(count);
@@ -156,7 +160,7 @@ for (const lineCount of values.lines) {
   for (const [label, at] of [['start', 0], ['middle', Math.floor(document.length * HALF)], ['end', document.length]] as const) {
     const edit = measureEdit(document, tree, at);
     console.log(
-      `| ${String(count)} | ${String(document.length)} | ${ms(full)} ms | ${label} | ${String(edit.resumedAt)} | ${ms(edit.toViewport)} ms | ${ms(edit.toEnd)} ms |`
+      `| ${String(count)} | ${String(document.length)} | ${ms(full)} ms | ${label} | ${String(edit.resumedAt)} | ${String(edit.parsedAgain)} | ${ms(edit.toViewport)} ms | ${ms(edit.toEnd)} ms |`
     );
   }
   console.log(`Typing ${String(TYPING_KEYSTROKES)} characters in the middle of ${String(count)} lines, re-parsing to the viewport each time: median ${ms(measureTyping(document, tree))} ms per keystroke`);

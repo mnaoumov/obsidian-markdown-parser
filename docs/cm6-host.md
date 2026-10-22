@@ -22,29 +22,34 @@ The host's tree gives every character and line the same classes as the line toke
 
 Each chunk records the tokenizer state after its last line, and how far its lines read: each line's own newline, and the end and newline of any line read ahead. After an edit, a new parse resumes from the last chunk whose reads all end before the edit (and before the 25-character margin `StreamLanguage` keeps from an edited fragment's end). So a paragraph line whose lookahead saw the line now turned into `---` is parsed again, and so is a last line that gains a line after it.
 
+After the edit, the parse also reuses what follows. At each line end past the edit, it looks for a chunk of the old tree that starts at the same text. That chunk must come after a chunk whose stored state equals the state the new parse has reached. When it finds one, the lines from there on give what they gave before, so it takes that chunk and the ones after it. It stops at the first chunk whose reads, lookahead included, reach past the unchanged text the fragment covers. That text ends 25 characters from an edit on either side. Then it parses on from the last reused chunk's state. A reused chunk keeps its tree and gets its line index shifted by the lines the edit added or removed.
+
+Two states are equal when `areLineStatesEqual` (`src/editor/highlight.ts`) says so. It compares the live state as a copy, because the mode's copy drops what it carries only within a line. It compares plain objects, class instances and arrays by their own properties, and functions and built-in objects by identity. A kept line stream is compared by its text, the only part a later line reads. Two states whose tokenizer is a closure made at different times are never equal, so a multi-line string or comment converges only once it closes.
+
+A state inside a fenced code block, or inside a `<script>` or `<style>` element of an HTML block, is equal to no other state. It holds a CodeMirror 5 mode object made for that block, and such a mode keeps state in its closure, outside the state the host can see. The CSS mode keeps the type of the last token in a variable, and a `-` it reads no token from takes that type, so `-` after `<style>` is classed by whatever that mode object tokenized last. Resuming inside such a block already shows this, with or without reuse. Reusing chunks there would also make it depend on which parse ran the mode last, so the parse goes on to the block's end before it compares again.
+
 The rest is what `StreamLanguage` does:
 
-- Only a prefix is reused. Everything after the edit is parsed again, from the resumed state.
 - Each `advance` parses one chunk, and a parse stops at the end of the viewport, so the editor parses the rest in idle time.
 - A viewport more than 100,000 characters past the parsed text is parsed from a fresh state.
 
-The suite checks that 400 random edits to a 300-line document, parsed incrementally with 16-character chunks, give the same tree as a fresh parse, and that more than half of them resumed after the document's start. It also checks the two lookahead cases and the appended line with one-line chunks.
+The suite checks that 400 random edits to a 300-line document, parsed incrementally with 16-character chunks, give the same tree as a fresh parse, and that more than half of them resumed after the document's start. It also checks that more than three quarters reused chunks after the edit, and that together they re-tokenized less than a quarter of the text after their resume points. It checks the two lookahead cases and the appended line with one-line chunks. It checks that an edit reuses everything past the edit's margin, and that an edit opening a fence reuses nothing after it. It also checks that an edit inside a fence or a `<style>` element is parsed to the block's end and reuses what follows it. `reusedLength` (`src/editor/tree-reuse.ts`) measures the reuse: a chunk taken from the old tree shares its array of children with it. Outside the suite, 9,900 random edits across all eleven corpora with 1-, 16- and 512-character chunks gave the same tree as a fresh parse.
 
 ## Cost
 
-`scripts/cm6-bench.ts` repeats the texts of the two wider oracle corpora to 10,000 and 100,000 lines. It times a full parse, then inserts one character at the start of the line at the document's start, middle and end and times the re-parse from the old tree's fragments to a viewport 3,000 characters past the edit (about 60 lines of this corpus), and on to the end. Medians of 5 runs, Node 26.10.0 on an AMD Ryzen 5 7500F. Two runs of the script differed by up to 30%.
+`scripts/cm6-bench.ts` repeats the texts of the two wider oracle corpora to 10,000 and 100,000 lines. It times a full parse. Then it inserts one character at the start of the line at the document's start, middle and end, and times the re-parse from the old tree's fragments to a viewport 3,000 characters past the edit (about 60 lines of this corpus), and on to the end. `Re-parsed` is how many characters the re-parse to the end tokenized again rather than reused. Medians of 5 runs, Node 26.10.0 on an AMD Ryzen 5 7500F, measured on 2026-10-22. Two runs of the script differed by up to 30%, and up to 50% on the smallest times.
 
-| Lines   | Characters | Full parse | Edit at | Resumed from | To viewport | To end    |
-| ------: | ---------: | ---------: | :------ | -----------: | ----------: | --------: |
-| 10,000  | 61,546     | 22.44 ms   | start   | 0            | 2.50 ms     | 19.83 ms  |
-| 10,000  | 61,546     | 22.44 ms   | middle  | 30,601       | 0.61 ms     | 6.05 ms   |
-| 10,000  | 61,546     | 22.44 ms   | end     | 61,078       | 0.11 ms     | 0.11 ms   |
-| 100,000 | 582,536    | 101.54 ms  | start   | 0            | 2.43 ms     | 100.55 ms |
-| 100,000 | 582,536    | 101.54 ms  | middle  | 291,028      | 0.34 ms     | 45.15 ms  |
-| 100,000 | 582,536    | 101.54 ms  | end     | 582,106      | 0.05 ms     | 0.05 ms   |
+| Lines   | Characters | Full parse | Edit at | Resumed from | Re-parsed | To viewport | To end  |
+| ------: | ---------: | ---------: | :------ | -----------: | --------: | ----------: | ------: |
+| 10,000  | 61,546     | 24.69 ms   | start   | 0            | 1,042     | 0.63 ms     | 0.82 ms |
+| 10,000  | 61,546     | 24.69 ms   | middle  | 30,601       | 981       | 0.35 ms     | 0.49 ms |
+| 10,000  | 61,546     | 24.69 ms   | end     | 61,078       | 469       | 0.14 ms     | 0.14 ms |
+| 100,000 | 582,536    | 113.53 ms  | start   | 0            | 574       | 0.77 ms     | 0.94 ms |
+| 100,000 | 582,536    | 113.53 ms  | middle  | 291,028      | 513       | 0.53 ms     | 0.62 ms |
+| 100,000 | 582,536    | 113.53 ms  | end     | 582,106      | 431       | 0.35 ms     | 0.35 ms |
 
-Typing 50 characters one after another in the middle, each re-parse resuming from the tree before it and stopping at the viewport, costs a median of 0.56 ms per keystroke at 10,000 lines and 0.33 ms at 100,000.
+Before the parse reused the chunks after an edit, the re-parse to the end after an edit at the start cost 19.83 ms at 10,000 lines and 100.55 ms at 100,000. It parsed everything after the edit again. Now it re-tokenizes about a chunk around the edit and takes the rest from the old tree, so an edit costs about the same wherever it is and however long the document is. An edit that changes the state of every line after it still costs a parse to the end: one that opens a fence or a multi-line comment, for example. Inside a fenced block or a `<style>` or `<script>` element the parse goes on to the block's end.
 
-So the cost of an edit is the cost of the viewport after it, whatever the document's size. The parse after the viewport costs as much as parsing the rest of the document. The editor does that work in idle time, and an edit near the start repeats almost all of it. Reusing the chunks after an edit would need a test that the state after a re-parsed line equals the old state at the same line, and the mode's state holds sub-mode states and tokenizer functions. That is not built.
+Typing 50 characters one after another in the middle costs a median of 0.16 ms per keystroke at 10,000 lines and 0.80 ms at 100,000. Each re-parse resumes from the tree before it and stops at the viewport. Before, those were 0.56 ms and 0.33 ms. A keystroke at 100,000 lines now costs more because its tree reaches the document's end, not the viewport. The parse balances the tree over every reused chunk, and the next keystroke lists the old tree's chunks. In exchange nothing is left for idle time. Before, the rest of the document, 45 ms at 100,000 lines, was parsed again after every keystroke.
 
 Run it with `npx jiti scripts/cm6-bench.ts [--lines <n>]... [--runs <n>]`.

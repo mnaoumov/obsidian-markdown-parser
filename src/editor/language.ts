@@ -10,7 +10,8 @@
  * The tree has the shape of the editor's: a line with line classes is a node named by them, holding its tokens, and
  * every token is a node named by its classes, sorted and joined by `_`. Lines are grouped into chunks, anonymous nodes
  * a tree cursor steps through, and each chunk records the state after its last line and how far its lines read,
- * lookahead included. A new parse after an edit resumes from the last chunk whose reads all lie before the edit.
+ * lookahead included. A new parse after an edit resumes from the last chunk whose reads all lie before the edit, and
+ * once a line after the edit ends in the state the earlier parse had there, it reuses the earlier parse's chunks.
  */
 
 import type {
@@ -37,6 +38,7 @@ import type { LineState } from './highlight.ts';
 
 import { compareCodeUnits } from '../oracle/score.ts';
 import {
+  areLineStatesEqual,
   copyLineState,
   startLineState,
   tokenizeLine
@@ -68,6 +70,15 @@ interface FoundState {
   readonly pos: number;
 }
 
+// A chunk of an earlier tree, in document coordinates.
+interface FragmentChunk {
+  readonly from: number;
+  readonly info: ChunkInfo;
+  // The state and line index after the chunk before it, or `null` when no chunk ends where this one starts.
+  readonly previous: ChunkInfo | null;
+  readonly tree: Tree;
+}
+
 interface ParseRange {
   readonly from: number;
   readonly to: number;
@@ -77,6 +88,21 @@ interface ParseStart {
   readonly lineIndex: number;
   readonly state: LineState;
   readonly tree: Tree;
+}
+
+// A fragment of an earlier tree that a parse may reuse chunks from, with the range it may read in.
+interface ReusableFragment {
+  chunks: null | readonly FragmentChunk[];
+  readonly fragment: TreeFragment;
+  readonly from: number;
+  readonly to: number;
+}
+
+interface TakeChunksParams {
+  readonly firstIndex: number;
+  readonly lineShift: number;
+  readonly parseEnd: number;
+  readonly reusable: ReusableFragment;
 }
 
 /**
@@ -95,6 +121,7 @@ const OPEN_EDGE_MARGIN = 25;
 // Like `StreamLanguage`, parse a viewport this far past the parsed text from a fresh state instead.
 const MAX_DISTANCE_BEFORE_VIEWPORT = 100_000;
 const NODE_SIZE = 4;
+const HALVES = 2;
 
 const chunkProperty = new NodeProp<ChunkInfo>({ perNode: true });
 // As in `StreamLanguage`, node types are added as new class sets appear, so the set's array grows after it is made.
@@ -124,7 +151,8 @@ class EditorClassParse implements PartialParse {
   private readonly from: number;
   private lineIndex: number;
   private readonly lineTexts = new Map<number, string>();
-  private readonly state: LineState;
+  private readonly reusableFragments: ReusableFragment[] = [];
+  private state: LineState;
   private readonly to: number;
 
   public constructor(
@@ -157,6 +185,13 @@ class EditorClassParse implements PartialParse {
     }
     this.chunkStart = this.parsedPos;
     this.chunkReadTo = this.parsedPos;
+    for (const fragment of fragments) {
+      const from = fragment.from + (fragment.openStart ? OPEN_EDGE_MARGIN : 0);
+      const to = fragment.to - (fragment.openEnd ? OPEN_EDGE_MARGIN : 0);
+      if (from < to && to > this.parsedPos) {
+        this.reusableFragments.push({ chunks: null, fragment, from, to });
+      }
+    }
   }
 
   public advance(): null | Tree {
@@ -168,6 +203,7 @@ class EditorClassParse implements PartialParse {
     }
     while (this.parsedPos < end) {
       this.parseLine();
+      this.reuseChunks(parseEnd);
     }
     if (this.chunkStart < this.parsedPos) {
       this.finishChunk();
@@ -308,6 +344,60 @@ class EditorClassParse implements PartialParse {
     }
     return text.slice(0, this.to - from);
   }
+
+  /*
+   * Once a line ends in the state an earlier parse had at the same text, the lines after it give what they gave then. So
+   * when an earlier tree has a chunk starting here, after a chunk that ended in an equal state, its chunks are reused
+   * for as long as their reads stay in the text the edit left unchanged.
+   */
+  private reuseChunks(parseEnd: number): void {
+    for (const reusable of this.reusableFragments) {
+      if (this.parsedPos < reusable.from || this.parsedPos >= reusable.to) {
+        continue;
+      }
+      reusable.chunks ??= fragmentChunks(reusable.fragment);
+      const firstIndex = findChunkIndex(reusable.chunks, this.parsedPos);
+      const first = reusable.chunks[firstIndex];
+      if (
+        first?.from === this.parsedPos
+        && first.previous
+        && isChunkReusable(first, reusable, parseEnd)
+        // The stored state is a copy, and a copy drops what the mode carries only within a line, so compare a copy.
+        && areLineStatesEqual(copyLineState(this.state), first.previous.state)
+      ) {
+        this.takeChunks({ firstIndex, lineShift: this.lineIndex - first.previous.lineIndex, parseEnd, reusable });
+        return;
+      }
+    }
+  }
+
+  // Takes a fragment's chunks from `firstIndex` on, while they are contiguous and reusable, and parses on after them.
+  private takeChunks(params: TakeChunksParams): void {
+    const { firstIndex, lineShift, parseEnd, reusable } = params;
+    const chunks = reusable.chunks ?? [];
+    if (this.chunkStart < this.parsedPos) {
+      this.finishChunk();
+    }
+    let lastIndex = firstIndex;
+    while (lastIndex + 1 < chunks.length && isNextChunkReusable(chunks[lastIndex + 1], reusable, parseEnd)) {
+      lastIndex++;
+    }
+    const taken = chunks.slice(firstIndex, lastIndex + 1);
+    for (const chunk of taken) {
+      this.chunks.push(lineShift === 0 ? chunk.tree : shiftChunkLines(chunk, lineShift));
+      this.chunkPositions.push(chunk.from - this.from);
+    }
+    const last = chunks[lastIndex];
+    if (!last) {
+      return;
+    }
+    this.parsedPos = last.from + last.tree.length;
+    this.state = copyLineState(last.info.state);
+    this.lineIndex = last.info.lineIndex + lineShift;
+    this.chunkStart = this.parsedPos;
+    this.chunkReadTo = this.parsedPos;
+    this.lineTexts.clear();
+  }
 }
 /* eslint-enable unicorn/consistent-class-member-order -- The rule is off for EditorClassParse only. */
 
@@ -333,6 +423,21 @@ export function createEditorClassLanguage(options: CreateEditorClassLanguageOpti
   return new Language(data, new EditorClassParser(host), [], 'obsidian-markdown');
 }
 
+// The index of the first chunk starting at or after `pos`.
+function findChunkIndex(chunks: readonly FragmentChunk[], pos: number): number {
+  let low = 0;
+  let high = chunks.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / HALVES);
+    if ((chunks[middle]?.from ?? Infinity) < pos) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+}
+
 // Finds the last chunk whose reads end before `before`, starting at or after `startPos`.
 function findState(tree: Tree, offset: number, startPos: number, before: number): FoundState | null {
   const info = tree.prop(chunkProperty);
@@ -351,6 +456,43 @@ function findState(tree: Tree, offset: number, startPos: number, before: number)
     }
   }
   return null;
+}
+
+// The chunks of a fragment's tree in document order, each with the chunk that ends where it starts.
+function fragmentChunks(fragment: TreeFragment): FragmentChunk[] {
+  const chunks: FragmentChunk[] = [];
+  let previous: FragmentChunk | null = null;
+  function visit(tree: Tree, from: number): void {
+    const info = tree.prop(chunkProperty);
+    if (info) {
+      const chunk: FragmentChunk = { from, info, previous: previous && previous.from + previous.tree.length === from ? previous.info : null, tree };
+      chunks.push(chunk);
+      previous = chunk;
+      return;
+    }
+    for (const [index, child] of tree.children.entries()) {
+      if (child instanceof Tree) {
+        visit(child, from + (tree.positions[index] ?? 0));
+      }
+    }
+  }
+  visit(fragment.tree, -fragment.offset);
+  return chunks;
+}
+
+// A chunk is reused only when the text it read is unchanged and it ends where the parse may.
+function isChunkReusable(chunk: FragmentChunk, reusable: ReusableFragment, parseEnd: number): boolean {
+  return chunk.from >= reusable.from && chunk.from + chunk.info.readLength <= reusable.to && chunk.from + chunk.tree.length <= parseEnd;
+}
+
+// A chunk after a reused one is reused too when it starts where that one ends and is reusable itself.
+function isNextChunkReusable(chunk: FragmentChunk | undefined, reusable: ReusableFragment, parseEnd: number): chunk is FragmentChunk {
+  return !!chunk?.previous && isChunkReusable(chunk, reusable, parseEnd);
+}
+
+function shiftChunkLines(chunk: FragmentChunk, lineShift: number): Tree {
+  const info: ChunkInfo = { ...chunk.info, lineIndex: chunk.info.lineIndex + lineShift };
+  return new Tree(chunk.tree.type, chunk.tree.children, chunk.tree.positions, chunk.tree.length, [[chunkProperty, info]]);
 }
 
 function typeId(property: NodeProp<readonly string[]>, classes: readonly string[]): number {
