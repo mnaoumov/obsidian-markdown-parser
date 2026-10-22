@@ -11,8 +11,10 @@
 import type { ObsidianState } from './obsidian-mode.ts';
 import type { LineReader } from './string-stream.ts';
 
+import { areStatesEqual } from './mode.ts';
 import { createObsidianMode } from './obsidian-mode.ts';
 import { StringStream } from './string-stream.ts';
+import { isHtmlInEmbeddedMode } from './sub-modes.ts';
 
 /**
  * A run of characters with the classes the editor gives them.
@@ -144,6 +146,23 @@ interface HighlightLineParams {
 }
 
 /**
+ * Whether two tokenizer states are equal: the lines after either give the same classes, so a parse that reaches a state
+ * equal to an earlier parse's at the same text can reuse what that parse gave from there on.
+ *
+ * A state inside a fenced code block, or inside a script or style element of an HTML block, is equal to no other. It
+ * holds a CodeMirror 5 mode made for that block, and such a mode can keep state of its own between tokens, outside the
+ * state: the CSS mode keeps the last token's type, and a `-` it reads no token from takes that type. So what the lines
+ * after it give depends on what that mode object tokenized last, which differs between two parses that share it.
+ *
+ * @param a - A state.
+ * @param b - Another state.
+ * @returns `true` when they are equal.
+ */
+export function areLineStatesEqual(a: LineState, b: LineState): boolean {
+  return !isInBlockMode(a) && areStatesEqual(a, b);
+}
+
+/**
  * Copies a tokenizer state, so it can be kept as a resume point.
  *
  * @param state - The state.
@@ -252,6 +271,10 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
     spans: spans.map((span) => ({ classes: span.classes, from: offset + span.from, to: offset + span.to })),
     to: offset + line.length
   };
+}
+
+function isInBlockMode(state: LineState): boolean {
+  return state.localMode !== null || (state.htmlState !== null && isHtmlInEmbeddedMode(state.htmlState));
 }
 
 // Like the editor, a token may be empty while it changes the state, but the mode must advance within a few calls.

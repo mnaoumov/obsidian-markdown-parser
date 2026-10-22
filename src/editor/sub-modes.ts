@@ -120,6 +120,17 @@ export function getCodeMode(name: string): AnyMode | null {
 }
 
 /**
+ * Whether an HTML mode state sits inside a script or style element, which the HTML mode tokenizes with a mode made for
+ * that element.
+ *
+ * @param state - The HTML mode state.
+ * @returns `true` inside such an element.
+ */
+export function isHtmlInEmbeddedMode(state: object): boolean {
+  return codeMirror5.innerMode(HTML_MODE, state).mode.name !== 'xml';
+}
+
+/**
  * Whether an HTML mode state sits in plain text, outside every tag and every embedded script or style: the test the
  * CodeMirror 5 markdown mode uses to leave an HTML block.
  *

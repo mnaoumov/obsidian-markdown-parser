@@ -38,6 +38,7 @@ import {
   editorClassLanguage,
   lineClassesProperty
 } from './language.ts';
+import { reusedLength } from './tree-reuse.ts';
 
 const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle');
 const TINY_CHUNK_SIZE = 1;
@@ -45,11 +46,15 @@ const SMALL_CHUNK_SIZE = 16;
 const RANDOM_EDITS = 400;
 const RANDOM_DOCUMENT_LINES = 300;
 const MAX_DELETE = 4;
+const SUFFIX_REUSE_SHARE = 0.75;
+const PARSED_AGAIN_SHARE = 0.25;
 const PRNG_MULTIPLIER = 1_103_515_245;
 const PRNG_INCREMENT = 12_345;
 const PRNG_MODULUS = 2 ** 31;
 const PARSE_TIMEOUT_MS = 1e9;
 const PADDING = ' '.repeat(40);
+// How far the host keeps from an edited fragment's edge, as `StreamLanguage` does.
+const OPEN_EDGE_MARGIN = 25;
 const FILLER_LINES = 10;
 // `TreeFragment.applyChanges` drops a fragment shorter than 128 characters, so a case needs text before it to reuse.
 const FILLER = `${Array.from({ length: FILLER_LINES }, (_, index) => `filler line ${String(index)} with some words in it`).join('\n')}\n\n`;
@@ -243,6 +248,47 @@ describe('editorClassLanguage', () => {
     expect(lineNodeAt(result.tree, FILLER.length)).toContain('HyperMD-header');
   });
 
+  it('should reuse the chunks after an edit once a line ends in the state it had before', () => {
+    const language = createEditorClassLanguage({ chunkSize: TINY_CHUNK_SIZE });
+    const text = Array.from({ length: 100 }, (_, index) => `line ${String(index)}`).join('\n');
+    const tree = parse(language, text);
+    for (const insert of ['x', '\n', '# ']) {
+      const at = text.indexOf('line 10');
+      const result = applyEdit({ edit: { from: at, insert, to: at }, language, text, tree });
+      expect(treeNodes(result.tree)).toEqual(treeNodes(parse(language, result.text)));
+      // The edit, the margin the host keeps from it and the line that margin ends in are parsed again, and nothing after.
+      expect(result.text.length - reusedLength(tree, result.tree)).toBeLessThan(at - result.resumedAt + insert.length + 2 * OPEN_EDGE_MARGIN);
+    }
+  });
+
+  it('should not reuse the chunks after an edit that changes the state of the lines after it', () => {
+    const language = createEditorClassLanguage({ chunkSize: TINY_CHUNK_SIZE });
+    const text = `${FILLER}${Array.from({ length: 50 }, (_, index) => `line ${String(index)}`).join('\n')}`;
+    const tree = parse(language, text);
+    const result = applyEdit({ edit: { from: FILLER.length, insert: '```\n', to: FILLER.length }, language, text, tree });
+    expect(treeNodes(result.tree)).toEqual(treeNodes(parse(language, result.text)));
+    expect(reusedLength(tree, result.tree)).toBeLessThanOrEqual(FILLER.length);
+  });
+
+  it('should not reuse the chunks inside a fenced block or a style element', () => {
+    const language = createEditorClassLanguage({ chunkSize: TINY_CHUNK_SIZE });
+    const body = Array.from({ length: 30 }, (_, index) => `a${String(index)} { color: red; }`).join('\n');
+    const lastLine = 'the last line';
+    for (const [open, close] of [['```css', '```'], ['<style>', '</style>']] as const) {
+      const block = `${open}\n${body}\n${close}\n`;
+      const text = `${FILLER}${block}\n${FILLER}${lastLine}`;
+      const tree = parse(language, text);
+      const at = FILLER.length + open.length + 1;
+      const result = applyEdit({ edit: { from: at, insert: 'b', to: at }, language, text, tree });
+      expect(treeNodes(result.tree)).toEqual(treeNodes(parse(language, result.text)));
+      // Everything from the edit to the block's end is parsed again, and so is the last line, which reads the document's end.
+      const blockEnd = FILLER.length + block.length + 1;
+      const parsedAgain = result.text.length - reusedLength(tree, result.tree);
+      expect(parsedAgain).toBeGreaterThanOrEqual(blockEnd - result.resumedAt);
+      expect(parsedAgain, open).toBeLessThanOrEqual(blockEnd - result.resumedAt + lastLine.length);
+    }
+  });
+
   it('should give the same tree after random edits as a fresh parse', () => {
     const oracle = readOracle('obsidian-1.14.4-seed-12345.json');
     const pieces = ['\n', '\n\n', '-', '---', '=', '|', ' ', ' '.repeat(4), 'a', 'word', '#', '# ', '`', '```', '$', '$$', '> ', '* ', '1. ', '[[', ']]', '%%', '^id', '==', '\t'];
@@ -256,6 +302,9 @@ describe('editorClassLanguage', () => {
     let text = corpusLines.slice(0, RANDOM_DOCUMENT_LINES).join('\n');
     let tree = parse(language, text);
     let resumed = 0;
+    let suffixReused = 0;
+    let afterResume = 0;
+    let parsedAgain = 0;
     for (let step = 0; step < RANDOM_EDITS; step++) {
       const from = random(text.length + 1);
       const to = Math.min(text.length, from + random(MAX_DELETE));
@@ -265,9 +314,18 @@ describe('editorClassLanguage', () => {
       if (result.resumedAt > 0) {
         resumed++;
       }
+      const reused = reusedLength(tree, result.tree);
+      if (reused > result.resumedAt) {
+        suffixReused++;
+      }
+      afterResume += result.text.length - result.resumedAt;
+      parsedAgain += result.text.length - reused;
       ({ text, tree } = result);
     }
     expect(resumed).toBeGreaterThan(RANDOM_EDITS / 2);
+    // Most edits reuse chunks after them, and the parses together re-tokenize a small part of what followed their resume point.
+    expect(suffixReused).toBeGreaterThan(RANDOM_EDITS * SUFFIX_REUSE_SHARE);
+    expect(parsedAgain).toBeLessThan(afterResume * PARSED_AGAIN_SHARE);
   });
 
   it('should run as an editor state\'s language', () => {
