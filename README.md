@@ -4,6 +4,8 @@
 
 Unofficial: not affiliated with or endorsed by Obsidian. See [AGENTS.md](AGENTS.md) for status, goals and method.
 
+It is three engines, not one: the editor's classes come from a ported CodeMirror 5 line tokenizer hosted as a Lezer parser, the Obsidian syntax tree from `@lezer/markdown`, and the reading view's parse and the metadata from a port of `remark-parse` 8. Why each output needs its engine, what each is measured against, and what a single Lezer engine would take are in [docs/architecture.md](docs/architecture.md).
+
 ## Development
 
 The tooling follows the owner's TypeScript template: `npm install`, then `npm run build:compile` (type check), `npm run lint`, `npm run format:check`, `npm run spellcheck`, `npm run lint:md` and `npm test`.
