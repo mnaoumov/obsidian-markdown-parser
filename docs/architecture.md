@@ -59,7 +59,7 @@ Every oracle is pinned to Obsidian 1.14.4 and re-read from a newer one with `npm
 
 ## What a single Lezer engine would take
 
-A single engine would be one `@lezer/markdown` tree from which the metadata and the reading view's HTML are derived, as well as the editor's display. Its gain is real: the tree is incremental, so metadata could follow an edit instead of re-parsing the note, which `parseMetadata` does today on every call, with a peak memory that grows faster than the note ([demo-plugin.md](demo-plugin.md#results)). The editor and the reading view would also read one structure.
+A single engine would be one `@lezer/markdown` tree from which the metadata and the reading view's HTML are derived, as well as the editor's display. Its gain is real: the tree is incremental, so metadata could follow an edit instead of re-parsing the note, which `parseMetadata` does today on every call ([demo-plugin.md](demo-plugin.md#results)). The editor and the reading view would also read one structure.
 
 The class layer would stay a second parser in any version of this. Phase 0 is the measurement: the classes are a tokenizer's artefacts, and the tokenizer is already a Lezer `Parser`. So the realistic single-engine target is two Lezer parsers, the class tokenizer and one `@lezer/markdown` tree for everything else, in place of today's tokenizer, tree and `remark-parse` 8 engine.
 

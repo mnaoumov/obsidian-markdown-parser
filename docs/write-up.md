@@ -73,7 +73,7 @@ Inside Obsidian, with the parser swapped in as the editor's language ([demo-plug
 
 The live-preview keystroke on a long note is the one place the parser is slower, by three times. The likely cause, not yet confirmed, is that its re-parse gives a tree reaching the document's end where the stock one stops at the viewport, so live preview's plugins see the whole tree change.
 
-The metadata is not incremental: `parseMetadata` parses the whole note on every call, and its peak memory grows with the square of the note's length.
+The metadata is not incremental: `parseMetadata` parses the whole note on every call. Its peak memory grows with the note's length: 250 MB of process memory for the 100,000-line note in Node, 82 MB of it the `remark-parse` tree.
 
 ### 3. CSS-class compatibility: yes
 
@@ -112,7 +112,7 @@ The `remark-parse` 8 port gives the same tree, positions included, as npm `remar
 
 ### 7. `CachedMetadata`: yes
 
-`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,236 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 115 vault notes, in 48 ms for all of them.
+`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,236 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 116 notes, the 100,001-line note included, in 691 ms for all of them.
 
 ### 8. Keeping up with Obsidian: yes
 
@@ -130,8 +130,7 @@ Each is measured, and each has a test or a script that reproduces it.
 
 ### In the metadata engine
 
-- **`parseMetadata`'s peak memory grows with the square of the note**: 360 MB at 25,000 lines and 2.5 GB at 100,000, enough to take the app down. The in-app comparison skips notes over 1,000,000 characters for that reason.
-- **It is not incremental**, so it re-parses the whole note on every change.
+- **`parseMetadata` is not incremental**, so it re-parses the whole note on every change.
 
 ### In the Lezer tree and the adapters
 

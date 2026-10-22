@@ -141,12 +141,6 @@ export interface MetadataComparisonReport {
    * How long `parseMetadata` took over all notes, in milliseconds.
    */
   readonly parseMs: number;
-
-  /**
-   * The notes left out because they are longer than the comparison takes: `parseMetadata`'s peak memory grows faster
-   * than the note, and a note of a few megabytes can take the app down.
-   */
-  readonly skipped: readonly string[];
 }
 
 /**
@@ -238,8 +232,6 @@ const HALF = 0.5;
 const MODE_LOAD_MS = 1000;
 // The pause between keystrokes: a frame at 60 Hz. `requestAnimationFrame` hardly fires in a hidden window, which a test instance is.
 const FRAME_MS = 16;
-// At 25,000 lines (900,000 characters) `parseMetadata` peaks at 360 MB, and at 100,000 lines at 2.5 GB.
-const MAX_METADATA_CHARACTERS = 1_000_000;
 
 // The public package's types do not have Obsidian's two props, so the module is read through its own shape.
 const { ensureSyntaxTree, language } = codeMirrorLanguage;
@@ -327,15 +319,10 @@ export default class MarkdownParserDemoPlugin extends Plugin {
    */
   public async compareMetadata(paths?: readonly string[]): Promise<MetadataComparisonReport> {
     const differing: NoteMetadataDifference[] = [];
-    const skipped: string[] = [];
     const files = this.getNotes(paths);
     let parseMs = 0;
     for (const file of files) {
       const text = await this.app.vault.cachedRead(file);
-      if (text.length > MAX_METADATA_CHARACTERS) {
-        skipped.push(file.path);
-        continue;
-      }
       const start = performance.now();
       const metadata = parseMetadata(text);
       parseMs += performance.now() - start;
@@ -344,7 +331,7 @@ export default class MarkdownParserDemoPlugin extends Plugin {
         differing.push({ path: file.path, where });
       }
     }
-    const report: MetadataComparisonReport = { differing, notes: files.length - skipped.length, parseMs, skipped };
+    const report: MetadataComparisonReport = { differing, notes: files.length, parseMs };
     this.lastReport.metadata = report;
     this.showReport('Metadata compared with the metadata cache', report);
     return report;
