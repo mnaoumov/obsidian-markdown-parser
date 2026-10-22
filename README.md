@@ -32,4 +32,6 @@ To read a new oracle from a live Obsidian, run `npx jiti scripts/oracle.ts --see
 
 Every oracle is pinned to Obsidian 1.14.4. To re-read all of them from another Obsidian and see what changed, run `npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>]`: it writes that version's oracles beside the pinned ones, then reports, per oracle, the readings that changed between the versions and whether the parser matches the new ones. `npm run oracle:drift -- --to-version <version>` gives the same report for oracles already read. How it works and the last run are in [docs/oracles.md](docs/oracles.md).
 
+What is ported from open-source code, what was learned by reading Obsidian's code, what was only measured, and what the oracle files hold are in [docs/provenance.md](docs/provenance.md).
+
 The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.
