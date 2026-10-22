@@ -4,8 +4,9 @@
  * Runs the editor mode over a document, the way the editor does: one line at a time, carrying the state forward and
  * calling `blankLine` for empty lines. Classes prefixed `line-` or `line-background-` belong to the line.
  *
- * Every line start is a resume point: the state after any line can be copied, and highlighting the rest of the
- * document from that copy gives the same classes as highlighting the whole document.
+ * A line start outside a fenced code block and outside a script or style element of an HTML block is a resume point:
+ * the state after that line can be copied, and highlighting the rest of the document from that copy gives the same
+ * classes as highlighting the whole document. {@link isLineStateResumable} tells which states are.
  */
 
 import type { ObsidianState } from './obsidian-mode.ts';
@@ -149,17 +150,14 @@ interface HighlightLineParams {
  * Whether two tokenizer states are equal: the lines after either give the same classes, so a parse that reaches a state
  * equal to an earlier parse's at the same text can reuse what that parse gave from there on.
  *
- * A state inside a fenced code block, or inside a script or style element of an HTML block, is equal to no other. It
- * holds a CodeMirror 5 mode made for that block, and such a mode can keep state of its own between tokens, outside the
- * state: the CSS mode keeps the last token's type, and a `-` it reads no token from takes that type. So what the lines
- * after it give depends on what that mode object tokenized last, which differs between two parses that share it.
+ * A state that is not resumable ({@link isLineStateResumable}) is equal to no other.
  *
  * @param a - A state.
  * @param b - Another state.
  * @returns `true` when they are equal.
  */
 export function areLineStatesEqual(a: LineState, b: LineState): boolean {
-  return !isInBlockMode(a) && areStatesEqual(a, b);
+  return isLineStateResumable(a) && areStatesEqual(a, b);
 }
 
 /**
@@ -203,6 +201,22 @@ export function highlightLines(params: HighlightLinesParams): HighlightedLine[] 
     offset += line.length + 1;
   }
   return out;
+}
+
+/**
+ * Whether highlighting from a copy of a state gives what the parse that reached it gives from there on.
+ *
+ * A state inside a fenced code block, or inside a script or style element of an HTML block, is not. It holds a
+ * CodeMirror 5 mode made for that block when the block opened, and such a mode can keep state of its own between tokens,
+ * outside the state: the CSS mode keeps the last token's type, and a `-` it reads no token from takes that type. A copy
+ * of the state shares the mode, so what the lines after it give depends on what that mode object tokenized last. A
+ * resume before the block makes the mode again when the block opens, as a parse from the start does.
+ *
+ * @param state - The state after a line.
+ * @returns `true` when the state is a resume point.
+ */
+export function isLineStateResumable(state: LineState): boolean {
+  return state.localMode === null && (state.htmlState === null || !isHtmlInEmbeddedMode(state.htmlState));
 }
 
 /**
@@ -271,10 +285,6 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
     spans: spans.map((span) => ({ classes: span.classes, from: offset + span.from, to: offset + span.to })),
     to: offset + line.length
   };
-}
-
-function isInBlockMode(state: LineState): boolean {
-  return state.localMode !== null || (state.htmlState !== null && isHtmlInEmbeddedMode(state.htmlState));
 }
 
 // Like the editor, a token may be empty while it changes the state, but the mode must advance within a few calls.

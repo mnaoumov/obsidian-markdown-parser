@@ -43,6 +43,7 @@ import { compareCodeUnits } from '../oracle/score.ts';
 import {
   areLineStatesEqual,
   copyLineState,
+  isLineStateResumable,
   startLineState,
   tokenizeLine
 } from './highlight.ts';
@@ -408,21 +409,25 @@ class EditorClassParse implements PartialParse {
   private takeChunks(params: TakeChunksParams): void {
     const { firstIndex, lineShift, parseEnd, reusable } = params;
     const chunks = reusable.chunks ?? [];
-    if (this.chunkStart < this.parsedPos) {
-      this.finishChunk();
-    }
     let lastIndex = firstIndex;
     while (lastIndex + 1 < chunks.length && isNextChunkReusable(chunks[lastIndex + 1], reusable, parseEnd)) {
       lastIndex++;
+    }
+    // The parse goes on from the last chunk's state, so that chunk must end at a resume point, or where the parse ends.
+    while (lastIndex >= firstIndex && !isChunkEndResumable(chunks[lastIndex], parseEnd)) {
+      lastIndex--;
+    }
+    const last = chunks[lastIndex];
+    if (!last || lastIndex < firstIndex) {
+      return;
+    }
+    if (this.chunkStart < this.parsedPos) {
+      this.finishChunk();
     }
     const taken = chunks.slice(firstIndex, lastIndex + 1);
     for (const chunk of taken) {
       this.chunks.push(lineShift === 0 ? chunk.tree : shiftChunkLines(chunk, lineShift));
       this.chunkPositions.push(chunk.from - this.from);
-    }
-    const last = chunks[lastIndex];
-    if (!last) {
-      return;
     }
     this.parsedPos = last.from + last.tree.length;
     this.state = copyLineState(last.info.state);
@@ -471,10 +476,10 @@ function findChunkIndex(chunks: readonly FragmentChunk[], pos: number): number {
   return low;
 }
 
-// Finds the last chunk whose reads end before `before`, starting at or after `startPos`.
+// Finds the last chunk whose reads end before `before`, starting at or after `startPos`, and ending at a resume point.
 function findState(tree: Tree, offset: number, startPos: number, before: number): FoundState | null {
   const info = tree.prop(chunkProperty);
-  if (info && offset >= startPos && offset + info.readLength <= before) {
+  if (info && offset >= startPos && offset + info.readLength <= before && isLineStateResumable(info.state)) {
     return { info, pos: offset + tree.length };
   }
   for (let index = tree.children.length - 1; index >= 0; index--) {
@@ -511,6 +516,11 @@ function fragmentChunks(fragment: TreeFragment): FragmentChunk[] {
   }
   visit(fragment.tree, -fragment.offset);
   return chunks;
+}
+
+// A parse may go on from a chunk's state when the state is a resume point, and has nothing to go on with past its end.
+function isChunkEndResumable(chunk: FragmentChunk | undefined, parseEnd: number): boolean {
+  return !!chunk && (chunk.from + chunk.tree.length >= parseEnd || isLineStateResumable(chunk.info.state));
 }
 
 // A chunk is reused only when the text it read is unchanged and it ends where the parse may.

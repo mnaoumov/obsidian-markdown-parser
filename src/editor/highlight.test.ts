@@ -19,7 +19,8 @@ import {
 } from '../oracle/score.ts';
 import {
   highlight,
-  highlightLines
+  highlightLines,
+  isLineStateResumable
 } from './highlight.ts';
 
 /*
@@ -68,7 +69,7 @@ describe('highlight', () => {
     expect(classesAt(4, 0)).toBe('hmd-codeblock');
   });
 
-  it('should resume from the state after any line with the same result', () => {
+  it('should resume from the state after any line outside a block with the same result', () => {
     const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     for (const document of oracle.docs) {
       const lines = document.text.split('\n');
@@ -80,9 +81,26 @@ describe('highlight', () => {
         }
       });
       for (let k = 0; k < lines.length - 1; k++) {
-        const resumed = highlightLines({ lines, startLine: k + 1, ...(states[k] && { state: states[k] }) });
+        const state = states[k];
+        if (state && !isLineStateResumable(state)) {
+          continue;
+        }
+        const resumed = highlightLines({ lines, startLine: k + 1, ...(state && { state }) });
         expect(resumed).toEqual(full.slice(k + 1));
       }
     }
+  });
+
+  it('should not take a state inside a fenced block or a script or style element as a resume point', () => {
+    const lines = ['a', '```css', 'b {', '```', '<style>', 'b {', '</style>', '<script>', 'x', '</script>', '```', 'plain', '```', 'c'];
+    const resumable: boolean[] = [];
+    highlightLines({
+      lines,
+      onLineEnd: (lineIndex, state) => {
+        resumable[lineIndex] = isLineStateResumable(state);
+      }
+    });
+    // A fence with no language has no mode of its own.
+    expect(resumable).toEqual([true, false, false, true, false, false, true, false, false, true, true, true, true, true]);
   });
 });

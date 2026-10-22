@@ -34,7 +34,7 @@ From this round on, a rule the oracle could not settle was read from the editor'
 
 For comparison, Phase 0's best stage (a Lezer tree, a mapping and a 70-line inline state machine) reached 613 of 2,128.
 
-Every line start is a resume point. Highlighting from a copy of the state after any line gives the same classes as highlighting the whole document. The test suite checks this at all 7,171 line starts of the seed 12345 corpus.
+Every line start outside a fenced code block and outside a `<script>` or `<style>` element is a resume point (`isLineStateResumable`). Highlighting from a copy of the state after such a line gives the same classes as highlighting the whole document. The test suite checks this at the 7,119 such line starts of the 7,171 in the seed 12345 corpus. Inside those blocks the state holds a CodeMirror 5 mode object that keeps state in its closure, which a copy shares rather than copies ([cm6-host.md](cm6-host.md#incremental-reuse)).
 
 ## How it works
 

@@ -23,7 +23,7 @@ Every entry point of the root package is a subpath of it, and the root (`obsidia
 
 ### `obsidian-markdown-parser/editor`
 
-- `highlight`, `highlightLines` and `LineState`: the classes Obsidian's editor puts on every character and line, resumable from any line ([phase-1.md](phase-1.md)).
+- `highlight`, `highlightLines` and `LineState`: the classes Obsidian's editor puts on every character and line, resumable from any line outside a fenced block or a script or style element (`isLineStateResumable`, [phase-1.md](phase-1.md)).
 - `editorClassLanguage` and `createEditorClassLanguage`: that tokenizer as a CodeMirror 6 `Language`, with the editor's tree shape and incremental re-parsing ([cm6-host.md](cm6-host.md)).
 - `editorClasses` and `editorClassDecorations`: its classes rendered as the editor renders them ([cm6-host.md](cm6-host.md)).
 
