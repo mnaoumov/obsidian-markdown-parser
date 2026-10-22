@@ -17,6 +17,9 @@ node_modules
 dist
 coverage
 
+# Copied in by `npm run build`
+/packages/metadata/THIRD-PARTY-NOTICES.md
+
 /tsconfig.tsbuildinfo
 /.env
 

@@ -4,6 +4,8 @@
 
 This repository is private. Do not make it public, publish it to npm, link it from any public place, or mention it in a public issue, PR, forum post or README of another project. Making it public needs the Obsidian team's permission first, and asking for it is the owner's call.
 
+`npm run build` makes two installable packages, the whole parser and `obsidian-markdown-parser-metadata` (`packages/metadata/`, the metadata projection without the editor or CodeMirror dependencies), described in [`docs/api.md`](docs/api.md). Both keep `"private": true`: a consumer installs a tarball from `npm pack`, never a registry. A new module under `src/remark/` or `src/metadata/` stays inside the metadata package's import closure, which `src/entries/metadata-package.test.ts` pins; a new package that closure imports goes into `packages/metadata/package.json` at the root package's version.
+
 ## L2. Goal
 
 A single incremental markdown parser for Obsidian-flavoured markdown, built on [`@lezer/markdown`](https://github.com/lezer-parser/markdown), that could one day serve both Obsidian's editor and its reading view. The Obsidian founder named Lezer as the target and the two hard parts (2026-10-13):
