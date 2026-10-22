@@ -44,7 +44,7 @@ One run of `npx jiti scripts/demo-plugin-measure.ts --lines 100000` on 2026-10-2
 
 **Nodes: 0 differences.** The first run found 2 notes that differed: a code span left open inside a quote, where the parser's token was `inline-code_inline-code_quote_quote-1` and the stock one `inline-code_quote_quote-1`. The class sets were equal, but the two type names differed, so the tokens next to it did not merge and the text rendered as more spans than the stock editor's. With that, the classes a footnote label repeats and the tokens with an empty style fixed, a second run the same day gave 0 of 116 notes, and the eleven class oracles are exact node for node too.
 
-**Metadata: 0 differences** on 115 notes, which took 48 ms in all. `long.md` is skipped: the comparison leaves out notes over 1,000,000 characters, because `parseMetadata`'s peak memory grows faster than the note (360 MB at 25,000 lines, 2.5 GB at 100,000), and that took the app down.
+**Metadata: 0 differences** on all 116 notes, `long.md` included, which took 691 ms in all (a run of the same day, after the fix below). The first run left `long.md` out: `parseMetadata`'s peak memory then grew with the square of the note (360 MB at 25,000 lines, 2.5 GB at 100,000) and took the app down. The engine put eaten text back as `subvalue + value`, which the next slice flattened into a fresh copy of the rest of the note, and every node value sliced from that copy kept it alive. It now puts back the string it sliced from, and the peak in Node is 250 MB at 100,000 lines and grows with the note.
 
 **Cost.** Medians, in milliseconds, with the slowest keystroke in brackets:
 

@@ -704,7 +704,12 @@ export class RemarkParser {
         throw new Error('Incorrectly eaten value');
       }
 
+      // Putting the text back restores this string rather than `subvalue + value`: the concatenation is flattened into
+      // a fresh copy of the rest of the document by the next slice, and every node value sliced from it keeps that copy
+      // alive, so a long note held one copy per reset.
+      const before = value;
       value = value.slice(subvalue.length);
+      const after = value;
 
       updatePosition(subvalue);
 
@@ -727,7 +732,7 @@ export class RemarkParser {
 
         line = current.line;
         column = current.column;
-        value = subvalue + value;
+        value = putBack();
         parser.atStart = wasAtStart;
 
         return result;
@@ -738,13 +743,17 @@ export class RemarkParser {
 
         line = current.line;
         column = current.column;
-        value = subvalue + value;
+        value = putBack();
 
         if (!result.position) {
           throw new Error('Unreachable: a tested range always has a position');
         }
 
         return result.position;
+      }
+
+      function putBack(): string {
+        return value === after ? before : subvalue + value;
       }
     }
   }
