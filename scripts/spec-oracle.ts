@@ -12,7 +12,7 @@
  *
  * `src/oracle/spec-quirks.ts` compares them with the spec.
  *
- * Usage: `jiti scripts/spec-oracle.ts [--obsidian-version <version>]`.
+ * Usage: `jiti scripts/spec-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
  */
 
 /// <reference lib="dom.iterable" />
@@ -195,12 +195,14 @@ interface Workspace {
   getMostRecentLeaf: () => Leaf | null;
 }
 
-const BATCH_SIZE = 50;
+// Small enough that one eval stays well under the 30-second cap of an eval, on a busy machine too.
+const BATCH_SIZE = 10;
 const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
   options: {
-    'obsidian-version': { type: 'string' }
+    'obsidian-version': { type: 'string' },
+    'out-dir': { type: 'string' }
   }
 });
 const obsidianVersion = values['obsidian-version'];
@@ -403,7 +405,7 @@ try {
     process.stderr.write(`spec-oracle: ${String(results.length)}/${String(examples.length)}\n`);
   }
 
-  const outDirectory = join(here, '..', 'oracle');
+  const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
   const version = meta.appVersion ?? 'unknown';
   const outFile = join(outDirectory, `spec-obsidian-${version}.json`);

@@ -11,14 +11,14 @@
  * value with `atob`, and fails the front matter without it.
  *
  * The worker is read from the Obsidian install it names, at run time; nothing of it is kept here. It defaults to the
- * `obsidian-versions` checkout beside this repository, whose tag gives the version.
+ * `obsidian-versions` checkout beside this repository, whose `obsidian.asar/package.json` gives the version.
+ * `scripts/oracle-refresh.ts` instead hands it the worker of the instance it reads the other oracles from.
  *
  * Usage: `jiti scripts/worker-oracle.ts [--worker <path to worker.js>] [--obsidian-version <version>] [--per-set <n>]
- * [--seed <n>]`.
+ * [--seed <n>] [--out-dir <directory>]`.
  */
 
 import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
-import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
   readFileSync,
@@ -42,6 +42,11 @@ import type {
 } from '../src/oracle/worker-metadata.ts';
 
 import { CONFORMANCE_CASES } from '../src/syntax/conformance.ts';
+
+// The app's own `package.json`, beside its `worker.js`.
+interface AppPackage {
+  readonly version: string;
+}
 
 // The message the app posts to its metadata worker: the document, encoded.
 interface WorkerMessage {
@@ -96,6 +101,7 @@ const SETS: Readonly<Record<string, readonly string[]>> = {
 const { values } = parseArgs({
   options: {
     'obsidian-version': { type: 'string' },
+    'out-dir': { type: 'string' },
     'per-set': { type: 'string' },
     'seed': { type: 'string' },
     'worker': { type: 'string' }
@@ -104,7 +110,8 @@ const { values } = parseArgs({
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const workerPath = values.worker ?? join(repoRoot, '..', 'obsidian-versions', 'obsidian.asar', 'worker.js');
-const appVersion = values['obsidian-version'] ?? execFileSync('git', ['describe', '--tags', '--exact-match'], { cwd: dirname(workerPath), encoding: 'utf-8' }).trim();
+const appPackagePath = join(dirname(workerPath), 'package.json');
+const appVersion = values['obsidian-version'] ?? (JSON.parse(readFileSync(appPackagePath, 'utf-8')) as AppPackage).version;
 const perSet = Number(values['per-set'] ?? DEFAULT_PER_SET);
 const seed = Number(values.seed ?? DEFAULT_SEED);
 
@@ -168,7 +175,7 @@ for (const [set, pieces] of Object.entries(SETS)) {
 }
 
 const oracleFile: WorkerMetadataOracleFile = { docs, meta: { appVersion, perSet, seed } };
-const outFile = join(repoRoot, 'oracle', `worker-metadata-obsidian-${appVersion}.json`);
+const outFile = join(values['out-dir'] ?? join(repoRoot, 'oracle'), `worker-metadata-obsidian-${appVersion}.json`);
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, `${JSON.stringify(oracleFile)}\n`);
 // The repository's dprint check covers `oracle/`, and its layout is not `JSON.stringify`'s.

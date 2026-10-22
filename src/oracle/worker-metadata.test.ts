@@ -1,11 +1,3 @@
-/* eslint-disable import-x/no-nodejs-modules -- The test runs in Node and reads the oracles from disk. */
-import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-/* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
   expect,
@@ -17,11 +9,15 @@ import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
 import { parseMetadata } from '../metadata/metadata.ts';
+import {
+  readOracleFile,
+  specOracleFileName,
+  workerMetadataOracleFileName
+} from './oracle-location.ts';
 import { exampleKey } from './spec-quirks.ts';
 
-const ORACLE_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle');
-const WORKER_ORACLE = JSON.parse(readFileSync(join(ORACLE_DIRECTORY, 'worker-metadata-obsidian-1.14.4.json'), 'utf-8')) as WorkerMetadataOracleFile;
-const SPEC_ORACLE = JSON.parse(readFileSync(join(ORACLE_DIRECTORY, 'spec-obsidian-1.14.4.json'), 'utf-8')) as SpecOracleFile;
+const WORKER_ORACLE = readOracleFile(workerMetadataOracleFileName()) as WorkerMetadataOracleFile;
+const SPEC_ORACLE = readOracleFile(specOracleFileName()) as SpecOracleFile;
 
 describe('the CachedMetadata projection', () => {
   it('gives the metadata worker\'s whole metadata on every document of the worker oracle', () => {

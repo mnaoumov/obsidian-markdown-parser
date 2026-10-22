@@ -11,7 +11,7 @@
  * The editor loads some sub-modes lazily (sTeX for math among them), so the script first opens a warm-up document
  * that uses every one of them, and it re-reads each document's tree until two reads agree.
  *
- * Usage: `jiti scripts/oracle.ts [--per-set 300] [--seed 12345] [--obsidian-version <version>]`.
+ * Usage: `jiti scripts/oracle.ts [--per-set 300] [--seed 12345] [--obsidian-version <version>] [--out-dir <directory>]`.
  */
 
 import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
@@ -93,7 +93,7 @@ interface ElectronGlobal {
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
-  readonly callback: (input: Input & ObsidianGlobals) => Promise<Result>;
+  readonly callback: (input: Input & ObsidianGlobals) => Promise<Result> | Result;
   readonly input?: Input;
 }
 
@@ -167,12 +167,16 @@ interface Workspace {
   getMostRecentLeaf: () => Leaf | null;
 }
 
-const BATCH_SIZE = 50;
+const MAX_READS = 20;
+const SETTLE_MS = 30;
+const PARSE_TIMEOUT_MS = 10_000;
+const PROGRESS_EVERY = 250;
 const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
   options: {
     'obsidian-version': { type: 'string' },
+    'out-dir': { type: 'string' },
     'per-set': { default: '300', type: 'string' },
     'seed': { default: '12345', type: 'string' }
   }
@@ -214,81 +218,82 @@ try {
     '%% c %%\n'
   ].join('');
 
-  const results: OracleDocument[] = [];
-  for (let start = -BATCH_SIZE; start < corpus.length; start += BATCH_SIZE) {
-    const batch = start < 0 ? [{ id: 'warm-up', set: 'warm-up', text: WARM_UP }] : corpus.slice(start, start + BATCH_SIZE);
-    const out = await conn.evalInObsidian({
-      callback: async ({ app, docs }) => {
-        const MAX_READS = 20;
-        const SETTLE_MS = 30;
-        const PARSE_TIMEOUT_MS = 10_000;
+  await conn.evalInObsidian({
+    callback: async ({ app }) => {
+      const file = app.vault.getAbstractFileByPath('oracle.md');
+      const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
+      await leaf.setViewState({ state: { file: (file as AbstractFile).path, mode: 'source', source: true }, type: 'markdown' });
+    }
+  });
+
+  // One read of the editor's tree, after giving it `text` when there is one. Each read is its own short eval.
+  async function readTree(text: null | string): Promise<string> {
+    return conn.evalInObsidian({
+      callback: ({ app, parseTimeout, text: newText }) => {
         const language = (globalThis as OracleGlobal & typeof globalThis).__oracleCmLanguage;
-        const file = app.vault.getAbstractFileByPath('oracle.md');
         const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
-        await leaf.setViewState({ state: { file: (file as AbstractFile).path, mode: 'source', source: true }, type: 'markdown' });
-        function readOnce(): TreeRead {
-          const state = leaf.view.editor.cm.state as EditorState;
-          const tree = language.ensureSyntaxTree(state, state.doc.length, PARSE_TIMEOUT_MS);
-          const nodes: RawNode[] = [];
-          const cursor = tree.cursor();
-          let depth = 0;
-          for (;;) {
-            if (depth > 0) {
-              nodes.push([cursor.from, cursor.to, depth, cursor.type.name]);
+        if (newText !== null) {
+          leaf.view.editor.setValue(newText);
+        }
+        const state = leaf.view.editor.cm.state as EditorState;
+        const tree = language.ensureSyntaxTree(state, state.doc.length, parseTimeout);
+        const nodes: RawNode[] = [];
+        const cursor = tree.cursor();
+        let depth = 0;
+        for (;;) {
+          if (depth > 0) {
+            nodes.push([cursor.from, cursor.to, depth, cursor.type.name]);
+          }
+          if (cursor.firstChild()) {
+            depth++;
+            continue;
+          }
+          while (!cursor.nextSibling()) {
+            if (!cursor.parent()) {
+              return JSON.stringify({ nodes, text: state.doc.toString() });
             }
-            if (cursor.firstChild()) {
-              depth++;
-              continue;
-            }
-            while (!cursor.nextSibling()) {
-              if (!cursor.parent()) {
-                return { nodes, text: state.doc.toString() };
-              }
-              depth--;
-            }
+            depth--;
           }
         }
-        async function readUntilStable(): Promise<ReadResult> {
-          let last = JSON.stringify(readOnce());
-          let reads = 1;
-          // Re-read until the tree stops changing: a lazily loaded sub-mode re-highlights after the first read.
-          for (; reads < MAX_READS; reads++) {
-            await new Promise((resolve) => {
-              globalThis.setTimeout(resolve, SETTLE_MS);
-            });
-            const next = JSON.stringify(readOnce());
-            if (next === last) {
-              break;
-            }
-            last = next;
-          }
-          return { ...(JSON.parse(last) as TreeRead), reads };
-        }
-        const treeReads: ReadResult[] = [];
-        for (const text of docs) {
-          leaf.view.editor.setValue(text);
-          treeReads.push(await readUntilStable());
-        }
-        return treeReads;
       },
-      input: { docs: batch.map((d) => d.text) }
+      input: { parseTimeout: PARSE_TIMEOUT_MS, text }
     });
-    if (start < 0) {
-      process.stderr.write(`oracle: warm-up read ${String(out[0]?.reads)} time(s)\n`);
-      continue;
-    }
-    for (const [index, document] of batch.entries()) {
-      const read = out[index];
-      if (!read) {
-        throw new Error(`No oracle result for ${document.id}`);
-      }
-      // The editor may rewrite the text it is given (ordered-list renumbering): `text` is what it parsed.
-      results.push({ ...document, nodes: read.nodes, ...(read.text !== document.text && { original: document.text, text: read.text }) });
-    }
-    process.stderr.write(`oracle: ${String(results.length)}/${String(corpus.length)}\n`);
   }
 
-  const outDirectory = join(here, '..', 'oracle');
+  /*
+   * Re-reads until the tree stops changing: a lazily loaded sub-mode re-highlights after the first read. The wait between
+   * reads is Node's: a renderer whose window is not in front throttles its own timers to a second or more, which once
+   * held a batch of reads past the 30-second cap of an eval.
+   */
+  async function readUntilStable(text: string): Promise<ReadResult> {
+    let last = await readTree(text);
+    let reads = 1;
+    for (; reads < MAX_READS; reads++) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, SETTLE_MS);
+      });
+      const next = await readTree(null);
+      if (next === last) {
+        break;
+      }
+      last = next;
+    }
+    return { ...(JSON.parse(last) as TreeRead), reads };
+  }
+
+  const warmUp = await readUntilStable(WARM_UP);
+  process.stderr.write(`oracle: warm-up read ${String(warmUp.reads)} time(s)\n`);
+  const results: OracleDocument[] = [];
+  for (const document of corpus) {
+    const read = await readUntilStable(document.text);
+    // The editor may rewrite the text it is given (ordered-list renumbering): `text` is what it parsed.
+    results.push({ ...document, nodes: read.nodes, ...(read.text !== document.text && { original: document.text, text: read.text }) });
+    if (results.length % PROGRESS_EVERY === 0 || results.length === corpus.length) {
+      process.stderr.write(`oracle: ${String(results.length)}/${String(corpus.length)}\n`);
+    }
+  }
+
+  const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
   const version = meta.appVersion ?? 'unknown';
   const outFile = join(outDirectory, `obsidian-${version}-seed-${String(seed)}.json`);
