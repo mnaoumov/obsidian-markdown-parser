@@ -334,10 +334,6 @@ class EditorClassParse implements PartialParse {
     const { classes, spans } = tokenizeLine({ line, lineIndex: this.lineIndex, readLine, state: this.state });
     let childCount = 0;
     for (const span of spans) {
-      if (span.classes.length === 0) {
-        continue;
-      }
-
       const id = typeId(this.host, tokenClassesProperty, span.classes);
       const last = this.buffer.length - NODE_SIZE;
       // As in `StreamLanguage`, a token right after one of the same type extends it.

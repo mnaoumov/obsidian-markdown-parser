@@ -42,7 +42,7 @@ One run of `npx jiti scripts/demo-plugin-measure.ts --lines 100000` on 2026-10-2
 
 **Classes: 0 differences.** On all 116 notes, 282,354 stock nodes, every character and every line gets the same classes from both languages.
 
-**Nodes: 2 notes differ.** Both are the same case: a code span left open inside a quote, where the parser's token is `inline-code_inline-code_quote_quote-1` and the stock one is `inline-code_quote_quote-1`. The class sets are equal, but the two type names differ, so the tokens next to it do not merge and the text renders as more spans than the stock editor's. On the oracle corpus of seed 12345 this shape, duplicated classes in a footnote reference, and tokens with an empty style the host drops make 229 of its 2,128 documents differ node for node.
+**Nodes: 0 differences.** The first run found 2 notes that differed: a code span left open inside a quote, where the parser's token was `inline-code_inline-code_quote_quote-1` and the stock one `inline-code_quote_quote-1`. The class sets were equal, but the two type names differed, so the tokens next to it did not merge and the text rendered as more spans than the stock editor's. With that, the classes a footnote label repeats and the tokens with an empty style fixed, a second run the same day gave 0 of 116 notes, and the eleven class oracles are exact node for node too.
 
 **Metadata: 0 differences** on 115 notes, which took 48 ms in all. `long.md` is skipped: the comparison leaves out notes over 1,000,000 characters, because `parseMetadata`'s peak memory grows faster than the note (360 MB at 25,000 lines, 2.5 GB at 100,000), and that took the app down.
 

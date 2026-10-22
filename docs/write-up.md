@@ -81,7 +81,7 @@ The metadata is not incremental: `parseMetadata` parses the whole note on every 
 
 - **36,608 of 36,608 documents exact**, in eleven oracle corpora covering tables, HTML blocks, 30 fenced languages through their CodeMirror 5 modes, nested lists, markdown nested in markdown fences, code spans left open and highlight color markers.
 - **Inside Obsidian, 0 class differences** on 116 notes and 282,354 stock nodes. Obsidian's renderer reads two node props of its own, which the language fills in when given them, so themes, live preview, folding, task checkboxes, callouts and code-block flair all work on the parser's tree.
-- **The tree is not yet identical node for node.** In 2 of the 116 notes, and 229 of 2,128 documents of one corpus, a token's type name repeats a class or a token with an empty style is split differently, so the same classes render as more spans.
+- **The tree is identical node for node**, type names and merged tokens included, on all 36,608 documents and inside Obsidian on all 116 notes, so the same text renders as the same spans. On the spec examples, every tree whose classes match the editor's matches it node for node too.
 
 ### 4. One syntax for three ecosystems: yes
 
@@ -126,7 +126,6 @@ Each is measured, and each has a test or a script that reproduces it.
 
 - **An unclosed color highlight on an earlier line puts `highlight` on a later line's inline math** in the editor, and the tokenizer misses that rule. Eight documents of the newest piece set show it.
 - **25 of the 674 spec examples** differ in the editor's classes.
-- **The tree differs node for node** in places, though never in its classes (goal 3).
 - **A live-preview keystroke on a 100,000-line note** costs 88 ms against the stock 29 ms (goal 2).
 
 ### In the metadata engine
