@@ -12,6 +12,9 @@
  * a tree cursor steps through, and each chunk records the state after its last line and how far its lines read,
  * lookahead included. A new parse after an edit resumes from the last chunk whose reads all lie before the edit, and
  * once a line after the edit ends in the state the earlier parse had there, it reuses the earlier parse's chunks.
+ *
+ * Obsidian's editor renders classes from two node props its copy of `@codemirror/language` adds, `lineClassNodeProp`
+ * and `tokenClassNodeProp`, which the public package does not have; a host inside Obsidian passes them as options.
  */
 
 import type {
@@ -55,6 +58,18 @@ export interface CreateEditorClassLanguageOptions {
    * @default 512
    */
   readonly chunkSize?: number;
+
+  /**
+   * A further node prop that carries a line node's classes, joined by spaces. Obsidian's editor renders a line's
+   * classes from the `lineClassNodeProp` its copy of `@codemirror/language` adds, so a host there passes that prop.
+   */
+  readonly lineClassNodeProperty?: NodeProp<string>;
+
+  /**
+   * A further node prop that carries a token node's classes, joined by spaces. Obsidian's editor renders a token's
+   * classes from the `tokenClassNodeProp` its copy of `@codemirror/language` adds, so a host there passes that prop.
+   */
+  readonly tokenClassNodeProperty?: NodeProp<string>;
 }
 
 interface ChunkInfo {
@@ -121,6 +136,8 @@ const OPEN_EDGE_MARGIN = 25;
 // Like `StreamLanguage`, parse a viewport this far past the parsed text from a fresh state instead.
 const MAX_DISTANCE_BEFORE_VIEWPORT = 100_000;
 const NODE_SIZE = 4;
+// A node in the buffer is its type, start, end and size.
+const NODE_END_OFFSET = 2;
 const HALVES = 2;
 
 const chunkProperty = new NodeProp<ChunkInfo>({ perNode: true });
@@ -130,11 +147,20 @@ const nodeSet = new NodeSet(typeArray);
 const typeIds = new Map<string, number>();
 
 class EditorClassHost {
+  public readonly chunkSize: number;
+  public readonly lineClassNodeProperty: NodeProp<string> | undefined;
+  public readonly tokenClassNodeProperty: NodeProp<string> | undefined;
   public readonly topNode: NodeType;
+  // Node types are shared by every host that adds no prop; a host that adds one gets types of its own.
+  public readonly typeKeyPrefix: string;
 
-  public constructor(public readonly chunkSize: number, data: ReturnType<typeof defineLanguageFacet>) {
+  public constructor(options: CreateEditorClassLanguageOptions, data: ReturnType<typeof defineLanguageFacet>) {
+    this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
+    this.lineClassNodeProperty = options.lineClassNodeProperty;
+    this.tokenClassNodeProperty = options.tokenClassNodeProperty;
     // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
     this.topNode = NodeType.define({ id: typeArray.length, name: 'Document', props: [[languageDataProp, data]], top: true });
+    this.typeKeyPrefix = this.lineClassNodeProperty || this.tokenClassNodeProperty ? `${String(this.topNode.id)}:` : '';
     typeArray.push(this.topNode);
   }
 }
@@ -311,11 +337,18 @@ class EditorClassParse implements PartialParse {
         continue;
       }
 
-      this.buffer.push(typeId(tokenClassesProperty, span.classes), lineFrom + span.from, lineFrom + span.to, NODE_SIZE);
+      const id = typeId(this.host, tokenClassesProperty, span.classes);
+      const last = this.buffer.length - NODE_SIZE;
+      // As in `StreamLanguage`, a token right after one of the same type extends it.
+      if (childCount > 0 && this.buffer[last] === id && this.buffer[last + NODE_END_OFFSET] === lineFrom + span.from) {
+        this.buffer[last + NODE_END_OFFSET] = lineFrom + span.to;
+        continue;
+      }
+      this.buffer.push(id, lineFrom + span.from, lineFrom + span.to, NODE_SIZE);
       childCount++;
     }
     if (classes.length > 0) {
-      this.buffer.push(typeId(lineClassesProperty, classes), lineFrom, lineEnd, NODE_SIZE * (childCount + 1));
+      this.buffer.push(typeId(this.host, lineClassesProperty, classes), lineFrom, lineEnd, NODE_SIZE * (childCount + 1));
     }
     this.chunkReadTo = Math.max(this.chunkReadTo, readTo);
     this.lineIndex++;
@@ -419,7 +452,7 @@ class EditorClassParser extends Parser {
  */
 export function createEditorClassLanguage(options: CreateEditorClassLanguageOptions = {}): Language {
   const data = defineLanguageFacet();
-  const host = new EditorClassHost(options.chunkSize ?? DEFAULT_CHUNK_SIZE, data);
+  const host = new EditorClassHost(options, data);
   return new Language(data, new EditorClassParser(host), [], 'obsidian-markdown');
 }
 
@@ -495,14 +528,20 @@ function shiftChunkLines(chunk: FragmentChunk, lineShift: number): Tree {
   return new Tree(chunk.tree.type, chunk.tree.children, chunk.tree.positions, chunk.tree.length, [[chunkProperty, info]]);
 }
 
-function typeId(property: NodeProp<readonly string[]>, classes: readonly string[]): number {
+function typeId(host: EditorClassHost, property: NodeProp<readonly string[]>, classes: readonly string[]): number {
   const sorted = classes.toSorted(compareCodeUnits);
-  const key = `${property === lineClassesProperty ? 'line' : 'token'}:${JSON.stringify(sorted)}`;
+  const isLine = property === lineClassesProperty;
+  const key = `${host.typeKeyPrefix}${isLine ? 'line' : 'token'}:${JSON.stringify(sorted)}`;
   let id = typeIds.get(key);
   if (id === undefined) {
     id = typeArray.length;
+    const properties: [NodeProp<readonly string[]> | NodeProp<string>, readonly string[] | string][] = [[property, sorted]];
+    const classProperty = isLine ? host.lineClassNodeProperty : host.tokenClassNodeProperty;
+    if (classProperty) {
+      properties.push([classProperty, sorted.join(' ')]);
+    }
     // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
-    typeArray.push(NodeType.define({ id, name: sorted.join('_'), props: [[property, sorted]] }));
+    typeArray.push(NodeType.define({ id, name: sorted.join('_'), props: properties }));
     typeIds.set(key, id);
   }
   return id;

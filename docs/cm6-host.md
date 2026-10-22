@@ -14,7 +14,11 @@ The tree has the shape the oracle reads from the live editor:
 - Every token with classes is a node named the same way. A token with no classes is left out, as in `StreamLanguage`.
 - Lines are grouped into chunks of about 512 characters. A chunk is an anonymous node, which a tree cursor steps through, so line nodes sit at depth 1 as they do in the editor.
 
+- A token right after one of the same type extends it, as `StreamLanguage`'s `mergeTokens` does.
+
 `lineClassesProperty` and `tokenClassesProperty` carry the classes on the node types, so the renderer does not split names on `_`, which a `tag-<name>` class may contain. `editorClasses` puts a token's classes on its text as `cm-<class>` and a line's classes on its `.cm-line`, for the visible ranges.
+
+Obsidian's editor renders the classes itself, from two node props its copy of `@codemirror/language` adds: `lineClassNodeProp` and `tokenClassNodeProp`, each holding the classes joined by spaces. A language made with `createEditorClassLanguage({ lineClassNodeProperty, tokenClassNodeProperty })` puts the classes in the props it is given too, on node types of its own, so the language runs as the editor's language inside Obsidian ([docs/demo-plugin.md](demo-plugin.md)).
 
 The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it is exact on all of them too.
 
