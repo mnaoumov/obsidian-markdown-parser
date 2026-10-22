@@ -33,6 +33,13 @@
       "expect": "^0.16.0",
       "manualCheck": "When micromark-extension-math's range admits a patched katex (>= 0.18.2) on its own, delete this override and this entry."
     },
+    "obsidian": {
+      "section": "overrides",
+      "why": "The demo plugin (src/demo-plugin/) takes Obsidian's API types from the obsidian package, which peer-requires an exact @codemirror/view (6.43.13 for obsidian 1.14.4) older than the one the parser depends on, so npm refuses to install it. The nested override resolves that peer to the root @codemirror/view; the plugin only needs the types, and at run time it uses the app's own copy.",
+      "check": "npm view obsidian peerDependencies.@codemirror/view",
+      "expect": "6.43.13",
+      "manualCheck": "When obsidian's peer range admits the root @codemirror/view on its own, delete this override and this entry."
+    },
     "typescript": {
       "section": "devDependencies",
       "why": "typescript-eslint peer-requires >=4.8.4 <6.1.0, and its parser cannot run on the TypeScript 7 native API, so type-aware ESLint would stop working on 7. Exact so a sweep cannot drift it to 7.",

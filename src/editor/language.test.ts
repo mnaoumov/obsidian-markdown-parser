@@ -6,7 +6,10 @@ import {
   syntaxTree
 } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
-import { TreeFragment } from '@lezer/common';
+import {
+  NodeProp,
+  TreeFragment
+} from '@lezer/common';
 /* eslint-disable import-x/no-nodejs-modules -- The suite runs in Node and reads the oracle fixtures from disk. */
 import { readFileSync } from 'node:fs';
 import {
@@ -190,6 +193,31 @@ describe('editorClassLanguage', () => {
     const cursor = tree.cursor();
     cursor.firstChild();
     expect(cursor.type.prop(lineClassesProperty)).toEqual(['HyperMD-header', 'HyperMD-header-1']);
+  });
+
+  it('should carry the classes in the node props a host passes, joined by spaces, on types of its own', () => {
+    const lineClassNodeProperty = new NodeProp<string>();
+    const tokenClassNodeProperty = new NodeProp<string>();
+    const language = createEditorClassLanguage({ lineClassNodeProperty, tokenClassNodeProperty });
+    const tree = parse(language, '# Title');
+    expect(treeNodes(tree)).toEqual(treeNodes(parse(editorClassLanguage, '# Title')));
+    const cursor = tree.cursor();
+    cursor.firstChild();
+    expect(cursor.type.prop(lineClassNodeProperty)).toBe('HyperMD-header HyperMD-header-1');
+    cursor.firstChild();
+    expect(cursor.type.prop(tokenClassNodeProperty)).toBe('formatting formatting-header formatting-header-1 header header-1');
+    const plain = parse(editorClassLanguage, '# Title').cursor();
+    plain.firstChild();
+    expect(plain.type.prop(lineClassNodeProperty)).toBeUndefined();
+  });
+
+  it('should merge a token into the one before it when their classes are the same, as `StreamLanguage` does', () => {
+    expect(treeNodes(parse(editorClassLanguage, '- [ ] task'))).toEqual([
+      [0, 10, 1, 'HyperMD-list-line_HyperMD-list-line-1_HyperMD-task-line'],
+      [0, 2, 2, 'formatting_formatting-list_formatting-list-ul_list-1'],
+      [2, 5, 2, 'formatting_formatting-task_meta'],
+      [5, 10, 2, 'list-1']
+    ]);
   });
 
   it('should read the next line for a setext heading and a table', () => {

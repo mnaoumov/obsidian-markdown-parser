@@ -1,0 +1,9 @@
+{
+  "id": "markdown-parser-demo",
+  "name": "Markdown parser demo",
+  "version": "0.0.0",
+  "minAppVersion": "1.14.4",
+  "description": "Private demo: runs this repository's parser in the editor and compares it with the stock editor and metadata cache.",
+  "author": "Michael Naumov",
+  "isDesktopOnly": true
+}
