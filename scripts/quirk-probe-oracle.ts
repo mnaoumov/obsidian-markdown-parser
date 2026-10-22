@@ -6,7 +6,7 @@
  * DOM, with `strictLineBreaks: true`, and its metadata worker's sections to `oracle/quirk-probes-obsidian-<version>.json`.
  * The DOM is normalized as `scripts/spec-oracle.ts` normalizes it.
  *
- * Usage: `jiti scripts/quirk-probe-oracle.ts [--obsidian-version <version>]`.
+ * Usage: `jiti scripts/quirk-probe-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
  */
 
 /// <reference lib="dom.iterable" />
@@ -146,7 +146,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
   options: {
-    'obsidian-version': { type: 'string' }
+    'obsidian-version': { type: 'string' },
+    'out-dir': { type: 'string' }
   }
 });
 const obsidianVersion = values['obsidian-version'];
@@ -260,7 +261,7 @@ try {
     }
     return { ...probe, html: read.html, sections: read.sections };
   });
-  const outDirectory = join(here, '..', 'oracle');
+  const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
   const outFile = join(outDirectory, `quirk-probes-obsidian-${meta.appVersion ?? 'unknown'}.json`);
   const oracleFile: QuirkProbeFile = { meta, probes };

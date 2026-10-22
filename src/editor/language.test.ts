@@ -10,14 +10,6 @@ import {
   NodeProp,
   TreeFragment
 } from '@lezer/common';
-/* eslint-disable import-x/no-nodejs-modules -- The suite runs in Node and reads the oracle fixtures from disk. */
-import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-/* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
   expect,
@@ -31,6 +23,12 @@ import type {
 import type { ClassSets } from '../oracle/score.ts';
 
 import {
+  CLASS_ORACLE_SEEDS,
+  classOracleFileName,
+  MAIN_CLASS_ORACLE_SEED,
+  readOracleFile
+} from '../oracle/oracle-location.ts';
+import {
   classSetsOf,
   compareCodeUnits,
   toNodes
@@ -43,7 +41,6 @@ import {
 } from './language.ts';
 import { reusedLength } from './tree-reuse.ts';
 
-const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle');
 const TINY_CHUNK_SIZE = 1;
 const SMALL_CHUNK_SIZE = 16;
 const RANDOM_EDITS = 400;
@@ -66,19 +63,7 @@ const FILLER = `${Array.from({ length: FILLER_LINES }, (_, index) => `filler lin
  * The documents each oracle still disagrees on, as in `highlight.test.ts`: the host must give the live editor's classes
  * wherever the tokenizer does.
  */
-const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
-  ['obsidian-1.14.4-seed-12345.json', []],
-  ['obsidian-1.14.4-seed-1414.json', []],
-  ['obsidian-1.14.4-seed-1618.json', []],
-  ['obsidian-1.14.4-seed-2026.json', []],
-  ['obsidian-1.14.4-seed-2718.json', []],
-  ['obsidian-1.14.4-seed-31337.json', []],
-  ['obsidian-1.14.4-seed-3141.json', []],
-  ['obsidian-1.14.4-seed-4242.json', []],
-  ['obsidian-1.14.4-seed-6174.json', []],
-  ['obsidian-1.14.4-seed-777.json', []],
-  ['obsidian-1.14.4-seed-9001.json', []]
-]);
+const KNOWN_DIFFERENCES = new Map<string, readonly string[]>(CLASS_ORACLE_SEEDS.map((seed) => [classOracleFileName(seed), []]));
 
 interface ApplyEditParams {
   readonly edit: Edit;
@@ -132,7 +117,7 @@ function parse(language: Language, text: string): Tree {
 }
 
 function readOracle(name: string): OracleFile {
-  return JSON.parse(readFileSync(join(ORACLE_DIR, name), 'utf-8')) as OracleFile;
+  return readOracleFile(name) as OracleFile;
 }
 
 function sortedSets(sets: readonly ReadonlySet<string>[]): string[][] {
@@ -318,7 +303,7 @@ describe('editorClassLanguage', () => {
   });
 
   it('should give the same tree after random edits as a fresh parse', () => {
-    const oracle = readOracle('obsidian-1.14.4-seed-12345.json');
+    const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     const pieces = ['\n', '\n\n', '-', '---', '=', '|', ' ', ' '.repeat(4), 'a', 'word', '#', '# ', '`', '```', '$', '$$', '> ', '* ', '1. ', '[[', ']]', '%%', '^id', '==', '\t'];
     let seed = 1;
     function random(n: number): number {

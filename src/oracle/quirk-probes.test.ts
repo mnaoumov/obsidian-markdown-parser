@@ -1,11 +1,3 @@
-/* eslint-disable import-x/no-nodejs-modules -- The test runs in Node and reads the probe oracle from disk. */
-import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-/* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
   expect,
@@ -25,6 +17,10 @@ import {
   OBSIDIAN_QUIRK_FLAGS,
   OBSIDIAN_QUIRKS
 } from '../syntax/options.ts';
+import {
+  quirkProbeOracleFileName,
+  readOracleFile
+} from './oracle-location.ts';
 import { QUIRK_PROBES } from './quirk-probes.ts';
 import {
   ADAPTERS,
@@ -33,8 +29,7 @@ import {
   normalizeHtml
 } from './render-html.ts';
 
-const ORACLE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'quirk-probes-obsidian-1.14.4.json');
-const ORACLE = JSON.parse(readFileSync(ORACLE_PATH, 'utf-8')) as QuirkProbeFile;
+const ORACLE = readOracleFile(quirkProbeOracleFileName()) as QuirkProbeFile;
 
 interface FlaggedProbe extends QuirkProbeRead {
   readonly quirk: keyof ObsidianQuirkFlags;

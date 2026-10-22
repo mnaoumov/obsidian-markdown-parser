@@ -1,11 +1,3 @@
-/* eslint-disable import-x/no-nodejs-modules -- The test runs in Node and reads the spec oracle from disk. */
-import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-/* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
   expect,
@@ -24,6 +16,10 @@ import { renderRemarkHtml } from '../remark/html.ts';
 import { parseRemark } from '../remark/parse.ts';
 import { OBSIDIAN_QUIRKS } from '../syntax/options.ts';
 import {
+  readOracleFile,
+  specOracleFileName
+} from './oracle-location.ts';
+import {
   ADAPTERS,
   compareKeys,
   htmlRenderer,
@@ -40,8 +36,7 @@ import {
   workerSectionMismatches
 } from './spec-quirks.ts';
 
-const ORACLE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'spec-obsidian-1.14.4.json');
-const ORACLE = JSON.parse(readFileSync(ORACLE_PATH, 'utf-8')) as SpecOracleFile;
+const ORACLE = readOracleFile(specOracleFileName()) as SpecOracleFile;
 /*
  * The examples of each flag on which the flag alone does not give Obsidian's reading view, because another of its
  * quirks shows there too.

@@ -1,11 +1,3 @@
-/* eslint-disable import-x/no-nodejs-modules -- The suite runs in Node and reads the oracle fixtures from disk. */
-import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-/* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
   expect,
@@ -16,6 +8,12 @@ import type { OracleFile } from '../oracle/oracle-file.ts';
 import type { LineState } from './highlight.ts';
 
 import {
+  CLASS_ORACLE_SEEDS,
+  classOracleFileName,
+  MAIN_CLASS_ORACLE_SEED,
+  readOracleFile
+} from '../oracle/oracle-location.ts';
+import {
   compareCodeUnits,
   compareDocument
 } from '../oracle/score.ts';
@@ -24,28 +22,14 @@ import {
   highlightLines
 } from './highlight.ts';
 
-const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle');
-
 /*
  * The documents each oracle still disagrees on. A change that fixes one must remove it here, and a change that
  * breaks another fails the suite.
  */
-const KNOWN_DIFFERENCES = new Map<string, readonly string[]>([
-  ['obsidian-1.14.4-seed-12345.json', []],
-  ['obsidian-1.14.4-seed-1414.json', []],
-  ['obsidian-1.14.4-seed-1618.json', []],
-  ['obsidian-1.14.4-seed-2026.json', []],
-  ['obsidian-1.14.4-seed-2718.json', []],
-  ['obsidian-1.14.4-seed-31337.json', []],
-  ['obsidian-1.14.4-seed-3141.json', []],
-  ['obsidian-1.14.4-seed-4242.json', []],
-  ['obsidian-1.14.4-seed-6174.json', []],
-  ['obsidian-1.14.4-seed-777.json', []],
-  ['obsidian-1.14.4-seed-9001.json', []]
-]);
+const KNOWN_DIFFERENCES = new Map<string, readonly string[]>(CLASS_ORACLE_SEEDS.map((seed) => [classOracleFileName(seed), []]));
 
 function readOracle(name: string): OracleFile {
-  return JSON.parse(readFileSync(join(ORACLE_DIR, name), 'utf-8')) as OracleFile;
+  return readOracleFile(name) as OracleFile;
 }
 
 describe('highlight', () => {
@@ -85,7 +69,7 @@ describe('highlight', () => {
   });
 
   it('should resume from the state after any line with the same result', () => {
-    const oracle = readOracle('obsidian-1.14.4-seed-12345.json');
+    const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     for (const document of oracle.docs) {
       const lines = document.text.split('\n');
       const states: LineState[] = [];

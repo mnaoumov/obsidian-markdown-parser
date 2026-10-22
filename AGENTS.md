@@ -16,6 +16,7 @@ A single incremental markdown parser for Obsidian-flavoured markdown, built on [
 ## L3. Method: measured against the live app, never copied from it
 
 - Behaviour is matched by differential fuzzing against a real Obsidian instance driven over CDP: the editor's class-token spans (read through `@codemirror/language`) and the metadata worker's `CachedMetadata`.
+- Every oracle in `oracle/` is pinned to one Obsidian version, named once in `src/oracle/oracle-location.ts`. `npm run oracle:refresh` re-reads them all from another version and `npm run oracle:drift` reports what changed and whether the parser still matches ([`docs/oracles.md`](docs/oracles.md)). Moving the pin to a new version is a change of `PINNED_OBSIDIAN_VERSION` plus that version's files, once the drift report and the suites are clean on them.
 - Obsidian's code is proprietary: never copy code from the app bundle into this repository. Reading it to learn behaviour is allowed for plugin development under Obsidian's Terms (Restrictions, item iii).
 - Open-source code the editor's behaviour descends from may be ported under its license, with the notice kept in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The class tokenizer ports the MIT CodeMirror 5 `markdown` mode and HyperMD, and uses CodeMirror 5's own sub-modes from `codemirror@5`.
 - This work is the owner's own, done in his own time and never billed under his contractor agreement. It is intended as a gift to the Obsidian team, handed over with a written assignment if they take it into the core.
