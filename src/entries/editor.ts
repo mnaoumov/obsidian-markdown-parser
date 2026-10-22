@@ -4,7 +4,8 @@
  * The editor entry point (`obsidian-markdown-parser/editor`): the classes Obsidian's editor puts on every character
  * and line.
  *
- * - {@link highlight} and {@link highlightLines} give those classes, resumable from any line.
+ * - {@link highlight} and {@link highlightLines} give those classes, resumable from any line whose state
+ *   {@link isLineStateResumable} accepts.
  * - {@link editorClassLanguage} hosts that tokenizer in CodeMirror 6, with the editor's tree shape and incremental
  *   re-parsing, and {@link editorClasses} renders its classes the way the editor does.
  */
@@ -19,7 +20,8 @@ export type {
 export {
   copyLineState,
   highlight,
-  highlightLines
+  highlightLines,
+  isLineStateResumable
 } from '../editor/highlight.ts';
 
 export type { CreateEditorClassLanguageOptions } from '../editor/language.ts';

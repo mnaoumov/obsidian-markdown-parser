@@ -7,7 +7,7 @@ The repository is private and nothing in it has been published.
 ## In short
 
 - **The editor's classes are reproduced exactly.** All 36,608 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
-- **Live parsing works for the editor.** The tokenizer resumes from any line, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is about a fifth faster than the stock language's.
+- **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is about a fifth faster than the stock language's.
 - **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,236 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
 - **The Obsidian syntax is defined once** and ships for `@lezer/markdown`, micromark with mdast, and markdown-it, each checked against one conformance corpus and the CommonMark 0.31.2 suite.
 - **It is three engines, not the single Lezer parser asked for.** Each of Obsidian's three outputs comes from a different kind of parser today, and each engine here is that kind of parser. What one engine would take is costed below, and it turns on one question for the team.
@@ -127,7 +127,6 @@ Each is measured, and each has a test or a script that reproduces it.
 - **An unclosed color highlight on an earlier line puts `highlight` on a later line's inline math** in the editor, and the tokenizer misses that rule. Eight documents of the newest piece set show it.
 - **25 of the 674 spec examples** differ in the editor's classes.
 - **The tree differs node for node** in places, though never in its classes (goal 3).
-- **A resume inside a fenced block, `<script>` or `<style>` element can differ from a fresh parse.** CodeMirror 5's sub-modes keep state in their closures, where the host cannot copy it, so the CSS mode can class a `-` by whatever it tokenized last. The host already parses to the block's end before it reuses anything there. The resume itself can still differ.
 - **A live-preview keystroke on a 100,000-line note** costs 88 ms against the stock 29 ms (goal 2).
 
 ### In the metadata engine

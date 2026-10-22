@@ -302,6 +302,37 @@ describe('editorClassLanguage', () => {
     }
   });
 
+  it('should resume before a fenced block or a style element, not inside it', () => {
+    const language = createEditorClassLanguage({ chunkSize: TINY_CHUNK_SIZE });
+    /*
+     * The CSS mode keeps the last token's type in its closure, and a `-` it reads no token from takes that type. Resuming
+     * inside the block from the earlier parse's state would run on with the type the earlier parse left there.
+     */
+    const body = '--v: 1\n- -\ncolor: red;\ncolor: red;';
+    for (const [open, close] of [['```css', '```'], ['<style>', '</style>']] as const) {
+      const text = `${FILLER}${open}\n${body}\n${close}\n${FILLER}`;
+      const tree = parse(language, text);
+      const at = text.lastIndexOf('d;');
+      const result = applyEdit({ edit: { from: at, insert: 'b', to: at }, language, text, tree });
+      expect(treeNodes(result.tree), open).toEqual(treeNodes(parse(language, result.text)));
+      expect(result.resumedAt, open).toBeLessThanOrEqual(FILLER.length);
+    }
+  });
+
+  it('should not go on from a reused chunk that ends inside a fenced block', () => {
+    const language = createEditorClassLanguage({ chunkSize: SMALL_CHUNK_SIZE });
+    /*
+     * The block runs to the document's end, whose last line reads past it, so the chunks reusable after the edit stop
+     * inside the block, and the parse would go on from the CSS mode the earlier parse left at the document's end.
+     */
+    const text = `${Array.from({ length: 12 }, (_, index) => `filler ${String(index)}`).join('\n')}\n\n\`\`\`css\nvar x = 1;\n-\nx--\nx--`;
+    const tree = parse(language, text);
+    // Joins two filler lines.
+    const at = text.indexOf('\nfiller 9');
+    const result = applyEdit({ edit: { from: at, insert: 'x', to: at + 2 }, language, text, tree });
+    expect(treeNodes(result.tree)).toEqual(treeNodes(parse(language, result.text)));
+  });
+
   it('should give the same tree after random edits as a fresh parse', () => {
     const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     const pieces = ['\n', '\n\n', '-', '---', '=', '|', ' ', ' '.repeat(4), 'a', 'word', '#', '# ', '`', '```', '$', '$$', '> ', '* ', '1. ', '[[', ']]', '%%', '^id', '==', '\t'];
