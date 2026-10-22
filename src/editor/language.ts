@@ -11,7 +11,8 @@
  * every token is a node named by its classes, sorted and joined by `_`. Lines are grouped into chunks, anonymous nodes
  * a tree cursor steps through, and each chunk records the state after its last line and how far its lines read,
  * lookahead included. A new parse after an edit resumes from the last chunk whose reads all lie before the edit, and
- * once a line after the edit ends in the state the earlier parse had there, it reuses the earlier parse's chunks.
+ * once a line after the edit ends in the state the earlier parse had there, it reuses the earlier parse's chunks. In an
+ * editor, the parse and the reuse stop at the end of the viewport.
  *
  * Obsidian's editor renders classes from two node props its copy of `@codemirror/language` adds, `lineClassNodeProp`
  * and `tokenClassNodeProp`, which the public package does not have; a host inside Obsidian passes them as options.
@@ -224,13 +225,15 @@ class EditorClassParse implements PartialParse {
   public advance(): null | Tree {
     const context = ParseContext.get();
     const parseEnd = this.stoppedAt === null ? this.to : Math.min(this.to, this.stoppedAt);
-    let end = Math.min(parseEnd, this.chunkStart + this.host.chunkSize);
-    if (context) {
-      end = Math.min(end, context.viewport.to);
-    }
+    /*
+     * In an editor, a parse stops at the end of the viewport, as `StreamLanguage`'s does, and so do the chunks reused
+     * after an edit: live preview walks the whole tree on every change, so a tree past the viewport costs every keystroke.
+     */
+    const viewEnd = context ? Math.min(parseEnd, context.viewport.to) : parseEnd;
+    const end = Math.min(viewEnd, this.chunkStart + this.host.chunkSize);
     while (this.parsedPos < end) {
       this.parseLine();
-      this.reuseChunks(parseEnd);
+      this.reuseChunks(viewEnd);
     }
     if (this.chunkStart < this.parsedPos) {
       this.finishChunk();
@@ -514,6 +517,15 @@ function fragmentChunks(fragment: TreeFragment): FragmentChunk[] {
   return chunks;
 }
 
+/*
+ * The same text as an internalized string. Live preview splits a token's classes on every node of the tree on every
+ * change, and V8 caches a split only for an internalized string, which one made by `join` is not: it took twice as long
+ * on the parser's tree as on the stock one. An object's key is internalized.
+ */
+function internalize(text: string): string {
+  return Object.keys({ [text]: 0 })[0] ?? text;
+}
+
 // A parse may go on from a chunk's state when the state is a resume point, and has nothing to go on with past its end.
 function isChunkEndResumable(chunk: FragmentChunk | undefined, parseEnd: number): boolean {
   return !!chunk && (chunk.from + chunk.tree.length >= parseEnd || isLineStateResumable(chunk.info.state));
@@ -544,7 +556,7 @@ function typeId(host: EditorClassHost, property: NodeProp<readonly string[]>, cl
     const properties: [NodeProp<readonly string[]> | NodeProp<string>, readonly string[] | string][] = [[property, sorted]];
     const classProperty = isLine ? host.lineClassNodeProperty : host.tokenClassNodeProperty;
     if (classProperty) {
-      properties.push([classProperty, sorted.join(' ')]);
+      properties.push([classProperty, internalize(sorted.join(' '))]);
     }
     // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
     typeArray.push(NodeType.define({ id, name: sorted.join('_'), props: properties }));

@@ -44,17 +44,22 @@ One run of `npx jiti scripts/demo-plugin-measure.ts --lines 100000` on 2026-10-2
 
 **Nodes: 0 differences.** The first run found 2 notes that differed: a code span left open inside a quote, where the parser's token was `inline-code_inline-code_quote_quote-1` and the stock one `inline-code_quote_quote-1`. The class sets were equal, but the two type names differed, so the tokens next to it did not merge and the text rendered as more spans than the stock editor's. With that, the classes a footnote label repeats and the tokens with an empty style fixed, a second run the same day gave 0 of 116 notes, and the eleven class oracles are exact node for node too.
 
-**Metadata: 0 differences** on all 116 notes, `long.md` included, which took 691 ms in all (a run of the same day, after the fix below). The first run left `long.md` out: `parseMetadata`'s peak memory then grew with the square of the note (360 MB at 25,000 lines, 2.5 GB at 100,000) and took the app down. The engine put eaten text back as `subvalue + value`, which the next slice flattened into a fresh copy of the rest of the note, and every node value sliced from that copy kept it alive. It now puts back the string it sliced from, and the peak in Node is 250 MB at 100,000 lines and grows with the note.
+**Metadata: 0 differences** on all 116 notes, `long.md` included, which took 646 ms in all. The first run left `long.md` out: `parseMetadata`'s peak memory then grew with the square of the note (360 MB at 25,000 lines, 2.5 GB at 100,000) and took the app down. The engine put eaten text back as `subvalue + value`, which the next slice flattened into a fresh copy of the rest of the note, and every node value sliced from that copy kept it alive. It now puts back the string it sliced from, and the peak in Node is 250 MB at 100,000 lines and grows with the note.
 
 **Cost.** Medians, in milliseconds, with the slowest keystroke in brackets:
 
 | Note | Mode | Full parse, parser | Full parse, stock | Keystroke, parser | Keystroke, stock |
 | :--- | :--- | -----------------: | ----------------: | ----------------: | ---------------: |
-| 178 lines | source | 5.0 | 5.1 | 2.0 (5.2) | 4.0 (15.7) |
-| 178 lines | live preview | 5.0 | 5.5 | 2.2 (3.4) | 4.2 (6.0) |
-| 100,001 lines | source | 811 | 1,041 | 3.6 (8.5) | 3.1 (7.2) |
-| 100,001 lines | live preview | 779 | 970 | 87.9 (170.5) | 29.4 (89.6) |
+| 178 lines | source | 2.8 | 3.3 | 1.6 (4.8) | 3.1 (15.2) |
+| 178 lines | live preview | 3.0 | 4.2 | 2.5 (3.4) | 3.3 (4.9) |
+| 100,001 lines | source | 735 | 852 | 2.2 (5.0) | 3.5 (7.4) |
+| 100,001 lines | live preview | 727 | 877 | 25.3 (85.9) | 26.1 (94.0) |
 
-A full parse is about a fifth faster than the stock language's. A keystroke costs about the same in source mode at either length, and less on the short note. In live preview on the long note it costs three times as much. The likely cause is that the parser's re-parse after an edit gives a tree that reaches the document's end (see [the CodeMirror 6 host](cm6-host.md#cost)), while the stock language stops at the viewport, so live preview's plugins see the whole tree change. That is not confirmed yet.
+A full parse is 14 to 17% faster than the stock language's. A keystroke costs about the same as the stock one on the long note in both modes, and less on the short note.
+
+The first run of the day gave a live-preview keystroke on the long note 87.9 ms against the stock 29.4 ms. A CPU profile of the keystrokes over CDP found two causes, both in how live preview reads the tree:
+
+- **Live preview walks the whole tree on every change.** Its decoration field calls `iterate` on the tree with no range, on every transaction whose parse reaches 2,000 characters past the viewport within 20 ms. So the walk costs what the tree holds. In an editor `StreamLanguage` stops each parse at the end of the viewport, but the parser's re-parse took the chunks it reused after an edit on to the document's end. The walk covered 3.6 million characters where the stock one covered the 1.8 million up to the viewport, in the middle of the note. The reuse now stops at the end of the viewport, as the parse does ([the CodeMirror 6 host](cm6-host.md#incremental-reuse)), which brought the keystroke to 44 ms.
+- **The walk splits every node's classes.** It builds `new Set(classes.split(' '))` from the token class prop of each node. V8 caches a split only for an internalized string, and the language made its class strings with `join`, so the same walk over the same 138,000 nodes took 39 ms on the parser's tree against 25 ms on the stock one. The language now internalizes them.
 
 These are single runs, so the smallest times carry the most noise.

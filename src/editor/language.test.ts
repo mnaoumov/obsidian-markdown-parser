@@ -1,13 +1,15 @@
 import type { Language } from '@codemirror/language';
-import type { Tree } from '@lezer/common';
+import type { Parser } from '@lezer/common';
 
 import {
   ensureSyntaxTree,
+  ParseContext,
   syntaxTree
 } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import {
   NodeProp,
+  Tree,
   TreeFragment
 } from '@lezer/common';
 import {
@@ -58,6 +60,8 @@ const OPEN_EDGE_MARGIN = 25;
 const FILLER_LINES = 10;
 // `TreeFragment.applyChanges` drops a fragment shorter than 128 characters, so a case needs text before it to reuse.
 const FILLER = `${Array.from({ length: FILLER_LINES }, (_, index) => `filler line ${String(index)} with some words in it`).join('\n')}\n\n`;
+// `ParseContext`, whose constructor its types declare private.
+const editorParseContext: unknown = ParseContext;
 
 /*
  * The documents each oracle still disagrees on: the host must give the live editor's tree node for node, so text the
@@ -75,6 +79,32 @@ interface ApplyEditParams {
 interface Edit {
   readonly from: number;
   readonly insert: string;
+  readonly to: number;
+}
+
+/*
+ * `ParseContext` as `@codemirror/language` drives it inside an editor, through members its types leave out: an
+ * `EditorView` makes one with its viewport, which a test without a DOM cannot.
+ */
+interface EditorParseContext {
+  readonly skipped: readonly ParseRange[];
+  readonly tree: Tree;
+  work: (until: number) => boolean;
+}
+
+type EditorParseContextConstructor = new (
+  parser: Parser,
+  state: EditorState,
+  fragments: readonly TreeFragment[],
+  tree: Tree,
+  treeLength: number,
+  viewport: ParseRange,
+  skipped: readonly ParseRange[],
+  scheduleOn: null
+) => EditorParseContext;
+
+interface ParseRange {
+  readonly from: number;
   readonly to: number;
 }
 
@@ -295,6 +325,25 @@ describe('editorClassLanguage', () => {
       // The edit, the margin the host keeps from it and the line that margin ends in are parsed again, and nothing after.
       expect(result.text.length - reusedLength(tree, result.tree)).toBeLessThan(at - result.resumedAt + insert.length + 2 * OPEN_EDGE_MARGIN);
     }
+  });
+
+  it('should stop the parse and the chunks it reuses after an edit at the end of an editor\'s viewport', () => {
+    const language = createEditorClassLanguage({ chunkSize: TINY_CHUNK_SIZE });
+    const text = Array.from({ length: 100 }, (_, index) => `line ${String(index)}`).join('\n');
+    const tree = parse(language, text);
+    const at = text.indexOf('line 10');
+    const newText = `${text.slice(0, at)}x${text.slice(at)}`;
+    const fragments = TreeFragment.applyChanges(TreeFragment.addTree(tree), [{ fromA: at, fromB: at, toA: at, toB: at + 1 }]);
+    const viewport = { from: 0, to: newText.indexOf('line 30') };
+    // eslint-disable-next-line unicorn/name-replacements -- CodeMirror's option name.
+    const state = EditorState.create({ doc: newText });
+    const context = new (editorParseContext as EditorParseContextConstructor)(language.parser, state, fragments, Tree.empty, 0, viewport, [], null);
+    expect(context.work(PARSE_TIMEOUT_MS)).toBe(true);
+    // As `StreamLanguage`'s, the tree ends at the viewport's end, and the rest waits until it comes into view.
+    expect(context.tree.length).toBe(viewport.to);
+    expect(context.skipped).toEqual([{ from: viewport.to, to: newText.length }]);
+    expect(treeNodes(context.tree)).toEqual(treeNodes(parse(language, newText)).filter((node) => node[0] < viewport.to));
+    expect(reusedLength(tree, context.tree)).toBeGreaterThan(0);
   });
 
   it('should not reuse the chunks after an edit that changes the state of the lines after it', () => {

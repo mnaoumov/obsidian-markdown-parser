@@ -7,7 +7,7 @@ The repository is private and nothing in it has been published.
 ## In short
 
 - **The editor's classes are reproduced exactly.** All 36,608 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
-- **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is about a fifth faster than the stock language's.
+- **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is 14 to 17% faster than the stock language's, and a keystroke costs the same as the stock one, in live preview too.
 - **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,236 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
 - **The Obsidian syntax is defined once** and ships for `@lezer/markdown`, micromark with mdast, and markdown-it, each checked against one conformance corpus and the CommonMark 0.31.2 suite.
 - **It is three engines, not the single Lezer parser asked for.** Each of Obsidian's three outputs comes from a different kind of parser today, and each engine here is that kind of parser. What one engine would take is costed below, and it turns on one question for the team.
@@ -68,10 +68,10 @@ Inside Obsidian, with the parser swapped in as the editor's language ([demo-plug
 
 | Mode | Full parse, parser | Full parse, stock | Keystroke, parser | Keystroke, stock |
 | --- | ---: | ---: | ---: | ---: |
-| Source | 811 ms | 1,041 ms | 3.6 ms | 3.1 ms |
-| Live preview | 779 ms | 970 ms | 87.9 ms | 29.4 ms |
+| Source | 735 ms | 852 ms | 2.2 ms | 3.5 ms |
+| Live preview | 727 ms | 877 ms | 25.3 ms | 26.1 ms |
 
-The live-preview keystroke on a long note is the one place the parser is slower, by three times. The likely cause, not yet confirmed, is that its re-parse gives a tree reaching the document's end where the stock one stops at the viewport, so live preview's plugins see the whole tree change.
+Live preview walks the whole tree on every keystroke and splits every node's classes, so its keystroke follows the tree's length and how cheaply its class strings split. A first run gave 87.9 ms against 29.4 ms, until the re-parse stopped at the viewport, as the stock one does, and the class strings were internalized ([demo-plugin.md](demo-plugin.md#results)).
 
 The metadata is not incremental: `parseMetadata` parses the whole note on every call. Its peak memory grows with the note's length: 250 MB of process memory for the 100,000-line note in Node, 82 MB of it the `remark-parse` tree.
 
@@ -112,7 +112,7 @@ The `remark-parse` 8 port gives the same tree, positions included, as npm `remar
 
 ### 7. `CachedMetadata`: yes
 
-`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,236 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 116 notes, the 100,001-line note included, in 691 ms for all of them.
+`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,236 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 116 notes, the 100,001-line note included, in 646 ms for all of them.
 
 ### 8. Keeping up with Obsidian: yes
 
@@ -126,7 +126,6 @@ Each is measured, and each has a test or a script that reproduces it.
 
 - **An unclosed color highlight on an earlier line puts `highlight` on a later line's inline math** in the editor, and the tokenizer misses that rule. Eight documents of the newest piece set show it.
 - **25 of the 674 spec examples** differ in the editor's classes.
-- **A live-preview keystroke on a 100,000-line note** costs 88 ms against the stock 29 ms (goal 2).
 
 ### In the metadata engine
 
