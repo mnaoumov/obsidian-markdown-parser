@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "inlineSourceMap": false,
+    "inlineSources": false,
+    "noEmit": false,
+    "outDir": "./dist/lib",
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": "./src",
+    "tsBuildInfoFile": null
+  },
+  "files": [
+    "./src/entries/editor.ts",
+    "./src/entries/lezer.ts",
+    "./src/entries/markdown-it.ts",
+    "./src/entries/mdast.ts",
+    "./src/entries/metadata.ts",
+    "./src/entries/remark.ts",
+    "./src/entries/syntax.ts",
+    "./src/index.ts"
+  ],
+  "include": []
+}

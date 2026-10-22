@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../src"
+  },
+  "files": [
+    "../../src/entries/metadata.ts",
+    "../../src/entries/remark.ts"
+  ]
+}

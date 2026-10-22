@@ -1,6 +1,6 @@
 {
   "name": "obsidian-markdown-parser",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Incremental parser for Obsidian-flavoured markdown, built on @lezer/markdown.",
   "keywords": [],
@@ -15,7 +15,50 @@
   "license": "UNLICENSED",
   "author": "Michael Naumov",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
+    },
+    "./editor": {
+      "types": "./dist/lib/entries/editor.d.ts",
+      "default": "./dist/lib/entries/editor.js"
+    },
+    "./lezer": {
+      "types": "./dist/lib/entries/lezer.d.ts",
+      "default": "./dist/lib/entries/lezer.js"
+    },
+    "./markdown-it": {
+      "types": "./dist/lib/entries/markdown-it.d.ts",
+      "default": "./dist/lib/entries/markdown-it.js"
+    },
+    "./mdast": {
+      "types": "./dist/lib/entries/mdast.d.ts",
+      "default": "./dist/lib/entries/mdast.js"
+    },
+    "./metadata": {
+      "types": "./dist/lib/entries/metadata.d.ts",
+      "default": "./dist/lib/entries/metadata.js"
+    },
+    "./remark": {
+      "types": "./dist/lib/entries/remark.d.ts",
+      "default": "./dist/lib/entries/remark.js"
+    },
+    "./syntax": {
+      "types": "./dist/lib/entries/syntax.d.ts",
+      "default": "./dist/lib/entries/syntax.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/lib",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "workspaces": [
+    "packages/metadata"
+  ],
   "scripts": {
+    "build": "jiti scripts/build.ts",
     "build:compile": "jiti scripts/build-compile.ts",
     "commit": "jiti scripts/commit.ts",
     "format": "jiti scripts/format.ts",

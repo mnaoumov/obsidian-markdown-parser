@@ -6,7 +6,9 @@ Unofficial: not affiliated with or endorsed by Obsidian. See [AGENTS.md](AGENTS.
 
 ## Development
 
-The tooling follows the owner's TypeScript template: `npm install`, then `npm run build:compile` (type check), `npm run lint`, `npm run format:check`, `npm run spellcheck`, `npm run lint:md` and `npm test`. The package is `private` and has no build output or release step.
+The tooling follows the owner's TypeScript template: `npm install`, then `npm run build:compile` (type check), `npm run lint`, `npm run format:check`, `npm run spellcheck`, `npm run lint:md` and `npm test`.
+
+`npm run build` compiles two installable packages, both `private` and never published: `obsidian-markdown-parser` into `dist/lib/`, with an entry point per part (`./editor`, `./lezer`, `./mdast`, `./markdown-it`, `./syntax`, `./remark`, `./metadata`), and `obsidian-markdown-parser-metadata` (`packages/metadata/`), the metadata projection and its remark engine without the editor or CodeMirror dependencies. `npm pack` and `npm pack --workspace packages/metadata` make the tarballs. The entry points, what each exports and the packages' dependencies are in [docs/api.md](docs/api.md).
 
 `highlight(text)` in `src/index.ts` gives the classes Obsidian's editor puts on every character and line, and `highlightLines` resumes from any line. How close it is, and how it works, is in [docs/phase-1.md](docs/phase-1.md). Third-party code it ports is listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
