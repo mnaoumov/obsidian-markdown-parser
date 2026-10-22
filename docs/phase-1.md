@@ -97,6 +97,10 @@ Each rule below was read off the oracle and checked against all three corpora.
 - A line after a definition continues it (`HyperMD-footnote`) when it is indented by a whole number of tab stops of 4, counting a tab as 4 spaces. Blank lines continue it too. A line indented by 2 spaces, and an indented list item, do not.
 - A definition opens even when link text was left open on the line above. Other links on that line wear no `hmd-barelink`: the open link text hides them.
 - After a definition's `]:`, only a URL is marked. Anything else is plain text.
+- A definition's label between its marks wears `hmd-barelink hmd-footnote` twice, and its marks once. The repeat changes no class, but it is in the token's type name, so it decides which tokens merge into one span.
+- The spaces after a definition's `]:` are a token with no style, even on a lazy quote line, so they are no node. The indentation of a line that continues a definition is a token whose style holds the line class only, so it is a node named `""`.
+
+The tree is the editor's node for node, not only class for class: a token of a quote fence wears `inline-code` once, as every other token does, and the CodeMirror 6 host keeps a style's repeats and its empty styles ([cm6-host.md](cm6-host.md#the-tree)).
 
 ### Tables and front matter
 

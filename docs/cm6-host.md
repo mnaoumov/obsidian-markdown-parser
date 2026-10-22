@@ -11,7 +11,7 @@ The tokenizer has CodeMirror's stream-parser shape, but `StreamLanguage` gives a
 The tree has the shape the oracle reads from the live editor:
 
 - A line with line classes is a node named by them, sorted and joined by `_`, spanning the line. It holds the line's tokens.
-- Every token with classes is a node named the same way. A token with no classes is left out, as in `StreamLanguage`.
+- Every token with a style is a node named the same way, a class the style repeats included, so `hmd-barelink_hmd-barelink_hmd-footnote_hmd-footnote_link` names a footnote label as it does in the editor. A token whose style holds line classes only is a node named `""`, as the indentation continuing a footnote definition is in the editor. A token with no style is left out, as in `StreamLanguage`.
 - Lines are grouped into chunks of about 512 characters. A chunk is an anonymous node, which a tree cursor steps through, so line nodes sit at depth 1 as they do in the editor.
 
 - A token right after one of the same type extends it, as `StreamLanguage`'s `mergeTokens` does.
@@ -20,7 +20,7 @@ The tree has the shape the oracle reads from the live editor:
 
 Obsidian's editor renders the classes itself, from two node props its copy of `@codemirror/language` adds: `lineClassNodeProp` and `tokenClassNodeProp`, each holding the classes joined by spaces. A language made with `createEditorClassLanguage({ lineClassNodeProperty, tokenClassNodeProperty })` puts the classes in the props it is given too, on node types of its own, so the language runs as the editor's language inside Obsidian ([docs/demo-plugin.md](demo-plugin.md)).
 
-The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it is exact on all of them too.
+The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it is exact on all of them too. Since 2026-10-22 it is also the live editor's tree node for node, names and merged tokens included, on all 36,608 documents of the eleven class oracles, which `src/editor/language.test.ts` pins.
 
 ## Incremental reuse
 

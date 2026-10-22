@@ -54,6 +54,8 @@ export interface MarkdownMode {
   blankLine: (state: MarkdownState) => null;
   blockNormal: TokenFunction;
   copyState: (state: MarkdownState) => MarkdownState;
+  footnoteUrl: TokenFunction;
+  footnoteUrlTitle: TokenFunction;
   getType: (state: MarkdownState) => null | string;
   htmlBlock: TokenFunction;
   inlineNormal: TokenFunction;
@@ -409,7 +411,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     const isFenceCanOpenBlock = isFirstTokenOnLine && state.indentation <= maxNonCodeIndentation;
     if (isEditor && state.quote && isAfterQuoteMark && !isFenceCanOpenBlock && (match = matchRe(stream, FENCED_CODE_RE))) {
       state.quoteFence = state.quoteFence ? 0 : (match[1] ?? '').length;
-      return `${getType(state) ?? ''} inline-code`;
+      return withCodeStyle(getType(state));
     }
     if (!isHr && !state.setext && isFirstTokenOnLine && state.indentation <= maxNonCodeIndentation && (match = matchRe(stream, LIST_RE))) {
       const listType = match[1] ? 'ol' : 'ul';
@@ -619,6 +621,11 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     return styles.length > 0 ? styles.join(' ') : null;
   }
 
+  // Obsidian: a token of a quote fence wears the code style once, whether or not the state already gives it.
+  function withCodeStyle(type: null | string): string {
+    return type?.split(' ').includes(TOKEN_TYPES.code) ? type : `${type ?? ''} ${TOKEN_TYPES.code}`;
+  }
+
   function handleText(stream: Stream, state: MarkdownState): null | string | undefined {
     return matchRe(stream, TEXT_RE) ? getType(state) : undefined;
   }
@@ -698,7 +705,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       if (!run) {
         stream.next();
       }
-      return `${getType(state) ?? ''} inline-code`;
+      return withCodeStyle(getType(state));
     }
 
     const ch = stream.next() ?? '';
@@ -1140,6 +1147,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         localState: s.localMode && s.localState ? copyState(s.localMode, s.localState) : null
       };
     },
+    footnoteUrl,
+    footnoteUrlTitle,
     getType,
     htmlBlock,
     inlineNormal,

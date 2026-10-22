@@ -329,6 +329,7 @@ export function createObsidianMode(): ObsidianMode {
     }
     const wasInComment = state.comment;
     const wasInMarkdownInline = isInMarkdownInline;
+    const wasInDefinitionDestination = state.f === rawMode.footnoteUrl || state.f === rawMode.footnoteUrlTitle;
     state.extensionsAllowed = isInMarkdownInline;
     ans += ` ${rawMode.token(stream, state) ?? ''}`;
     if (state.header) {
@@ -406,7 +407,8 @@ export function createObsidianMode(): ObsidianMode {
          * Obsidian: any markdown token read while a quote is open marks its line a quote line, unless another quote
          * mark follows it; a line whose first quote mark is not within 3 spaces of its start is a lazy one.
          */
-        if (!matchRe(stream, /^\s*>/u, false) || stream.eol()) {
+        // A space the mode reads with no style before a definition's destination marks nothing.
+        if ((ans.trim() || !wasInDefinitionDestination) && (!matchRe(stream, /^\s*>/u, false) || stream.eol())) {
           ans += ` line-HyperMD-quote line-HyperMD-quote-${String(state.quote)}`;
           if (!/^ {0,3}>/u.test(stream.string)) {
             ans += ' line-HyperMD-quote-lazy';
@@ -483,6 +485,10 @@ export function createObsidianMode(): ObsidianMode {
       }
       if (state.hmdLinkType !== LinkType.None) {
         ans += ` ${LINK_STYLE.get(state.hmdLinkType) ?? ''}`;
+        // Obsidian: a footnote label's text between its brackets wears the footnote style twice, and its marks once.
+        if (state.hmdLinkType === LinkType.Footnote && wasLinkText && state.linkText && !ans.includes('formatting-link')) {
+          ans += ` ${LINK_STYLE.get(state.hmdLinkType) ?? ''}`;
+        }
       }
       if (ans.includes('formatting-escape') && current.length > 1) {
         const escapedLength = current.length - 1;

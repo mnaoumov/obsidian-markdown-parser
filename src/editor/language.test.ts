@@ -60,8 +60,8 @@ const FILLER_LINES = 10;
 const FILLER = `${Array.from({ length: FILLER_LINES }, (_, index) => `filler line ${String(index)} with some words in it`).join('\n')}\n\n`;
 
 /*
- * The documents each oracle still disagrees on, as in `highlight.test.ts`: the host must give the live editor's classes
- * wherever the tokenizer does.
+ * The documents each oracle still disagrees on: the host must give the live editor's tree node for node, so text the
+ * editor renders as one span renders as one span here too.
  */
 const KNOWN_DIFFERENCES = new Map<string, readonly string[]>(CLASS_ORACLE_SEEDS.map((seed) => [classOracleFileName(seed), []]));
 
@@ -112,6 +112,11 @@ function lineNodeAt(tree: Tree, from: number): string | undefined {
   return treeNodes(tree).find((node) => node[0] === from)?.[3];
 }
 
+// Each node of the tree as its text and its name.
+function nodeNames(text: string): string[] {
+  return treeNodes(parse(editorClassLanguage, text)).map((node) => `${text.slice(node[0], node[1])}=${node[3]}`);
+}
+
 function parse(language: Language, text: string): Tree {
   return language.parser.parse(text);
 }
@@ -152,12 +157,12 @@ function treeNodes(tree: Tree): OracleNode[] {
 
 describe('editorClassLanguage', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
-    it(`should match the live editor's tree on every document of ${name} but the known differences`, () => {
+    it(`should match the live editor's tree node for node on every document of ${name} but the known differences`, () => {
       const differing: string[] = [];
       for (const document of readOracle(name).docs) {
-        const hosted = encodeClassSets(hostedClassSets(document.text));
-        expect(hosted).toBe(encodeClassSets(tokenizerClassSets(document.text)));
-        if (hosted !== encodeClassSets(classSetsOf(document.text, document.nodes))) {
+        const nodes = treeNodes(parse(editorClassLanguage, document.text));
+        expect(encodeClassSets(classSetsOf(document.text, nodes))).toBe(encodeClassSets(tokenizerClassSets(document.text)));
+        if (JSON.stringify(nodes) !== JSON.stringify(document.nodes)) {
           differing.push(document.id);
         }
       }
@@ -203,6 +208,24 @@ describe('editorClassLanguage', () => {
       [2, 5, 2, 'formatting_formatting-task_meta'],
       [5, 10, 2, 'list-1']
     ]);
+  });
+
+  it('should name a token by its classes as the editor does, duplicates and empty styles included', () => {
+    // A footnote label wears its footnote style twice, and its marks once.
+    expect(nodeNames('[^1]: a')).toContain('1=hmd-barelink_hmd-barelink_hmd-footnote_hmd-footnote_link');
+    expect(nodeNames('[^1]: a')).toContain('[^=formatting_formatting-link_hmd-barelink_hmd-footnote_link');
+    // A quote fence's tokens wear the code style once, so the next line's text is one span.
+    expect(nodeNames('> ```\n<?php')).toEqual([
+      '> ```=HyperMD-quote_HyperMD-quote-1',
+      '> =formatting_formatting-quote_formatting-quote-1_quote_quote-1',
+      '```=inline-code_quote_quote-1',
+      '<?php=HyperMD-quote_HyperMD-quote-1_HyperMD-quote-lazy',
+      '<?php=inline-code_quote_quote-1'
+    ]);
+    // The indentation continuing a footnote definition is a token with no classes.
+    expect(nodeNames('[^1]: a\n    b')).toContain('    =');
+    // The space after a definition's `]:` on a lazy quote line is no token.
+    expect(nodeNames('> a\n[b]: /v').filter((name) => name.startsWith(' '))).toEqual([]);
   });
 
   it('should read the next line for a setext heading and a table', () => {

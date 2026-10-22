@@ -256,7 +256,8 @@ export function tokenizeLine(params: TokenizeLineParams): TokenizedLine {
         tokenClasses.push(cls);
       }
     }
-    if (to > from) {
+    // A token with no style is no span, but one whose style holds line classes only is a span with no classes.
+    if (style !== null && to > from) {
       spans.push({ classes: tokenClasses, from, to });
     }
   }
