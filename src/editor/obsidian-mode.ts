@@ -619,7 +619,11 @@ export function createObsidianMode(): ObsidianMode {
       if (state.inlineFootnote) {
         ans += ' footref inline-footnote';
       }
-      if (isEscapeAt && ans.includes('formatting-escape') && current.length > 1) {
+      /*
+       * Obsidian: the token that makes its line indented code is split too, as an escape of the rest of the line, since
+       * the line is still inline markdown when the token starts.
+       */
+      if (isEscapeAt && (ans.includes('formatting-escape') || state.indentedCode) && current.length > 1) {
         const escapedLength = current.length - 1;
         const escapedCharStyle = `${ans.replace('formatting-escape', 'escape')} hmd-escape-char`;
         state.hmdOverride = (s, st): string => {
