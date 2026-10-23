@@ -36,6 +36,11 @@ function mathClasses(text: string): string[] {
   return [...new Set(sets)];
 }
 
+// Whether each line of a document carries the math block's line class.
+function mathLines(text: string): boolean[] {
+  return highlight(text).map((line) => line.classes.includes('HyperMD-math'));
+}
+
 function readOracle(name: string): OracleFile {
   return readOracleFile(name) as OracleFile;
 }
@@ -80,6 +85,21 @@ describe('highlight', () => {
     expect(mathClasses('[a $x$] b $y$')).toEqual(['math']);
     expect(mathClasses('$x [a$ b](u)')).toEqual(['math', 'bracket math']);
     expect(mathClasses('![a $x$](u)')).toEqual(['math']);
+  });
+
+  // The line classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should open a math block at a `$$` that starts its line and is followed by no other `$` on it', () => {
+    expect(mathLines('$$\na\n$$')).toEqual([true, true, true]);
+    expect(mathLines('$$x\n\nb\n$$')).toEqual([true, true, true, true]);
+    expect(mathLines('$$x\n# h\n$$')).toEqual([true, true, true]);
+    expect(mathLines('$$x\na$$b\nc')).toEqual([true, true, false]);
+    expect(mathLines('$$ x')).toEqual([true]);
+    expect(mathLines('a\n$$](u)')).toEqual([false, true]);
+    expect(mathLines('a\n    $$x')).toEqual([false, true]);
+    expect(mathLines('$$x\n$$y\nz')).toEqual([true, true, false]);
+    for (const text of ['$$x$$](u)', '$$x $$', '$$x$\n$$', String.raw`$$x\$`, '$$x`$`', '$$$x', 'a $$x\nb\n$$\nc', '**$$x**', '> $$x\n> a\n> $$', '- $$x\n  a\n  $$']) {
+      expect(mathLines(text).some(Boolean)).toBe(false);
+    }
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
