@@ -246,6 +246,8 @@ const SETEXT_HEADER_RE = /^ {0,3}(?:={1,}|-{2,})\s*$/u;
 const TEXT_RE = /^[^#![\]*_\\<>` "'(~:=|$%^]+/u;
 const FENCED_CODE_RE = /^(~~~+|```+)[ \t]*([\w/+#-]*)[^\n`]*$/u;
 const LINK_DEF_RE = /^\s*\[[^\]]+?\]:.*$/u;
+// Obsidian: a definition whose label is a `^` with whitespace after it, which the editor reads as no footnote's.
+const PLAIN_LINK_DEFINITION_RE = /^\[\^(?:[^\]\\]|\\.)*?\s(?:[^\]\\]|\\.)*\]:/u;
 const PUNCTUATION = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~\p{P}]/u;
 const EXPANDED_TAB = ' '.repeat(4);
 // Obsidian: the marks of a footnote definition, which wear no other style.
@@ -463,8 +465,12 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.thisLine.hr = true;
       return TOKEN_TYPES.hr;
     }
-    // Obsidian: a footnote definition opens only at the start of its line.
-    return switchInline(stream, state, (isFirstTokenOnLine || !isEditor) && stream.peek() === '[' ? footnoteLink : state.inline);
+    // Obsidian: a footnote definition opens only at the start of its line, and a plain link definition where the fork's does.
+    return switchInline(
+      stream,
+      state,
+      (isFirstTokenOnLine || !isEditor || matchRe(stream, PLAIN_LINK_DEFINITION_RE, false)) && stream.peek() === '[' ? footnoteLink : state.inline
+    );
   }
 
   function openFence(stream: Stream, state: MarkdownState, match: RegExpMatchArray): null | string {
@@ -788,10 +794,13 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       stream.backUp(2);
     }
 
-    // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them, link text included.
+    /*
+     * Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them, link text included. A footnote
+     * reference inside does not stop the link from opening.
+     */
     if ((ch === '[' || ch === '!') && isExtensionsAllowed && !state.image) {
       const isEmbed = ch === '!';
-      const linkMatch = matchRe(stream, isEmbed ? /^\[\[([^\]]*?)\]\]/u : /^\[([^\]]*?)\]\]/u, false);
+      const linkMatch = matchRe(stream, isEmbed ? /^\[\[((?:[^\]]|\[\^[^\]\s]*\])*?)\]\]/u : /^\[((?:[^\]]|\[\^[^\]\s]*\])*?)\]\]/u, false);
       if (linkMatch) {
         stream.pos += isEmbed ? 2 : 1;
         state.internalLink = { embed: isEmbed, hasAlias: (linkMatch[1] ?? '').includes('|'), part: 'target' };
@@ -986,11 +995,16 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       link.part = 'alias';
       return `${context} hmd-internal-link link-alias-pipe${embed}`;
     }
+    // Obsidian: a footnote reference inside the link is a token of its own, read by the layer above.
     if (link.part === 'target') {
-      matchRe(stream, /^[^\]|]+/u);
+      if (!matchRe(stream, /^(?:[^\]|[]|\[(?!\^[^\]\s]*\]))+/u)) {
+        stream.next();
+      }
       return `${context} hmd-internal-link${embed}${link.hasAlias ? ' link-has-alias' : ''}`;
     }
-    matchRe(stream, /^[^\]]+/u);
+    if (!matchRe(stream, /^(?:[^\][]|\[(?!\^[^\]\s]*\]))+/u)) {
+      stream.next();
+    }
     return `${context} hmd-internal-link link-alias${embed}`;
   }
 
@@ -1048,11 +1062,13 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
   function footnoteLink(stream: Stream, state: MarkdownState): null | string {
     if (matchRe(stream, /^(?:[^\]\\]|\\.)*\]:/u, false)) {
-      state.f = footnoteLinkInside;
+      // Obsidian: a label that is a `^` with whitespace after it is no footnote's, and is read as the fork reads it.
+      const isFootnote = isEditor && !matchRe(stream, PLAIN_LINK_DEFINITION_RE, false);
+      state.f = isFootnote ? footnoteLinkInside : linkDefinitionInside;
       stream.next();
       setFormatting(state, 'link');
       state.linkText = true;
-      if (!isEditor) {
+      if (!isFootnote) {
         return getType(state);
       }
       // Obsidian: the `^` of a footnote definition belongs to the opening mark.
@@ -1068,15 +1084,44 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.f = footnoteUrl;
       state.inline = footnoteUrl;
       setFormatting(state, 'link');
-      const returnType = isEditor ? FOOTNOTE_MARK : getType(state);
       state.linkText = false;
-      return returnType;
+      return FOOTNOTE_MARK;
     }
 
     matchRe(stream, /^(?:[^\]\\]|\\.)+/u);
 
     // Obsidian: a definition's label wears the context styles, while its marks wear none.
-    return isEditor ? getType(state) : TOKEN_TYPES.linkText;
+    return getType(state);
+  }
+
+  function linkDefinitionInside(stream: Stream, state: MarkdownState): null | string {
+    if (stream.match(']:', true)) {
+      state.f = linkDefinitionUrl;
+      state.inline = linkDefinitionUrl;
+      setFormatting(state, 'link');
+      const returnType = getType(state);
+      state.linkText = false;
+      return returnType;
+    }
+
+    matchRe(stream, /^(?:[^\]\\]|\\.)+/u);
+    return TOKEN_TYPES.linkText;
+  }
+
+  function linkDefinitionUrl(stream: Stream, state: MarkdownState): null | string {
+    if (stream.eatSpace()) {
+      return null;
+    }
+    state.f = inlineNormal;
+    state.inline = inlineNormal;
+    // The fork: the next word is the URL, and a title may follow it, on this line or the next.
+    matchRe(stream, /^[^\s]+/u);
+    if (stream.peek() === undefined) {
+      state.linkTitle = true;
+    } else {
+      matchRe(stream, /^(?:\s+(?:"(?:[^"\\]|\\.)+"|'(?:[^'\\]|\\.)+'|\((?:[^)\\]|\\.)+\)))?/u);
+    }
+    return `${TOKEN_TYPES.linkHref} url`;
   }
 
   function footnoteUrl(stream: Stream, state: MarkdownState): null | string {
@@ -1085,16 +1130,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
     state.f = inlineNormal;
     state.inline = inlineNormal;
-    if (!isEditor) {
-      // The fork: the next word is the URL, and a title may follow it, on this line or the next.
-      matchRe(stream, /^[^\s]+/u);
-      if (stream.peek() === undefined) {
-        state.linkTitle = true;
-      } else {
-        matchRe(stream, /^(?:\s+(?:"(?:[^"\\]|\\.)+"|'(?:[^'\\]|\\.)+'|\((?:[^)\\]|\\.)+\)))?/u);
-      }
-      return `${TOKEN_TYPES.linkHref} url`;
-    }
     // Obsidian: only a URL is marked after a definition's `]:`; anything else is plain text. A title may follow the URL.
     if (matchRe(stream, URL_RE)) {
       state.f = footnoteUrlTitle;
