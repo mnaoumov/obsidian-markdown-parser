@@ -39,13 +39,13 @@ import {
 type Spans = Map<ObsidianNodeName, string[]>;
 
 const DEFAULT_ORACLES = [
-  'oracle/obsidian-1.14.4-seed-12345.json',
-  'oracle/obsidian-1.14.4-seed-777.json',
-  'oracle/obsidian-1.14.4-seed-4242.json',
-  'oracle/obsidian-1.14.4-seed-2026.json',
-  'oracle/obsidian-1.14.4-seed-9001.json',
-  'oracle/obsidian-1.14.4-seed-2718.json',
-  'oracle/obsidian-1.14.4-seed-31337.json'
+  'oracle/obsidian-1.14.5-seed-12345.json',
+  'oracle/obsidian-1.14.5-seed-777.json',
+  'oracle/obsidian-1.14.5-seed-4242.json',
+  'oracle/obsidian-1.14.5-seed-2026.json',
+  'oracle/obsidian-1.14.5-seed-9001.json',
+  'oracle/obsidian-1.14.5-seed-2718.json',
+  'oracle/obsidian-1.14.5-seed-31337.json'
 ];
 const NAME_COLUMN_WIDTH = 22;
 const COUNT_COLUMN_WIDTH = 7;

@@ -25,7 +25,7 @@ import {
   ObsidianNode
 } from './spec.ts';
 
-const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'obsidian-1.14.4-seed-12345.json');
+const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'obsidian-1.14.5-seed-12345.json');
 const EDITED_DOCUMENTS = 400;
 const EDIT_SEED = 7;
 const RANDOM_MULTIPLIER = 1_103_515_245;

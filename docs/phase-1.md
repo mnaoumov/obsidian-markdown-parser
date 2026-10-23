@@ -44,7 +44,7 @@ The classes are the output of a CodeMirror 5 line tokenizer, not of a tree. So t
 
 - `src/editor/markdown-mode.ts` ports the CodeMirror 5 `markdown` mode (MIT), as Obsidian forks it. Its editor layer carries HyperMD's options and token types, and Obsidian's additions to the inline flow: `%%` comments, `==highlights==`, `[[internal links]]` and embeds, footnote references, inline footnotes, block ids, callouts, fences in list items and in quotes.
 - `src/editor/obsidian-mode.ts` ports HyperMD (MIT), which wraps the markdown mode. It adds math, tables, footnote definitions, front matter, hashtags and the `line-*` classes, plus the Obsidian rules that act on whole lines.
-- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror` package, pinned to 5.64.0, the release Obsidian 1.14.4 bundles: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`. It also registers this port, without its editor layer, as the `markdown` mode, as Obsidian registers its fork.
+- `src/editor/sub-modes.ts` loads CodeMirror 5's own modes from the `codemirror` package, pinned to 5.64.0, the release Obsidian 1.14.4 and 1.14.5 bundle: `htmlmixed` for HTML, `stex` for math, `yaml` for front matter, and any fenced-code language CodeMirror 5 knows. They load through CodeMirror 5's `runmode.node.js`. It also registers this port, without its editor layer, as the `markdown` mode, as Obsidian registers its fork.
 - `src/editor/highlight.ts` runs the mode the way the editor does. It reads one line at a time, calls `blankLine` for empty lines, and never parses an empty last line.
 
 The oracle harness from Phase 0 is now TypeScript:

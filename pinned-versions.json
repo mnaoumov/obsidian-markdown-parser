@@ -15,7 +15,7 @@
   "pins": {
     "codemirror": {
       "section": "dependencies",
-      "why": "The class tokenizer runs CodeMirror 5's own sub-modes from this package, and their classes differ between CM5 releases. 5.64.0 is the release Obsidian 1.14.4 bundles, which is what the oracle corpora were measured against (AGENTS.md L4).",
+      "why": "The class tokenizer runs CodeMirror 5's own sub-modes from this package, and their classes differ between CM5 releases. 5.64.0 is the release Obsidian 1.14.4 and 1.14.5 bundle, which is what the oracle corpora were measured against (AGENTS.md L4).",
       "check": null,
       "manualCheck": "When the oracle is re-measured against a newer Obsidian, find the CodeMirror 5 release that build bundles and move the pin to it, then re-run the oracle-backed tests (src/editor/highlight.test.ts)."
     },
