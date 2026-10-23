@@ -61,11 +61,13 @@ The callout and the task are [Obsidian's edits](#obsidians-edits) to `blockquote
 
 ## Where the worker and the editor differ
 
-`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 29 of its 36 cases as the editor does. The other 7 are places where the worker reads the syntax differently, each checked against the worker itself:
+`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 30 of its 39 cases as the editor does. The other 9 are places where the worker reads the syntax differently, each checked against the worker itself, or for a highlight, which `CachedMetadata` does not list, against the reading view of Obsidian 1.14.5:
 
 | Case | The worker |
 | --- | --- |
 | `[[a]b]] and [[open\nclose]]` | `[[a]b]]` is a link: its content may hold a `]`. |
+| `a ===marked=== b` | `=marked` is highlighted: the first `==` opens, and the first `==` after a character that is no whitespace closes, leaving the last `=` as text. The editor reads each run of `=` as one mark. |
+| `a ==>x== b` | `>x` is highlighted: a `==` opens before any character that is no whitespace. The editor opens none before `>`. |
 | `a %%hidden [[link]]%% b` | Reads the syntax inside a comment, and lists the link. |
 | `%%\nhidden\n\n#not-a-tag\n%%\nafter` | Lists the tag inside the comment block. |
 | `a %%open\nto the end` | No comment: an inline comment closes on its line. |

@@ -40,7 +40,7 @@ const EXPECTED_SCORES = new Map<string, readonly [using: number, agreeing: numbe
   ['footnote definition', [455, 436]],
   ['footnote reference', [384, 360]],
   ['front matter', [2732, 2732]],
-  ['highlight', [2177, 1437]],
+  ['highlight', [2149, 1803]],
   ['inline footnote', [355, 342]],
   ['internal link', [1416, 1334]],
   ['math', [1775, 1357]],

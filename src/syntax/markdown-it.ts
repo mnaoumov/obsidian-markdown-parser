@@ -55,8 +55,10 @@ import {
   findCommentClose,
   findInternalLinkEnd,
   findMathClose,
+  highlightDelimiterBefore,
   isBlockId,
   isFrontMatterFence,
+  isHighlightDelimiter,
   isObsidianNodeName,
   matchCalloutMarker,
   matchFootnoteDefinition,
@@ -631,8 +633,9 @@ function checkFrontMatter(state: StateBlock, startLine: number, endLine: number,
 }
 
 /*
- * A highlight delimiter is a run of exactly two `=`. It opens before a non-space, and any of them closes; the pairs
- * are made once the content is read. A longer run is text: no `==` is read inside it.
+ * A highlight delimiter is a run of `=` that `isHighlightDelimiter` accepts. It opens before what
+ * `canOpenHighlightBefore` accepts, and any of them closes; the pairs are made once the content is read. Any other
+ * run is text: no delimiter is read inside it.
  */
 function checkHighlight(state: StateInline, isSilent: boolean): boolean {
   const start = state.pos;
@@ -641,10 +644,12 @@ function checkHighlight(state: StateInline, isSilent: boolean): boolean {
   }
   const size = equalsRunLength(state.src.slice(start, state.posMax));
   if (!isSilent) {
-    if (size === DELIMITER_SIZE) {
+    const after = start + size < state.posMax ? state.src[start + size] ?? '' : '';
+    // The inline content holds no container marks, and keeps the indentation of a later line.
+    const before = highlightDelimiterBefore(state.src.slice(state.src.lastIndexOf('\n', start - 1) + 1, start));
+    if (isHighlightDelimiter(before, size, after)) {
       const token = pushInline(state, 'text', '', 0, range(start, start + size));
-      token.content = '==';
-      const after = start + size < state.posMax ? state.src[start + size] ?? '' : '';
+      token.content = state.src.slice(start, start + size);
       highlightDelimiters.set(token, { canOpen: canOpenHighlightBefore(after) });
     } else {
       state.pending += state.src.slice(start, start + size);
@@ -1042,16 +1047,16 @@ function pairHighlights(state: StateInline): void {
       continue;
     }
     const mark = new state.Token(ObsidianNode.HighlightMark, '', 0);
-    mark.markup = '==';
+    mark.markup = token.content;
     contentRanges.set(mark, contentRanges.get(token) ?? range(0, 0));
     if (openers.has(token)) {
       const open = new state.Token(ObsidianNode.Highlight + OPEN_SUFFIX, 'mark', 1);
-      open.markup = '==';
+      open.markup = token.content;
       contentRanges.set(open, range(contentRanges.get(token)?.from ?? 0, contentRanges.get(closer)?.to ?? 0));
       tokens.push(open, mark);
     } else {
       const close = new state.Token(ObsidianNode.Highlight + CLOSE_SUFFIX, 'mark', -1);
-      close.markup = '==';
+      close.markup = token.content;
       tokens.push(mark, close);
     }
   }

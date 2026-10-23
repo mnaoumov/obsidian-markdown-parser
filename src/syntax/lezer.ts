@@ -51,8 +51,10 @@ import {
   findCommentClose,
   findInternalLinkEnd,
   findMathClose,
+  highlightDelimiterBefore,
   isBlockId,
   isFrontMatterFence,
+  isHighlightDelimiter,
   matchCalloutMarker,
   matchFootnoteDefinition,
   matchFootnoteReference,
@@ -548,13 +550,15 @@ function parseHighlight(cx: InlineContext, next: number, pos: number): number {
   if (next !== Char.Equals) {
     return -1;
   }
-  const run = equalsRunLength(cx.slice(pos, pos + DELIMITER_SIZE + 1));
-  if (run !== DELIMITER_SIZE) {
-    // A single `=` is text, and so is a longer run, which is consumed whole so that no `==` is read inside it.
-    return run === 1 ? -1 : pos + equalsRunLength(cx.slice(pos, lineEndOf(cx, pos)));
+  const end = pos + equalsRunLength(cx.slice(pos, lineEndOf(cx, pos)));
+  const after = cx.slice(end, end + 1);
+  // The inline text holds a container's marks on a later line as spaces.
+  const before = highlightDelimiterBefore(cx.slice(cx.offset + cx.text.lastIndexOf('\n', pos - cx.offset - 1) + 1, pos));
+  if (!isHighlightDelimiter(before, end - pos, after)) {
+    // A single `=` is text, and so is any other run that is no delimiter, which is consumed whole.
+    return end - pos === 1 ? -1 : end;
   }
-  const after = cx.slice(pos + DELIMITER_SIZE, pos + DELIMITER_SIZE + 1);
-  return cx.addDelimiter(HIGHLIGHT_DELIMITER, pos, pos + DELIMITER_SIZE, canOpenHighlightBefore(after), true);
+  return cx.addDelimiter(HIGHLIGHT_DELIMITER, pos, end, canOpenHighlightBefore(after), true);
 }
 
 function parseInlineFootnote(cx: InlineContext, next: number, pos: number): number {

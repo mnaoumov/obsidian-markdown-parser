@@ -61,6 +61,7 @@ import {
   findMathClose,
   isBlockId,
   isFrontMatterFence,
+  isHighlightDelimiter,
   matchCalloutMarker,
   matchFootnoteDefinition,
   matchFootnoteReference,
@@ -1017,11 +1018,13 @@ function tokenizeFrontMatter(context: TokenizeContext, effects: Effects, ok: Sta
 }
 
 /*
- * A highlight delimiter is a run of exactly two `=`. It opens before a non-space, and any of them closes. A longer run
- * is text: no `==` is read inside it.
+ * A highlight delimiter is a run of `=` that `isHighlightDelimiter` accepts. It opens before what
+ * `canOpenHighlightBefore` accepts, and any of them closes. Any other run is text: no delimiter is read inside it.
  */
 function tokenizeHighlight(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   let size = 0;
+  // A line's text holds none of its indentation, so a space before the run follows text on its line.
+  const before = context.previous === Char.Space ? ' ' : '';
   return start;
 
   function start(code: Code): State | undefined {
@@ -1038,7 +1041,7 @@ function tokenizeHighlight(context: TokenizeContext, effects: Effects, ok: State
       size++;
       return more;
     }
-    if (size !== DELIMITER_SIZE) {
+    if (!isHighlightDelimiter(before, size, charOf(code))) {
       return nok(code);
     }
     const token = effects.exit(ObsidianToken.HighlightSequence);
