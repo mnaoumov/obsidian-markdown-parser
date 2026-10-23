@@ -8,7 +8,10 @@
  * itself contains `_` (a `tag-<name>` of a tag with an underscore) splits the same way on both.
  */
 
-import type { HighlightedLine } from '../editor/highlight.ts';
+import type {
+  EditorClassOptions,
+  HighlightedLine
+} from '../editor/highlight.ts';
 import type {
   OracleDocument,
   OracleNode
@@ -34,6 +37,11 @@ export interface ClassSets {
    */
   readonly tok: readonly ReadonlySet<string>[];
 }
+
+/**
+ * Options of {@link compareDocument}: which Obsidian release's classes to predict.
+ */
+export type CompareDocumentOptions = EditorClassOptions;
 
 /**
  * One disagreement.
@@ -129,13 +137,14 @@ export function compareCodeUnits(a: string, b: string): number {
  * Compares the prediction for a document with the oracle.
  *
  * @param oracleDocument - The oracle document.
+ * @param options - Which Obsidian release's classes to predict: the one the oracle was read from.
  * @returns The comparison.
  */
-export function compareDocument(oracleDocument: OracleDocument): DocumentComparison {
+export function compareDocument(oracleDocument: OracleDocument, options: CompareDocumentOptions = {}): DocumentComparison {
   const { text } = oracleDocument;
   const starts = lineStartsOf(text);
   const oracle = classSetsOf(text, oracleDocument.nodes);
-  const predicted = classSetsOf(text, toNodes(highlight(text)));
+  const predicted = classSetsOf(text, toNodes(highlight(text, options)));
   const differences: Difference[] = [];
   function compare(o: ReadonlySet<string> | undefined, p: ReadonlySet<string> | undefined, line: number, pos: null | number): void {
     const oracleClasses = o ?? [];

@@ -130,8 +130,8 @@ function classRow(seed: number): DriftRow {
   const to = readOracleFile(classOracleFileName(seed, toVersion), toDirectory) as OracleFile;
   return {
     ...compareReadings(`classes, seed ${String(seed)}`, classReadings(from.docs), classReadings(to.docs)),
-    parserFrom: scoreClasses(from.docs),
-    parserTo: scoreClasses(to.docs)
+    parserFrom: scoreClasses(from.docs, fromVersion),
+    parserTo: scoreClasses(to.docs, toVersion)
   };
 }
 
@@ -204,8 +204,8 @@ function probeRow(): DriftRow {
   return compareReadings('quirk probes, reading view and sections', readings(from), readings(to));
 }
 
-function scoreClasses(docs: readonly OracleDocument[]): Score {
-  return { failing: docs.filter((document) => compareDocument(document).differences.length > 0).map((document) => classKey(document)), total: docs.length };
+function scoreClasses(docs: readonly OracleDocument[], obsidianVersion: string): Score {
+  return { failing: docs.filter((document) => compareDocument(document, { obsidianVersion }).differences.length > 0).map((document) => classKey(document)), total: docs.length };
 }
 
 function scoreMetadata(items: readonly MetadataItem[]): Score {
@@ -228,8 +228,8 @@ function specRows(): DriftRow[] {
   return [
     {
       ...compareReadings('spec, editor classes', readings(from, (read) => [read.editorText, read.editorNodes]), readings(to, (read) => [read.editorText, read.editorNodes])),
-      parserFrom: scoreClasses(from.examples.map((read) => specEditorDocument(read))),
-      parserTo: scoreClasses(to.examples.map((read) => specEditorDocument(read)))
+      parserFrom: scoreClasses(from.examples.map((read) => specEditorDocument(read)), fromVersion),
+      parserTo: scoreClasses(to.examples.map((read) => specEditorDocument(read)), toVersion)
     },
     {
       ...compareReadings('spec, worker metadata', readings(from, (read) => read.metadata), readings(to, (read) => read.metadata)),

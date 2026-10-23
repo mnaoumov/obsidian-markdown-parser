@@ -38,7 +38,10 @@ import {
   Tree
 } from '@lezer/common';
 
-import type { LineState } from './highlight.ts';
+import type {
+  EditorClassOptions,
+  LineState
+} from './highlight.ts';
 
 import { compareCodeUnits } from '../oracle/score.ts';
 import {
@@ -50,9 +53,10 @@ import {
 } from './highlight.ts';
 
 /**
- * Options of {@link createEditorClassLanguage}.
+ * Options of {@link createEditorClassLanguage}. A host inside Obsidian passes the app's `apiVersion` as
+ * `obsidianVersion`.
  */
-export interface CreateEditorClassLanguageOptions {
+export interface CreateEditorClassLanguageOptions extends EditorClassOptions {
   /**
    * How many characters a chunk spans before it is closed, at a line end. A chunk is the unit of reuse after an edit and
    * of work per `advance` call.
@@ -150,6 +154,7 @@ const typeIds = new Map<string, number>();
 
 class EditorClassHost {
   public readonly chunkSize: number;
+  public readonly classOptions: EditorClassOptions;
   public readonly lineClassNodeProperty: NodeProp<string> | undefined;
   public readonly tokenClassNodeProperty: NodeProp<string> | undefined;
   public readonly topNode: NodeType;
@@ -159,6 +164,7 @@ class EditorClassHost {
   public constructor(options: CreateEditorClassLanguageOptions, data: ReturnType<typeof defineLanguageFacet>) {
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
     this.lineClassNodeProperty = options.lineClassNodeProperty;
+    this.classOptions = options;
     this.tokenClassNodeProperty = options.tokenClassNodeProperty;
     // eslint-disable-next-line unicorn/name-replacements -- Lezer's option name.
     this.topNode = NodeType.define({ id: typeArray.length, name: 'Document', props: [[languageDataProp, data]], top: true });
@@ -207,7 +213,7 @@ class EditorClassParse implements PartialParse {
     if (context && this.parsedPos < context.viewport.from - MAX_DISTANCE_BEFORE_VIEWPORT && this.to >= context.viewport.from) {
       const line = context.state.doc.lineAt(context.viewport.from);
       context.skipUntilInView(this.parsedPos, line.from);
-      this.state = startLineState();
+      this.state = startLineState(this.host.classOptions);
       this.lineIndex = line.number - 1;
       this.parsedPos = line.from;
     }
@@ -289,7 +295,7 @@ class EditorClassParse implements PartialParse {
         return { lineIndex: found.info.lineIndex, state: copyLineState(found.info.state), tree };
       }
     }
-    return { lineIndex: 0, state: startLineState(), tree: Tree.empty };
+    return { lineIndex: 0, state: startLineState(this.host.classOptions), tree: Tree.empty };
   }
 
   private finish(): Tree {

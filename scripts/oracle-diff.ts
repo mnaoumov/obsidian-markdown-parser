@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Scores the tokenizer against an oracle file.
+ * Scores the tokenizer against an oracle file, giving the classes of the Obsidian version the file was read from.
  *
  * Usage:
  * - `jiti scripts/oracle-diff.ts [--oracle <file>]`: the number of exact documents, and the classes that disagree most.
@@ -52,6 +52,7 @@ const { positionals, values } = parseArgs({
 
 const oracle = JSON.parse(readFileSync(values.oracle, 'utf-8')) as OracleFile;
 const docs = oracle.docs.filter((d) => values.set === undefined || d.set === values.set);
+const classOptions = oracle.meta.appVersion === null ? {} : { obsidianVersion: oracle.meta.appVersion };
 
 if (values.show) {
   for (const id of positionals) {
@@ -60,7 +61,7 @@ if (values.show) {
       console.log(`no document ${id}`);
       continue;
     }
-    show(document.text, compareDocument(document), id);
+    show(document.text, compareDocument(document, classOptions), id);
   }
 } else {
   let exact = 0;
@@ -68,7 +69,7 @@ if (values.show) {
   const byClass = new Map<string, ClassScore>();
   const bySet = new Map<string, SetScore>();
   for (const document of docs) {
-    const { differences } = compareDocument(document);
+    const { differences } = compareDocument(document, classOptions);
     const scoreOfSet = bySet.get(document.set) ?? { exact: 0, total: 0 };
     scoreOfSet.total++;
     if (differences.length === 0) {

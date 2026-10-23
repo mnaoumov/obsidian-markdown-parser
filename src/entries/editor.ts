@@ -12,8 +12,10 @@
 
 export type {
   ClassSpan,
+  EditorClassOptions,
   HighlightedLine,
   HighlightLinesParams,
+  HighlightOptions,
   LineState
 } from '../editor/highlight.ts';
 

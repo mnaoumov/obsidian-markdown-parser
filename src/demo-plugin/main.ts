@@ -40,6 +40,7 @@ import {
   ViewPlugin
 } from '@codemirror/view';
 import {
+  apiVersion,
   MarkdownView,
   Modal,
   Notice,
@@ -236,7 +237,9 @@ const FRAME_MS = 16;
 // The public package's types do not have Obsidian's two props, so the module is read through its own shape.
 const { ensureSyntaxTree, language } = codeMirrorLanguage;
 const obsidianLanguageModule = codeMirrorLanguage as ObsidianLanguageModule;
+// The classes of the running app's release.
 const parserLanguage = createEditorClassLanguage({
+  obsidianVersion: apiVersion,
   ...(obsidianLanguageModule.lineClassNodeProp && { lineClassNodeProperty: obsidianLanguageModule.lineClassNodeProp }),
   ...(obsidianLanguageModule.tokenClassNodeProp && { tokenClassNodeProperty: obsidianLanguageModule.tokenClassNodeProp })
 });

@@ -128,6 +128,8 @@ export interface MarkdownState {
   indentedCode: boolean;
   inline: TokenFunction;
   internalLink: InternalLinkState | null;
+  // Obsidian 1.15: a mark closing emphasis, strikethrough or a code span wears `formatting-<kind>-end`.
+  isFormattingEndMarked: boolean;
   lineStartQuote: number;
   linkHref: boolean;
   linkText: boolean;
@@ -699,7 +701,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       const run = matchRe(stream, /^`+/u);
       if (run && run[0].length >= 3) {
         state.quoteFence = 0;
-        return `${getType(state) ?? ''} formatting formatting-code inline-code`;
+        return `${getType(state) ?? ''} formatting formatting-code${state.isFormattingEndMarked ? ' formatting-code-end' : ''} inline-code`;
       }
       // Anything else is read one character at a time, so a closing heading mark is still seen.
       if (!run) {
@@ -730,6 +732,9 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         return getType(state);
       }
       if (count === state.code) {
+        if (state.isFormattingEndMarked) {
+          setFormatting(state, ['code', 'code-end']);
+        }
         const t = getType(state);
         state.code = 0;
         return t;
@@ -923,7 +928,14 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         }
       }
       if (nextStrong !== null || nextEm !== null) {
-        if (nextEm === null) {
+        if (state.isFormattingEndMarked) {
+          setFormatting(state, [
+            ...nextStrong === null ? [] : ['strong'],
+            ...nextStrong === false ? ['strong-end'] : [],
+            ...nextEm === null ? [] : ['em'],
+            ...nextEm === false ? ['em-end'] : []
+          ]);
+        } else if (nextEm === null) {
           setFormatting(state, 'strong');
         } else if (nextStrong === null) {
           setFormatting(state, 'em');
@@ -954,7 +966,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
     if (ch === '~' && isStrikethrough && stream.eatWhile(ch)) {
       if (state.strikethrough) {
-        setFormatting(state, 'strikethrough');
+        setFormatting(state, state.isFormattingEndMarked ? ['strikethrough', 'strikethrough-end'] : 'strikethrough');
         const t = getType(state);
         state.strikethrough = false;
         return t;
@@ -1177,6 +1189,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         indentedCode: false,
         inline: inlineNormal,
         internalLink: null,
+        isFormattingEndMarked: false,
         lineStartQuote: 0,
         linkHref: false,
         linkText: false,

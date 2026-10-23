@@ -23,11 +23,13 @@ import type {
   OracleNode
 } from '../oracle/oracle-file.ts';
 import type { ClassSets } from '../oracle/score.ts';
+import type { EditorClassOptions } from './highlight.ts';
 
 import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
   MAIN_CLASS_ORACLE_SEED,
+  oracleObsidianVersion,
   readOracleFile
 } from '../oracle/oracle-location.ts';
 import {
@@ -159,8 +161,8 @@ function sortedSets(sets: readonly ReadonlySet<string>[]): string[][] {
   return sets.map((set) => [...set].toSorted(compareCodeUnits));
 }
 
-function tokenizerClassSets(text: string): ClassSets {
-  return classSetsOf(text, toNodes(highlight(text)));
+function tokenizerClassSets(text: string, options: EditorClassOptions = {}): ClassSets {
+  return classSetsOf(text, toNodes(highlight(text, options)));
 }
 
 // The tree in the oracle's encoding: pre-order, without the root, as `scripts/oracle.ts` reads the live editor's.
@@ -188,10 +190,12 @@ function treeNodes(tree: Tree): OracleNode[] {
 describe('editorClassLanguage', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
     it(`should match the live editor's tree node for node on every document of ${name} but the known differences`, () => {
+      const options = { obsidianVersion: oracleObsidianVersion() };
+      const language = createEditorClassLanguage(options);
       const differing: string[] = [];
       for (const document of readOracle(name).docs) {
-        const nodes = treeNodes(parse(editorClassLanguage, document.text));
-        expect(encodeClassSets(classSetsOf(document.text, nodes))).toBe(encodeClassSets(tokenizerClassSets(document.text)));
+        const nodes = treeNodes(parse(language, document.text));
+        expect(encodeClassSets(classSetsOf(document.text, nodes))).toBe(encodeClassSets(tokenizerClassSets(document.text, options)));
         if (JSON.stringify(nodes) !== JSON.stringify(document.nodes)) {
           differing.push(document.id);
         }
@@ -229,6 +233,15 @@ describe('editorClassLanguage', () => {
     const plain = parse(editorClassLanguage, '# Title').cursor();
     plain.firstChild();
     expect(plain.type.prop(lineClassNodeProperty)).toBeUndefined();
+  });
+
+  it('should give the classes of the Obsidian version it is made for', () => {
+    const text = '`a` **b**';
+    const language = createEditorClassLanguage({ obsidianVersion: '1.15.0' });
+    const nodes = treeNodes(parse(language, text));
+    expect(nodes.map((node) => node[3])).toContain('formatting_formatting-code_formatting-code-end_inline-code');
+    expect(encodeClassSets(classSetsOf(text, nodes))).toBe(encodeClassSets(tokenizerClassSets(text, { obsidianVersion: '1.15.0' })));
+    expect(nodeNames(text)).toContain('`=formatting_formatting-code_inline-code');
   });
 
   it('should merge a token into the one before it when their classes are the same, as `StreamLanguage` does', () => {
