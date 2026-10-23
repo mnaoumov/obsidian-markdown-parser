@@ -45,6 +45,12 @@ function readOracle(name: string): OracleFile {
   return readOracleFile(name) as OracleFile;
 }
 
+// The distinct classes of the span at a position, sorted.
+function spanClassesAt(text: string, position: number): string {
+  const classes = highlight(text).flatMap((line) => line.spans).find((s) => s.from <= position && position < s.to)?.classes ?? [];
+  return [...new Set(classes)].toSorted(compareCodeUnits).join(' ');
+}
+
 describe('highlight', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
     it(`should match the live editor on every document of ${name} but the known differences`, () => {
@@ -104,39 +110,73 @@ describe('highlight', () => {
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read an inline footnote\'s body as inline markdown, up to a `]` outside a link or code', () => {
-    function classesAt(text: string, position: number): string {
-      const classes = highlight(text).flatMap((line) => line.spans).find((s) => s.from <= position && position < s.to)?.classes ?? [];
-      return [...new Set(classes)].toSorted(compareCodeUnits).join(' ');
-    }
     const start = 'footref formatting-inline-footnote inline-footnote inline-footnote-start';
     const end = 'footref formatting-inline-footnote inline-footnote inline-footnote-end';
-    expect(classesAt('^[a **b**]', 0)).toBe(start);
-    expect(classesAt('^[a **b**]', 4)).toBe('footref formatting formatting-strong inline-footnote strong');
-    expect(classesAt('^[a **b**]', 9)).toBe(end);
-    expect(classesAt('^[a ==b== `c`]', 11)).toBe('footref inline-code inline-footnote');
-    expect(classesAt('^[a #tag c]', 5)).toBe('footref hashtag hashtag-end inline-footnote meta tag-tag');
+    expect(spanClassesAt('^[a **b**]', 0)).toBe(start);
+    expect(spanClassesAt('^[a **b**]', 4)).toBe('footref formatting formatting-strong inline-footnote strong');
+    expect(spanClassesAt('^[a **b**]', 9)).toBe(end);
+    expect(spanClassesAt('^[a ==b== `c`]', 11)).toBe('footref inline-code inline-footnote');
+    expect(spanClassesAt('^[a #tag c]', 5)).toBe('footref hashtag hashtag-end inline-footnote meta tag-tag');
     // Math wears neither footnote class.
-    expect(classesAt('^[a $x$ b]', 4)).toBe('formatting formatting-math formatting-math-begin keyword math');
+    expect(spanClassesAt('^[a $x$ b]', 4)).toBe('formatting formatting-math formatting-math-begin keyword math');
     // A `]` closing link text, a code span or a footnote reference.
-    expect(classesAt('^[a [b] c]', 6)).toBe('footref formatting formatting-link hmd-barelink inline-footnote link');
-    expect(classesAt('^[a [b] c]', 9)).toBe(end);
-    expect(classesAt('^[a `]` b]', 5)).toBe('footref inline-code inline-footnote');
-    expect(classesAt('^[a [^1] c]', 7)).toBe(`${end} formatting formatting-link formatting-link-end hmd-barelink`.split(' ').toSorted(compareCodeUnits).join(' '));
-    expect(classesAt('^[a [^1] c]', 9)).toBe('');
+    expect(spanClassesAt('^[a [b] c]', 6)).toBe('footref formatting formatting-link hmd-barelink inline-footnote link');
+    expect(spanClassesAt('^[a [b] c]', 9)).toBe(end);
+    expect(spanClassesAt('^[a `]` b]', 5)).toBe('footref inline-code inline-footnote');
+    expect(spanClassesAt('^[a [^1] c]', 7)).toBe(`${end} formatting formatting-link formatting-link-end hmd-barelink`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(spanClassesAt('^[a [^1] c]', 9)).toBe('');
     // No nested inline footnote, and none past the end of the line.
-    expect(classesAt('^[a ^[b] c]', 4)).toBe('footref inline-footnote');
-    expect(classesAt('^[a ^[b] c]', 10)).toBe(end);
-    expect(classesAt('^[a', 2)).toBe('footref inline-footnote');
+    expect(spanClassesAt('^[a ^[b] c]', 4)).toBe('footref inline-footnote');
+    expect(spanClassesAt('^[a ^[b] c]', 10)).toBe(end);
+    expect(spanClassesAt('^[a', 2)).toBe('footref inline-footnote');
     expect(highlight('^[a\nb]')[1]?.spans).toEqual([]);
     // Inside link text, `^[` still opens one, and the link text's `]` comes first.
-    expect(classesAt('[a ^[b $x$]](u)', 3)).toBe(`${start} hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
-    expect(classesAt('[a ^[b $x$]](u)', 11)).toBe(end);
+    expect(spanClassesAt('[a ^[b $x$]](u)', 3)).toBe(`${start} hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(spanClassesAt('[a ^[b $x$]](u)', 11)).toBe(end);
     // The closing mark takes the classes of the markdown token after it, and what that token does to the state.
-    expect(classesAt('^[a][b]', 3)).toBe(`${end} formatting formatting-link hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
-    expect(classesAt('^[a][b]', 4)).toBe('hmd-barelink link');
-    expect(classesAt('^[a ==b] c==', 9)).toBe('highlight');
+    expect(spanClassesAt('^[a][b]', 3)).toBe(`${end} formatting formatting-link hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(spanClassesAt('^[a][b]', 4)).toBe('hmd-barelink link');
+    expect(spanClassesAt('^[a ==b] c==', 9)).toBe('highlight');
     // HTML ends the markdown inline flow, and the footnote classes with it.
-    expect(classesAt('^[a <b> c]', 9)).toBe('');
+    expect(spanClassesAt('^[a <b> c]', 9)).toBe('');
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should read `[^label]` as a footnote reference when its label holds no `]` and no whitespace', () => {
+    const start = 'footref formatting formatting-link formatting-link-start hmd-barelink';
+    const end = 'footref formatting formatting-link formatting-link-end hmd-barelink';
+    expect(spanClassesAt('[^a]', 0)).toBe(start);
+    expect(spanClassesAt('[^a]', 2)).toBe('footref hmd-barelink');
+    expect(spanClassesAt('[^a]', 3)).toBe(end);
+    // An empty label.
+    expect(spanClassesAt('[^]', 1)).toBe(start);
+    expect(spanClassesAt('[^]', 2)).toBe(end);
+    // Whitespace in the label makes link text.
+    expect(spanClassesAt('[^a b]', 0)).toBe('formatting formatting-link hmd-barelink link');
+    expect(spanClassesAt('[^a b]', 2)).toBe('hmd-barelink link');
+    expect(spanClassesAt('[^ a]', 3)).toBe('hmd-barelink link');
+    expect(spanClassesAt('[^a\tb]', 2)).toBe('hmd-barelink link');
+    // The markdown token read after `[^` changes the state, so a `[` there opens link text.
+    expect(spanClassesAt('[^[a]', 0)).toBe('formatting formatting-link formatting-link-start hmd-barelink link');
+    expect(spanClassesAt('[^[a]', 2)).toBe('hmd-barelink link');
+    expect(spanClassesAt('[^%%a]', 3)).toBe(`comment comment-start ${start}`);
+    expect(spanClassesAt('[^%%a]', 4)).toBe('comment footref hmd-barelink');
+    // A token read inside the label changes nothing, and an escape does not hide the closing `]`.
+    expect(spanClassesAt('[^a[b]', 3)).toBe('footref formatting formatting-link hmd-barelink link');
+    expect(spanClassesAt('[^a[b]', 4)).toBe('footref hmd-barelink');
+    expect(spanClassesAt('[^a[b]', 5)).toBe(end);
+    expect(spanClassesAt(String.raw`[^a\]b]`, 3)).toBe('footref formatting-escape hmd-barelink');
+    expect(spanClassesAt(String.raw`[^a\]b]`, 4)).toBe(end);
+    expect(spanClassesAt(String.raw`[^a\]b]`, 5)).toBe('');
+    expect(spanClassesAt(String.raw`[^\]`, 1)).toBe('footref formatting formatting-escape formatting-link formatting-link-start hmd-barelink');
+    expect(spanClassesAt('[^$x$]', 2)).toBe('footref hmd-barelink');
+    // Inside link text, the closing `]` does not close the link text.
+    expect(spanClassesAt('[a [^b] c]', 6)).toBe(`${end} link`);
+    expect(spanClassesAt('[a [^b] c]', 7)).toBe('link');
+    expect(spanClassesAt('[a [^b] c]', 9)).toBe('formatting formatting-link link');
+    // An unclosed label, and a block id after it.
+    expect(spanClassesAt('[^a', 0)).toBe('formatting formatting-link hmd-barelink link');
+    expect(spanClassesAt('[^a', 1)).toBe('blockid');
   });
 
   // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.

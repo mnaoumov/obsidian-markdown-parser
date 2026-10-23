@@ -112,7 +112,6 @@ export interface MarkdownState {
   fencedEndRE: null | RegExp;
   fenceIndent: number;
   fenceInList: boolean;
-  footref: boolean;
   formatting: Formatting;
   hashtag: boolean;
   header: number;
@@ -802,20 +801,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       }
     }
 
-    // Obsidian: `[^footnote]` references. An inline footnote is the layer above's.
-    if (isExtensionsAllowed && !state.linkText && !state.image && ch === '[' && stream.peek() === '^' && matchRe(stream, /^\^([^\]]+)\]/u, false)) {
-      stream.next();
-      state.footref = true;
-      state.f = footref;
-      state.inline = footref;
-      return `${getType(state) ?? ''} footref formatting formatting-link formatting-link-start hmd-barelink`;
-    }
-
-    // Obsidian: a `^block-id` ending the line.
-    if (ch === '^' && isEditor && matchRe(stream, /^[A-Za-z0-9-]+$/u)) {
-      return 'blockid';
-    }
-
     if (ch === '!' && matchRe(stream, /^\[[^\]]*\] ?(?:\(|\[)/u, false)) {
       state.imageMarker = true;
       state.image = true;
@@ -983,18 +968,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
 
     return getType(state);
-  }
-
-  function footref(stream: Stream, state: MarkdownState): null | string {
-    const context = getType(state) ?? '';
-    if (stream.eat(']')) {
-      state.footref = false;
-      state.f = inlineNormal;
-      state.inline = inlineNormal;
-      return `${context} footref formatting formatting-link formatting-link-end hmd-barelink`;
-    }
-    matchRe(stream, /^[^\]]+/u);
-    return `${context} footref hmd-barelink`;
   }
 
   function internalLink(stream: Stream, state: MarkdownState): null | string {
@@ -1165,7 +1138,6 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         fencedEndRE: null,
         fenceIndent: 0,
         fenceInList: false,
-        footref: false,
         formatting: false,
         hashtag: false,
         header: 0,
