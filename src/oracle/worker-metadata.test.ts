@@ -10,6 +10,7 @@ import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
 import { parseMetadata } from '../metadata/metadata.ts';
 import {
+  CORPUS_TEST_TIMEOUT_MS,
   readOracleFile,
   specOracleFileName,
   workerMetadataOracleFileName
@@ -20,12 +21,12 @@ const WORKER_ORACLE = readOracleFile(workerMetadataOracleFileName()) as WorkerMe
 const SPEC_ORACLE = readOracleFile(specOracleFileName()) as SpecOracleFile;
 
 describe('the CachedMetadata projection', () => {
-  it('gives the metadata worker\'s whole metadata on every document of the worker oracle', () => {
+  it('gives the metadata worker\'s whole metadata on every document of the worker oracle', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = WORKER_ORACLE.docs.filter((document) => JSON.stringify(parseMetadata(document.text)) !== JSON.stringify(document.metadata));
     expect(differing.map((document) => document.text)).toEqual([]);
   });
 
-  it('gives the live app\'s whole metadata on every spec example', () => {
+  it('gives the live app\'s whole metadata on every spec example', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = SPEC_ORACLE.examples.filter((read) => JSON.stringify(parseMetadata(read.markdown)) !== JSON.stringify(read.metadata));
     expect(differing.map((read) => exampleKey(read))).toEqual([]);
   });

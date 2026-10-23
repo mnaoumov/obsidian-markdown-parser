@@ -22,6 +22,7 @@ import {
 import type { OracleFile } from '../oracle/oracle-file.ts';
 import type { OutlineEntry } from './conformance.ts';
 
+import { CORPUS_TEST_TIMEOUT_MS } from '../oracle/oracle-location.ts';
 import { CONFORMANCE_CASES } from './conformance.ts';
 import { obsidianParser } from './lezer.ts';
 import { micromarkObsidianMarkdown } from './micromark.ts';
@@ -120,7 +121,7 @@ describe('micromarkObsidianSyntax', () => {
     expect(outlineOf('> [!note] Title\nlazy')[0]).toEqual([N.Callout, '> [!note] Title\nlazy']);
   });
 
-  it('should agree with the @lezer/markdown extensions on the oracle documents', () => {
+  it('should agree with the @lezer/markdown extensions on the oracle documents', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const oracle = JSON.parse(readFileSync(ORACLE_FILE, 'utf-8')) as OracleFile;
     const agreeing = oracle.docs.filter((document) => lezerSpansOf(document.text).join('\n') === micromarkSpansOf(document.text).join('\n'));
     expect(agreeing).toHaveLength(AGREEING_DOCUMENTS);

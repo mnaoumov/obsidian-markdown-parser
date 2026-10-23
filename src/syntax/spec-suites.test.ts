@@ -32,6 +32,7 @@ import type {
   ObsidianSyntaxPreset
 } from './options.ts';
 
+import { CORPUS_TEST_TIMEOUT_MS } from '../oracle/oracle-location.ts';
 import { parseWithLinkReferences } from './lezer-commonmark.ts';
 import { renderLezerHtml } from './lezer-html.ts';
 import { createObsidianParser } from './lezer.ts';
@@ -314,21 +315,21 @@ describe('the vendored spec suites', () => {
 });
 
 describe('the mdast tree', () => {
-  it.each(PRESETS)('is built for every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+  it.each(PRESETS)('is built for every example of both suites with all of Obsidian\'s quirks on from the %s preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, (preset) => {
     expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => parseMdast(example.markdown, { ...OBSIDIAN_QUIRKS, preset }))).not.toThrow();
   });
 });
 
 describe.each(ADAPTERS)('%s', (adapter) => {
-  it('passes the CommonMark 0.31.2 spec suite with the commonmark preset', () => {
+  it('passes the CommonMark 0.31.2 spec suite with the commonmark preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     expect(failingExamples(COMMONMARK, renderer(adapter, { preset: 'commonmark' }, false))).toEqual(COMMONMARK_FAILURES[adapter]);
   });
 
-  it('passes the GFM spec\'s extension examples with the gfm preset', () => {
+  it('passes the GFM spec\'s extension examples with the gfm preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     expect(failingExamples(GFM_EXTENSIONS, renderer(adapter, { preset: 'gfm' }, true))).toEqual(GFM_FAILURES[adapter]);
   });
 
-  it.each(PRESETS)('changes only the examples using a flag\'s syntax when the flag is toggled from the %s preset', (preset) => {
+  it.each(PRESETS)('changes only the examples using a flag\'s syntax when the flag is toggled from the %s preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, (preset) => {
     const base = structure(adapter, { preset });
     const baseStructures = COMMONMARK.map((example) => base(example.markdown));
     const changes: Partial<Record<keyof ObsidianSyntaxFlags, number[]>> = {};
@@ -339,7 +340,7 @@ describe.each(ADAPTERS)('%s', (adapter) => {
     expect(changes).toEqual(FLAG_CHANGES);
   });
 
-  it.each(PRESETS)('changes only the examples showing a quirk when the quirk is turned on from the %s preset', (preset) => {
+  it.each(PRESETS)('changes only the examples showing a quirk when the quirk is turned on from the %s preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, (preset) => {
     const base = renderer(adapter, { preset }, false);
     const baseHtml = COMMONMARK.map((example) => base(example.markdown));
     const changes: Partial<Record<keyof ObsidianQuirkFlags, number[]>> = {};
@@ -350,7 +351,7 @@ describe.each(ADAPTERS)('%s', (adapter) => {
     expect(changes).toEqual(QUIRK_CHANGES[adapter]);
   });
 
-  it('changes only the GFM extension examples showing a quirk when the quirk is turned on from the gfm preset', () => {
+  it('changes only the GFM extension examples showing a quirk when the quirk is turned on from the gfm preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const base = renderer(adapter, { preset: 'gfm' }, true);
     const baseHtml = GFM_EXTENSIONS.map((example) => base(example.markdown));
     const changes: Partial<Record<keyof ObsidianQuirkFlags, number[]>> = {};
@@ -364,12 +365,12 @@ describe.each(ADAPTERS)('%s', (adapter) => {
     expect(changes).toEqual(GFM_QUIRK_CHANGES);
   });
 
-  it.each(PRESETS)('renders every example of both suites with all of Obsidian\'s quirks on from the %s preset', (preset) => {
+  it.each(PRESETS)('renders every example of both suites with all of Obsidian\'s quirks on from the %s preset', { timeout: CORPUS_TEST_TIMEOUT_MS }, (preset) => {
     const render = renderer(adapter, { ...OBSIDIAN_QUIRKS, preset }, false);
     expect(() => [...COMMONMARK, ...GFM_EXTENSIONS].map((example) => render(example.markdown))).not.toThrow();
   });
 
-  it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', () => {
+  it('passes the CommonMark spec suite with every quirk at its CommonMark behaviour', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     expect(failingExamples(COMMONMARK, renderer(adapter, { ...COMMONMARK_QUIRKS, preset: 'commonmark' }, false))).toEqual(COMMONMARK_FAILURES[adapter]);
   });
 });

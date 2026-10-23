@@ -31,6 +31,13 @@ export const PINNED_OBSIDIAN_VERSION = '1.14.5';
 export const MAIN_CLASS_ORACLE_SEED = 12_345;
 
 /**
+ * The timeout of a test that runs a whole corpus: an oracle file, a spec suite or a long run of random edits. Such a test
+ * takes up to about 2 s on an idle machine and over a minute on a loaded one, far past vitest's default of 5000 ms. A
+ * quick test keeps that default, so it still fails fast when it hangs.
+ */
+export const CORPUS_TEST_TIMEOUT_MS = 300_000;
+
+/**
  * The environment variable that names the Obsidian version the suites read their oracles from.
  */
 export const ORACLE_VERSION_VARIABLE = 'ORACLE_OBSIDIAN_VERSION';
