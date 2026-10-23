@@ -109,6 +109,26 @@ describe('highlight', () => {
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should open math after a line\'s leading whitespace even where the line would be indented code', () => {
+    const begin = 'formatting formatting-math formatting-math-begin keyword math';
+    expect(spanClassesAt('    $x$ b', 4)).toBe(begin);
+    expect(spanClassesAt('    $x$ b', 8)).toBe('hmd-indented-code inline-code');
+    expect(spanClassesAt('\t$$x', 1)).toBe(`${begin} math-block`);
+    for (const text of ['a\n\n    $x$', '# h\n    $x$', '```\n```\n    $x$', '    a\n\n    $x$', '- a\n\n      $x$', '        $x$']) {
+      expect(mathClasses(text)).toEqual(['math']);
+    }
+    expect(mathLines('    $$\n    a\n    $$')).toEqual([true, true, true]);
+    expect(mathLines('    $$x\n\n    a')).toEqual([true, true, true]);
+    // A line after the math line is no indented code, since the markdown mode never read that line's block structure.
+    expect(highlight('    $x$\n    a')[1]?.spans).toEqual([]);
+    expect(spanClassesAt('    $x$\n    $y$', 12)).toBe(begin);
+    // A `$` that opens no math, and a line after indented code.
+    for (const text of ['    $ x$', '    $x', '    a $x$', '    a\n    $x$', '    $ x$\n    $y$']) {
+      expect(mathClasses(text)).toEqual([]);
+    }
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read an inline footnote\'s body as inline markdown, up to a `]` outside a link or code', () => {
     const start = 'footref formatting-inline-footnote inline-footnote inline-footnote-start';
     const end = 'footref formatting-inline-footnote inline-footnote inline-footnote-end';

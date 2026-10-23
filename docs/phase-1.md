@@ -120,10 +120,11 @@ The tree is the editor's node for node, not only class for class: a token of a q
 
 ### Line starts the markdown mode never sees
 
-Obsidian reads two tokens that start a line before the markdown mode runs. The markdown mode never sees such a line, so the line cannot head a setext heading, and the next line's `---` is a rule.
+Obsidian reads three tokens that start a line before the markdown mode runs. The markdown mode never sees such a line, so the line cannot head a setext heading, and the next line's `---` is a rule.
 
 - A block id that is the whole line.
 - Math at the line's start, once an earlier line has started with math. Obsidian keeps this memory across lines and clears it only at a `$` that does not open math. The first line in a document to start with math still goes through the markdown mode.
+- Math right after the line's leading whitespace. The markdown mode reads that whitespace as a token of its own and reads the line's block structure only at the next token, so math opens there even where the line would be indented code (`$x$` indented by four spaces), unless the line above is indented code. Text after the math on the same line is still read as indented code, and the next line is not indented code, since the line above it never became any.
 
 ### Markdown blocks
 
