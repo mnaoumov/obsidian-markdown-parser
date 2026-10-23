@@ -287,8 +287,6 @@ export function createObsidianMode(): ObsidianMode {
     }
     let isInMarkdown = !(wasInCodeFence || wasInHTML);
     let isInMarkdownInline = isInMarkdown && !(state.code || state.quoteFence || state.indentedCode || state.linkHref);
-    let ans = '';
-    let temporary: null | RegExpMatchArray;
     /*
      * Obsidian: two tokens that start a line are read without the markdown mode, which then never sees that line: a
      * block id that is the whole line, and math once an earlier line has started with math. A `$` that does not open
@@ -306,6 +304,22 @@ export function createObsidianMode(): ObsidianMode {
         return math ?? null;
       }
     }
+    /*
+     * Obsidian: the token after a line's leading whitespace is read for math before the markdown mode reads the line's
+     * block structure, so math opens there even where that structure would be indented code, unless the line above is
+     * indented code.
+     */
+    if (
+      !isBol && isInMarkdownInline && state.f === state.block && stream.peek() === '$' && !state.internalLink
+      && /^\s+$/u.test(stream.string.slice(0, stream.start)) && isMathAt(stream)
+    ) {
+      state.linkText = false;
+      const math = enterMath(stream, state);
+      state.hmdEnteredMath = false;
+      return math ?? null;
+    }
+    let ans = '';
+    let temporary: null | RegExpMatchArray;
     // Obsidian: a line after a footnote definition indented by a whole number of tab stops continues it.
     if (isBol && state.hmdFootnote) {
       const leading = /^\s*/u.exec(stream.string)?.[0] ?? '';
