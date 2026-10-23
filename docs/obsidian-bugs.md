@@ -51,6 +51,7 @@ The components are the editor (Source mode and Live Preview), the metadata cache
 | B26 | An indented line that starts with math is math in the editor | editor, reading view | fixed in the tree | [50661](https://forum.obsidian.md/t/50661) |
 | B27 | A setext heading takes only one line | reading view, editor, CommonMark | CommonMark in the adapters; flag | [112786](https://forum.obsidian.md/t/112786) |
 | B28 | Live Preview hides a backslash at the start of an indented code block | editor, reading view | fixed in the tree | not posted yet |
+| B29 | A footnote reference before HTML breaks HTML in every note until restart | editor | reads as a warm editor does | not posted yet |
 
 "Fixed in the tree" means the `@lezer/markdown` tree reads the sample as the reading view does, while the class tokenizer still reproduces the editor. "CommonMark in the adapters" means the `@lezer/markdown`, micromark and markdown-it adapters read it as CommonMark does, while `parseRemark` reproduces the reading view.
 
@@ -615,12 +616,30 @@ Text before.
 
 **Forum:** not posted yet (draft 28).
 
+### B29. A footnote reference before HTML breaks HTML in every note until restart
+
+**Obsidian:** the editor's mode does not know which of its states is HTML until it first sees HTML, and it learns that from the state the first HTML leaves. When that first HTML follows a footnote reference's `[^` at the start of a line, the mode learns the plain inline state instead. From then on, until Obsidian restarts, every note is affected: plain text after a block wears `hmd-html-begin`, real HTML loses it, and Live Preview shows inline HTML as source and renders the text after it as a broken HTML block. Draft 14 was this bug, seen while the oracle loaded documents one after another and put down to an unclosed tag.
+
+```markdown
+[^<b>] note
+```
+
+Opened first after a restart, then any note holding `Plain text and <b>bold</b> here.` in Live Preview.
+
+**Components:** the editor against itself: the same note reads differently depending on what was opened before it.
+
+**This parser:** reproduces the editor as it reads once any other HTML came first, the state of nearly every session. The class tokenizer holds the HTML state as a constant, so no document changes how another one reads ([phase-1.md](phase-1.md#footnotes)). The fix would go in the editor's mode: compare with the markdown mode's own HTML state rather than learn it.
+
+**Pinned by:** `src/editor/highlight.test.ts`, "should leave HTML half open after a footnote reference mark that opens its line".
+
+**Forum:** not posted yet (draft 29). Related, not a duplicate: <https://forum.obsidian.md/t/63314>.
+
 ## Not bugs any more
 
 Drafted, then not reproduced on 1.14.5, so not reported:
 
 - **`[[a]b]]` was text in the editor and a link in the reading view** (draft 06). The editor now reads it as a link to `a]b`, and every view agrees. The class tokenizer follows the editor ([phase-1.md](phase-1.md#footnotes), `src/editor/highlight.test.ts`). The conformance case "internal link content holds no ] and no line break" in `src/syntax/conformance.ts` still reads it as no link.
-- **An unclosed HTML tag leaking highlighting into the next note** (draft 14). Not reproduced by opening other notes or by replacing the note's text.
+- **An unclosed HTML tag leaking highlighting into the next note** (draft 14). Not reproduced by opening other notes or by replacing the note's text. The leak was real but had another cause, now B29.
 
 ## Docs note: links and tags inside comments
 

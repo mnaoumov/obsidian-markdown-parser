@@ -496,7 +496,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     state.htmlState = htmlState;
     const style = htmlMode.token(stream, htmlState);
     if (config.html.isInText(htmlState) || (state.mdInside && stream.current().includes('>'))) {
-      state.f = inlineNormal;
+      // Obsidian: HTML that ends inside the label of a definition opening its line hands the label back.
+      state.f = isEditor && state.linkText && state.inline === footnoteLink ? footnoteLinkInside : inlineNormal;
       state.block = blockNormal;
       state.htmlState = null;
     }
@@ -1114,6 +1115,14 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       setFormatting(state, 'link');
       state.linkText = false;
       return FOOTNOTE_MARK;
+    }
+
+    /*
+     * Obsidian: the label of a definition that opens its line is read as inline markdown, as the editor reads the line
+     * from the label on as a line of its own. A label elsewhere is link text.
+     */
+    if (stream.string.startsWith('[')) {
+      return inlineNormal(stream, state);
     }
 
     matchRe(stream, /^(?:[^\]\\]|\\.)+/u);
