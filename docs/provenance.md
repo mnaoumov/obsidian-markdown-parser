@@ -26,7 +26,7 @@ Where every part of this repository comes from: what is ported from open-source 
 
 ## What was read
 
-Each was read in an Obsidian 1.14.4 install outside this repository, from the app's own files, sometimes pretty-printed to make them readable. There are two exceptions, both read in the pretty-printed `app.js` in the `obsidian-versions` checkout beside this repository: the inline footnote's rule in the editor's mode, read in Obsidian 1.15.0's, and the footnote reference's rule and the block id's place in the editor's mode, read in Obsidian 1.14.5's:
+Each was read in an Obsidian 1.14.4 install outside this repository, from the app's own files, sometimes pretty-printed to make them readable. There are three exceptions, all read in the pretty-printed files in the `obsidian-versions` checkout beside this repository: the inline footnote's rule in the editor's mode, read in Obsidian 1.15.0's `app.js`, the footnote reference's rule and the block id's place in the editor's mode, read in Obsidian 1.14.5's `app.js`, and the internal link's rule, read in Obsidian 1.14.5's `app.js` and its `lib/codemirror/markdown.js`:
 
 - **The editor's mode**, in `app.js` (the HyperMD-derived mode), and **Obsidian's fork of the CodeMirror 5 markdown mode**, in `lib/codemirror/markdown.js`. They were read only for the rules the class oracle could not settle ([`phase-1.md`](phase-1.md)).
 - **The metadata worker**, `worker.js`, for three things: which of `remark-parse` 8's tokenizers Obsidian edited, the plugin chain that adds its syntax, and the walk from the tree to `CachedMetadata`.

@@ -647,7 +647,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       return style;
     }
 
-    if (state.list) {
+    // The fork: an internal link right after a list marker leaves the marker's state for the link's end to clear.
+    if (state.list && !(isExtensionsAllowed && !state.image && matchRe(stream, /^\[\[.*?\]\]/u, false))) {
       state.list = null;
       // Obsidian: a fence right after a list marker opens a code block, and a heading mark makes a heading.
       const fence = matchRe(stream, FENCED_CODE_RE);
@@ -794,13 +795,10 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       stream.backUp(2);
     }
 
-    /*
-     * Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them, link text included. A footnote
-     * reference inside does not stop the link from opening.
-     */
+    // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them, link text included.
     if ((ch === '[' || ch === '!') && isExtensionsAllowed && !state.image) {
       const isEmbed = ch === '!';
-      const linkMatch = matchRe(stream, isEmbed ? /^\[\[((?:[^\]]|\[\^[^\]\s]*\])*?)\]\]/u : /^\[((?:[^\]]|\[\^[^\]\s]*\])*?)\]\]/u, false);
+      const linkMatch = matchRe(stream, isEmbed ? /^\[\[(.*?)\]\]/u : /^\[(.*?)\]\]/u, false);
       if (linkMatch) {
         stream.pos += isEmbed ? 2 : 1;
         state.internalLink = { embed: isEmbed, hasAlias: (linkMatch[1] ?? '').includes('|'), part: 'target' };
@@ -981,6 +979,13 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
   function internalLink(stream: Stream, state: MarkdownState): null | string {
     const link = state.internalLink;
+    /*
+     * The fork: the link's pipes, comment marks and end are read as markdown on the state itself, which clears a list
+     * marker's state the link's opening left.
+     */
+    if (state.list && (stream.match(']]', false) || stream.peek() === '|' || stream.match('%%', false))) {
+      state.list = null;
+    }
     if (!link || stream.match(']]')) {
       state.internalLink = null;
       state.f = inlineNormal;
@@ -989,23 +994,45 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       state.linkText = false;
       return `${getType(state) ?? ''} formatting-link formatting-link-end`;
     }
-    const context = getType(state) ?? '';
     const embed = link.embed ? ' hmd-embed' : '';
-    if (link.part === 'target' && stream.eat('|')) {
+    // Obsidian: every pipe of the link is a pipe, in the alias too.
+    if (stream.eat('|')) {
       link.part = 'alias';
-      return `${context} hmd-internal-link link-alias-pipe${embed}`;
+      return `${getType(state) ?? ''} hmd-internal-link link-alias-pipe${embed}`;
     }
-    // Obsidian: a footnote reference inside the link is a token of its own, read by the layer above.
-    if (link.part === 'target') {
-      if (!matchRe(stream, /^(?:[^\]|[]|\[(?!\^[^\]\s]*\]))+/u)) {
-        stream.next();
-      }
-      return `${context} hmd-internal-link${embed}${link.hasAlias ? ' link-has-alias' : ''}`;
+    const part = link.part === 'alias' ? ' link-alias' : (link.hasAlias ? ' link-has-alias' : '');
+    // Obsidian: a `%%` inside the link opens or closes a comment.
+    if (state.extensionsAllowed && stream.match('%%', false)) {
+      return `${inlineNormal(stream, state) ?? ''} hmd-internal-link${embed}${part}`;
     }
-    if (!matchRe(stream, /^(?:[^\][]|\[(?!\^[^\]\s]*\]))+/u)) {
+    /*
+     * Obsidian: any other character of the link is a token of its own, whose classes are a read of it as inline markdown
+     * on a copy of the state, without Obsidian's syntax, so a `[` there wears the classes of opening link text and a `\`
+     * those of an escape, and the characters after them none. A footnote reference is read by the layer above. While a
+     * list marker's state is left, the read gives only the context's classes.
+     */
+    if (state.list) {
       stream.next();
+      return `${getType(state) ?? ''} hmd-internal-link${embed}${part}`;
     }
-    return `${context} hmd-internal-link link-alias${embed}`;
+    const readState = copyMarkdownState(state);
+    readState.f = inlineNormal;
+    readState.inline = inlineNormal;
+    readState.extensionsAllowed = false;
+    const start = stream.pos;
+    const type = inlineNormal(stream, readState);
+    stream.pos = start + 1;
+    return `${type ?? ''} hmd-internal-link${embed}${part}`;
+  }
+
+  function copyMarkdownState(s: MarkdownState): MarkdownState {
+    return {
+      ...s,
+      formatting: false,
+      htmlState: s.htmlState && copyState(htmlMode, s.htmlState),
+      listStack: [...s.listStack],
+      localState: s.localMode && s.localState ? copyState(s.localMode, s.localState) : null
+    };
   }
 
   function linkInline(stream: Stream, state: MarkdownState): null | string {
@@ -1149,15 +1176,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
   return {
     blankLine,
     blockNormal,
-    copyState(s: MarkdownState): MarkdownState {
-      return {
-        ...s,
-        formatting: false,
-        htmlState: s.htmlState && copyState(htmlMode, s.htmlState),
-        listStack: [...s.listStack],
-        localState: s.localMode && s.localState ? copyState(s.localMode, s.localState) : null
-      };
-    },
+    copyState: copyMarkdownState,
     footnoteUrl,
     footnoteUrlTitle,
     getType,
