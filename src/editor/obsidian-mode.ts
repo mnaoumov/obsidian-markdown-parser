@@ -272,6 +272,7 @@ export function createObsidianMode(): ObsidianMode {
     const isBol = stream.start === 0;
     const wasLinkText = state.linkText;
     const wasLinkHref = state.linkHref;
+    const wasInternalLink = state.internalLink !== null;
     if (isBol) {
       // Obsidian: a link's type does not carry over to the next line.
       state.hmdLinkType = LinkType.None;
@@ -541,6 +542,10 @@ export function createObsidianMode(): ObsidianMode {
             state.hmdLinkType = LinkType.Normal;
           }
         }
+      } else if (state.linkText && state.internalLink && !wasInternalLink) {
+        // Obsidian: an internal link opened in link text ends the link's type, whose style its opening mark wears.
+        ans += ` ${LINK_STYLE.get(state.hmdLinkType) ?? ''}`;
+        state.hmdLinkType = LinkType.None;
       } else if (isBol && state.linkText && /^\s*$/u.test(stream.string.slice(0, stream.start)) && matchRe(stream, /^[^\]]+\]:/u, false)) {
         /*
          * Obsidian: link text left open on the line above hides the new link this line opens, but not a footnote
