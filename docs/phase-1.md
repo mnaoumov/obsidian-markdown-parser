@@ -96,6 +96,7 @@ Each rule below was read off the oracle and checked against all three corpora.
 ### Footnotes
 
 - `[^ref]` and `^[inline]` have their own marks (`footref`, `formatting-link-start`/`-end`, `inline-footnote-start`/`-end`) and no `link` class.
+- An inline footnote's body is read as inline markdown, and every token of it but math wears `footref inline-footnote`. `^[` opens one anywhere in the inline flow, link text included, but not inside another. The first `]` outside link text, an internal link, an image and code closes it, the `]` of a footnote reference too, and so does the end of its line. The markdown mode still reads a token at a mark, from past a closing `]`, so the closing mark takes that token's classes, and what that token does to the state stays, as with `^[a][b]`, whose `]` opens link text. That token sees none of Obsidian's inline syntax. This rule was read in the editor's mode in Obsidian 1.15.0's `app.js` and then measured against the live editor of 1.14.5 ([provenance.md](provenance.md#what-was-read)).
 - A definition opens only at the start of its line. Its marks do not wear the quote style, but its label does.
 - A line after a definition continues it (`HyperMD-footnote`) when it is indented by a whole number of tab stops of 4, counting a tab as 4 spaces. Blank lines continue it too. A line indented by 2 spaces, and an indented list item, do not.
 - A definition opens even when link text was left open on the line above. Other links on that line wear no `hmd-barelink`: the open link text hides them.

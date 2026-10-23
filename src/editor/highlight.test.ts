@@ -82,6 +82,43 @@ describe('highlight', () => {
     expect(mathClasses('![a $x$](u)')).toEqual(['math']);
   });
 
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should read an inline footnote\'s body as inline markdown, up to a `]` outside a link or code', () => {
+    function classesAt(text: string, position: number): string {
+      const classes = highlight(text).flatMap((line) => line.spans).find((s) => s.from <= position && position < s.to)?.classes ?? [];
+      return [...new Set(classes)].toSorted(compareCodeUnits).join(' ');
+    }
+    const start = 'footref formatting-inline-footnote inline-footnote inline-footnote-start';
+    const end = 'footref formatting-inline-footnote inline-footnote inline-footnote-end';
+    expect(classesAt('^[a **b**]', 0)).toBe(start);
+    expect(classesAt('^[a **b**]', 4)).toBe('footref formatting formatting-strong inline-footnote strong');
+    expect(classesAt('^[a **b**]', 9)).toBe(end);
+    expect(classesAt('^[a ==b== `c`]', 11)).toBe('footref inline-code inline-footnote');
+    expect(classesAt('^[a #tag c]', 5)).toBe('footref hashtag hashtag-end inline-footnote meta tag-tag');
+    // Math wears neither footnote class.
+    expect(classesAt('^[a $x$ b]', 4)).toBe('formatting formatting-math formatting-math-begin keyword math');
+    // A `]` closing link text, a code span or a footnote reference.
+    expect(classesAt('^[a [b] c]', 6)).toBe('footref formatting formatting-link hmd-barelink inline-footnote link');
+    expect(classesAt('^[a [b] c]', 9)).toBe(end);
+    expect(classesAt('^[a `]` b]', 5)).toBe('footref inline-code inline-footnote');
+    expect(classesAt('^[a [^1] c]', 7)).toBe(`${end} formatting formatting-link formatting-link-end hmd-barelink`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(classesAt('^[a [^1] c]', 9)).toBe('');
+    // No nested inline footnote, and none past the end of the line.
+    expect(classesAt('^[a ^[b] c]', 4)).toBe('footref inline-footnote');
+    expect(classesAt('^[a ^[b] c]', 10)).toBe(end);
+    expect(classesAt('^[a', 2)).toBe('footref inline-footnote');
+    expect(highlight('^[a\nb]')[1]?.spans).toEqual([]);
+    // Inside link text, `^[` still opens one, and the link text's `]` comes first.
+    expect(classesAt('[a ^[b $x$]](u)', 3)).toBe(`${start} hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(classesAt('[a ^[b $x$]](u)', 11)).toBe(end);
+    // The closing mark takes the classes of the markdown token after it, and what that token does to the state.
+    expect(classesAt('^[a][b]', 3)).toBe(`${end} formatting formatting-link hmd-barelink link`.split(' ').toSorted(compareCodeUnits).join(' '));
+    expect(classesAt('^[a][b]', 4)).toBe('hmd-barelink link');
+    expect(classesAt('^[a ==b] c==', 9)).toBe('highlight');
+    // HTML ends the markdown inline flow, and the footnote classes with it.
+    expect(classesAt('^[a <b> c]', 9)).toBe('');
+  });
+
   // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.
   it('should mark the end of emphasis, strikethrough and code spans from Obsidian 1.15 on', () => {
     const text = '*em* **strong** ***both*** ~~strike~~ `code`\n> ```\n> a ```';

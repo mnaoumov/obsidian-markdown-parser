@@ -104,6 +104,7 @@ export interface ObsidianState extends MarkdownState {
   hmdTableColumns: string[];
   hmdTableRow: number;
   hmdWasHeading: boolean;
+  inlineFootnote: boolean;
 }
 
 type ExitChecker = (stream: Stream, state: ObsidianState) => ExitInfo | null;
@@ -275,6 +276,8 @@ export function createObsidianMode(): ObsidianMode {
       state.hmdLinkType = LinkType.None;
       state.hmdWasHeading = state.hmdIsHeading;
       state.hmdIsHeading = false;
+      // Obsidian: an inline footnote ends with its line.
+      state.inlineFootnote = false;
       // Obsidian: a code span opened by one or two backticks does not run past the end of its line.
       if (state.code === 1 || state.code === 2) {
         state.code = 0;
@@ -336,7 +339,31 @@ export function createObsidianMode(): ObsidianMode {
     const wasInMarkdownInline = isInMarkdownInline;
     const wasInDefinitionDestination = state.f === rawMode.footnoteUrl || state.f === rawMode.footnoteUrlTitle;
     state.extensionsAllowed = isInMarkdownInline;
+    /*
+     * Obsidian: `^[` opens an inline footnote, whose body is read as inline markdown. The first `]` outside link text,
+     * an internal link, an image and code closes it. The markdown mode still reads a token at the mark, which a
+     * closing `]` has already passed, and the mark keeps that token's classes and what it did to the state, but not
+     * its length. That token sees none of Obsidian's inline syntax.
+     */
+    let footnoteMarkEnd = -1;
+    if (isInMarkdownInline && !state.inlineFootnote && stream.match('^[', false)) {
+      state.inlineFootnote = true;
+      ans += ' inline-footnote-start formatting-inline-footnote';
+      footnoteMarkEnd = stream.pos + 2;
+    } else if (isInMarkdownInline && state.inlineFootnote && !state.internalLink && state.hmdLinkType === LinkType.None && !state.image && stream.peek() === ']') {
+      state.inlineFootnote = false;
+      ans += ' footref inline-footnote inline-footnote-end formatting-inline-footnote';
+      // The `]` closing a footnote reference closes the inline footnote too.
+      if (!state.footref) {
+        stream.next();
+        footnoteMarkEnd = stream.pos;
+        state.extensionsAllowed = false;
+      }
+    }
     ans += ` ${rawMode.token(stream, state) ?? ''}`;
+    if (footnoteMarkEnd !== -1) {
+      stream.pos = footnoteMarkEnd;
+    }
     if (state.header) {
       state.hmdIsHeading = true;
     }
@@ -494,6 +521,9 @@ export function createObsidianMode(): ObsidianMode {
         if (state.hmdLinkType === LinkType.Footnote && wasLinkText && state.linkText && !ans.includes('formatting-link')) {
           ans += ` ${LINK_STYLE.get(state.hmdLinkType) ?? ''}`;
         }
+      }
+      if (state.inlineFootnote) {
+        ans += ' footref inline-footnote';
       }
       if (ans.includes('formatting-escape') && current.length > 1) {
         const escapedLength = current.length - 1;
@@ -663,7 +693,8 @@ export function createObsidianMode(): ObsidianMode {
         hmdTableCol: 0,
         hmdTableColumns: [],
         hmdTableRow: 0,
-        hmdWasHeading: false
+        hmdWasHeading: false,
+        inlineFootnote: false
       };
     },
     token
