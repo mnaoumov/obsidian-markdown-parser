@@ -30,6 +30,7 @@ const DIFFERENCES: readonly string[] = [
   'a %% line closes the comment its paragraph left open',
   // A reference to no definition is text.
   'footnote reference',
+  'footnote reference with an empty label',
   // A definition opens a line of any container, a quote's too.
   'a definition must open its line, so in a quote it is a reference'
 ];

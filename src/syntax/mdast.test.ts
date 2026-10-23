@@ -106,7 +106,8 @@ function partsOf(node: Nodes, markdown: string): OutlineEntry[] {
     }
     case 'footnoteDefinition':
     case 'footnoteReference': {
-      return [[N.FootnoteLabel, node.label ?? '']];
+      // An empty label `[^]` has no label node.
+      return node.label ? [[N.FootnoteLabel, node.label]] : [];
     }
     case 'listItem': {
       const [paragraph] = node.children;
