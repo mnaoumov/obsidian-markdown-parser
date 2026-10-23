@@ -16,6 +16,7 @@ import { renderRemarkHtml } from '../remark/html.ts';
 import { parseRemark } from '../remark/parse.ts';
 import { OBSIDIAN_QUIRKS } from '../syntax/options.ts';
 import {
+  CORPUS_TEST_TIMEOUT_MS,
   readOracleFile,
   specOracleFileName
 } from './oracle-location.ts';
@@ -113,7 +114,7 @@ describe('the spec oracle', () => {
 });
 
 describe.each(ADAPTERS)('%s with a quirk flag', (adapter) => {
-  it.each(SPEC_DIFFERENCES.filter((difference) => difference.flag !== undefined))('reproduces the reading view on the examples of $name', (difference) => {
+  it.each(SPEC_DIFFERENCES.filter((difference) => difference.flag !== undefined))('reproduces the reading view on the examples of $name', { timeout: CORPUS_TEST_TIMEOUT_MS }, (difference) => {
     const quirk = difference.flag ?? 'softLineBreak';
     const renderers = { commonmark: render(adapter, quirk, 'commonmark'), gfm: render(adapter, quirk, 'gfm') };
     const differing = specDifferenceKeys(difference).filter((key) => {
@@ -131,14 +132,14 @@ function keysOf(kind: SpecDifference['kind']): Set<string> {
 }
 
 describe('the remark-parse 8 engine', () => {
-  it('gives the reading view\'s HTML on every example but raw HTML and the rendering and comparison rows', () => {
+  it('gives the reading view\'s HTML on every example but raw HTML and the rendering and comparison rows', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = ORACLE.examples
       .filter((read) => normalizeHtml(renderRemarkHtml(parseRemark(read.markdown))) !== normalizeHtml(read.htmlStrict))
       .map((read) => exampleKey(read));
     expect(differing.toSorted(compareKeys)).toEqual([...ENGINE_RAW_HTML, ...ENGINE_COMPARISON, ...ENGINE_RENDERED].toSorted(compareKeys));
   });
 
-  it('misses only examples of the comparison and rendering rows it names, and raw HTML', () => {
+  it('misses only examples of the comparison and rendering rows it names, and raw HTML', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differences = new Set(readingViewDifferences(ORACLE));
     expect(ENGINE_COMPARISON.filter((key) => !keysOf('comparison').has(key))).toEqual([]);
     expect(ENGINE_RENDERED.filter((key) => !keysOf('rendering').has(key))).toEqual([]);

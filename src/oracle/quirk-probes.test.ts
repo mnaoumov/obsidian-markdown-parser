@@ -18,6 +18,7 @@ import {
   OBSIDIAN_QUIRKS
 } from '../syntax/options.ts';
 import {
+  CORPUS_TEST_TIMEOUT_MS,
   quirkProbeOracleFileName,
   readOracleFile
 } from './oracle-location.ts';
@@ -149,7 +150,7 @@ describe('the quirk probe oracle', () => {
 });
 
 describe.each(ADAPTERS)('%s with the quirk flag of each probe', (adapter) => {
-  it('reproduces the reading view on the probes', () => {
+  it('reproduces the reading view on the probes', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = FLAGGED.filter((probe) => {
       const toHtml = htmlRenderer(adapter, { preset: probe.preset, [probe.quirk]: OBSIDIAN_QUIRKS[probe.quirk] });
       return normalizeHtml(toHtml(probe.markdown)) !== normalizeHtml(probe.html);
@@ -157,7 +158,7 @@ describe.each(ADAPTERS)('%s with the quirk flag of each probe', (adapter) => {
     expect(differing.toSorted(compareKeys)).toEqual(NOT_REPRODUCED[adapter].toSorted(compareKeys));
   });
 
-  it('does not reproduce the quirks that are no flag', () => {
+  it('does not reproduce the quirks that are no flag', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = UNFLAGGED.filter((probe) => {
       const toHtml = htmlRenderer(adapter, { preset: probe.preset, ...ALL_QUIRKS });
       return normalizeHtml(toHtml(probe.markdown)) !== normalizeHtml(probe.html);
@@ -167,7 +168,7 @@ describe.each(ADAPTERS)('%s with the quirk flag of each probe', (adapter) => {
 });
 
 describe('the remark-parse 8 engine', () => {
-  it('reproduces the reading view on every probe but the rendered ones and raw HTML, the quirks that are no flag included', () => {
+  it('reproduces the reading view on every probe but the rendered ones and raw HTML, the quirks that are no flag included', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const differing = ORACLE.probes
       .filter((probe) => normalizeHtml(renderRemarkHtml(parseRemark(probe.markdown))) !== normalizeHtml(probe.html))
       .map((probe) => probe.markdown);

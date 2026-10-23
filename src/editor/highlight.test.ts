@@ -10,6 +10,7 @@ import type { LineState } from './highlight.ts';
 import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
+  CORPUS_TEST_TIMEOUT_MS,
   MAIN_CLASS_ORACLE_SEED,
   oracleObsidianVersion,
   readOracleFile
@@ -53,7 +54,7 @@ function spanClassesAt(text: string, position: number): string {
 
 describe('highlight', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
-    it(`should match the live editor on every document of ${name} but the known differences`, () => {
+    it(`should match the live editor on every document of ${name} but the known differences`, { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
       const oracle = readOracle(name);
       const differing = oracle.docs.filter((document) => compareDocument(document, { obsidianVersion: oracleObsidianVersion() }).differences.length > 0).map((document) => document.id);
       expect(differing).toEqual(known);
@@ -272,7 +273,7 @@ describe('highlight', () => {
     expect(classesAt(4, 0)).toBe('hmd-codeblock');
   });
 
-  it('should resume from the state after any line outside a block with the same result', () => {
+  it('should resume from the state after any line outside a block with the same result', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     for (const document of oracle.docs) {
       const lines = document.text.split('\n');

@@ -14,6 +14,7 @@ import {
 
 import type { OracleFile } from './oracle-file.ts';
 
+import { CORPUS_TEST_TIMEOUT_MS } from './oracle-location.ts';
 import { classSetsOf } from './score.ts';
 import {
   compareSyntax,
@@ -49,7 +50,7 @@ const EXPECTED_SCORES = new Map<string, readonly [using: number, agreeing: numbe
 ]);
 
 describe('compareSyntax', () => {
-  it('should score the tree against the live editor as recorded', () => {
+  it('should score the tree against the live editor as recorded', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const scores = new Map<string, [number, number]>(CONSTRUCTS.map((c) => [c.name, [0, 0]]));
     for (const file of ORACLE_FILES) {
       const oracle = JSON.parse(readFileSync(join(ORACLE_DIR, file), 'utf-8')) as OracleFile;

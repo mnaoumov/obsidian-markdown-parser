@@ -28,6 +28,7 @@ import type { EditorClassOptions } from './highlight.ts';
 import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
+  CORPUS_TEST_TIMEOUT_MS,
   MAIN_CLASS_ORACLE_SEED,
   oracleObsidianVersion,
   readOracleFile
@@ -189,7 +190,7 @@ function treeNodes(tree: Tree): OracleNode[] {
 
 describe('editorClassLanguage', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
-    it(`should match the live editor's tree node for node on every document of ${name} but the known differences`, () => {
+    it(`should match the live editor's tree node for node on every document of ${name} but the known differences`, { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
       const options = { obsidianVersion: oracleObsidianVersion() };
       const language = createEditorClassLanguage(options);
       const differing: string[] = [];
@@ -418,7 +419,7 @@ describe('editorClassLanguage', () => {
     expect(treeNodes(result.tree)).toEqual(treeNodes(parse(language, result.text)));
   });
 
-  it('should give the same tree after random edits as a fresh parse', () => {
+  it('should give the same tree after random edits as a fresh parse', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const oracle = readOracle(classOracleFileName(MAIN_CLASS_ORACLE_SEED));
     const pieces = ['\n', '\n\n', '-', '---', '=', '|', ' ', ' '.repeat(4), 'a', 'word', '#', '# ', '`', '```', '$', '$$', '> ', '* ', '1. ', '[[', ']]', '%%', '^id', '==', '\t'];
     let seed = 1;

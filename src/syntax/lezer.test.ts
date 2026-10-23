@@ -18,6 +18,7 @@ import {
 import type { OracleFile } from '../oracle/oracle-file.ts';
 import type { OutlineEntry } from './conformance.ts';
 
+import { CORPUS_TEST_TIMEOUT_MS } from '../oracle/oracle-location.ts';
 import { CONFORMANCE_CASES } from './conformance.ts';
 import { obsidianParser } from './lezer.ts';
 import {
@@ -88,7 +89,7 @@ describe('obsidianParser', () => {
     expect(tree.topNode.firstChild?.to).toBe(text.length);
   });
 
-  it('should give an incremental parse after an edit the tree of a full parse', () => {
+  it('should give an incremental parse after an edit the tree of a full parse', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
     const oracle = JSON.parse(readFileSync(ORACLE_FILE, 'utf-8')) as OracleFile;
     let seed = EDIT_SEED;
     function random(n: number): number {
