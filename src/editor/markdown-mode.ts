@@ -788,8 +788,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       stream.backUp(2);
     }
 
-    // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them.
-    if ((ch === '[' || ch === '!') && isExtensionsAllowed && !state.linkText && !state.image) {
+    // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them, link text included.
+    if ((ch === '[' || ch === '!') && isExtensionsAllowed && !state.image) {
       const isEmbed = ch === '!';
       const linkMatch = matchRe(stream, isEmbed ? /^\[\[([^\]]*?)\]\]/u : /^\[([^\]]*?)\]\]/u, false);
       if (linkMatch) {
@@ -972,13 +972,15 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
 
   function internalLink(stream: Stream, state: MarkdownState): null | string {
     const link = state.internalLink;
-    const context = getType(state) ?? '';
     if (!link || stream.match(']]')) {
       state.internalLink = null;
       state.f = inlineNormal;
       state.inline = inlineNormal;
-      return `${context} formatting-link formatting-link-end`;
+      // Obsidian: an internal link opened in link text ends the link text with its closing mark.
+      state.linkText = false;
+      return `${getType(state) ?? ''} formatting-link formatting-link-end`;
     }
+    const context = getType(state) ?? '';
     const embed = link.embed ? ' hmd-embed' : '';
     if (link.part === 'target' && stream.eat('|')) {
       link.part = 'alias';

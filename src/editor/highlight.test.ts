@@ -142,6 +142,28 @@ describe('highlight', () => {
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should open an internal link inside a markdown link\'s text and end the link text with it', () => {
+    const start = 'formatting-link formatting-link-start hmd-barelink link';
+    const end = 'formatting-link formatting-link-end';
+    expect(spanClassesAt('[a [[b]] c](u)', 3)).toBe(start);
+    expect(spanClassesAt('[a [[b]] c](u)', 5)).toBe('hmd-internal-link link');
+    expect(spanClassesAt('[a [[b]] c](u)', 6)).toBe(end);
+    expect(spanClassesAt('[a [[b]] c](u)', 9)).toBe('');
+    expect(spanClassesAt('[a [[b]] c](u)', 11)).toBe('');
+    expect(spanClassesAt('[a [[b|c]] d](u)', 5)).toBe('hmd-internal-link link link-has-alias');
+    expect(spanClassesAt('[a [[b|c]] d](u)', 6)).toBe('hmd-internal-link link link-alias-pipe');
+    expect(spanClassesAt('[a [[b|c]] d](u)', 7)).toBe('hmd-internal-link link link-alias');
+    expect(spanClassesAt('[a ![[b]] c](u)', 3)).toBe(`formatting-embed ${start}`);
+    expect(spanClassesAt('[a ![[b]] c](u)', 6)).toBe('hmd-embed hmd-internal-link link');
+    expect(spanClassesAt('[a **[[b]]** c](u)', 8)).toBe(`${end} strong`);
+    // The link text has ended, so a second internal link is an ordinary one.
+    expect(spanClassesAt('[a [[b]] [[c]] d](u)', 9)).toBe('formatting-link formatting-link-start');
+    expect(spanClassesAt('[a [[b]] [[c]] d](u)', 11)).toBe('hmd-internal-link');
+    // After the closing mark of an inline footnote, which opened the link text.
+    expect(spanClassesAt('^[a][[b]] c', 4)).toBe(start);
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read `[^label]` as a footnote reference when its label holds no `]` and no whitespace', () => {
     const start = 'footref formatting formatting-link formatting-link-start hmd-barelink';
     const end = 'footref formatting formatting-link formatting-link-end hmd-barelink';
