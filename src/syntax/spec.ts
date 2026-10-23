@@ -200,22 +200,19 @@ export function findCommentClose(text: string): number {
 }
 
 /**
- * Finds where an internal link's content ends: the first `]]`, with no `]` or line break before it.
+ * Finds where an internal link's content ends: the first `]]` with no line break before it. A `]` inside the content
+ * does not end it, so `[[a]b]]` links to `a]b`.
  *
  * @param text - The text after the opening `[[`.
  * @returns The length of the content, or `-1` when the link does not close.
  */
 export function findInternalLinkEnd(text: string): number {
-  for (let index = 0; index < text.length; index++) {
-    const ch = text[index];
-    if (ch === ']') {
-      return text[index + 1] === ']' ? index : -1;
-    }
-    if (ch === '\n') {
-      return -1;
-    }
+  const close = text.indexOf(']]');
+  if (close === -1) {
+    return -1;
   }
-  return -1;
+  const lineBreak = text.indexOf('\n');
+  return lineBreak === -1 || lineBreak > close ? close : -1;
 }
 
 /**
