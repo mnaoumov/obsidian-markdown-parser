@@ -9,6 +9,9 @@
  * the plugin's commands: the class comparison and the metadata comparison over every note, then the measurement on the
  * long note and on the longest copied note, in source mode and in live preview.
  *
+ * It runs the Obsidian version the oracles are pinned to unless `--obsidian-version` names another, so its numbers are
+ * the pinned version's whichever Obsidian is installed; the report's `appVersion` says which version ran.
+ *
  * Usage: `jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines 100000] [--obsidian-version <version>]`.
  */
 
@@ -34,6 +37,7 @@ import type {
   MetadataComparisonReport
 } from '../src/demo-plugin/main.ts';
 
+import { PINNED_OBSIDIAN_VERSION } from '../src/oracle/oracle-location.ts';
 import { compareCodeUnits } from '../src/oracle/score.ts';
 
 interface App {
@@ -135,7 +139,7 @@ const root = join(here, '..');
 const { values } = parseArgs({
   options: {
     'lines': { default: '100000', type: 'string' },
-    'obsidian-version': { type: 'string' },
+    'obsidian-version': { default: PINNED_OBSIDIAN_VERSION, type: 'string' },
     'vault': { default: join(root, '..', 'obsidian-community-vault'), type: 'string' }
   }
 });
@@ -154,7 +158,7 @@ const oit = await import(pathToFileURL(oitPath).href) as OitModule;
 
 // The connection is disposed by hand: `await using` needs a tslib helper this repo does not install.
 // A whole-vault comparison or the long note's measurement is one plugin call, which cannot be split into shorter calls.
-const conn = await oit.connectToCdp({ commandTimeoutInMilliseconds: COMMAND_TIMEOUT_MS, ...(obsidianVersion !== undefined && { obsidianVersion }) });
+const conn = await oit.connectToCdp({ commandTimeoutInMilliseconds: COMMAND_TIMEOUT_MS, obsidianVersion });
 try {
   for (let start = 0; start < notes.length; start += BATCH_SIZE) {
     await conn.evalInObsidian({
