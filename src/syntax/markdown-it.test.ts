@@ -33,7 +33,7 @@ import {
 const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'obsidian-1.14.4-seed-12345.json');
 // The documents of the oracle file on which markdown-it and the @lezer/markdown extensions give the same Obsidian
 // nodes. `docs/syntax.md` explains the rest, and `scripts/adapter-diff.ts` shows them.
-const AGREEING_DOCUMENTS = 2016;
+const AGREEING_DOCUMENTS = 4086;
 
 function allTokens(tokens: readonly Token[]): Token[] {
   return tokens.flatMap((token) => [token, ...allTokens(token.children ?? [])]);
