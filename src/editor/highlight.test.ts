@@ -245,6 +245,44 @@ describe('highlight', () => {
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should open an internal link at a footnote reference label\'s character and end the reference there', () => {
+    const start = 'footref formatting formatting-link formatting-link-start hmd-barelink link';
+    const linkText = 'formatting formatting-link hmd-internal-link link';
+    const end = 'formatting-link formatting-link-end';
+    expect(spanClassesAt('[^a[[b]]]', 2)).toBe('footref hmd-barelink');
+    expect(spanClassesAt('[^a[[b]]]', 3)).toBe(start);
+    expect(spanClassesAt('[^a[[b]]]', 4)).toBe(linkText);
+    expect(spanClassesAt('[^a[[b]]]', 5)).toBe('hmd-internal-link');
+    expect(spanClassesAt('[^a[[b]]]', 6)).toBe(end);
+    expect(spanClassesAt('[^a[[b]]]', 8)).toBe('');
+    expect(spanClassesAt('[^a[[b|c]]]', 6)).toBe('hmd-internal-link link-alias-pipe');
+    expect(spanClassesAt('[^a[[]]]', 5)).toBe(end);
+    expect(spanClassesAt('[^a[[[b]]]', 5)).toBe(linkText);
+    // An embed opens at its `!`, and both its brackets are read inside it.
+    expect(spanClassesAt('[^a![[b]]]', 3)).toBe('footref formatting-embed formatting-link formatting-link-start hmd-barelink');
+    expect(spanClassesAt('[^a![[b]]]', 4)).toBe('formatting formatting-link hmd-embed hmd-internal-link link');
+    // Inside link text, an inline footnote, a comment and after a list marker.
+    expect(spanClassesAt('[x [^a[[b]]] y](u)', 7)).toBe('hmd-internal-link link');
+    expect(spanClassesAt('[x [^a[[b]]] y](u)', 11)).toBe('');
+    expect(spanClassesAt('^[x [^a[[b]]] y]', 10)).toBe('footref formatting-link formatting-link-end inline-footnote');
+    expect(spanClassesAt('^[x [^a[[b]]] y]', 12)).toBe('footref formatting-inline-footnote inline-footnote inline-footnote-end');
+    expect(spanClassesAt('[^a%%[[b]]%%]', 7)).toBe('comment hmd-internal-link');
+    expect(spanClassesAt('- [^a[[b]]]', 7)).toBe('hmd-internal-link list-1');
+    // An unclosed link opens nothing.
+    expect(spanClassesAt('[^a[[b]', 3)).toBe('footref formatting formatting-link hmd-barelink link');
+    expect(spanClassesAt('[^a[[b]', 5)).toBe('footref hmd-barelink');
+    // The read after `[^` opens no internal link: a `[` there opens link text, which holds the link, and a `!` reads as text.
+    expect(spanClassesAt('[^[[b]]]', 0)).toBe('formatting formatting-link formatting-link-start hmd-barelink link');
+    expect(spanClassesAt('[^[[b]]]', 2)).toBe('formatting-link formatting-link-start hmd-barelink link');
+    expect(spanClassesAt('[^[[b]]]', 4)).toBe('hmd-internal-link link');
+    expect(spanClassesAt('[^[[b]]]', 7)).toBe('');
+    expect(spanClassesAt('[^![[b]]]', 0)).toBe('footref formatting formatting-link formatting-link-start hmd-barelink');
+    expect(spanClassesAt('[^![[b]]]', 2)).toBe('footref formatting-embed formatting-link formatting-link-start hmd-barelink');
+    // After a list marker, that read leaves the reference open.
+    expect(spanClassesAt('- [^[[b]]]', 4)).toBe(`${start} list-1`);
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read each character of an internal link as inline markdown that leaves the state as it was', () => {
     const linkText = 'formatting formatting-link hmd-internal-link link';
     expect(spanClassesAt('[[[b]]]', 2)).toBe(linkText);

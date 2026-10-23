@@ -35,6 +35,8 @@ const TOKEN_BREAK_RE = /[^\\][$|]/u;
 // Obsidian counts a tab in a footnote continuation's indentation as four spaces, wherever it stands.
 const TAB_WIDTH = 4;
 const LIST_RE = /^(?:[*\-+]|^[0-9]+([.)]))\s+/u;
+// An internal link or an embed that its line closes: its embed mark and its text.
+const INTERNAL_LINK_START_RE = /^(!?)\[\[(.*?)\]\]/u;
 const EMAIL_RE = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/u;
 // Obsidian: a table's head and delimiter rows, the rows that continue it, and a delimiter cell.
 const SIMPLE_TABLE_RE = /^\s*[^|].*?\|.*[^|]\s*$/u;
@@ -365,12 +367,16 @@ export function createObsidianMode(): ObsidianMode {
     // Whether the markdown mode's read leaves the state as it was.
     let isReadOnCopy = false;
     let isFootrefStart = false;
+    // An internal link a footnote reference's label opens, and the match that opens it.
+    let footrefInternalLink: null | RegExpMatchArray = null;
     /*
      * Obsidian: `[^label]` is a footnote reference when its label holds no `]` and no whitespace, and may be empty,
      * unless a `:` follows it at the start of the line. `[^` is one token, whose markdown read changes the state, so a
      * `[` there opens link text instead. Each character of the label and the closing `]` is a token whose markdown read
      * changes nothing, except that a `%%` there still opens or closes a comment. A reference inside an internal link
-     * ends the link, whose alias class its opening mark keeps, and the rest of the link is plain text.
+     * ends the link, whose alias class its opening mark keeps, and the rest of the link is plain text. These markdown
+     * reads open no internal link, which is the layer's: a label character starting one opens it as a token of its own
+     * and ends the reference, so the link's next character is read inside the link.
      */
     if (isInMarkdownInline && state.internalLink && stream.peek() === '[' && matchRe(stream, /^\[\^[^\]\s]*\]/u, false)) {
       if (state.internalLink.part === 'alias') {
@@ -387,6 +393,9 @@ export function createObsidianMode(): ObsidianMode {
         if (stream.peek() === ']') {
           state.hmdLinkType = LinkType.None;
           ans += ` formatting formatting-link formatting-link-end ${LINK_STYLE.get(LinkType.Footref) ?? ''}`;
+        } else if ((footrefInternalLink = matchRe(stream, INTERNAL_LINK_START_RE, false))) {
+          state.hmdLinkType = LinkType.None;
+          ans += ` formatting-link formatting-link-start${footrefInternalLink[1] ? ' formatting-embed' : ''} ${LINK_STYLE.get(LinkType.Footref) ?? ''}`;
         }
       } else if (stream.peek() === '[' && (temporary = matchRe(stream, /^\[\^[^\]\s]*\](:?)/u, false)) && !(isBol && temporary[1])) {
         stream.pos += 2;
@@ -417,7 +426,15 @@ export function createObsidianMode(): ObsidianMode {
       state.extensionsAllowed = false;
     }
     const readState = isReadOnCopy ? rawMode.copyState(state) : state;
+    if (footrefInternalLink || (isFootrefStart && matchRe(stream, INTERNAL_LINK_START_RE, false))) {
+      readState.extensionsAllowed = false;
+    }
     ans += ` ${rawMode.token(stream, readState) ?? ''}`;
+    if (footrefInternalLink) {
+      state.internalLink = { embed: Boolean(footrefInternalLink[1]), hasAlias: (footrefInternalLink[2] ?? '').includes('|'), part: 'target' };
+      state.f = rawMode.internalLink;
+      state.inline = rawMode.internalLink;
+    }
     // A comment mark is the layer above's in Obsidian, so it keeps its length and its effect on the state.
     if ((isReadOnCopy || isFootrefStart) && readState.comment !== wasInComment) {
       state.comment = readState.comment;

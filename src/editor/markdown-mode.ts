@@ -59,6 +59,7 @@ export interface MarkdownMode {
   getType: (state: MarkdownState) => null | string;
   htmlBlock: TokenFunction;
   inlineNormal: TokenFunction;
+  internalLink: TokenFunction;
   startState: () => MarkdownState;
   token: (stream: Stream, state: MarkdownState) => null | string;
 }
@@ -1182,6 +1183,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     getType,
     htmlBlock,
     inlineNormal,
+    internalLink,
     startState(): MarkdownState {
       return {
         block: blockNormal,
