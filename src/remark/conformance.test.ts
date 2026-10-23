@@ -15,8 +15,6 @@ import { CONFORMANCE_CASES } from '../syntax/conformance.ts';
  * `docs/remark.md` explains each; each was checked against the worker itself.
  */
 const DIFFERENCES: readonly string[] = [
-  // `[[a]b]]` is a link: the worker's link content may hold a `]`.
-  'internal link content holds no ] and no line break',
   // `===` opens with its first `==` and closes with its first `==` after a non-space, so `===x===` is `=x` highlighted.
   'a run of three or more = is a highlight mark',
   // A `==` opens before any character that is no whitespace, `>` included.

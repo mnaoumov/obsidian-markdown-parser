@@ -638,7 +638,7 @@ Opened first after a restart, then any note holding `Plain text and <b>bold</b> 
 
 Drafted, then not reproduced on 1.14.5, so not reported:
 
-- **`[[a]b]]` was text in the editor and a link in the reading view** (draft 06). The editor now reads it as a link to `a]b`, and every view agrees. The class tokenizer follows the editor ([phase-1.md](phase-1.md#footnotes), `src/editor/highlight.test.ts`). The conformance case "internal link content holds no ] and no line break" in `src/syntax/conformance.ts` still reads it as no link.
+- **`[[a]b]]` was text in the editor and a link in the reading view** (draft 06). The editor now reads it as a link to `a]b`, and every view agrees. The class tokenizer follows the editor ([phase-1.md](phase-1.md#footnotes), `src/editor/highlight.test.ts`), and so does the shared syntax: the conformance case "internal link content may hold a ]" in `src/syntax/conformance.ts` reads it as a link in the Lezer tree, the micromark adapter, the markdown-it plugin and the engine.
 - **An unclosed HTML tag leaking highlighting into the next note** (draft 14). Not reproduced by opening other notes or by replacing the note's text. The leak was real but had another cause, now B29.
 
 ## Docs note: links and tags inside comments

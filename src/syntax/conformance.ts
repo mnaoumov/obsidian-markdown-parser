@@ -73,9 +73,14 @@ export const CONFORMANCE_CASES: readonly ConformanceCase[] = [
     name: 'embed'
   },
   {
+    expected: [[N.InternalLink, '[[a]b]]'], [N.InternalLinkMark, '[['], [N.InternalLinkPath, 'a]b'], [N.InternalLinkMark, ']]']],
+    markdown: '[[a]b]]',
+    name: 'internal link content may hold a ]'
+  },
+  {
     expected: [],
-    markdown: '[[a]b]] and [[open\nclose]]',
-    name: 'internal link content holds no ] and no line break'
+    markdown: '[[open\nclose]]',
+    name: 'internal link content holds no line break'
   },
   {
     expected: [],
