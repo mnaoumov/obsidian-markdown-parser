@@ -61,7 +61,7 @@ The callout and the task are [Obsidian's edits](#obsidians-edits) to `blockquote
 
 ## Where the worker and the editor differ
 
-`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 30 of its 39 cases as the editor does. The other 9 are places where the worker reads the syntax differently, each checked against the worker itself, or for a highlight, which `CachedMetadata` does not list, against the reading view of Obsidian 1.14.5:
+`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 31 of its 41 cases as the editor does. The other 10 are places where the worker reads the syntax differently, each checked against the worker itself, or for a highlight, which `CachedMetadata` does not list, against the reading view of Obsidian 1.14.5:
 
 | Case | The worker |
 | --- | --- |
@@ -73,6 +73,7 @@ The callout and the task are [Obsidian's edits](#obsidians-edits) to `blockquote
 | `a %%open\nto the end` | No comment: an inline comment closes on its line. |
 | `text %% inline\n%%` | The `%%` line interrupts the paragraph and opens a comment block, which runs to the end. |
 | `text[^1] more` | No reference: there is no definition, so `[^1]` is the text `1`. |
+| `text[^] more` | No reference, for the same reason. |
 | `> [^2]: in a quote` | A footnote definition, inside the quote. |
 
 So the editor's grammar and the worker's are two grammars. The editor's is the one the class layer and the three adapters follow, and the worker's is the one `CachedMetadata`, and so phase 2, reads.

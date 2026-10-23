@@ -176,6 +176,16 @@ export const CONFORMANCE_CASES: readonly ConformanceCase[] = [
     name: 'footnote reference'
   },
   {
+    expected: [[N.FootnoteReference, '[^]'], [N.FootnoteMark, '[^'], [N.FootnoteMark, ']']],
+    markdown: 'text[^] more',
+    name: 'footnote reference with an empty label'
+  },
+  {
+    expected: [],
+    markdown: 'text[^a b] and [^ a] and [^a\tb]',
+    name: 'footnote reference label holds no whitespace'
+  },
+  {
     expected: [[N.InlineFootnote, '^[an *inline* note]'], [N.FootnoteMark, '^['], [N.FootnoteMark, ']']],
     markdown: 'text^[an *inline* note]',
     name: 'inline footnote'

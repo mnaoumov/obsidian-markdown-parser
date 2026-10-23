@@ -580,7 +580,10 @@ function checkFootnoteReference(state: StateInline, isSilent: boolean): boolean 
     open.attrSet('class', 'footnote-ref');
     open.attrSet('data-footnote', label);
     pushInline(state, ObsidianNode.FootnoteMark, '', 0, range(start, start + DELIMITER_SIZE)).markup = '[^';
-    pushInline(state, ObsidianNode.FootnoteLabel, '', 0, range(start + DELIMITER_SIZE, end - 1)).content = label;
+    // An empty label `[^]` gets no label token.
+    if (label !== '') {
+      pushInline(state, ObsidianNode.FootnoteLabel, '', 0, range(start + DELIMITER_SIZE, end - 1)).content = label;
+    }
     pushInline(state, ObsidianNode.FootnoteMark, '', 0, range(end - 1, end)).markup = ']';
     pushInline(state, ObsidianNode.FootnoteReference + CLOSE_SUFFIX, 'sup', -1, null);
   }

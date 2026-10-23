@@ -539,9 +539,12 @@ function parseFootnoteReference(cx: InlineContext, next: number, pos: number): n
     return -1;
   }
   const end = pos + length;
+  const labelFrom = pos + DELIMITER_SIZE;
+  // An empty label `[^]` gets no label node.
+  const label = end - 1 > labelFrom ? [cx.elt(ObsidianNode.FootnoteLabel, labelFrom, end - 1)] : [];
   return cx.addElement(cx.elt(ObsidianNode.FootnoteReference, pos, end, [
-    cx.elt(ObsidianNode.FootnoteMark, pos, pos + DELIMITER_SIZE),
-    cx.elt(ObsidianNode.FootnoteLabel, pos + DELIMITER_SIZE, end - 1),
+    cx.elt(ObsidianNode.FootnoteMark, pos, labelFrom),
+    ...label,
     cx.elt(ObsidianNode.FootnoteMark, end - 1, end)
   ]));
 }

@@ -144,6 +144,7 @@ const BLOCK_ID_RE = /^\^[A-Za-z0-9-]+$/u;
 const CALLOUT_RE = /^\[!(?<type>[^\]\n]+)\](?<fold>[+-]?)/u;
 const TASK_RE = /^\[(?<marker>[^\n])\](?=\s)/u;
 const FOOTNOTE_DEFINITION_RE = /^\[\^(?<label>[^\]\n]+)\]:/u;
+const FOOTNOTE_REFERENCE_RE = /^\[\^[^\]\s]*\]/u;
 const MATH_INLINE_OPEN_RE = /^\$[^\s$]/u;
 const MATH_INLINE_CLOSABLE_RE = /[^\s\\]\$/u;
 // The length of the two-character openers `[^`, `^[` and `[!`.
@@ -323,17 +324,13 @@ export function matchFootnoteDefinition(text: string): FootnoteDefinitionStart |
 }
 
 /**
- * Reads a footnote reference, `[^label]`.
+ * Reads a footnote reference, `[^label]`. Its label holds no `]` and no whitespace, and may be empty.
  *
  * @param text - The text from the `[`.
  * @returns The length of the reference, or `0` when it is none.
  */
 export function matchFootnoteReference(text: string): number {
-  if (!text.startsWith('[^')) {
-    return 0;
-  }
-  const close = text.indexOf(']', OPENER_LENGTH);
-  return close <= OPENER_LENGTH || text.slice(OPENER_LENGTH, close).includes('\n') ? 0 : close + 1;
+  return FOOTNOTE_REFERENCE_RE.exec(text)?.[0].length ?? 0;
 }
 
 /**
