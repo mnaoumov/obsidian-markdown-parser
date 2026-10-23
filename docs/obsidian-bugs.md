@@ -50,6 +50,7 @@ The components are the editor (Source mode and Live Preview), the metadata cache
 | B25 | Autolink schemes, and `<mailto:...>` hiding the scheme | reading view, CommonMark | CommonMark in the adapters; flag | not posted yet |
 | B26 | An indented line that starts with math is math in the editor | editor, reading view | fixed in the tree | [50661](https://forum.obsidian.md/t/50661) |
 | B27 | A setext heading takes only one line | reading view, editor, CommonMark | CommonMark in the adapters; flag | [112786](https://forum.obsidian.md/t/112786) |
+| B28 | Live Preview hides a backslash at the start of an indented code block | editor, reading view | fixed in the tree | not posted yet |
 
 "Fixed in the tree" means the `@lezer/markdown` tree reads the sample as the reading view does, while the class tokenizer still reproduces the editor. "CommonMark in the adapters" means the `@lezer/markdown`, micromark and markdown-it adapters read it as CommonMark does, while `parseRemark` reproduces the reading view.
 
@@ -594,6 +595,25 @@ Bar
 **Pinned by:** the setext heading row of `src/oracle/spec-quirks.test.ts`, and the `setextHeading` row of `src/syntax/spec-suites.test.ts`.
 
 **Forum:** a duplicate of <https://forum.obsidian.md/t/112786> (open).
+
+### B28. Live Preview hides a backslash at the start of an indented code block
+
+**Obsidian:** the editor splits the token that starts an indented code block at a leading backslash, into an escape's backslash (`hmd-escape-backslash`) and the rest of the line as its character (`hmd-escape-char`), beside the code classes. Live Preview then hides the backslash, as it hides an escape's in text, whatever follows it. The reading view shows the line as typed. A line that continues the block is not affected.
+
+```markdown
+Text before.
+
+    \$HOME/bin
+    \$PATH
+```
+
+**Components:** the editor against the reading view.
+
+**This parser:** fixed in the tree. The class tokenizer reproduces the editor ([phase-1.md](phase-1.md#line-starts-the-markdown-mode-never-sees)). The Lezer tree, markdown-it and `parseRemark` read indented code holding the backslash (run here). In the editor the cause is the one of B26: the markdown mode reads the line's block structure only at the token after the leading whitespace, so that token is still read as inline markdown.
+
+**Pinned by:** `src/editor/highlight.test.ts`, "should split the token that makes its line indented code at a leading backslash, as an escape of the rest of the line".
+
+**Forum:** not posted yet (draft 28).
 
 ## Not bugs any more
 

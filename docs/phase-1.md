@@ -129,6 +129,8 @@ Obsidian reads three tokens that start a line before the markdown mode runs. The
 - Math at the line's start, once an earlier line has started with math. Obsidian keeps this memory across lines and clears it only at a `$` that does not open math. The first line in a document to start with math still goes through the markdown mode.
 - Math right after the line's leading whitespace. The markdown mode reads that whitespace as a token of its own and reads the line's block structure only at the next token, so math opens there even where the line would be indented code (`$x$` indented by four spaces), unless the line above is indented code. Text after the math on the same line is still read as indented code, and the next line is not indented code, since the line above it never became any.
 
+The same order splits the token that makes a line indented code when it starts with a backslash: it is still read as inline markdown, so the backslash wears `hmd-escape-backslash` and the rest of the line `hmd-escape-char`, beside the code classes, whatever character follows the backslash. A backslash alone on the line is not split, nor is the first token of a line that continues indented code. This was measured against the live editor of 1.14.5.
+
 ### Markdown blocks
 
 Obsidian registers its fork of the CodeMirror 5 markdown mode under the name `markdown`. So a fenced block whose language resolves to that mode (`markdown` in any case, or the MIME type `text/markdown` or `text/x-markdown`) runs the fork itself. It runs without HyperMD and without the editor's layer, with the options the fork defaults to. `src/editor/sub-modes.ts` registers this port under that name in the same way, and the stock `markdown.js` is never loaded. `md` resolves to no mode at all.

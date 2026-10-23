@@ -130,6 +130,22 @@ describe('highlight', () => {
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should split the token that makes its line indented code at a leading backslash, as an escape of the rest of the line', () => {
+    const backslash = 'hmd-escape-backslash hmd-indented-code inline-code';
+    const escaped = 'hmd-escape-char hmd-indented-code inline-code';
+    expect(spanClassesAt(String.raw`    \$x`, 4)).toBe(backslash);
+    expect(spanClassesAt(String.raw`    \$x`, 5)).toBe(escaped);
+    expect(highlight(String.raw`    \a\b $y`)[0]?.spans.map((s) => [s.from, s.to])).toEqual([[4, 5], [5, 11]]);
+    for (const text of ['\t\\$x', '  \t\\$x', String.raw`    \\`, String.raw`    \*a`, '# h\n    \\$x', '```\nx\n```\n    \\$x', '    a\n\n    \\$x', '- a\n\n      \\$x', String.raw`        \$x`]) {
+      expect(spanClassesAt(text, text.lastIndexOf('\\', text.length - 2))).toContain('hmd-escape-backslash');
+    }
+    // A line continuing indented code, a lone backslash, a lazy paragraph line and a backslash later in the line.
+    for (const text of ['    a\n    \\$x', '    \\', 'a\n    \\$x', String.raw`    a\$`]) {
+      expect(highlight(text).flatMap((line) => line.spans).some((s) => s.classes.includes('hmd-indented-code') && s.classes.includes('hmd-escape-backslash'))).toBe(false);
+    }
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read an inline footnote\'s body as inline markdown, up to a `]` outside a link or code', () => {
     const start = 'footref formatting-inline-footnote inline-footnote inline-footnote-start';
     const end = 'footref formatting-inline-footnote inline-footnote inline-footnote-end';
