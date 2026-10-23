@@ -245,6 +245,35 @@ describe('highlight', () => {
   });
 
   // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should read each character of an internal link as inline markdown that leaves the state as it was', () => {
+    const linkText = 'formatting formatting-link hmd-internal-link link';
+    expect(spanClassesAt('[[[b]]]', 2)).toBe(linkText);
+    expect(spanClassesAt('[[[b]]]', 3)).toBe('hmd-internal-link');
+    expect(spanClassesAt('[[a[[b]]', 4)).toBe(linkText);
+    expect(spanClassesAt('![[a[b]]', 4)).toBe('formatting formatting-link hmd-embed hmd-internal-link link');
+    expect(spanClassesAt('[[a|b[c]]', 5)).toBe(`${linkText} link-alias`);
+    expect(spanClassesAt('[[a[b|c]]', 3)).toBe(`${linkText} link-has-alias`);
+    // An escape is its backslash alone, and the character after it is read again.
+    expect(spanClassesAt(String.raw`[[b\]]`, 3)).toBe('formatting-escape hmd-internal-link');
+    expect(spanClassesAt(String.raw`[[b\]]`, 4)).toBe('formatting-link formatting-link-end');
+    expect(spanClassesAt(String.raw`[[a\*b]]`, 4)).toBe('em formatting formatting-em hmd-internal-link');
+    expect(spanClassesAt(String.raw`[[a\*b]]`, 5)).toBe('hmd-internal-link');
+    expect(spanClassesAt(String.raw`[[a\\]]`, 4)).toBe('formatting-escape hmd-internal-link');
+    expect(spanClassesAt(String.raw`[[a\b]]`, 3)).toBe('hmd-internal-link');
+    expect(spanClassesAt('[[a[b`c`]]', 6)).toBe('hmd-internal-link');
+    // A `]` does not stop the link from opening, and every pipe is a pipe.
+    expect(spanClassesAt('[[a]b]]', 3)).toBe('hmd-internal-link');
+    expect(spanClassesAt('[[a|b|c]]', 5)).toBe('hmd-internal-link link-alias-pipe');
+    // A comment mark changes the state.
+    expect(spanClassesAt('[[a%%b]]', 3)).toBe('comment comment-start formatting hmd-internal-link');
+    expect(spanClassesAt('[[a%%b]]', 5)).toBe('comment hmd-internal-link');
+    // Right after a list marker, the target wears no markdown classes until a pipe.
+    expect(spanClassesAt('- [[a[b]]', 5)).toBe('hmd-internal-link list-1');
+    expect(spanClassesAt(String.raw`- [[a|b\*c]]`, 7)).toBe('formatting-escape hmd-internal-link link-alias list-1');
+    expect(spanClassesAt('- ![[a[b]]', 6)).toBe('formatting formatting-link hmd-embed hmd-internal-link link list-1');
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
   it('should read a definition opening its line as a footnote unless its label is a `^` with whitespace after it', () => {
     const footnoteMark = 'formatting formatting-link hmd-barelink hmd-footnote link';
     // An empty label, with or without its `^`.
