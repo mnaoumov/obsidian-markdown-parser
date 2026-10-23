@@ -176,8 +176,9 @@ export function createObsidianMode(): ObsidianMode {
 
   /*
    * Obsidian: math opens inside the markdown inline flow, after the line's block structure is read. Inline `$` math
-   * opens before a non-space and closes after one; a line holding only `$$` opens a math block, whose lines carry
-   * `HyperMD-math`. A markdown link's text opens no math.
+   * opens before a non-space and closes after one; a `$$` that is the line's first non-space and is followed by no other
+   * `$` on its line, escaped or not, opens a math block, whose lines carry `HyperMD-math`. A markdown link's text opens
+   * no math.
    */
   function enterMath(stream: Stream, state: ObsidianState): string | undefined {
     const temporary = matchRe(stream, /^\${1,2}/u, false);
@@ -206,7 +207,7 @@ export function createObsidianMode(): ObsidianMode {
       style: mathLevel === 1 ? ['math', ...openSpanStyles(state)].join(' ') : 'math'
     });
     ans += ` formatting formatting-math formatting-math-begin${mathLevel === 2 ? ' math-block' : ''}`;
-    if (mathLevel === 2 && /^\s*\$\$\s*$/u.test(stream.string)) {
+    if (mathLevel === 2 && /^\s*\$\$[^$]*$/u.test(stream.string)) {
       state.hmdMathBlock = true;
     }
     state.hmdEnteredMath = true;
