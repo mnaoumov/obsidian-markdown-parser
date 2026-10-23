@@ -76,7 +76,7 @@ const INLINE_ALGORITHM = 'Each adapter reads inline content with its own delimit
 
 /* eslint-disable no-magic-numbers -- The spec example numbers are the data. */
 /**
- * Every behaviour behind a difference between Obsidian 1.14.4 and the spec examples.
+ * Every behaviour behind a difference between Obsidian 1.14.5 and the spec examples.
  */
 export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   {

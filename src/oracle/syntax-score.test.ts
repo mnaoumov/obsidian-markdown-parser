@@ -22,11 +22,11 @@ import {
 
 const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle');
 const ORACLE_FILES = [
-  'obsidian-1.14.4-seed-12345.json',
-  'obsidian-1.14.4-seed-777.json',
-  'obsidian-1.14.4-seed-4242.json',
-  'obsidian-1.14.4-seed-2026.json',
-  'obsidian-1.14.4-seed-9001.json'
+  'obsidian-1.14.5-seed-12345.json',
+  'obsidian-1.14.5-seed-777.json',
+  'obsidian-1.14.5-seed-4242.json',
+  'obsidian-1.14.5-seed-2026.json',
+  'obsidian-1.14.5-seed-9001.json'
 ];
 
 /*

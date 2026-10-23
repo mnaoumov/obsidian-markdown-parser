@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * The Obsidian version every oracle file in `oracle/` was read from.
  */
-export const PINNED_OBSIDIAN_VERSION = '1.14.4';
+export const PINNED_OBSIDIAN_VERSION = '1.14.5';
 
 /**
  * The seed of the class-span oracle the suites use where one is enough.

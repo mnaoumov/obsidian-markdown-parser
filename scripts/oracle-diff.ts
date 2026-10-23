@@ -32,7 +32,7 @@ interface SetScore {
   total: number;
 }
 
-const DEFAULT_ORACLE = 'oracle/obsidian-1.14.4-seed-12345.json';
+const DEFAULT_ORACLE = 'oracle/obsidian-1.14.5-seed-12345.json';
 const TOP_CLASSES = 40;
 const CLASS_COLUMN_WIDTH = 36;
 const DOCS_COLUMN_WIDTH = 4;

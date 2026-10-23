@@ -38,7 +38,7 @@ interface Timed<T> {
   readonly value: T;
 }
 
-const ORACLES = ['oracle/obsidian-1.14.4-seed-2026.json', 'oracle/obsidian-1.14.4-seed-9001.json'];
+const ORACLES = ['oracle/obsidian-1.14.5-seed-2026.json', 'oracle/obsidian-1.14.5-seed-9001.json'];
 // About 60 lines of this corpus: a tall editor viewport.
 const VIEWPORT_CHARS = 3000;
 const TYPING_KEYSTROKES = 50;
