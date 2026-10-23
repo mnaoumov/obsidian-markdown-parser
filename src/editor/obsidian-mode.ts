@@ -440,8 +440,11 @@ export function createObsidianMode(): ObsidianMode {
       state.comment = readState.comment;
       tokenEnd = stream.pos;
     }
-    // Obsidian: a read after a mark that opens its line leaves the line's block structure unread, but HTML it opens stays.
-    if (isFootrefStart && isBol && state.f === state.block && state.f !== rawMode.htmlBlock) {
+    /*
+     * Obsidian: a read after a mark that opens its line leaves the line's block structure unread. HTML that read opens
+     * is left half open: the token goes on as inline text, while the HTML block and its state wait for the next line.
+     */
+    if (isFootrefStart && isBol && state.f === state.block) {
       state.f = rawMode.inlineNormal;
       state.inline = rawMode.inlineNormal;
     }
@@ -483,6 +486,10 @@ export function createObsidianMode(): ObsidianMode {
     let current = stream.current();
     if (isInHTML !== wasInHTML) {
       ans += isInHTML ? ' hmd-html-begin' : ' hmd-html-end';
+      // Obsidian: a definition's label gives its classes before the read, so a token of it that opens HTML wears them.
+      if (isInHTML && state.hmdLinkType === LinkType.Footnote) {
+        ans += ` link ${LINK_STYLE.get(LinkType.Footnote) ?? ''}`;
+      }
     }
     if (wasInCodeFence || isInCodeFence) {
       if (!state.localMode || !wasInCodeFence) {

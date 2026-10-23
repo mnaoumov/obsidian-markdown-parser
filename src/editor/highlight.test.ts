@@ -346,9 +346,34 @@ describe('highlight', () => {
     expect(spanClassesAt('> [^a b]: x', 10)).toBe('string url');
   });
 
-  // The classes the live editor of Obsidian 1.14.5 gave this document.
-  it('should keep HTML opened right after a footnote reference mark that opens its line', () => {
-    expect(spanClassesAt('[^<b>]', 0)).toBe('bracket formatting formatting-link formatting-link-start hmd-html-begin tag');
+  /*
+   * The classes the live editor of Obsidian 1.14.5 gave these documents once it had read HTML elsewhere. Before that it
+   * reads them differently, which is an Obsidian bug in the ledger (`docs/obsidian-bugs.md`).
+   */
+  it('should leave HTML half open after a footnote reference mark that opens its line', () => {
+    expect(spanClassesAt('[^<b>]', 0)).toBe('bracket footref formatting formatting-link formatting-link-start hmd-barelink tag');
+    expect(spanClassesAt('[^<b>]', 2)).toBe('bracket footref hmd-barelink tag');
+    expect(spanClassesAt('[^<b>]', 3)).toBe('footref hmd-barelink');
+    expect(spanClassesAt('[^<b>] x\ny', 7)).toBe('');
+    // The HTML takes the next line, and the one after a blank line.
+    expect(spanClassesAt('[^<b>] x\ny', 9)).toBe('hmd-html-begin tag');
+    expect(spanClassesAt('[^<b>]\n\nplain [x]', 8)).toBe('hmd-html-begin tag');
+    expect(spanClassesAt('[^<b>]\n\nplain [x]', 15)).toBe('attribute');
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should read the label of a definition that opens its line as inline markdown', () => {
+    const label = 'hmd-barelink hmd-footnote link';
+    expect(spanClassesAt('[^*a*]: y', 3)).toBe(`em ${label}`);
+    expect(spanClassesAt('[x*a*]: y', 3)).toBe(`em ${label}`);
+    expect(spanClassesAt('[^`c`]: x', 3)).toBe('hmd-barelink hmd-footnote inline-code link');
+    expect(spanClassesAt('[^==a==]: x', 4)).toBe('highlight hmd-barelink hmd-footnote link');
+    // HTML opened in the label takes the rest of the line, unless it ends inside the label.
+    expect(spanClassesAt('[^<b>]: x', 2)).toBe('bracket hmd-barelink hmd-footnote hmd-html-begin link tag');
+    expect(spanClassesAt('[^<b>]: x', 3)).toBe('tag');
+    expect(spanClassesAt('[^<b>]: x', 5)).toBe('');
+    expect(highlight('[^<b>]: x\n    y')[1]?.classes).not.toContain('HyperMD-footnote');
+    expect(spanClassesAt('[^<b></b>]: x', 10)).toBe('formatting formatting-link hmd-barelink hmd-footnote link');
   });
 
   // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.
