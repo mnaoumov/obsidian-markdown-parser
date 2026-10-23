@@ -69,6 +69,19 @@ describe('highlight', () => {
     expect(mathClasses('==a\n\n$x$')).toEqual(['math']);
   });
 
+  // The classes the live editor of Obsidian 1.14.4 gave these documents.
+  it('should open no math inside a markdown link\'s text', () => {
+    for (const text of ['[a $x$](u)', '[a $x$]', '[a $x$][r]\n\n[r]: u', '[a $$x$$](u)', 'a [b $x$', '> [a $x$](u)', '**[a $x$](u)**']) {
+      expect(mathClasses(text)).toEqual([]);
+    }
+    // Link text ends with its line.
+    expect(mathClasses('[a\nb $x$](u)')).toEqual(['math']);
+    expect(highlight('$x$\n[a\n$y$](u)')[2]?.spans.filter((s) => s.classes.includes('math'))).toHaveLength(3);
+    expect(mathClasses('[a $x$] b $y$')).toEqual(['math']);
+    expect(mathClasses('$x [a$ b](u)')).toEqual(['math', 'bracket math']);
+    expect(mathClasses('![a $x$](u)')).toEqual(['math']);
+  });
+
   // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.
   it('should mark the end of emphasis, strikethrough and code spans from Obsidian 1.15 on', () => {
     const text = '*em* **strong** ***both*** ~~strike~~ `code`\n> ```\n> a ```';
