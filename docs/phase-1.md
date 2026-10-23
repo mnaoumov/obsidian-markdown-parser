@@ -4,21 +4,23 @@ Measured on 2026-10-14 against Obsidian 1.14.4 (installer 1.14.4), on a harness-
 
 ## Result
 
-The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on all 36,608 oracle documents.
+The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on all 46,508 oracle documents.
 
-| Oracle corpus                               | Documents | Exact |
-| ------------------------------------------- | --------: | ----: |
-| seed 12345 (tuned against)                  |     2,128 | 2,128 |
-| seed 777 (first read after tuning)          |     2,128 | 2,128 |
-| seed 4242 (read once, at the end)           |     2,128 | 2,128 |
-| seed 2026 (wider corpus, tuned against)     |     3,328 | 3,328 |
-| seed 9001 (wider corpus, validation)        |     3,328 | 3,328 |
-| seed 31337 (markdown blocks, tuned against) |     3,628 | 3,628 |
-| seed 2718 (markdown blocks, validation)     |     3,628 | 3,628 |
-| seed 1618 (code spans, tuned against)       |     3,928 | 3,928 |
-| seed 1414 (code spans, validation)          |     3,928 | 3,928 |
-| seed 3141 (highlight colors, tuned against) |     4,228 | 4,228 |
-| seed 6174 (highlight colors, validation)    |     4,228 | 4,228 |
+| Oracle corpus                               | First read | Exact then | Documents now | Exact now |
+| ------------------------------------------- | ---------: | ---------: | ------------: | --------: |
+| seed 12345 (tuned against)                  |      2,128 |      2,128 |         4,228 |     4,228 |
+| seed 777 (first read after tuning)          |      2,128 |      2,128 |         4,228 |     4,228 |
+| seed 4242 (read once, at the end)           |      2,128 |      2,128 |         4,228 |     4,228 |
+| seed 2026 (wider corpus, tuned against)     |      3,328 |      3,328 |         4,228 |     4,228 |
+| seed 9001 (wider corpus, validation)        |      3,328 |      3,328 |         4,228 |     4,228 |
+| seed 31337 (markdown blocks, tuned against) |      3,628 |      3,628 |         4,228 |     4,228 |
+| seed 2718 (markdown blocks, validation)     |      3,628 |      3,628 |         4,228 |     4,228 |
+| seed 1618 (code spans, tuned against)       |      3,928 |      3,928 |         4,228 |     4,228 |
+| seed 1414 (code spans, validation)          |      3,928 |      3,928 |         4,228 |     4,228 |
+| seed 3141 (highlight colors, tuned against) |      4,228 |      4,228 |         4,228 |     4,228 |
+| seed 6174 (highlight colors, validation)    |      4,228 |      4,228 |         4,228 |     4,228 |
+
+Each seed was first read from the corpus of its day, which lacked the piece sets added after it. On 2026-10-22 the nine seeds read before the last set were read again from the current corpus, so every file now holds the hand-written cases and all fourteen sets, and the tokenizer was exact on every one of them. A seed draws other texts for a set once a set before it is added or grows, so the document ids named in the paragraphs below, and in the rules further down, are those of a seed's first read.
 
 Seed 777 scored 2,110 the first time it was read, which measured how well rules found on seed 12345 carry to documents nobody looked at. The rules it then taught carried to seed 4242, which scored 2,122 on its first read and 2,126 after two fixes found there. The last 4 documents (`inline-83`, `inline-280`, `inline-34`, `inline-206`) were closed by the two rules under [Line starts the markdown mode never sees](#line-starts-the-markdown-mode-never-sees) and by the CodeMirror 5 release under [Tables and front matter](#tables-and-front-matter).
 
@@ -34,7 +36,7 @@ From this round on, a rule the oracle could not settle was read from the editor'
 
 For comparison, Phase 0's best stage (a Lezer tree, a mapping and a 70-line inline state machine) reached 613 of 2,128.
 
-Every line start outside a fenced code block and outside a `<script>` or `<style>` element is a resume point (`isLineStateResumable`). Highlighting from a copy of the state after such a line gives the same classes as highlighting the whole document. The test suite checks this at the 7,119 such line starts of the 7,171 in the seed 12345 corpus. Inside those blocks the state holds a CodeMirror 5 mode object that keeps state in its closure, which a copy shares rather than copies ([cm6-host.md](cm6-host.md#incremental-reuse)).
+Every line start outside a fenced code block and outside a `<script>` or `<style>` element is a resume point (`isLineStateResumable`). Highlighting from a copy of the state after such a line gives the same classes as highlighting the whole document. The test suite checks this at the 12,818 such line starts of the 14,501 in the seed 12345 corpus. Inside those blocks the state holds a CodeMirror 5 mode object that keeps state in its closure, which a copy shares rather than copies ([cm6-host.md](cm6-host.md#incremental-reuse)).
 
 ## How it works
 

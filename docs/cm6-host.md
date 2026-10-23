@@ -20,7 +20,7 @@ The tree has the shape the oracle reads from the live editor:
 
 Obsidian's editor renders the classes itself, from two node props its copy of `@codemirror/language` adds: `lineClassNodeProp` and `tokenClassNodeProp`, each holding the classes joined by spaces. A language made with `createEditorClassLanguage({ lineClassNodeProperty, tokenClassNodeProperty })` puts the classes in the props it is given too, on node types of its own, so the language runs as the editor's language inside Obsidian ([docs/demo-plugin.md](demo-plugin.md)).
 
-The host's tree gives every character and line the same classes as the line tokenizer on all 20,296 documents of the seven oracle corpora. Scored against the live editor's trees directly, it is exact on all of them too. Since 2026-10-22 it is also the live editor's tree node for node, names and merged tokens included, on all 36,608 documents of the eleven class oracles, which `src/editor/language.test.ts` pins.
+The host's tree is the live editor's tree node for node, names and merged tokens included, on all 46,508 documents of the eleven class oracles, which `src/editor/language.test.ts` pins. So it gives every character and line the live editor's classes, and the line tokenizer's.
 
 ## Incremental reuse
 
@@ -49,17 +49,19 @@ The suite checks that 400 random edits to a 300-line document, parsed incrementa
 
 `scripts/cm6-bench.ts` repeats the texts of the two wider oracle corpora to 10,000 and 100,000 lines. It times a full parse. Then it inserts one character at the start of the line at the document's start, middle and end, and times the re-parse from the old tree's fragments to a viewport 3,000 characters past the edit (about 60 lines of this corpus), and on to the end. `Re-parsed` is how many characters the re-parse to the end tokenized again rather than reused. Medians of 5 runs, Node 26.10.0 on an AMD Ryzen 5 7500F, measured on 2026-10-22. Two runs of the script differed by up to 30%, and up to 50% on the smallest times.
 
+The two corpora were read again from the current corpus on 2026-10-22, which gave them the `mdlang`, `codespan` and `mark` piece sets. With the same code, a full parse of their texts costs about twice what it cost on the texts read before (26.01 ms and 103.14 ms in the same sitting). At 10,000 lines the edit in the middle now falls inside a `<script>` element, so the parse goes on to the element's end and re-tokenizes more.
+
 | Lines   | Characters | Full parse | Edit at | Resumed from | Re-parsed | To viewport | To end  |
 | ------: | ---------: | ---------: | :------ | -----------: | --------: | ----------: | ------: |
-| 10,000  | 61,546     | 24.69 ms   | start   | 0            | 1,042     | 0.63 ms     | 0.82 ms |
-| 10,000  | 61,546     | 24.69 ms   | middle  | 30,601       | 981       | 0.35 ms     | 0.49 ms |
-| 10,000  | 61,546     | 24.69 ms   | end     | 61,078       | 469       | 0.14 ms     | 0.14 ms |
-| 100,000 | 582,536    | 113.53 ms  | start   | 0            | 574       | 0.77 ms     | 0.94 ms |
-| 100,000 | 582,536    | 113.53 ms  | middle  | 291,028      | 513       | 0.53 ms     | 0.62 ms |
-| 100,000 | 582,536    | 113.53 ms  | end     | 582,106      | 431       | 0.35 ms     | 0.35 ms |
+| 10,000  | 61,590     | 49.94 ms   | start   | 0            | 649       | 0.85 ms     | 0.95 ms |
+| 10,000  | 61,590     | 49.94 ms   | middle  | 29,971       | 2,137     | 2.30 ms     | 2.36 ms |
+| 10,000  | 61,590     | 49.94 ms   | end     | 61,515       | 76        | 0.08 ms     | 0.08 ms |
+| 100,000 | 584,250    | 172.22 ms  | start   | 0            | 596       | 0.97 ms     | 1.29 ms |
+| 100,000 | 584,250    | 172.22 ms  | middle  | 291,714      | 1,588     | 1.68 ms     | 1.84 ms |
+| 100,000 | 584,250    | 172.22 ms  | end     | 583,712      | 539       | 0.33 ms     | 0.33 ms |
 
-Before the parse reused the chunks after an edit, the re-parse to the end after an edit at the start cost 19.83 ms at 10,000 lines and 100.55 ms at 100,000. It parsed everything after the edit again. Now it re-tokenizes about a chunk around the edit and takes the rest from the old tree, so an edit costs about the same wherever it is and however long the document is. An edit that changes the state of every line after it still costs a parse to the end: one that opens a fence or a multi-line comment, for example. Inside a fenced block or a `<style>` or `<script>` element the parse goes on to the block's end.
+Before the parse reused the chunks after an edit, the re-parse to the end after an edit at the start cost 19.83 ms at 10,000 lines and 100.55 ms at 100,000, on the texts read before. It parsed everything after the edit again. Now it re-tokenizes about a chunk around the edit and takes the rest from the old tree, so an edit costs about the same wherever it is and however long the document is. An edit that changes the state of every line after it still costs a parse to the end: one that opens a fence or a multi-line comment, for example. Inside a fenced block or a `<style>` or `<script>` element the parse goes on to the block's end.
 
-Typing 50 characters one after another in the middle costs a median of 0.16 ms per keystroke at 10,000 lines and 0.80 ms at 100,000. Each re-parse resumes from the tree before it. Before the reuse, those were 0.56 ms and 0.33 ms. The bench runs no editor, so a re-parse there takes the old tree's chunks on to the document's end, balances the tree over all of them, and the next keystroke lists them again, which is why 100,000 lines cost more. In an editor the parse and the reuse stop at the end of the viewport, and the rest is parsed when it comes into view.
+Typing 50 characters one after another in the middle costs a median of 1.46 ms per keystroke at 10,000 lines, inside that `<script>` element, and 0.94 ms at 100,000. Each re-parse resumes from the tree before it. On the texts read before, those were 0.16 ms and 0.80 ms, and 0.56 ms and 0.33 ms before the reuse. The bench runs no editor, so a re-parse there takes the old tree's chunks on to the document's end, balances the tree over all of them, and the next keystroke lists them again, which makes a keystroke on a longer document cost more outside such an element. In an editor the parse and the reuse stop at the end of the viewport, and the rest is parsed when it comes into view.
 
 Run it with `npx jiti scripts/cm6-bench.ts [--lines <n>]... [--runs <n>]`.

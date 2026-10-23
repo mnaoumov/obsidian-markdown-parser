@@ -24,7 +24,7 @@ It needs a global `obsidian-integration-testing` install, which launches each Ob
 3. It writes the files to `oracle/`, named after the version, beside the pinned ones. A re-read of the pinned version itself goes to a temporary directory instead (`<tmp>/obsidian-oracles-<version>`), so it never overwrites the files the suites check against.
 4. It runs the drift report below.
 
-A class-span re-read follows the corpus as it is now, and the corpus has changed since most pinned files were read: piece sets were added and grew, which also moves what the seed draws for the sets after them. Only seeds 3141 and 6174 were read from the current corpus. For the others most documents now have another text under the same id, and the report counts them as new rather than compared.
+A class-span re-read follows the corpus as it is now. Every pinned file holds the current corpus, 4,228 documents per seed: seeds 3141 and 6174 were first read from it, and the other nine were read again from it on 2026-10-22 and replaced. When a piece set is added or grows, that also moves what a seed draws for the sets after it, so most documents of a later re-read have another text under the same id, and the report counts them as new rather than compared until the files are read again.
 
 ## The drift report
 
@@ -67,5 +67,6 @@ The parser's score is shown on both versions because it is not 100% everywhere o
 - **The parser matched every compared document**, as on the pinned files.
 - **8 new documents differ.** The corpus gained its `mark` piece set after the pinned files of seeds 777, 1414, 2026 and 9001 were read, so those files never held it, and the re-reads show the tokenizer missing a rule there: an unclosed highlight on an earlier line puts `highlight` on a later line's inline math in the editor. The pinned seeds 3141 and 6174, read from the current corpus, did not happen to draw such a document. So the conformance suites failed on the re-read on exactly these 8. Probing the live editor showed the rule is wider than highlights: `$` math wears every `strong`, `em`, `strikethrough` and `highlight` span open around it ([`phase-1.md`](phase-1.md)). The tokenizer now follows it, and all eleven re-reads are exact.
 - The spec examples' editor classes were 649 of 674 exact on both reads: the 25 others differ on the pinned file too.
+- The class-span re-reads of the nine seeds read from older corpora then replaced their pinned files, so every pinned file holds the current corpus, and the suites and scripts that record numbers on them were re-recorded.
 
 The first runs also showed that a renderer whose window is not in front throttles its timers, which held a batch of reads past the 30-second cap of one eval. `scripts/oracle.ts` now makes each read its own eval and waits between reads from Node.

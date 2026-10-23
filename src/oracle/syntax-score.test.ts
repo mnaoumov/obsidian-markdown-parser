@@ -34,18 +34,18 @@ const ORACLE_FILES = [
  * editor. `docs/syntax.md` explains the rest. A change that moves either number in either direction must update it here.
  */
 const EXPECTED_SCORES = new Map<string, readonly [using: number, agreeing: number]>([
-  ['block id', [893, 882]],
-  ['callout', [437, 409]],
-  ['comment', [1594, 1128]],
-  ['footnote definition', [347, 342]],
-  ['footnote reference', [350, 345]],
-  ['front matter', [1728, 1728]],
-  ['highlight', [518, 516]],
-  ['inline footnote', [343, 341]],
-  ['internal link', [1176, 1140]],
-  ['math', [1453, 1087]],
-  ['tag', [749, 717]],
-  ['task marker', [932, 837]]
+  ['block id', [979, 946]],
+  ['callout', [426, 395]],
+  ['comment', [1962, 1453]],
+  ['footnote definition', [455, 436]],
+  ['footnote reference', [384, 360]],
+  ['front matter', [2732, 2732]],
+  ['highlight', [2177, 1437]],
+  ['inline footnote', [355, 342]],
+  ['internal link', [1416, 1334]],
+  ['math', [1775, 1357]],
+  ['tag', [951, 894]],
+  ['task marker', [1054, 937]]
 ]);
 
 describe('compareSyntax', () => {

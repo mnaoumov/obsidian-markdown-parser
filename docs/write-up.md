@@ -6,7 +6,7 @@ The repository is private and nothing in it has been published.
 
 ## In short
 
-- **The editor's classes are reproduced exactly.** All 36,608 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
+- **The editor's classes are reproduced exactly.** All 46,508 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
 - **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is 14 to 17% faster than the stock language's, and a keystroke costs the same as the stock one, in live preview too.
 - **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,236 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
 - **The Obsidian syntax is defined once** and ships for `@lezer/markdown`, micromark with mdast, and markdown-it, each checked against one conformance corpus and the CommonMark 0.31.2 suite.
@@ -59,10 +59,10 @@ The CodeMirror 6 host ([cm6-host.md](cm6-host.md)) parses in chunks that record 
 
 | Lines | Full parse | Edit at the start, re-parse to the end |
 | ---: | ---: | ---: |
-| 10,000 | 24.7 ms | 0.82 ms |
-| 100,000 | 113.5 ms | 0.94 ms |
+| 10,000 | 49.9 ms | 0.95 ms |
+| 100,000 | 172.2 ms | 1.29 ms |
 
-Before the reuse, the second column was 19.8 ms and 100.6 ms. An edit that changes the state of every line after it, such as opening a fence, still costs a parse to the end. 9,900 random edits across all eleven corpora gave the same tree as a fresh parse.
+Before the reuse, the second column was 19.8 ms and 100.6 ms, on texts read before the corpus gained its last three piece sets, which cost about half as much to parse in full. An edit that changes the state of every line after it, such as opening a fence, still costs a parse to the end. 9,900 random edits across all eleven corpora gave the same tree as a fresh parse.
 
 Inside Obsidian, with the parser swapped in as the editor's language ([demo-plugin.md](demo-plugin.md)), on a 100,001-line note:
 
@@ -79,20 +79,20 @@ The metadata is not incremental: `parseMetadata` parses the whole note on every 
 
 ([phase-1.md](phase-1.md))
 
-- **36,608 of 36,608 documents exact**, in eleven oracle corpora covering tables, HTML blocks, 30 fenced languages through their CodeMirror 5 modes, nested lists, markdown nested in markdown fences, code spans left open and highlight color markers.
+- **46,508 of 46,508 documents exact**, in eleven oracle corpora covering tables, HTML blocks, 30 fenced languages through their CodeMirror 5 modes, nested lists, markdown nested in markdown fences, code spans left open and highlight color markers.
 - **Inside Obsidian, 0 class differences** on 116 notes and 282,354 stock nodes. Obsidian's renderer reads two node props of its own, which the language fills in when given them, so themes, live preview, folding, task checkboxes, callouts and code-block flair all work on the parser's tree.
-- **The tree is identical node for node**, type names and merged tokens included, on all 36,608 documents and inside Obsidian on all 116 notes, so the same text renders as the same spans. On the spec examples, every tree whose classes match the editor's matches it node for node too.
+- **The tree is identical node for node**, type names and merged tokens included, on all 46,508 documents and inside Obsidian on all 116 notes, so the same text renders as the same spans. On the spec examples, every tree whose classes match the editor's matches it node for node too.
 
 ### 4. One syntax for three ecosystems: yes
 
-The syntax is defined once (`src/syntax/spec.ts`): internal links and embeds, tags, `%%` comments, math, highlights, footnotes with inline notes, block ids, callouts, task markers and front matter ([syntax.md](syntax.md)). Each adapter passes the whole conformance corpus. On the 20,296 documents of seven oracle corpora, compared with the Lezer tree node for node:
+The syntax is defined once (`src/syntax/spec.ts`): internal links and embeds, tags, `%%` comments, math, highlights, footnotes with inline notes, block ids, callouts, task markers and front matter ([syntax.md](syntax.md)). Each adapter passes the whole conformance corpus. On the 29,596 documents of seven oracle corpora, compared with the Lezer tree node for node:
 
 | Adapter | Same Obsidian nodes as the Lezer tree |
 | --- | ---: |
-| micromark and mdast | 19,509 of 20,296 |
-| markdown-it | 19,546 of 20,296 |
+| micromark and mdast | 28,551 of 29,596 |
+| markdown-it | 28,682 of 29,596 |
 
-None of the differences is a rule of the Obsidian syntax. Each is a place where two parsers' block structure reads the document differently: an unclosed block taking the document's last line break, which GFM table rules apply, and which list items may interrupt a lazy line.
+None of the differences is a rule of the Obsidian syntax. Each is a place where two parsers' block structure reads the document differently, an unclosed block taking the document's last line break, which GFM table rules apply, and which list items may interrupt a lazy line, or where they pair a highlight's `==` across emphasis differently.
 
 ### 5. CommonMark and GFM: yes, with Obsidian's departures as options
 
@@ -124,7 +124,6 @@ Each is measured, and each has a test or a script that reproduces it.
 
 ### In the editor engine
 
-- **An unclosed color highlight on an earlier line puts `highlight` on a later line's inline math** in the editor, and the tokenizer misses that rule. Eight documents of the newest piece set show it.
 - **25 of the 674 spec examples** differ in the editor's classes.
 
 ### In the metadata engine
@@ -134,7 +133,8 @@ Each is measured, and each has a test or a script that reproduces it.
 ### In the Lezer tree and the adapters
 
 - **`@lezer/markdown` 1.8 differs from CommonMark 0.31.2 in seven examples.** Six are worked around here. Example 280, a list item that starts with a blank line, sits in its internal list continuation and cannot be. All seven are reported upstream as [lezer/markdown#70](https://code.haverbeke.berlin/lezer/markdown/issues/70), without naming this project.
-- **The adapters differ from the Lezer tree on 787 and 750 of 20,296 documents**, all block structure (goal 4).
+- **The tree's highlight rule differs from the editor's on two shapes**: the editor toggles a highlight on a run of three or more `=` and opens none before `>`, and the tree does the opposite on both ([syntax.md](syntax.md#measured-against-the-live-editor)).
+- **The adapters differ from the Lezer tree on 1,045 and 914 of 29,596 documents**, block structure and the pairing of highlights across emphasis (goal 4).
 - **With every flag on, each adapter matches the reading view on 34 of the 68 inline probes.** The other 34 are `remark-parse` 8's inline rules, which only the fourth engine has.
 - **The editor and the worker read the syntax differently in 7 of the conformance corpus's cases**: a link holding a `]`, links and tags inside comments, an inline comment closing on its line, a `%%` line interrupting a paragraph, a footnote reference with no definition, and a footnote definition inside a quote ([remark.md](remark.md#where-the-worker-and-the-editor-differ)). The tree follows the editor and the metadata follows the worker.
 - **List indentation beyond CommonMark's is not yet measured**: whether Obsidian nests a child indented by 2 or 3 spaces where CommonMark needs the content column, and the same with tabs.

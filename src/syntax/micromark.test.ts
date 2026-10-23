@@ -33,7 +33,7 @@ import {
 const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'oracle', 'obsidian-1.14.4-seed-12345.json');
 // The documents of the oracle file on which the two adapters give the same Obsidian nodes. `docs/syntax.md` explains
 // the rest, and `scripts/adapter-diff.ts` shows them.
-const AGREEING_DOCUMENTS = 2011;
+const AGREEING_DOCUMENTS = 4068;
 
 function eventsOf(markdown: string): Event[] {
   return postprocess(parse({ extensions: [...micromarkObsidianMarkdown] }).document().write(preprocess()(markdown, undefined, true)));
