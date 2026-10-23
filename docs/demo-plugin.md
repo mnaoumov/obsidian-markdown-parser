@@ -14,7 +14,7 @@
 
 Each command shows its report in a modal and keeps it on the plugin as `lastReport`.
 
-`npx jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines <n>]` does all of that unattended. It starts an owned Obsidian instance through a global `obsidian-integration-testing` install, copies a real vault's notes into its temporary vault, adds a note of `<n>` lines built from those notes (100,000 by default), installs the build, runs every command and prints the reports as JSON. The default vault is the `obsidian-community-vault` checkout beside this repository. Folders whose names start with `.` and `node_modules` folders are skipped.
+`npx jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines <n>] [--obsidian-version <version>]` does all of that unattended. It starts an owned Obsidian instance through a global `obsidian-integration-testing` install. The instance runs the Obsidian version the oracles are pinned to (`PINNED_OBSIDIAN_VERSION` in `src/oracle/oracle-location.ts`) whichever version is installed, or the one `--obsidian-version` names, and the report's `appVersion` says which version ran. It copies a real vault's notes into its temporary vault, adds a note of `<n>` lines built from those notes (100,000 by default), installs the build, runs every command and prints the reports as JSON. The default vault is the `obsidian-community-vault` checkout beside this repository. Folders whose names start with `.` and `node_modules` folders are skipped.
 
 ## How the swap works
 
