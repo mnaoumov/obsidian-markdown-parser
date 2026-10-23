@@ -81,7 +81,7 @@ Each rule below was read off the oracle and checked against all three corpora.
 
 - `%%` toggles a comment state. Inside a comment, each token read as markdown inline text carries `comment`. A footnote definition's opening mark gets the single class `commentformatting`, which is two classes joined without a space, unless a code span left open on the line above hides the comment.
 - A code span opened by one or two backticks ends with its line, wherever it was opened. One opened by three or more runs on until a run of the same length closes it.
-- A run of two or more `=` toggles a highlight. It opens one only before a character that is neither whitespace nor `>`. Where it opens nothing, only its first `=` is read. A run with a space on each side is plain text, and so is the space before it. A list item or a blank line ends a highlight, as it ends emphasis and code spans.
+- A run of two or more `=` toggles a highlight. It opens one only before a character that is neither whitespace nor `>`. Where it opens nothing, only its first `=` is read. A `==` with a space on each side is plain text, and so is the space before it. A list item or a blank line ends a highlight, as it ends emphasis and code spans.
 - A color marker right after an opening run joins the run's token: one of 🔴 🟥 (red), 🟠 🟧 (orange), 🟡 🟨 (yellow), 🟢 🟩 (green), 🔵 🟦 (blue) and 🟣 🟪 (purple). Every token of that highlight, both of its marks included, then carries `highlight-<color>` beside `highlight`. Any other emoji is highlighted text.
 - A run of plain text also stops at `|` and `$`.
 - A tag token carries `tag-<name>`, keeping only ASCII letters, digits, `_` and `-`. The `#` token takes the whole name, and the last token takes its own text. The tokens after the `#` drop `em`.

@@ -150,16 +150,18 @@ const MATH_INLINE_CLOSABLE_RE = /[^\s\\]\$/u;
 const OPENER_LENGTH = 2;
 const INLINE_MATH_SIZE = 1;
 const DISPLAY_MATH_SIZE = 2;
+const HIGHLIGHT_DELIMITER_MIN_LENGTH = 2;
 const NODE_NAMES: ReadonlySet<string> = new Set(Object.values(ObsidianNode).map(String));
 
 /**
- * Whether a `==` can open a highlight: it must be followed by a non-space. Any `==` closes an open highlight.
+ * Whether a highlight delimiter can open a highlight: it must be followed by a character that is no whitespace and no
+ * `>`. Any delimiter closes an open highlight.
  *
- * @param after - The character after the `==`, or `''` at the end of the text.
+ * @param after - The character after the delimiter, or `''` at the end of the text.
  * @returns `true` when the highlight can open.
  */
 export function canOpenHighlightBefore(after: string): boolean {
-  return after !== '' && !/^\s$/u.test(after);
+  return after !== '' && !/^[\s>]$/u.test(after);
 }
 
 /**
@@ -176,7 +178,7 @@ export function canOpenTagAfter(before: string): boolean {
  * Reads the size of a run of `=` that opens or closes a highlight.
  *
  * @param text - The text from the first `=` of the run.
- * @returns The length of the run. Only a run of exactly 2 is a highlight delimiter.
+ * @returns The length of the run. {@link isHighlightDelimiter} tells whether it is a highlight delimiter.
  */
 export function equalsRunLength(text: string): number {
   let length = 0;
@@ -233,6 +235,16 @@ export function findMathClose(text: string, size: MathDelimiterSize): number {
 }
 
 /**
+ * The character before a run of `=` that {@link isHighlightDelimiter} takes.
+ *
+ * @param lineBefore - The text of the run's line before it, with its container marks removed or blanked out.
+ * @returns Its last character, or `''` when it is only whitespace.
+ */
+export function highlightDelimiterBefore(lineBefore: string): string {
+  return /\S/u.test(lineBefore) ? lineBefore.slice(-1) : '';
+}
+
+/**
  * Whether the text from a `^` to the end of its line is a block id.
  *
  * @param text - The text from the `^` to the end of the line.
@@ -250,6 +262,20 @@ export function isBlockId(text: string): boolean {
  */
 export function isFrontMatterFence(line: string): boolean {
   return line === '---';
+}
+
+/**
+ * Whether a run of `=` is a highlight delimiter, as the editor toggles a highlight on it: a run of two or more `=`,
+ * except a run of exactly two with a space on each side.
+ *
+ * @param before - The character before the run, or `''` when only indentation and container marks come before it on
+ *   its line.
+ * @param length - The length of the run.
+ * @param after - The character after the run, or `''` at the end of the text.
+ * @returns `true` when the run is a delimiter. Any other run is text.
+ */
+export function isHighlightDelimiter(before: string, length: number, after: string): boolean {
+  return length > HIGHLIGHT_DELIMITER_MIN_LENGTH || (length === HIGHLIGHT_DELIMITER_MIN_LENGTH && (before !== ' ' || after !== ' '));
 }
 
 /**

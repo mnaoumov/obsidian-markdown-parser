@@ -90,7 +90,7 @@ The syntax is defined once (`src/syntax/spec.ts`): internal links and embeds, ta
 | Adapter | Same Obsidian nodes as the Lezer tree |
 | --- | ---: |
 | micromark and mdast | 28,551 of 29,596 |
-| markdown-it | 28,682 of 29,596 |
+| markdown-it | 28,681 of 29,596 |
 
 None of the differences is a rule of the Obsidian syntax. Each is a place where two parsers' block structure reads the document differently, an unclosed block taking the document's last line break, which GFM table rules apply, and which list items may interrupt a lazy line, or where they pair a highlight's `==` across emphasis differently.
 
@@ -133,10 +133,9 @@ Each is measured, and each has a test or a script that reproduces it.
 ### In the Lezer tree and the adapters
 
 - **`@lezer/markdown` 1.8 differs from CommonMark 0.31.2 in seven examples.** Six are worked around here. Example 280, a list item that starts with a blank line, sits in its internal list continuation and cannot be. All seven are reported upstream as [lezer/markdown#70](https://code.haverbeke.berlin/lezer/markdown/issues/70), without naming this project.
-- **The tree's highlight rule differs from the editor's on two shapes**: the editor toggles a highlight on a run of three or more `=` and opens none before `>`, and the tree does the opposite on both ([syntax.md](syntax.md#measured-against-the-live-editor)).
-- **The adapters differ from the Lezer tree on 1,045 and 914 of 29,596 documents**, block structure and the pairing of highlights across emphasis (goal 4).
+- **The adapters differ from the Lezer tree on 1,045 and 915 of 29,596 documents**, block structure and the pairing of highlights across emphasis (goal 4).
 - **With every flag on, each adapter matches the reading view on 34 of the 68 inline probes.** The other 34 are `remark-parse` 8's inline rules, which only the fourth engine has.
-- **The editor and the worker read the syntax differently in 7 of the conformance corpus's cases**: a link holding a `]`, links and tags inside comments, an inline comment closing on its line, a `%%` line interrupting a paragraph, a footnote reference with no definition, and a footnote definition inside a quote ([remark.md](remark.md#where-the-worker-and-the-editor-differ)). The tree follows the editor and the metadata follows the worker.
+- **The editor and the worker read the syntax differently in 9 of the conformance corpus's cases**: a link holding a `]`, a run of three or more `=` and a `==` before `>` in a highlight, links and tags inside comments, an inline comment closing on its line, a `%%` line interrupting a paragraph, a footnote reference with no definition, and a footnote definition inside a quote ([remark.md](remark.md#where-the-worker-and-the-editor-differ)). The tree follows the editor and the metadata follows the worker.
 - **List indentation beyond CommonMark's is not yet measured**: whether Obsidian nests a child indented by 2 or 3 spaces where CommonMark needs the content column, and the same with tabs.
 
 ### In the architecture

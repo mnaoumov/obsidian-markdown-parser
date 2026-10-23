@@ -103,6 +103,21 @@ export const CONFORMANCE_CASES: readonly ConformanceCase[] = [
     name: 'highlight'
   },
   {
+    expected: [[N.Highlight, '===marked==='], [N.HighlightMark, '==='], [N.HighlightMark, '===']],
+    markdown: 'a ===marked=== b',
+    name: 'a run of three or more = is a highlight mark'
+  },
+  {
+    expected: [],
+    markdown: 'a ==>x== b',
+    name: 'a highlight does not open before >'
+  },
+  {
+    expected: [[N.Highlight, '==a == b=='], [N.HighlightMark, '=='], [N.HighlightMark, '==']],
+    markdown: '==a == b==',
+    name: 'a == with a space on each side neither opens nor closes'
+  },
+  {
     expected: [],
     markdown: 'a == b == c and x === y',
     name: 'a highlight opens before a non-space, and a run of three is text'

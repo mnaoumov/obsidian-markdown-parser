@@ -19,7 +19,7 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 | Tag | `Tag`, with `TagMark`, `TagName` | `#` at the start of the inline content or after whitespace, followed by tag characters (anything but whitespace, ASCII punctuation other than `-`, `/` and `_`, and the General and Supplemental Punctuation blocks). A name of digits only is no tag. |
 | Comment | `ObsidianComment`, `ObsidianCommentBlock`, with `ObsidianCommentMark` | Inline `%%` to the next `%%`, across lines of its paragraph. An unclosed one runs to the end of the paragraph. A line that starts with `%%` and does not close it opens a comment block, which spans blank lines up to the line holding the next `%%`, or to the end of its container. The names carry the `Obsidian` prefix because `@lezer/markdown` already names HTML comments `Comment` and `CommentBlock`. |
 | Math | `InlineMath`, `MathBlock`, with `MathMark` | `$` before a non-space opens inline math when a later `$` on the line follows a non-space, and the first `$` no backslash escapes closes it. `$$` always opens, and closes at the next `$$`. A line that starts with `$$` and does not close it opens a math block, like a comment block. |
-| Highlight | `Highlight`, with `HighlightMark` | `==` before a non-space opens, and any `==` closes. A run of three or more `=` is text. |
+| Highlight | `Highlight`, with `HighlightMark` | A run of two or more `=` is a mark: it opens before a character that is neither whitespace nor `>`, and any mark closes. A run that cannot open and has nothing to close is text, and so is a `==` with a space on each side. |
 | Footnote reference | `FootnoteReference`, with `FootnoteMark`, `FootnoteLabel` | `[^label]` with a label of no `]` and no line break. |
 | Inline footnote | `InlineFootnote`, with `FootnoteMark` | `^[text]` with text of no `]` and no line break. The text is read as inline markdown. |
 | Footnote definition | `FootnoteDefinition`, with `FootnoteMark`, `FootnoteLabel` | `[^label]:` opening a line, outside any quote or list item. Its content continues on indented lines and across blank lines, and a line opening another definition ends it. Inside a quote, `[^label]: text` is a reference followed by text. |
@@ -38,7 +38,7 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 | --- | ---: | ---: | --- |
 | internal link | 1,416 | 1,334 | html 41, mdlang 25, obsidian 14, table 2 |
 | tag | 951 | 894 | mdlang 26, html 16, gap 10, obsidian 5 |
-| highlight | 2,177 | 1,437 | mark 630, codespan 96, mdlang 13, obsidian 1 |
+| highlight | 2,149 | 1,803 | mark 236, codespan 96, mdlang 13, obsidian 1 |
 | comment | 1,962 | 1,453 | rich 192, quote 180, gap 76, nest 23, obsidian 16, mdlang 16, codespan 6 |
 | math | 1,775 | 1,357 | rich 133, quote 120, gap 85, mdlang 35, table 26, nest 12, obsidian 7 |
 | footnote reference | 384 | 360 | mdlang 20, obsidian 4 |
@@ -51,7 +51,7 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 
 `src/oracle/syntax-score.test.ts` pins these numbers, so a change that moves one fails until the table and the test are updated together.
 
-The documents that disagree fall into a few groups. All but the highlight runs below are places where a line tokenizer and a block parser read a document differently, not a rule of the Obsidian syntax the tree gets wrong:
+The documents that disagree fall into a few groups. Each is a place where a line tokenizer and a block parser read a document differently, not a rule of the Obsidian syntax the tree gets wrong:
 
 - **An unclosed `%%` or `$$` that runs past its block.** In the editor, an inline comment or display math left open in a paragraph goes on over blank lines, list items, fences and the end of a quote, until the next `%%` or `$$`. The tree closes it at the end of its paragraph, and inside a quote at the end of the quote. This is most of the comment and math rows. The tree cannot carry the state over a block boundary without breaking incremental parsing, because a reused block does not run its parser again. So the tree stops at the block boundary. Phase 2 measures what the metadata worker does here.
 - **HTML blocks.** The tree reads HTML blocks as CommonMark does: a line such as `</div>` or `<div>` opens a block that ends at the next blank line. The editor leaves HTML at the tag, so the lines after it still hold links, tags, tasks, block ids and footnotes. This is most of the `obsidian` and `html` entries.
@@ -59,8 +59,8 @@ The documents that disagree fall into a few groups. All but the highlight runs b
 - **Quote continuation.** The editor treats a lazy line, or a `---` after a quote, as still in the quote. So a `> [!type]` on the next line continues that quote instead of opening a callout. It also marks a callout on every line where a deeper `>` opens with `[!type]`. The tree has one callout per quote.
 - **Task markers in quotes.** The editor does not style a task marker in a list inside a quote. The tree reads a task there, as the metadata worker lists one.
 - **Fences opened in a quote or a list item.** The editor keeps a fence open after the quote or list item it opened in ends, and inside a markdown fence it styles no Obsidian syntax. The tree ends the fence with its container and reads the lines after it as markdown. These are the `mdlang` entries, where the tree marks a construct the editor does not.
-- **Unclosed highlights.** The editor styles a `==` that never closes as a highlight up to the next list item or blank line, as it styles an unclosed comment or math. The tree has no node for a highlight that never closes. These are all of the `codespan` highlight entries.
-- **Highlight runs the tree reads by another rule.** The editor toggles a highlight on any run of two or more `=` and opens none before `>`. The tree opens one only on a run of exactly two, and before any non-space, `>` included. So `===x===` is a highlight in the editor alone, and `==>x==` in the tree alone. With unclosed highlights, these are the `mark` entries: in 381 of them the editor marks text the tree does not, in 162 the tree marks text the editor does not, and in 87 both.
+- **Unclosed highlights.** The editor styles a `==` that never closes as a highlight up to the next list item or blank line, as it styles an unclosed comment or math. The tree has no node for a highlight that never closes. A highlight left open in a quote even runs on into a heading after it, which the editor's next `==` then closes, so in `> ==q` followed by `# ==h==` the editor marks `==q`, the heading's `#` and its first `==`, and the tree marks the heading's `==h==`. These are all of the `codespan` highlight entries, and with the highlights across emphasis below, the `mark` ones.
+- **Highlights across emphasis.** In `*==e*==`, the editor toggles a highlight on at the `==` inside the emphasis and off at the one after it. The tree closes the emphasis first and leaves both `==` as text.
 
 ## The micromark and mdast adapter
 
@@ -106,7 +106,7 @@ A block's value leaves out the line ending after its opening delimiter and the o
 | --- | ---: | ---: | --- |
 | internal link | 1,943 | 1,939 | table 4 |
 | tag | 1,281 | 1,278 | html 2, table 1 |
-| highlight | 2,807 | 2,692 | mark 115 |
+| highlight | 2,799 | 2,684 | mark 115 |
 | comment | 2,700 | 2,233 | final line break 458, quote 7, gap 1, table 1 |
 | math | 2,474 | 2,077 | final line break 362, table 21, quote 10, gap 2, rich 2 |
 | footnote reference | 1,071 | 1,071 | |
@@ -152,13 +152,13 @@ The plugin renders the syntax as plain HTML, not measured against Obsidian's rea
 
 ### Measured against the Lezer extensions
 
-`scripts/adapter-diff.ts --adapter markdown-it` compares the plugin with the Lezer extensions on the same 29,596 documents. 28,682 documents give the same nodes, more than the micromark adapter's 28,551. `src/syntax/markdown-it.test.ts` pins the count for the first corpus (4,086 of 4,228).
+`scripts/adapter-diff.ts --adapter markdown-it` compares the plugin with the Lezer extensions on the same 29,596 documents. 28,681 documents give the same nodes, more than the micromark adapter's 28,551. `src/syntax/markdown-it.test.ts` pins the count for the first corpus (4,085 of 4,228).
 
 | Construct | Documents using it | Agreeing | Disagreeing, by group |
 | --- | ---: | ---: | --- |
 | internal link | 1,943 | 1,939 | table 4 |
 | tag | 1,281 | 1,277 | table 2, html 2 |
-| highlight | 2,793 | 2,775 | mark 18 |
+| highlight | 2,781 | 2,762 | mark 19 |
 | comment | 2,700 | 2,239 | final line break 458, table 2, gap 1 |
 | math | 2,474 | 2,087 | final line break 362, table 21, quote 3, rich 1 |
 | footnote reference | 1,071 | 1,071 | |
@@ -181,5 +181,5 @@ markdown-it drops a last line of the document that holds only whitespace and has
 
 ## What is left
 
-- The metadata worker reads the syntax with its own rules, which the `remark-parse` 8 engine follows ([its syntax](remark.md#the-obsidian-syntax)). Where it reads the conformance corpus differently from the editor is [listed there](remark.md#where-the-worker-and-the-editor-differ): a link holding a `]`, the syntax inside comments, inline comments on one line, a `%%` line opening a comment block, a reference to no definition, and a definition inside a quote. The rules here stay the editor's, which the class layer and the three adapters follow.
+- The metadata worker reads the syntax with its own rules, which the `remark-parse` 8 engine follows ([its syntax](remark.md#the-obsidian-syntax)). Where it reads the conformance corpus differently from the editor is [listed there](remark.md#where-the-worker-and-the-editor-differ): a link holding a `]`, the syntax inside comments, inline comments on one line, a `%%` line opening a comment block, a reference to no definition, a definition inside a quote, a run of three or more `=` and a `==` before `>`. The rules here stay the editor's, which the class layer and the three adapters follow.
 - The front matter content and math are left as text. A YAML and a LaTeX parser can be mounted on `FrontMatterContent` and the math nodes later.
