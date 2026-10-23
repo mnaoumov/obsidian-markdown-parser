@@ -369,8 +369,17 @@ export function createObsidianMode(): ObsidianMode {
      * Obsidian: `[^label]` is a footnote reference when its label holds no `]` and no whitespace, and may be empty,
      * unless a `:` follows it at the start of the line. `[^` is one token, whose markdown read changes the state, so a
      * `[` there opens link text instead. Each character of the label and the closing `]` is a token whose markdown read
-     * changes nothing, except that a `%%` there still opens or closes a comment.
+     * changes nothing, except that a `%%` there still opens or closes a comment. A reference inside an internal link
+     * ends the link, whose alias class its opening mark keeps, and the rest of the link is plain text.
      */
+    if (isInMarkdownInline && state.internalLink && stream.peek() === '[' && matchRe(stream, /^\[\^[^\]\s]*\]/u, false)) {
+      if (state.internalLink.part === 'alias') {
+        ans += ' link-alias';
+      }
+      state.internalLink = null;
+      state.f = rawMode.inlineNormal;
+      state.inline = rawMode.inlineNormal;
+    }
     if (isInMarkdownInline && !state.internalLink) {
       if (state.hmdLinkType === LinkType.Footref) {
         isReadOnCopy = true;
@@ -414,8 +423,8 @@ export function createObsidianMode(): ObsidianMode {
       state.comment = readState.comment;
       tokenEnd = stream.pos;
     }
-    // Obsidian: a read after a mark that opens its line leaves the line's block structure unread.
-    if (isFootrefStart && isBol && state.f === state.block) {
+    // Obsidian: a read after a mark that opens its line leaves the line's block structure unread, but HTML it opens stays.
+    if (isFootrefStart && isBol && state.f === state.block && state.f !== rawMode.htmlBlock) {
       state.f = rawMode.inlineNormal;
       state.inline = rawMode.inlineNormal;
     }
@@ -542,14 +551,20 @@ export function createObsidianMode(): ObsidianMode {
           }
           state.hmdLinkType = LinkType.None;
         } else {
-          temporary = matchRe(stream, /^([^\]]+)\](\(| ?\[|:)?/u, false);
-          if (!temporary) {
+          temporary = matchRe(stream, /^([^\]]*)\](\(| ?\[|:)?/u, false);
+          const label = temporary?.[1] ?? '';
+          const isLineStart = /^\s*$/u.test(stream.string.slice(0, stream.start));
+          // Obsidian: a definition's label may be empty, or be the `^` the markdown mode read with its opening mark.
+          if (!temporary || (!label && !(temporary[2] === ':' && isLineStart))) {
             state.hmdLinkType = LinkType.Barelink;
           } else if (!temporary[2]) {
-            state.hmdLinkType = (temporary[1] ?? '').startsWith('^') && !/\s/u.test(temporary[1] ?? '') ? LinkType.Footref : LinkType.Barelink;
+            state.hmdLinkType = label.startsWith('^') && !/\s/u.test(label) ? LinkType.Footref : LinkType.Barelink;
           } else if (temporary[2] === ':') {
-            // Obsidian: only a definition opening its line is a footnote.
-            state.hmdLinkType = /^\s*$/u.test(stream.string.slice(0, stream.start)) ? LinkType.Footnote : LinkType.Normal;
+            /*
+             * Obsidian: only a definition opening its line is a footnote, and not one whose label is a `^` with
+             * whitespace after it, which is a plain link definition.
+             */
+            state.hmdLinkType = isLineStart && !(label.startsWith('^') && /\s/u.test(label)) ? LinkType.Footnote : LinkType.Normal;
           } else if ((temporary[2] === '[' || temporary[2] === ' [') && stream.string.charAt(stream.pos + temporary[0].length) === ']') {
             state.hmdLinkType = LinkType.Barelink2;
           } else {

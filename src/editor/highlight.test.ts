@@ -222,6 +222,52 @@ describe('highlight', () => {
     expect(spanClassesAt('[^a', 1)).toBe('blockid');
   });
 
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should end an internal link at a footnote reference inside it', () => {
+    const start = 'footref formatting formatting-link formatting-link-start hmd-barelink';
+    const end = 'footref formatting formatting-link formatting-link-end hmd-barelink';
+    expect(spanClassesAt('[[a[^b]]]', 2)).toBe('hmd-internal-link');
+    expect(spanClassesAt('[[a[^b]]]', 3)).toBe(start);
+    expect(spanClassesAt('[[a[^b]]]', 5)).toBe('footref hmd-barelink');
+    expect(spanClassesAt('[[a[^b]]]', 6)).toBe(end);
+    expect(spanClassesAt('[[a[^b]]]', 7)).toBe('');
+    expect(spanClassesAt('![[a[^b]]]', 4)).toBe(start);
+    expect(spanClassesAt('[[[^b]]]', 2)).toBe(start);
+    expect(spanClassesAt('[[a[^]]]', 5)).toBe(end);
+    // The opening mark keeps the alias class.
+    expect(spanClassesAt('[[a|x[^b]]]', 5)).toBe(`${start} link-alias`);
+    expect(spanClassesAt('[[a|[^b]]]', 4)).toBe(`${start} link-alias`);
+    // The reference's `]` does not stop the link from opening, and the rest of the link is plain text.
+    expect(spanClassesAt('[[a[^b] c]]', 0)).toBe('formatting-link formatting-link-start');
+    expect(spanClassesAt('[[a[^b] c]]', 3)).toBe(start);
+    expect(spanClassesAt('[[a[^b] c]]', 8)).toBe('');
+    expect(spanClassesAt('x [[a[^b]]] y [[c]]', 16)).toBe('hmd-internal-link');
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave these documents.
+  it('should read a definition opening its line as a footnote unless its label is a `^` with whitespace after it', () => {
+    const footnoteMark = 'formatting formatting-link hmd-barelink hmd-footnote link';
+    // An empty label, with or without its `^`.
+    for (const text of ['[^]: x', '[]: x', '[^]:', '[^]:x']) {
+      expect(highlight(text)[0]?.classes).toContain('HyperMD-footnote');
+      expect(spanClassesAt(text, 0)).toBe(footnoteMark);
+    }
+    // A `^` with whitespace after it makes a plain link definition, inside a quote too.
+    for (const text of ['[^ ]: x', '[^a b]: x']) {
+      expect(highlight(text)[0]?.classes).not.toContain('HyperMD-footnote');
+      expect(spanClassesAt(text, 0)).toBe('formatting formatting-link link');
+      expect(spanClassesAt(text, 1)).toBe('link');
+      expect(spanClassesAt(text, text.length - 1)).toBe('string url');
+    }
+    expect(spanClassesAt('> [^a b]: x', 3)).toBe('link');
+    expect(spanClassesAt('> [^a b]: x', 10)).toBe('string url');
+  });
+
+  // The classes the live editor of Obsidian 1.14.5 gave this document.
+  it('should keep HTML opened right after a footnote reference mark that opens its line', () => {
+    expect(spanClassesAt('[^<b>]', 0)).toBe('bracket formatting formatting-link formatting-link-start hmd-html-begin tag');
+  });
+
   // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.
   it('should mark the end of emphasis, strikethrough and code spans from Obsidian 1.15 on', () => {
     const text = '*em* **strong** ***both*** ~~strike~~ `code`\n> ```\n> a ```';
