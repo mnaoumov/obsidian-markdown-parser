@@ -112,7 +112,7 @@ export interface MarkdownState {
   fencedEndRE: null | RegExp;
   fenceIndent: number;
   fenceInList: boolean;
-  footref: FootrefState | null;
+  footref: boolean;
   formatting: Formatting;
   hashtag: boolean;
   header: number;
@@ -169,10 +169,6 @@ export interface Stream extends CodeMirrorStringStream {
  * A token function: reads one token and returns its classes.
  */
 export type TokenFunction = (stream: Stream, state: MarkdownState) => null | string;
-
-interface FootrefState {
-  readonly inline: boolean;
-}
 
 type Formatting = false | string | string[];
 
@@ -794,7 +790,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     }
 
     // Obsidian: `[[internal links]]` and `![[embeds]]`, when the line closes them.
-    if ((ch === '[' || ch === '!') && isEditor && !state.linkText && !state.image) {
+    if ((ch === '[' || ch === '!') && isExtensionsAllowed && !state.linkText && !state.image) {
       const isEmbed = ch === '!';
       const linkMatch = matchRe(stream, isEmbed ? /^\[\[([^\]]*?)\]\]/u : /^\[([^\]]*?)\]\]/u, false);
       if (linkMatch) {
@@ -806,18 +802,13 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
       }
     }
 
-    // Obsidian: `[^footnote]` references and `^[inline footnotes]`.
-    if (isEditor && !state.linkText && !state.image && ((ch === '[' && stream.peek() === '^') || (ch === '^' && stream.peek() === '['))) {
-      const isInline = ch === '^';
-      const body = matchRe(stream, isInline ? /^\[([^\]]*)\]/u : /^\^([^\]]+)\]/u, false);
-      if (body) {
-        stream.next();
-        state.footref = { inline: isInline };
-        state.f = footref;
-        state.inline = footref;
-        const marks = isInline ? 'formatting-inline-footnote inline-footnote inline-footnote-start' : 'formatting formatting-link formatting-link-start hmd-barelink';
-        return `${getType(state) ?? ''} footref ${marks}`;
-      }
+    // Obsidian: `[^footnote]` references. An inline footnote is the layer above's.
+    if (isExtensionsAllowed && !state.linkText && !state.image && ch === '[' && stream.peek() === '^' && matchRe(stream, /^\^([^\]]+)\]/u, false)) {
+      stream.next();
+      state.footref = true;
+      state.f = footref;
+      state.inline = footref;
+      return `${getType(state) ?? ''} footref formatting formatting-link formatting-link-start hmd-barelink`;
     }
 
     // Obsidian: a `^block-id` ending the line.
@@ -995,17 +986,15 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
   }
 
   function footref(stream: Stream, state: MarkdownState): null | string {
-    const isInline = state.footref?.inline ?? false;
     const context = getType(state) ?? '';
     if (stream.eat(']')) {
-      state.footref = null;
+      state.footref = false;
       state.f = inlineNormal;
       state.inline = inlineNormal;
-      const marks = isInline ? 'formatting-inline-footnote inline-footnote inline-footnote-end' : 'formatting formatting-link formatting-link-end hmd-barelink';
-      return `${context} footref ${marks}`;
+      return `${context} footref formatting formatting-link formatting-link-end hmd-barelink`;
     }
     matchRe(stream, /^[^\]]+/u);
-    return `${context} footref ${isInline ? 'inline-footnote' : 'hmd-barelink'}`;
+    return `${context} footref hmd-barelink`;
   }
 
   function internalLink(stream: Stream, state: MarkdownState): null | string {
@@ -1176,7 +1165,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
         fencedEndRE: null,
         fenceIndent: 0,
         fenceInList: false,
-        footref: null,
+        footref: false,
         formatting: false,
         hashtag: false,
         header: 0,
