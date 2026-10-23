@@ -6,7 +6,7 @@
  * syntax as measured against the live editor.
  */
 
-/* eslint-disable complexity, no-magic-numbers, prefer-named-capture-group, unicorn/consistent-function-scoping, unicorn/no-declarations-before-early-exit, unicorn/prefer-simple-condition-first -- A line-for-line port of an upstream tokenizer: its regular expressions, nested helpers, declaration order and condition order stay as upstream wrote them. */
+/* eslint-disable complexity, no-magic-numbers, prefer-named-capture-group, unicorn/consistent-function-scoping, unicorn/prefer-simple-condition-first -- A line-for-line port of an upstream tokenizer: its regular expressions, nested helpers, declaration order and condition order stay as upstream wrote them. */
 
 import type {
   MarkdownState,
@@ -57,7 +57,7 @@ const LINK_STYLE = new Map<LinkType, string>([
   [LinkType.Barelink, 'hmd-barelink'],
   [LinkType.Barelink2, 'hmd-barelink2'],
   [LinkType.Footnote, 'hmd-barelink hmd-footnote line-HyperMD-footnote'],
-  [LinkType.Footref, 'hmd-barelink hmd-footref'],
+  [LinkType.Footref, 'hmd-barelink footref'],
   [LinkType.Footref2, 'hmd-footref2']
 ]);
 
@@ -186,7 +186,7 @@ export function createObsidianMode(): ObsidianMode {
       // A bare URL or email address.
       return !state.hmdLinkType && (matchRe(stream, URL_RE) || matchRe(stream, EMAIL_RE)) ? `${rawMode.getType(state) ?? ''} url` : undefined;
     }
-    if (state.linkText) {
+    if (state.linkText || state.hmdLinkType === LinkType.Footref) {
       return undefined;
     }
     if (!isMathAt(stream)) {
@@ -338,32 +338,74 @@ export function createObsidianMode(): ObsidianMode {
     }
     const wasInComment = state.comment;
     const wasInMarkdownInline = isInMarkdownInline;
+    // Obsidian splits an escape into its backslash and its character only in a token that starts at the backslash.
+    const isEscapeAt = isInMarkdownInline && stream.peek() === '\\';
     const wasInDefinitionDestination = state.f === rawMode.footnoteUrl || state.f === rawMode.footnoteUrlTitle;
     state.extensionsAllowed = isInMarkdownInline;
     /*
-     * Obsidian: `^[` opens an inline footnote, whose body is read as inline markdown. The first `]` outside link text,
-     * an internal link, an image and code closes it. The markdown mode still reads a token at the mark, which a
-     * closing `]` has already passed, and the mark keeps that token's classes and what it did to the state, but not
-     * its length. That token sees none of Obsidian's inline syntax.
+     * Obsidian: a mark read here ends its token where the mark says, while the markdown mode still reads a token from
+     * where the mark leaves the cursor, and the token keeps that read's classes but not its length.
      */
-    let footnoteMarkEnd = -1;
+    let tokenEnd = -1;
+    // Whether the markdown mode's read leaves the state as it was.
+    let isReadOnCopy = false;
+    let isFootrefStart = false;
+    /*
+     * Obsidian: `[^label]` is a footnote reference when its label holds no `]` and no whitespace, and may be empty,
+     * unless a `:` follows it at the start of the line. `[^` is one token, whose markdown read changes the state, so a
+     * `[` there opens link text instead. Each character of the label and the closing `]` is a token whose markdown read
+     * changes nothing, except that a `%%` there still opens or closes a comment.
+     */
+    if (isInMarkdownInline && !state.internalLink) {
+      if (state.hmdLinkType === LinkType.Footref) {
+        isReadOnCopy = true;
+        tokenEnd = stream.pos + 1;
+        if (stream.peek() === ']') {
+          state.hmdLinkType = LinkType.None;
+          ans += ` formatting formatting-link formatting-link-end ${LINK_STYLE.get(LinkType.Footref) ?? ''}`;
+        }
+      } else if (stream.peek() === '[' && (temporary = matchRe(stream, /^\[\^[^\]\s]*\](:?)/u, false)) && !(isBol && temporary[1])) {
+        stream.pos += 2;
+        ans += ' formatting formatting-link formatting-link-start';
+        state.hmdLinkType = LinkType.Footref;
+        tokenEnd = stream.pos;
+        isFootrefStart = true;
+      }
+      // Obsidian: a block id ending the line is read here, so it wears no other class.
+      if (stream.peek() === '^' && matchRe(stream, /^\^[A-Za-z0-9-]+$/u)) {
+        return `${ans} blockid`.trim();
+      }
+    }
+    /*
+     * Obsidian: `^[` opens an inline footnote, whose body is read as inline markdown. The first `]` outside link text,
+     * a footnote reference, an internal link, an image and code closes it, and the `]` closing a footnote reference
+     * closes it too. The token the markdown mode reads after a closing `]` sees none of Obsidian's inline syntax.
+     */
     if (isInMarkdownInline && !state.inlineFootnote && stream.match('^[', false)) {
       state.inlineFootnote = true;
       ans += ' inline-footnote-start formatting-inline-footnote';
-      footnoteMarkEnd = stream.pos + 2;
+      tokenEnd = stream.pos + 2;
     } else if (isInMarkdownInline && state.inlineFootnote && !state.internalLink && state.hmdLinkType === LinkType.None && !state.image && stream.peek() === ']') {
       state.inlineFootnote = false;
       ans += ' footref inline-footnote inline-footnote-end formatting-inline-footnote';
-      // The `]` closing a footnote reference closes the inline footnote too.
-      if (!state.footref) {
-        stream.next();
-        footnoteMarkEnd = stream.pos;
-        state.extensionsAllowed = false;
-      }
+      stream.next();
+      tokenEnd = stream.pos;
+      state.extensionsAllowed = false;
     }
-    ans += ` ${rawMode.token(stream, state) ?? ''}`;
-    if (footnoteMarkEnd !== -1) {
-      stream.pos = footnoteMarkEnd;
+    const readState = isReadOnCopy ? rawMode.copyState(state) : state;
+    ans += ` ${rawMode.token(stream, readState) ?? ''}`;
+    // A comment mark is the layer above's in Obsidian, so it keeps its length and its effect on the state.
+    if ((isReadOnCopy || isFootrefStart) && readState.comment !== wasInComment) {
+      state.comment = readState.comment;
+      tokenEnd = stream.pos;
+    }
+    // Obsidian: a read after a mark that opens its line leaves the line's block structure unread.
+    if (isFootrefStart && isBol && state.f === state.block) {
+      state.f = rawMode.inlineNormal;
+      state.inline = rawMode.inlineNormal;
+    }
+    if (tokenEnd !== -1) {
+      stream.pos = tokenEnd;
     }
     if (state.header) {
       state.hmdIsHeading = true;
@@ -489,7 +531,7 @@ export function createObsidianMode(): ObsidianMode {
           if (!temporary) {
             state.hmdLinkType = LinkType.Barelink;
           } else if (!temporary[2]) {
-            state.hmdLinkType = (temporary[1] ?? '').startsWith('^') ? LinkType.Footref : LinkType.Barelink;
+            state.hmdLinkType = (temporary[1] ?? '').startsWith('^') && !/\s/u.test(temporary[1] ?? '') ? LinkType.Footref : LinkType.Barelink;
           } else if (temporary[2] === ':') {
             // Obsidian: only a definition opening its line is a footnote.
             state.hmdLinkType = /^\s*$/u.test(stream.string.slice(0, stream.start)) ? LinkType.Footnote : LinkType.Normal;
@@ -526,7 +568,7 @@ export function createObsidianMode(): ObsidianMode {
       if (state.inlineFootnote) {
         ans += ' footref inline-footnote';
       }
-      if (ans.includes('formatting-escape') && current.length > 1) {
+      if (isEscapeAt && ans.includes('formatting-escape') && current.length > 1) {
         const escapedLength = current.length - 1;
         const escapedCharStyle = `${ans.replace('formatting-escape', 'escape')} hmd-escape-char`;
         state.hmdOverride = (s, st): string => {
@@ -791,4 +833,4 @@ function tagClass(name: string): string {
   return `tag-${name.replaceAll(/[^\w-]/gu, '')}`;
 }
 
-/* eslint-enable complexity, no-magic-numbers, prefer-named-capture-group, unicorn/consistent-function-scoping, unicorn/no-declarations-before-early-exit, unicorn/prefer-simple-condition-first -- The port ends here. */
+/* eslint-enable complexity, no-magic-numbers, prefer-named-capture-group, unicorn/consistent-function-scoping, unicorn/prefer-simple-condition-first -- The port ends here. */
