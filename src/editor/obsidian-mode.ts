@@ -176,13 +176,16 @@ export function createObsidianMode(): ObsidianMode {
   /*
    * Obsidian: math opens inside the markdown inline flow, after the line's block structure is read. Inline `$` math
    * opens before a non-space and closes after one; a line holding only `$$` opens a math block, whose lines carry
-   * `HyperMD-math`.
+   * `HyperMD-math`. A markdown link's text opens no math.
    */
   function enterMath(stream: Stream, state: ObsidianState): string | undefined {
     const temporary = matchRe(stream, /^\${1,2}/u, false);
     if (!temporary) {
       // A bare URL or email address.
       return !state.hmdLinkType && (matchRe(stream, URL_RE) || matchRe(stream, EMAIL_RE)) ? `${rawMode.getType(state) ?? ''} url` : undefined;
+    }
+    if (state.linkText) {
+      return undefined;
     }
     if (!isMathAt(stream)) {
       state.hmdLineStartedWithMath = false;
@@ -291,6 +294,8 @@ export function createObsidianMode(): ObsidianMode {
         return 'blockid';
       }
       if (state.hmdLineStartedWithMath && stream.peek() === '$' && !state.internalLink && isMathAt(stream)) {
+        // Link text ends with its line, which the markdown mode records only once it reads the line.
+        state.linkText = false;
         const math = enterMath(stream, state);
         state.hmdEnteredMath = false;
         return math ?? null;
