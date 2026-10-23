@@ -25,6 +25,7 @@ Every entry point of the root package is a subpath of it, and the root (`obsidia
 
 - `highlight`, `highlightLines` and `LineState`: the classes Obsidian's editor puts on every character and line, resumable from any line outside a fenced block or a script or style element (`isLineStateResumable`, [phase-1.md](phase-1.md)).
 - `editorClassLanguage` and `createEditorClassLanguage`: that tokenizer as a CodeMirror 6 `Language`, with the editor's tree shape and incremental re-parsing ([cm6-host.md](cm6-host.md)).
+- Each of `highlight`, `highlightLines` and `createEditorClassLanguage` takes an `obsidianVersion`, the release whose classes to give: 1.15.0 and later mark the end of emphasis, strikethrough and code spans ([phase-1.md](phase-1.md#inline-syntax)). Without one they give 1.14's classes. A state passed to highlightLines keeps the version it was started for.
 - `editorClasses` and `editorClassDecorations`: its classes rendered as the editor renders them ([cm6-host.md](cm6-host.md)).
 
 ### `obsidian-markdown-parser/lezer`

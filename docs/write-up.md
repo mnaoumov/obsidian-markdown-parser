@@ -35,7 +35,7 @@ Nothing here is matched to a description of Obsidian's behaviour. It is matched 
 - **The metadata worker's `CachedMetadata`**, read live, and offline by running the app's own `worker.js` on generated documents.
 - **The reading view's DOM**, for every CommonMark and GFM spec example and 169 probes of where Obsidian departs from the spec.
 
-All of them are pinned to Obsidian 1.14.4. The pin lives in one place, and `npm run oracle:refresh` re-reads every oracle from another version, then reports what changed and whether the parser still matches. Its first run re-read 1.14.4 itself: 0 of the documents both reads hold changed, so a change on a new version is that version's.
+All of them are pinned to Obsidian 1.14.4. The pin lives in one place, and `npm run oracle:refresh` re-reads every oracle from another version, then reports what changed and whether the parser still matches. Its first run re-read 1.14.4 itself: 0 of the documents both reads hold changed, so a change on a new version is that version's. Its run on the 1.15.0 insider build found two new rules for the editor's formatting marks and nothing else, and the tokenizer now takes the Obsidian version whose classes it gives.
 
 ## Results per goal
 

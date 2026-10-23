@@ -52,6 +52,15 @@ The parser's score is shown on both versions because it is not 100% everywhere o
 
 ## The last run
 
+2026-10-22, against Obsidian 1.15.0, an insider build (the public release was then 1.14.5). The re-read went to a temporary directory and took about 70 minutes; the files were not added to `oracle/`, and the pin stays on 1.14.4.
+
+- **Only the editor's classes changed.** 2,121 readings changed, all of them editor classes: 1,979 class-span documents and 142 spec examples. The metadata worker, both reading views of every spec example and every quirk probe read the same as on 1.14.4.
+- **What changed is two rules for formatting marks.** A mark that closes emphasis, strong emphasis, strikethrough or a code span, a quote's fence included, also carries `formatting-<kind>-end`, and a `***` that opens both emphases carries `formatting-em` beside `formatting-strong` ([`phase-1.md`](phase-1.md#inline-syntax)).
+- **The tokenizer now takes the version** (`obsidianVersion` on `highlight`, `highlightLines` and `createEditorClassLanguage`), and the suites and the scripts pass each oracle's own. With it the parser is exact on every one of 1.15.0's 46,508 class-span documents, and on 649 of its 674 spec examples, the same 25 left as on 1.14.4. The drift report finds no document the parser newly differs on, and the conformance suites pass on 1.15.0's files.
+- The demo plugin passes the running app's `apiVersion`, so its class comparison is 0 on 1.15.0 as on 1.14.4 ([`demo-plugin.md`](demo-plugin.md)).
+
+### The run before: 1.14.4 itself
+
 2026-10-22, against Obsidian 1.14.4 itself, since no newer release existed (1.14.5 was still a draft; the installed app, `public-latest` and `catalyst-latest` all launched 1.14.4). The re-read went to a temporary directory and took about 40 minutes, most of it the eleven class-span oracles.
 
 - **0 readings changed.** Every document both reads hold came back identical: 12,311 class-span documents, all 674 spec examples in the editor, the worker and both reading views, all 169 quirk probes and every worker document. A re-read of an unchanged Obsidian is deterministic, so a change the report shows on a new version is the version's.

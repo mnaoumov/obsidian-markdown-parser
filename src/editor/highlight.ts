@@ -38,6 +38,20 @@ export interface ClassSpan {
 }
 
 /**
+ * Which Obsidian release's editor classes the tokenizer gives.
+ */
+export interface EditorClassOptions {
+  /**
+   * The Obsidian version, as `x.y.z`. From 1.15.0 on, a mark that closes emphasis, strikethrough or a code span also
+   * wears `formatting-<kind>-end`, and a `***` that opens both emphases wears `formatting-em` beside
+   * `formatting-strong`.
+   *
+   * @default The classes of Obsidian 1.14.
+   */
+  readonly obsidianVersion?: string;
+}
+
+/**
  * The classes of one line.
  */
 export interface HighlightedLine {
@@ -65,7 +79,7 @@ export interface HighlightedLine {
 /**
  * Parameters of {@link highlightLines}.
  */
-export interface HighlightLinesParams {
+export interface HighlightLinesParams extends EditorClassOptions {
   /**
    * The document's lines, without their newlines.
    */
@@ -84,15 +98,26 @@ export interface HighlightLinesParams {
   readonly startLine?: number;
 
   /**
-   * The state before `startLine`, from {@link HighlightLinesParams.onLineEnd}. A fresh state when omitted.
+   * The state before `startLine`, from {@link HighlightLinesParams.onLineEnd}. A fresh state for `obsidianVersion` when
+   * omitted; a given state keeps the version it was started for.
    */
   readonly state?: LineState;
 }
 
 /**
+ * Options of {@link highlight}.
+ */
+export type HighlightOptions = EditorClassOptions;
+
+/**
  * The tokenizer state between two lines. Treat it as opaque: copy it with {@link copyLineState} before reusing it.
  */
 export type LineState = ObsidianState;
+
+/**
+ * Options of {@link startLineState}.
+ */
+export type StartLineStateOptions = EditorClassOptions;
 
 /**
  * The classes of one line, with offsets relative to the line's start.
@@ -136,6 +161,10 @@ export interface TokenizeLineParams {
 
 const LINE_CLASS_RE = /^line-(?:background-)?(?<name>.+)$/u;
 const MAX_TOKENS_PER_POSITION = 10;
+// The first release whose editor marks the end of emphasis, strikethrough and code spans.
+const FORMATTING_END_MAJOR = 1;
+const FORMATTING_END_MINOR = 15;
+const VERSION_RE = /^(?<major>\d+)\.(?<minor>\d+)/u;
 const mode = createObsidianMode();
 
 interface HighlightLineParams {
@@ -174,10 +203,11 @@ export function copyLineState(state: LineState): LineState {
  * Highlights a document.
  *
  * @param text - The document.
+ * @param options - Which Obsidian release's classes to give.
  * @returns Its lines with their classes.
  */
-export function highlight(text: string): HighlightedLine[] {
-  return highlightLines({ lines: text.split('\n') });
+export function highlight(text: string, options: HighlightOptions = {}): HighlightedLine[] {
+  return highlightLines({ ...options, lines: text.split('\n') });
 }
 
 /**
@@ -188,7 +218,7 @@ export function highlight(text: string): HighlightedLine[] {
  */
 export function highlightLines(params: HighlightLinesParams): HighlightedLine[] {
   const { lines, onLineEnd, startLine = 0 } = params;
-  const state = params.state ? mode.copyState(params.state) : mode.startState();
+  const state = params.state ? mode.copyState(params.state) : startLineState(params);
   let offset = 0;
   for (let index = 0; index < startLine; index++) {
     offset += (lines[index] ?? '').length + 1;
@@ -220,12 +250,16 @@ export function isLineStateResumable(state: LineState): boolean {
 }
 
 /**
- * Creates the tokenizer state at the start of a document.
+ * Creates the tokenizer state at the start of a document. The lines tokenized from it get the classes of the Obsidian
+ * release it was started for.
  *
+ * @param options - Which Obsidian release's classes to give.
  * @returns The state.
  */
-export function startLineState(): LineState {
-  return mode.startState();
+export function startLineState(options: StartLineStateOptions = {}): LineState {
+  const state = mode.startState();
+  state.isFormattingEndMarked = isFormattingEndMarkedIn(options.obsidianVersion);
+  return state;
 }
 
 /**
@@ -286,6 +320,13 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
     spans: spans.map((span) => ({ classes: span.classes, from: offset + span.from, to: offset + span.to })),
     to: offset + line.length
   };
+}
+
+function isFormattingEndMarkedIn(obsidianVersion: string | undefined): boolean {
+  const groups = obsidianVersion === undefined ? undefined : VERSION_RE.exec(obsidianVersion)?.groups;
+  const major = Number(groups?.['major'] ?? 0);
+  const minor = Number(groups?.['minor'] ?? 0);
+  return major > FORMATTING_END_MAJOR || (major === FORMATTING_END_MAJOR && minor >= FORMATTING_END_MINOR);
 }
 
 // Like the editor, a token may be empty while it changes the state, but the mode must advance within a few calls.

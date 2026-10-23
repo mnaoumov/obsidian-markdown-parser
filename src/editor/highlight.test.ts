@@ -11,6 +11,7 @@ import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
   MAIN_CLASS_ORACLE_SEED,
+  oracleObsidianVersion,
   readOracleFile
 } from '../oracle/oracle-location.ts';
 import {
@@ -43,7 +44,7 @@ describe('highlight', () => {
   for (const [name, known] of KNOWN_DIFFERENCES) {
     it(`should match the live editor on every document of ${name} but the known differences`, () => {
       const oracle = readOracle(name);
-      const differing = oracle.docs.filter((document) => compareDocument(document).differences.length > 0).map((document) => document.id);
+      const differing = oracle.docs.filter((document) => compareDocument(document, { obsidianVersion: oracleObsidianVersion() }).differences.length > 0).map((document) => document.id);
       expect(differing).toEqual(known);
     });
   }
@@ -66,6 +67,40 @@ describe('highlight', () => {
     expect(mathClasses('# ==a $x$')).toEqual(['highlight math']);
     expect(mathClasses('**a $$x$$')).toEqual(['math']);
     expect(mathClasses('==a\n\n$x$')).toEqual(['math']);
+  });
+
+  // The classes the live editors of Obsidian 1.14.4 and 1.15.0 gave this document.
+  it('should mark the end of emphasis, strikethrough and code spans from Obsidian 1.15 on', () => {
+    const text = '*em* **strong** ***both*** ~~strike~~ `code`\n> ```\n> a ```';
+    function classesAt(position: number, obsidianVersion?: string): string {
+      const lines = highlight(text, obsidianVersion === undefined ? {} : { obsidianVersion });
+      const classes = lines.flatMap((line) => line.spans).find((s) => s.from <= position && position < s.to)?.classes ?? [];
+      // The editor renders a class once however often the mode emits it.
+      return [...new Set(classes)].toSorted(compareCodeUnits).join(' ');
+    }
+    const closingPositions = [3, 13, 23, 35, 43, 56];
+    expect(closingPositions.map((position) => classesAt(position, '1.15.0'))).toEqual([
+      'em formatting formatting-em formatting-em-end',
+      'formatting formatting-strong formatting-strong-end strong',
+      'em formatting formatting-em formatting-em-end formatting-strong formatting-strong-end strong',
+      'formatting formatting-strikethrough formatting-strikethrough-end strikethrough',
+      'formatting formatting-code formatting-code-end inline-code',
+      'formatting formatting-code formatting-code-end inline-code quote quote-1'
+    ]);
+    expect(classesAt(16, '1.15.0')).toBe('em formatting formatting-em formatting-strong strong');
+    const before = closingPositions.map((position) => classesAt(position));
+    expect(before).toEqual([
+      'em formatting formatting-em',
+      'formatting formatting-strong strong',
+      'em formatting formatting-strong strong',
+      'formatting formatting-strikethrough strikethrough',
+      'formatting formatting-code inline-code',
+      'formatting formatting-code inline-code quote quote-1'
+    ]);
+    expect(classesAt(16)).toBe('em formatting formatting-strong strong');
+    expect(closingPositions.map((position) => classesAt(position, '1.14.5'))).toEqual(before);
+    expect(classesAt(3, '1.16.0-beta')).toBe('em formatting formatting-em formatting-em-end');
+    expect(classesAt(3, '2.0.0')).toBe('em formatting formatting-em formatting-em-end');
   });
 
   it('should run a markdown block through the fork of the markdown mode with its default options', () => {
