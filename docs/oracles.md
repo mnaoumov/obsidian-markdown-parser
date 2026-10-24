@@ -50,6 +50,20 @@ The parser's score is shown on both versions because it is not 100% everywhere o
 3. Change `PINNED_OBSIDIAN_VERSION` to the new version, so the conformance suites and the next report start from it.
 4. Re-point what records numbers on particular files rather than checking conformance, and re-record those numbers: the `syntax-score`, `lezer`, `micromark` and `markdown-it` suites and the `adapter-diff`, `cm6-bench`, `oracle-diff` and `syntax-diff` scripts name the pinned version's files themselves. Remove the old files only after that.
 
+## The oracles as test cases for another project
+
+```sh
+npm run export:test-cases -- [--out <directory>]
+```
+
+writes the pinned spec, quirk probe and metadata worker oracles as plain JSON into `dist/test-cases/` (`scripts/export-test-cases.ts`, built by `src/oracle/test-case-export.ts`), with a `README.md` on their format, for a project that keeps them next to its own tests. Every value is the spec's or Obsidian's own output, and nothing of this repository's code goes with them.
+
+- `commonmark-gfm-spec.json`: all 674 spec examples, each with the spec's HTML (`commonMarkSpecHtml`), the reading view's (`obsidianHtml`, `strictLineBreaks: true`, and `obsidianHtmlSoftBreaksAsHard` on the 66 examples the default `false` changes), the worker's `CachedMetadata`, and the `departures` from `SPEC_DIFFERENCES` on the 211 examples the reading view departs on.
+- `reading-view-quirks.json`: the 169 quirk probes, with the reading view's HTML, the worker's sections and a note on the quirk. The spec has no example for them, so they carry no spec HTML.
+- `metadata-cache.json`: the 3,255 worker documents with the worker's whole `CachedMetadata`.
+
+`src/oracle/test-case-export.test.ts` pins that each file holds every document of its oracle once and that the departures are the ones the spec suites explain.
+
 ## The last run
 
 2026-10-22, against Obsidian 1.14.5, the public release that followed 1.14.4. The re-read wrote its files to `oracle/` and took about 2 hours.

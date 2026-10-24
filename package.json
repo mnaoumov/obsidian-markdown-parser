@@ -61,6 +61,7 @@
     "build": "jiti scripts/build.ts",
     "build:compile": "jiti scripts/build-compile.ts",
     "commit": "jiti scripts/commit.ts",
+    "export:test-cases": "jiti scripts/export-test-cases.ts",
     "format": "jiti scripts/format.ts",
     "format:check": "jiti scripts/format-check.ts",
     "lint": "jiti scripts/lint.ts",
