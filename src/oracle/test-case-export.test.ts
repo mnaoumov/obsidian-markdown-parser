@@ -6,17 +6,25 @@ import {
 
 import type { ForumIssueFile } from './forum-issues.ts';
 import type { QuirkProbeFile } from './quirk-probes.ts';
+import type { GfmReferenceFile } from './reference-html.ts';
 import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
 import {
   forumIssueOracleFileName,
+  PINNED_ORACLE_DIRECTORY,
   quirkProbeOracleFileName,
   readOracleFile,
   specOracleFileName,
   workerMetadataOracleFileName
 } from './oracle-location.ts';
 import { QUIRK_PROBES } from './quirk-probes.ts';
+import {
+  GFM_REFERENCE_FILE_NAME,
+  gfmReferenceHtml,
+  isSameAsReference,
+  renderCommonMarkReference
+} from './reference-html.ts';
 import {
   exampleKey,
   readingViewDifferences,
@@ -30,14 +38,16 @@ const SPEC = readOracleFile(specOracleFileName()) as SpecOracleFile;
 const PROBES = readOracleFile(quirkProbeOracleFileName()) as QuirkProbeFile;
 const WORKER = readOracleFile(workerMetadataOracleFileName()) as WorkerMetadataOracleFile;
 const FORUM = readOracleFile(forumIssueOracleFileName()) as ForumIssueFile;
-const SUITES = buildTestCaseSuites(SPEC, PROBES, WORKER, FORUM);
+const GFM_REFERENCE = readOracleFile(GFM_REFERENCE_FILE_NAME, PINNED_ORACLE_DIRECTORY) as GfmReferenceFile;
+const SUITES = buildTestCaseSuites(SPEC, PROBES, WORKER, FORUM, GFM_REFERENCE);
 const SPEC_CASES = [...SUITES.commonmark.cases, ...SUITES.gfm.cases];
 const ALL_SUITES = [
   SUITES.commonmark,
-  SUITES.commonmarkDepartures,
+  SUITES.commonmarkFailing,
   SUITES.gfm,
-  SUITES.gfmDepartures,
-  SUITES.quirks,
+  SUITES.gfmFailing,
+  SUITES.commonmarkNoSpecFailing,
+  SUITES.gfmNoSpecFailing,
   SUITES.metadata,
   SUITES.livePreviewAndSourceModeVsReadingView,
   SUITES.metadataCacheIssues
@@ -45,6 +55,9 @@ const ALL_SUITES = [
 const EDITING_MODES_VS_READING_VIEW_CASES = 14;
 const METADATA_ISSUE_CASES = 10;
 const EXPECTED_METADATA_CASES = 6;
+const QUIRK_PROBE_COUNT = 169;
+const COMMONMARK_NO_SPEC_FAILING_CASES = 70;
+const GFM_NO_SPEC_FAILING_CASES = 27;
 const SOFT_LINE_BREAKS = 'soft line breaks are hard';
 
 interface IdentifiedCase {
@@ -60,7 +73,6 @@ describe('the exported test cases', () => {
     expect(SPEC_CASES.map((testCase) => exampleKey(testCase))).toEqual(SPEC.examples.map((read) => exampleKey(read)));
     expect(SUITES.commonmark.cases.every((testCase) => testCase.suite === 'commonmark')).toBe(true);
     expect(SUITES.gfm.cases.every((testCase) => testCase.suite === 'gfm')).toBe(true);
-    expect(SUITES.quirks.cases).toHaveLength(QUIRK_PROBES.length);
     expect(SUITES.metadata.cases).toHaveLength(WORKER.docs.length);
     for (const suite of ALL_SUITES) {
       expect(ids(suite.cases).size).toBe(suite.cases.length);
@@ -75,13 +87,30 @@ describe('the exported test cases', () => {
     expect(withDepartures).toBe(listed.size);
   });
 
-  it('keep in the departure files the full files\' cases the reading view departs on, unchanged, and nothing else', () => {
+  it('keep in the failing files the full files\' cases the reading view departs on, unchanged, and nothing else', () => {
     const departing = new Set(readingViewDifferences(SPEC));
-    for (const [full, subset] of [[SUITES.commonmark, SUITES.commonmarkDepartures], [SUITES.gfm, SUITES.gfmDepartures]] as const) {
+    for (const [full, subset] of [[SUITES.commonmark, SUITES.commonmarkFailing], [SUITES.gfm, SUITES.gfmFailing]] as const) {
       expect(subset.cases).toEqual(full.cases.filter((testCase) => departing.has(exampleKey(testCase))));
       expect(subset.cases.every((testCase) => testCase.departures?.some((departure) => departure.name !== SOFT_LINE_BREAKS) === true)).toBe(true);
     }
-    expect(SUITES.commonmarkDepartures.cases.length + SUITES.gfmDepartures.cases.length).toBe(departing.size);
+    expect(SUITES.commonmarkFailing.cases.length + SUITES.gfmFailing.cases.length).toBe(departing.size);
+  });
+
+  it('keep in the no-spec files the quirk probes the reading view departs from the reference implementation on, with its HTML', () => {
+    const files = [
+      { preset: 'commonmark', render: renderCommonMarkReference, suite: SUITES.commonmarkNoSpecFailing },
+      { preset: 'gfm', render: (markdown: string): string => gfmReferenceHtml(GFM_REFERENCE, markdown), suite: SUITES.gfmNoSpecFailing }
+    ] as const;
+    for (const { preset, render, suite } of files) {
+      const departing = PROBES.probes.filter((probe) => probe.preset === preset && !isSameAsReference(probe.html, render(probe.markdown)));
+      expect(suite.cases.map((testCase) => testCase.markdown)).toEqual(departing.map((probe) => probe.markdown));
+      expect(suite.cases.every((testCase) => testCase.referenceHtml === render(testCase.markdown))).toBe(true);
+    }
+    expect(SUITES.commonmarkNoSpecFailing.referenceImplementation).toBe('commonmark.js@0.31.2');
+    expect(SUITES.gfmNoSpecFailing.referenceImplementation).toBe('cmark-gfm@0.29.0.gfm.13');
+    expect(SUITES.commonmarkNoSpecFailing.cases).toHaveLength(COMMONMARK_NO_SPEC_FAILING_CASES);
+    expect(SUITES.gfmNoSpecFailing.cases).toHaveLength(GFM_NO_SPEC_FAILING_CASES);
+    expect(QUIRK_PROBES).toHaveLength(QUIRK_PROBE_COUNT);
   });
 
   it('carry the default line breaks\' HTML on exactly the examples it changes', () => {

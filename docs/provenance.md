@@ -7,7 +7,7 @@ Where every part of this repository comes from: what is ported from open-source 
 - **No code of Obsidian's app is in this repository**, and none has ever been committed: no file of the app's bundle, no excerpt of it and no generated copy of it. The history was checked on 2026-10-22 for every file it ever added.
 - **Obsidian's code was read, so this is not a clean-room implementation in the strict sense.** A clean room keeps the people who read the original apart from the people who write the new code. Here the same author did both. Reading the app to learn its behaviour is allowed for plugin development under Obsidian's Terms (Restrictions, item iii). What was read is listed below, and every rule taken from it was written fresh and then measured against the running app.
 - **The open-source code the app's behaviour descends from is ported under its license**, with the notices in [`THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md).
-- **The `oracle/` files are the app's output on documents this repository generated**: class names, metadata and rendered HTML. They hold no code.
+- **The `oracle/` files are the app's output on documents this repository generated**: class names, metadata and rendered HTML. They hold no code. The one exception, `reference-cmark-gfm-0.29.0.gfm.13.json`, is the HTML of `cmark-gfm`, GitHub's open-source GFM implementation, on the same documents.
 
 ## What each part is built from
 
@@ -51,6 +51,7 @@ The files are listed, with what each holds, in [`oracles.md`](oracles.md). Every
 | --- | --- | --- |
 | Class spans, spec, quirk probes, forum issues | `scripts/oracle.ts`, `spec-oracle.ts`, `quirk-probe-oracle.ts` and `forum-issue-oracle.ts` open the document in a running Obsidian, through `obsidian-integration-testing` and the Chrome DevTools Protocol, and read the editor's tree, the worker's metadata, the reading view's DOM and, for the forum issues, the DOM of Source mode and Live Preview | Class names, `CachedMetadata` and HTML |
 | Worker metadata | `scripts/worker-oracle.ts` loads `worker.js` from an Obsidian install at run time and runs it in a Node `vm` context, posting each document as the app posts it | `CachedMetadata` |
+| `cmark-gfm` reference | Not read from Obsidian: `scripts/reference-oracle.ts` runs `cmark-gfm` 0.29.0.gfm.13 through the Python `cmarkgfm` binding on the spec examples and the GFM quirk probes | Nothing of the app; `cmark-gfm`'s HTML |
 
 `scripts/worker-oracle.ts` holds no code of the worker: it reads the file from the install it is pointed at, by default the `obsidian-versions` checkout beside this repository, and `scripts/oracle-refresh.ts` hands it the worker of the instance it reads, from a temporary file it deletes when the run ends.
 

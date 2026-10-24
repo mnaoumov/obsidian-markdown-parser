@@ -19,6 +19,13 @@
       "check": null,
       "manualCheck": "When the oracle is re-measured against a newer Obsidian, find the CodeMirror 5 release that build bundles and move the pin to it, then re-run the oracle-backed tests (src/editor/highlight.test.ts)."
     },
+    "commonmark": {
+      "section": "devDependencies",
+      "why": "commonmark.js is the reference implementation the test-case export takes the expected HTML of its CommonMark no-spec cases from (src/oracle/reference-html.ts). 0.31.2 implements the CommonMark 0.31.2 spec the export's spec cases come from, and src/oracle/reference-html.test.ts checks that it passes all 652 examples and that its version is the one the export names. A release for a newer spec would no longer be the reference for 0.31.2.",
+      "check": "npm view commonmark version",
+      "expect": "0.31.2",
+      "manualCheck": "When the spec suite is moved to a newer CommonMark spec, move this pin to the commonmark.js release that implements it, update COMMONMARK_REFERENCE_IMPLEMENTATION and re-run the export."
+    },
     "eslint-plugin-unicorn": {
       "section": "devDependencies",
       "why": "The ESLint config follows @mnaoumov/typescript-dev-toolkit, which declares eslint-plugin-unicorn ^76.0.0. Version 78 adds unicorn/no-asterisk-prefix-in-documentation-comments, which reports 751 findings here, plus a few from other new rules. Exact so a sweep cannot lift it to 78 ahead of @mnaoumov/typescript-dev-toolkit.",

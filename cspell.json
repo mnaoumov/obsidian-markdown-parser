@@ -25,6 +25,7 @@
     "blockquotes",
     "ccount",
     "cmark",
+    "cmarkgfm",
     "codespan",
     "collab",
     "commentformatting",

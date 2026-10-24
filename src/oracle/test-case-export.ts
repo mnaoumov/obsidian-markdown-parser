@@ -3,8 +3,9 @@
  *
  * Turns the pinned oracle files into plain JSON test cases that can sit next to another project's tests: the spec
  * examples, the reading-view quirk probes, the metadata worker documents and the samples of the parser issues reported on
- * the forum, each with the markdown and what Obsidian gave for it. Every value is the spec's or Obsidian's own output,
- * read by the oracle scripts: nothing of this repository's parser goes into a case. The one value built here is a
+ * the forum, each with the markdown and what Obsidian gave for it. Every value is the spec's, a reference
+ * implementation's or Obsidian's own output: nothing of this repository's parser goes into a case. A quirk probe's
+ * `referenceHtml` comes from `commonmark.js` or `cmark-gfm` (`reference-html.ts`), and the one value built here is a
  * metadata issue's `expectedMetadata`, which is the worker's own output with the fault taken out.
  */
 
@@ -13,7 +14,11 @@ import type {
   ForumIssueFile,
   ForumIssueRead
 } from './forum-issues.ts';
-import type { QuirkProbeFile } from './quirk-probes.ts';
+import type {
+  QuirkProbeFile,
+  QuirkProbeRead
+} from './quirk-probes.ts';
+import type { GfmReferenceFile } from './reference-html.ts';
 import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { SpecDifference } from './spec-quirks.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
@@ -22,6 +27,12 @@ import {
   EDITING_MODES_VS_READING_VIEW_SAMPLES,
   METADATA_ISSUE_SAMPLES
 } from './forum-issues.ts';
+import {
+  COMMONMARK_REFERENCE_IMPLEMENTATION,
+  gfmReferenceHtml,
+  isSameAsReference,
+  renderCommonMarkReference
+} from './reference-html.ts';
 import {
   exampleKey,
   readingViewDifferences,
@@ -180,9 +191,10 @@ export interface MetadataIssueCase {
 }
 
 /**
- * A reading-view quirk case: a document beyond the spec examples that shows how Obsidian departs from CommonMark.
+ * A no-spec case: a document beyond the spec examples on which the reading view departs from a reference
+ * implementation that passes its whole spec suite.
  */
-export interface QuirkCase {
+export interface NoSpecCase {
   /**
    * The case id.
    */
@@ -219,9 +231,9 @@ export interface QuirkCase {
   readonly quirk: string;
 
   /**
-   * Whether GFM tables are part of the case: `gfm` for a table probe, `commonmark` otherwise.
+   * The reference implementation's HTML, as it renders it.
    */
-  readonly syntax: 'commonmark' | 'gfm';
+  readonly referenceHtml: string;
 }
 
 /**
@@ -302,6 +314,11 @@ export interface TestCaseSuite<Case> {
    * The Obsidian version every case was read from.
    */
   readonly obsidianVersion: string;
+
+  /**
+   * The reference implementation whose HTML the cases expect, as `<name>@<version>`; only in a no-spec suite.
+   */
+  readonly referenceImplementation?: string;
 }
 
 /**
@@ -316,7 +333,12 @@ export interface TestCaseSuites {
   /**
    * The CommonMark spec examples whose reading view, with `strictLineBreaks: true`, differs from the spec.
    */
-  readonly commonmarkDepartures: TestCaseSuite<SpecCase>;
+  readonly commonmarkFailing: TestCaseSuite<SpecCase>;
+
+  /**
+   * The CommonMark quirk probes whose reading view differs from `commonmark.js`.
+   */
+  readonly commonmarkNoSpecFailing: TestCaseSuite<NoSpecCase>;
 
   /**
    * The GFM spec's extension examples.
@@ -326,7 +348,12 @@ export interface TestCaseSuites {
   /**
    * The GFM spec's extension examples whose reading view, with `strictLineBreaks: true`, differs from the spec.
    */
-  readonly gfmDepartures: TestCaseSuite<SpecCase>;
+  readonly gfmFailing: TestCaseSuite<SpecCase>;
+
+  /**
+   * The GFM quirk probes whose reading view differs from `cmark-gfm`.
+   */
+  readonly gfmNoSpecFailing: TestCaseSuite<NoSpecCase>;
 
   /**
    * The notes that Live Preview or Source mode and the reading view read differently.
@@ -342,11 +369,6 @@ export interface TestCaseSuites {
    * The notes whose metadata the worker drops or misplaces.
    */
   readonly metadataCacheIssues: TestCaseSuite<MetadataIssueCase>;
-
-  /**
-   * The reading-view quirk probes.
-   */
-  readonly quirks: TestCaseSuite<QuirkCase>;
 }
 
 const SPEC_SUITE_NAMES: Readonly<Record<SpecCase['suite'], string>> = {
@@ -356,6 +378,16 @@ const SPEC_SUITE_NAMES: Readonly<Record<SpecCase['suite'], string>> = {
 
 // What every spec suite's cases hold, after the sentence naming its examples.
 const SPEC_SUITE_ABOUT = 'with the spec\'s HTML (`commonMarkSpecHtml`), the reading view\'s HTML with `strictLineBreaks: true` (`obsidianReadingViewHtml`), with the app\'s default `strictLineBreaks: false` where that differs (`obsidianReadingViewHtmlSoftBreaksAsHard`), and the metadata worker\'s CachedMetadata. `departures` explains each example whose reading view differs from the spec: `quirk` is Obsidian\'s parser reading valid markdown differently, `syntax` is Obsidian syntax, `rendering` is the sanitizer or an embed changing the parser\'s HTML, and `comparison` is the spec\'s HTML holding an unclosed tag that a DOM closes. The reading view\'s HTML is its rendered DOM, serialized, without the code block copy button, the syntax highlighting and the attributes the view adds to blocks; compare it with the spec\'s after putting both through a DOM and dropping whitespace between tags.';
+
+const NO_SPEC_SUITE_ABOUT: Readonly<Record<QuirkProbeRead['preset'], string>> = {
+  commonmark: 'Documents beyond the CommonMark spec\'s examples on which Obsidian\'s reading view departs from CommonMark. The spec has no example for them, so the expected HTML comes from its reference implementation.',
+  gfm: 'Documents beyond the GFM spec\'s examples, GFM tables and strikethrough, on which Obsidian\'s reading view departs from GFM. The spec has no example for them, so the expected HTML comes from its own implementation.'
+};
+
+const NO_SPEC_REFERENCE_SPEC: Readonly<Record<QuirkProbeRead['preset'], string>> = {
+  commonmark: 'all 652 examples of the CommonMark 0.31.2 spec',
+  gfm: 'all 22 extension examples of the GFM 0.29.0.gfm.13 spec, run with the extensions the spec\'s tests use (table, autolink, tagfilter, strikethrough, tasklist)'
+};
 
 const QUIRK_NOTES: Readonly<Record<string, string>> = {
   autolink: 'Which `<...>` autolinks there are: Obsidian takes any scheme followed by `://`, and any non-whitespace holding an `@`.',
@@ -375,27 +407,29 @@ const QUIRK_NOTES: Readonly<Record<string, string>> = {
 };
 
 /**
- * Builds the suites from the oracle files. A departure suite is its full suite filtered by the reading view's HTML, so
+ * Builds the suites from the oracle files. A failing suite is its full suite filtered by the reading view's HTML, so
  * the two cannot drift apart.
  *
  * @param spec - The spec oracle.
  * @param probes - The quirk probe oracle.
  * @param worker - The metadata worker oracle.
  * @param forum - The forum issue oracle.
+ * @param gfmReference - The `cmark-gfm` reference file.
  * @returns The suites.
  */
-export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile, worker: WorkerMetadataOracleFile, forum: ForumIssueFile): TestCaseSuites {
+export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile, worker: WorkerMetadataOracleFile, forum: ForumIssueFile, gfmReference: GfmReferenceFile): TestCaseSuites {
   const specCases = buildSpecCases(spec);
   const departing = new Set(readingViewDifferences(spec));
   return {
     commonmark: buildSpecSuite(spec, specCases, 'commonmark', null),
-    commonmarkDepartures: buildSpecSuite(spec, specCases, 'commonmark', departing),
+    commonmarkFailing: buildSpecSuite(spec, specCases, 'commonmark', departing),
+    commonmarkNoSpecFailing: buildNoSpecSuite(probes, 'commonmark', COMMONMARK_REFERENCE_IMPLEMENTATION, renderCommonMarkReference),
     gfm: buildSpecSuite(spec, specCases, 'gfm', null),
-    gfmDepartures: buildSpecSuite(spec, specCases, 'gfm', departing),
+    gfmFailing: buildSpecSuite(spec, specCases, 'gfm', departing),
+    gfmNoSpecFailing: buildNoSpecSuite(probes, 'gfm', gfmReference.meta.implementation, (markdown) => gfmReferenceHtml(gfmReference, markdown)),
     livePreviewAndSourceModeVsReadingView: buildLivePreviewAndSourceModeVsReadingViewSuite(forum),
     metadata: buildMetadataSuite(worker),
-    metadataCacheIssues: buildMetadataIssueSuite(forum),
-    quirks: buildQuirkSuite(probes)
+    metadataCacheIssues: buildMetadataIssueSuite(forum)
   };
 }
 
@@ -470,17 +504,26 @@ function buildMetadataSuite(worker: WorkerMetadataOracleFile): TestCaseSuite<Met
   };
 }
 
-function buildQuirkSuite(probes: QuirkProbeFile): TestCaseSuite<QuirkCase> {
+// A probe's id counts the probes of its quirk across both presets, so an id names the same probe whichever file it is in.
+function buildNoSpecSuite(probes: QuirkProbeFile, preset: QuirkProbeRead['preset'], referenceImplementation: string, render: (markdown: string) => string): TestCaseSuite<NoSpecCase> {
   const obsidianVersion = requireVersion(probes.meta.appVersion);
   const countPerQuirk = new Map<string, number>();
-  const cases = probes.probes.map((probe): QuirkCase => {
+  const cases: NoSpecCase[] = [];
+  for (const probe of probes.probes) {
     const index = (countPerQuirk.get(probe.quirk) ?? 0) + 1;
     countPerQuirk.set(probe.quirk, index);
+    if (probe.preset !== preset) {
+      continue;
+    }
     const note = QUIRK_NOTES[probe.quirk];
     if (note === undefined) {
       throw new Error(`No note for the quirk ${probe.quirk}`);
     }
-    return {
+    const referenceHtml = render(probe.markdown);
+    if (isSameAsReference(probe.html, referenceHtml)) {
+      continue;
+    }
+    cases.push({
       id: `${probe.quirk}-${String(index)}`,
       markdown: probe.markdown,
       metadataSections: probe.sections,
@@ -488,13 +531,14 @@ function buildQuirkSuite(probes: QuirkProbeFile): TestCaseSuite<QuirkCase> {
       obsidianReadingViewHtml: probe.html,
       obsidianVersion,
       quirk: probe.quirk,
-      syntax: probe.preset
-    };
-  });
+      referenceHtml
+    });
+  }
   return {
-    about: 'Documents beyond the spec examples that show where Obsidian\'s reading view departs from CommonMark, with the reading view\'s HTML (`strictLineBreaks: true`, serialized as in the spec suite) and the metadata worker\'s sections. The CommonMark spec has no example for them, so they carry no spec HTML. `syntax: "gfm"` marks a case read with GFM tables in play.',
+    about: `${NO_SPEC_SUITE_ABOUT[preset]} \`referenceHtml\` is the HTML of ${referenceImplementation} (\`referenceImplementation\`), which passes ${NO_SPEC_REFERENCE_SPEC[preset]}, and \`obsidianReadingViewHtml\` the reading view's with \`strictLineBreaks: true\`, serialized as in the spec suites. A probe on which the two agree is left out. Compare them as the spec suites compare the reading view with the spec: put \`referenceHtml\` through a DOM, then drop whitespace between tags in both. \`quirk\` names the behaviour, \`note\` describes it, and \`metadataSections\` are the metadata worker's sections.`,
     cases,
-    obsidianVersion
+    obsidianVersion,
+    referenceImplementation
   };
 }
 
