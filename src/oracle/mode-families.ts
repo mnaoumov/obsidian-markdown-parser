@@ -2,9 +2,10 @@
  * @file
  *
  * The families the judge's differences fall into, each told by the minimal note `reduceDifference` leaves and the
- * difference it keeps. A family is a known bug (one of the forum issues), a behaviour the editor shows by design, a
- * quirk of the reading view's parser that the spec and quirk probe oracles already measure, or a new candidate. The
- * first family that matches a difference takes it, so the more specific ones come first.
+ * difference it keeps. A family is a known bug (one of the forum issues, or a forum topic that already reports it), a
+ * behaviour the editor shows by design or as a known limit, a quirk of the reading view's parser that the spec and quirk
+ * probe oracles already measure, a disagreement judged in the app as not worth reporting, or a new candidate. The first
+ * family that matches a difference takes it, so the more specific ones come first.
  */
 
 import type {
@@ -18,6 +19,11 @@ import { parseDifferenceKey } from './mode-judge.ts';
  * A family of differences.
  */
 export interface ModeFamily {
+  /**
+   * A forum topic outside the forum issue samples that reports it or that the team closed, when one was found.
+   */
+  readonly forumUrl?: string;
+
   /**
    * The family id.
    */
@@ -53,13 +59,18 @@ export type ModeFamilyKind =
    */
   | 'candidate'
   /**
-  The editor's line tokenizer styles a mark it has not seen closed yet, while it is being typed.
+  The editor shows it by design, such as a mark it has not seen closed yet while it is being typed, or as a known limit
+  of Live Preview, such as one the team closed on the forum.
    */
   | 'expected'
   /**
-  A forum issue already reports it.
+  A forum issue already reports it: one of the forum issue samples, or the open topic of its `forumUrl`.
    */
   | 'known'
+  /**
+  Confirmed in the app and judged not worth reporting: only a note nobody writes on purpose shows it.
+   */
+  | 'minor'
   /**
   The reading view departs from CommonMark where the editor follows it; the spec and quirk probe oracles measure it.
    */
@@ -127,7 +138,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     id: 'four-dollars',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (_key, reduced) => reduced.includes('$$$$'),
     note: 'A line `$$$$` is empty display math in the editor and opens a math block in the reading view.'
   },
@@ -162,7 +173,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     id: 'unclosed-front-matter',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (_key, reduced) => /^---(?:\n|$)/u.test(reduced) && !/\n---[ \t]*(?:\n|$)/u.test(reduced),
     note: 'A note opening with a `---` line that no later `---` closes is front matter to its end in the editor and a thematic break in the reading view.'
   },
@@ -180,7 +191,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     id: 'fence-info-with-backtick',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (_key, reduced) => /^~~~[^`\n]*`/mu.test(reduced),
     note: 'The editor opens no tilde fence whose info string holds a backtick, which CommonMark and the reading view read as a fence.'
   },
@@ -191,74 +202,81 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'A run of three backticks that opens no fence, after other text on a line or before an info string holding a backtick, and is left unclosed, makes the rest of the note inline code in the editor.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/104674',
     id: 'html-block-ends-at-line',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => key.side === 'editor' && /^<\/?[A-Za-z][^\n]*\n/mu.test(reduced),
     note: 'The editor ends at its own line an HTML block that the reading view runs on to the next empty line, so the editor styles markdown the reading view shows as raw HTML.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/38847',
     id: 'unfinished-html-tag',
-    kind: 'candidate',
+    kind: 'known',
     matches: (key, reduced) => key.side === 'readingView' && /<[A-Za-z!/][^\n>]*(?:\n|$)/u.test(reduced),
     note: 'The editor reads the rest of a line and the next lines after an unfinished HTML tag as the tag, so it styles none of their markdown.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/29589',
     id: 'inline-html-before-internal-link',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'internalLink') && /<[a-z]+>\[\[/u.test(reduced),
     note: 'The editor styles no internal link right after an inline HTML tag.'
   },
   {
     id: 'lazy-line-after-empty-quote-line',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => isKey(key, 'editor', /^(?:quote-\d|thematicBreak)$/u) && /^>+\s*\n/mu.test(reduced),
     note: 'After an empty quote line the editor carries the quote onto the next line, which the reading view reads as a block of its own.'
   },
   {
     id: 'block-on-list-item-first-line',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => key.side === 'readingView' && /^\s*(?:>+ ?)*(?:[-*+]|\d+[.)])[ \t]+(?:>|\*\*\*|[-*+] |#)/mu.test(reduced),
     note: 'The editor reads no quote, thematic break, heading or nested list item opened on a list item\'s first line.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/73772',
     id: 'heading-in-quote',
-    kind: 'candidate',
+    kind: 'known',
     matches: (key, reduced) => isKey(key, 'readingView', /^heading-\d$/u) && /^>+ ?#/mu.test(reduced),
     note: 'The editor gives a heading in a quote no heading classes.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/14361',
     id: 'tag-after-mark',
-    kind: 'candidate',
+    kind: 'known',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'tag') && /[*=`_~]#|\[[^\]\n]*#/u.test(reduced),
     note: 'The editor reads no tag right after an emphasis, highlight or code mark, or after an unclosed `[`.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/30367',
     id: 'ordered-item-interrupts-paragraph',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => isKey(key, 'editor', /^(?:list|task)$/u) && /\S\n(?!1[.)])\d+[.)] /u.test(reduced),
     note: 'In the editor an ordered list item not numbered 1 interrupts a paragraph, which CommonMark and the reading view keep going.'
   },
   {
     id: 'empty-list-item',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => ((key.side === 'readingView' && key.fact === 'list') && /^(?:[-*+]|\d+[.)])$/mu.test(reduced)) || (isKey(key, 'editor', /^heading-\d$/u) && /^[-*+]\n/u.test(reduced)),
     note: 'The editor reads a list marker alone on its line as text; the reading view reads an empty list item.'
   },
   {
     id: 'one-dash-setext-underline',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'heading-2') && reduced.endsWith('\n-'),
     note: 'The editor reads a setext underline of one `-` as an empty list item; the reading view reads a heading.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/34124',
     id: 'setext-in-quote',
-    kind: 'candidate',
+    kind: 'known',
     matches: (key, reduced) => ((key.side === 'editor' && key.fact === 'thematicBreak') || (key.side === 'readingView' && key.fact === 'heading-2')) && /^>[^\n]+\n>-+$/mu.test(reduced),
     note: 'The editor reads a setext underline in a quote as a thematic break; the reading view reads a heading.'
   },
   {
     id: 'setext-under-special-line',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => (key.side === 'editor' && key.fact === 'thematicBreak') && /(?:^|\n)(?:\[[^\]\n]*\]:|\^|\|| \t)[^\n]*\n---$/u.test(reduced),
     note: 'The editor reads a `---` under a paragraph line that opens like a definition, a block id or a table row as a thematic break; the reading view reads a heading.'
   },
@@ -282,7 +300,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     id: 'indented-code-in-container',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (_key, reduced) => /^(?:>|[-*+]|\d+[.)]) {5,}\S/mu.test(reduced),
     note: 'The editor reads no indented code in a quote or a list item, opened by five spaces after the marker.'
   },
@@ -294,61 +312,63 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     id: 'line-after-indented-code',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (_key, reduced) => /^(?: {4}|\t)\S[^\n]*\n\S/mu.test(reduced),
     note: 'On the line right after an indented code line, the editor opens no math or comment block and styles no internal link, tag or math.'
   },
   {
     id: 'line-after-empty-list-item',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => key.side === 'editor' && /^\s*(?:[-*+]|\d+[.)]) ?\n\n?(?: {4,}|\t)/mu.test(reduced),
     note: 'A line indented four or more after an empty list item is a list item or code in the editor and neither in the reading view.'
   },
   {
     id: 'indented-code-after-block',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'code') && /^[^\n]+\n(?: {4}|\t)\S/mu.test(reduced),
     note: 'The editor reads no indented code right after a thematic break or another block that is no paragraph.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/53589',
     id: 'inline-math-across-lines',
-    kind: 'candidate',
+    kind: 'known',
     matches: (_key, reduced) => /\$[^$\n]*\n[^$]*\$/u.test(reduced),
     note: 'The editor ends inline math at the end of its line; the reading view runs it across the line break.'
   },
   {
     id: 'highlight-across-lines',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'highlight') && /[=]=[^=\n]*\n[^=]*==/u.test(reduced),
     note: 'The editor ends a highlight at the end of its line; the reading view runs it across the line break.'
   },
   {
     id: 'highlight-closer-after-space',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'highlight') && /[=]=\S[^=\n]* ==\S/u.test(reduced),
     note: 'The editor closes a highlight at a `==` after a space; the reading view does not, and pairs it with a later one.'
   },
   {
     id: 'table-with-empty-cells',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => key.fact === 'table' || ((key.side === 'editor' && key.fact === 'list') && reduced.includes('\n- |')),
     note: 'A table whose header row holds only empty cells or a single pipe, or whose delimiter row opens with `- `, is a table on one side and none on the other.'
   },
   {
     id: 'math-across-table-cells',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => key.fact === 'math' && /^\|?[^\n]*\$[^\n$]*\|[^\n$]*\$[^\n]*\n\|?\s*:?-/mu.test(reduced),
     note: 'In a table row, the editor pairs `$` marks from two cells into one math span.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/29589',
     id: 'emphasis-around-inline-html',
-    kind: 'candidate',
+    kind: 'expected',
     matches: (key, reduced) => isKey(key, 'readingView', /^(?:em|strong)$/u) && /[*_]<|>[*_]/u.test(reduced),
     note: 'The editor reads no emphasis that opens or closes next to an inline HTML tag.'
   },
   {
     id: 'brackets-in-internal-link',
-    kind: 'candidate',
+    kind: 'minor',
     matches: (key, reduced) => key.fact === 'internalLink' && /\[\[[^\]\n]*[[|]/u.test(reduced),
     note: 'An internal link whose target holds a `[` or a `|` in a table cell is one on one side and none on the other.'
   },
