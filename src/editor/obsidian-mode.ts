@@ -257,9 +257,10 @@ export function createObsidianMode(): ObsidianMode {
         state.hmdNextMaybe = NextMaybe.FrontMatterEnd;
         return enterMode(stream, state, YAML_MODE, {
           exitChecker(s, st) {
-            if (s.string === '---') {
+            // Obsidian: the closing `---` may be followed by spaces and tabs, which take its classes.
+            if (/^---[ \t]*$/u.test(s.string)) {
               st.hmdNextMaybe = NextMaybe.None;
-              return { endPos: 3 };
+              return { endPos: s.string.length };
             }
             return null;
           },

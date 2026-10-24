@@ -1,0 +1,3098 @@
+{
+  "meta": {
+    "appVersion": "1.14.5",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36"
+  },
+  "reads": [
+    {
+      "html": "<p>a <mark data-highlight=\"\">=marked</mark>= b</p>",
+      "markdown": "a ===marked=== b\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 16,
+                "offset": 16
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          2,
+          5,
+          1,
+          "formatting_formatting-highlight_highlight"
+        ],
+        [
+          5,
+          11,
+          1,
+          "highlight"
+        ],
+        [
+          11,
+          14,
+          1,
+          "formatting_formatting-highlight_formatting-highlight-end_highlight"
+        ]
+      ]
+    },
+    {
+      "html": "<p>a <mark data-highlight=\"\">&gt;x</mark> b</p>",
+      "markdown": "a ==>x== b\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 10,
+                "offset": 10
+              }
+            }
+          }
+        ]
+      },
+      "nodes": []
+    },
+    {
+      "html": "<p>a <mark data-highlight=\"\">&gt; next step</mark> b</p>",
+      "markdown": "a ==> next step== b\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 19,
+                "offset": 19
+              }
+            }
+          }
+        ]
+      },
+      "nodes": []
+    },
+    {
+      "html": "<p>a %%open</p>\n<h1>Heading</h1>\n<p>text</p>",
+      "markdown": "a %%open\n\n# Heading\n\ntext\n",
+      "metadata": {
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 10
+              },
+              "end": {
+                "line": 2,
+                "col": 9,
+                "offset": 19
+              }
+            },
+            "heading": "Heading",
+            "level": 1
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 8,
+                "offset": 8
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 10
+              },
+              "end": {
+                "line": 2,
+                "col": 9,
+                "offset": 19
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 4,
+                "col": 0,
+                "offset": 21
+              },
+              "end": {
+                "line": 4,
+                "col": 4,
+                "offset": 25
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          2,
+          4,
+          1,
+          "comment_comment-start_formatting"
+        ],
+        [
+          4,
+          8,
+          1,
+          "comment"
+        ],
+        [
+          10,
+          19,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          10,
+          12,
+          2,
+          "comment_formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          12,
+          19,
+          2,
+          "comment_header_header-1"
+        ],
+        [
+          21,
+          25,
+          1,
+          "comment"
+        ]
+      ]
+    },
+    {
+      "html": "<p>text %% inline</p>",
+      "markdown": "text %% inline\n%%\nafter\n\n# Heading\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 14,
+                "offset": 14
+              }
+            }
+          },
+          {
+            "type": "comment",
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 0,
+                "offset": 15
+              },
+              "end": {
+                "line": 5,
+                "col": 0,
+                "offset": 35
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          5,
+          7,
+          1,
+          "comment_comment-start_formatting"
+        ],
+        [
+          7,
+          14,
+          1,
+          "comment"
+        ],
+        [
+          15,
+          17,
+          1,
+          "comment_comment-end_formatting"
+        ],
+        [
+          25,
+          34,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          25,
+          27,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          27,
+          34,
+          2,
+          "header_header-1"
+        ]
+      ]
+    },
+    {
+      "html": "<p>Cost is $$5 or more.</p>\n<ul>\n<li>item</li>\n</ul>\n<blockquote>\n<p>quote</p>\n</blockquote>\n<p>Later text with $$ in it.</p>",
+      "markdown": "Cost is $$5 or more.\n\n- item\n\n> quote\n\nLater text with $$ in it.\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 20,
+                "offset": 20
+              }
+            }
+          },
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 22
+              },
+              "end": {
+                "line": 2,
+                "col": 6,
+                "offset": 28
+              }
+            }
+          },
+          {
+            "type": "blockquote",
+            "position": {
+              "start": {
+                "line": 4,
+                "col": 0,
+                "offset": 30
+              },
+              "end": {
+                "line": 4,
+                "col": 7,
+                "offset": 37
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 6,
+                "col": 0,
+                "offset": 39
+              },
+              "end": {
+                "line": 6,
+                "col": 25,
+                "offset": 64
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 22
+              },
+              "end": {
+                "line": 2,
+                "col": 6,
+                "offset": 28
+              }
+            },
+            "parent": -2
+          }
+        ]
+      },
+      "nodes": [
+        [
+          8,
+          10,
+          1,
+          "formatting_formatting-math_formatting-math-begin_keyword_math_math-block"
+        ],
+        [
+          10,
+          11,
+          1,
+          "math_number"
+        ],
+        [
+          11,
+          12,
+          1,
+          "math"
+        ],
+        [
+          12,
+          14,
+          1,
+          "math_variable-2"
+        ],
+        [
+          14,
+          15,
+          1,
+          "math"
+        ],
+        [
+          15,
+          19,
+          1,
+          "math_variable-2"
+        ],
+        [
+          19,
+          20,
+          1,
+          "error_math"
+        ],
+        [
+          22,
+          28,
+          1,
+          "math"
+        ],
+        [
+          30,
+          37,
+          1,
+          "math"
+        ],
+        [
+          39,
+          55,
+          1,
+          "math"
+        ],
+        [
+          55,
+          57,
+          1,
+          "formatting_formatting-math_formatting-math-end_keyword_math_math-"
+        ]
+      ]
+    },
+    {
+      "html": "<p>Run <code>npm install --save-dev</code> first.</p>",
+      "markdown": "Run ``npm install\n--save-dev`` first.\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 19,
+                "offset": 37
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          4,
+          6,
+          1,
+          "formatting_formatting-code_inline-code"
+        ],
+        [
+          6,
+          17,
+          1,
+          "inline-code"
+        ],
+        [
+          28,
+          30,
+          1,
+          "formatting_formatting-code_inline-code"
+        ],
+        [
+          30,
+          37,
+          1,
+          "inline-code"
+        ]
+      ]
+    },
+    {
+      "html": "<p><a href=\"https://example.com\">Area <span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"\\pi r^2\"><mjx-mi data-latex=\"\\pi\"><mjx-c class=\"mjx-c1D70B\">𝜋</mjx-c></mjx-mi><mjx-msup data-latex=\"r^2\"><mjx-mi data-latex=\"r\"><mjx-c class=\"mjx-c1D45F\">𝑟</mjx-c></mjx-mi><mjx-script style=\"vertical-align: 0.363em;\"><mjx-mn data-latex=\"2\" size=\"s\"><mjx-c class=\"mjx-c32\">2</mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-math></mjx-container></span></a></p>",
+      "markdown": "[Area $\\pi r^2$](https://example.com)\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 37,
+                "offset": 37
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          1,
+          1,
+          "formatting_formatting-link_link"
+        ],
+        [
+          1,
+          15,
+          1,
+          "link"
+        ],
+        [
+          15,
+          16,
+          1,
+          "formatting_formatting-link_link"
+        ],
+        [
+          16,
+          17,
+          1,
+          "formatting_formatting-link-string_string_url"
+        ],
+        [
+          17,
+          36,
+          1,
+          "string_url"
+        ],
+        [
+          36,
+          37,
+          1,
+          "formatting_formatting-link-string_string_url"
+        ]
+      ]
+    },
+    {
+      "html": "<p><span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"a\"><mjx-mi data-latex=\"a\"><mjx-c class=\"mjx-c1D44E\">𝑎</mjx-c></mjx-mi></mjx-math></mjx-container></span> is the first line.</p>\n<h2><span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"b\"><mjx-mi data-latex=\"b\"><mjx-c class=\"mjx-c1D44F\">𝑏</mjx-c></mjx-mi></mjx-math></mjx-container></span></h2>",
+      "markdown": "$a$ is the first line.\n\n$b$\n---\n",
+      "metadata": {
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 24
+              },
+              "end": {
+                "line": 3,
+                "col": 3,
+                "offset": 31
+              }
+            },
+            "heading": "$b$",
+            "level": 2
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 22,
+                "offset": 22
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 24
+              },
+              "end": {
+                "line": 3,
+                "col": 3,
+                "offset": 31
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          1,
+          1,
+          "formatting_formatting-math_formatting-math-begin_keyword_math"
+        ],
+        [
+          1,
+          2,
+          1,
+          "math_variable-2"
+        ],
+        [
+          2,
+          3,
+          1,
+          "formatting_formatting-math_formatting-math-end_keyword_math_math-"
+        ],
+        [
+          24,
+          25,
+          1,
+          "formatting_formatting-math_formatting-math-begin_keyword_math"
+        ],
+        [
+          25,
+          26,
+          1,
+          "math_variable-2"
+        ],
+        [
+          26,
+          27,
+          1,
+          "formatting_formatting-math_formatting-math-end_keyword_math_math-"
+        ],
+        [
+          28,
+          31,
+          1,
+          "HyperMD-hr_HyperMD-hr-bg"
+        ],
+        [
+          28,
+          31,
+          2,
+          "hr"
+        ]
+      ]
+    },
+    {
+      "html": "<blockquote>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\" data-task=\"\"><input class=\"task-list-item-checkbox\" type=\"checkbox\">quoted task</li>\n<li class=\"task-list-item is-checked\" data-task=\"x\"><input checked=\"\" class=\"task-list-item-checkbox\" type=\"checkbox\">done quoted task</li>\n</ul>\n</blockquote>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\" data-task=\"\"><input class=\"task-list-item-checkbox\" type=\"checkbox\">normal task</li>\n</ul>",
+      "markdown": "> - [ ] quoted task\n> - [x] done quoted task\n\n- [ ] normal task\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "blockquote",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 24,
+                "offset": 44
+              }
+            }
+          },
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 46
+              },
+              "end": {
+                "line": 3,
+                "col": 17,
+                "offset": 63
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 2,
+                "offset": 2
+              },
+              "end": {
+                "line": 0,
+                "col": 19,
+                "offset": 19
+              }
+            },
+            "parent": -1,
+            "task": " "
+          },
+          {
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 2,
+                "offset": 22
+              },
+              "end": {
+                "line": 1,
+                "col": 24,
+                "offset": 44
+              }
+            },
+            "parent": -1,
+            "task": "x"
+          },
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 46
+              },
+              "end": {
+                "line": 3,
+                "col": 17,
+                "offset": 63
+              }
+            },
+            "parent": -3,
+            "task": " "
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          19,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          0,
+          2,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          2,
+          4,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          4,
+          5,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          5,
+          6,
+          2,
+          "hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          6,
+          7,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          7,
+          19,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          20,
+          44,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          20,
+          22,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          22,
+          24,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          24,
+          25,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          25,
+          26,
+          2,
+          "hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          26,
+          27,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_quote_quote-1"
+        ],
+        [
+          27,
+          44,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          46,
+          63,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1_HyperMD-task-line"
+        ],
+        [
+          46,
+          48,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          48,
+          51,
+          2,
+          "formatting_formatting-task_meta"
+        ],
+        [
+          51,
+          63,
+          2,
+          "list-1"
+        ]
+      ]
+    },
+    {
+      "html": "<blockquote>\n<pre><code>code\n</code></pre>\n</blockquote>\n<p>Paragraph after the quote, with a <a href=\"link\">link</a> and a <a class=\"tag\" href=\"#tag\">#tag</a>.</p>",
+      "markdown": "> ```\n> code\n\nParagraph after the quote, with a [[link]] and a #tag.\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 34,
+                "offset": 48
+              },
+              "end": {
+                "line": 3,
+                "col": 42,
+                "offset": 56
+              }
+            },
+            "link": "link",
+            "original": "[[link]]",
+            "displayText": "link"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 49,
+                "offset": 63
+              },
+              "end": {
+                "line": 3,
+                "col": 53,
+                "offset": 67
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "sections": [
+          {
+            "type": "blockquote",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 6,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 14
+              },
+              "end": {
+                "line": 3,
+                "col": 54,
+                "offset": 68
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          5,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          0,
+          2,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          2,
+          5,
+          2,
+          "inline-code_quote_quote-1"
+        ],
+        [
+          6,
+          12,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          6,
+          8,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          8,
+          12,
+          2,
+          "inline-code_quote_quote-1"
+        ],
+        [
+          14,
+          68,
+          1,
+          "inline-code"
+        ]
+      ]
+    },
+    {
+      "html": "<ul>\n<li>\n<pre><code>code\n</code></pre>\n</li>\n</ul>\n<p>Paragraph after the list, with a <a href=\"link\">link</a> and a <a class=\"tag\" href=\"#tag\">#tag</a>.</p>",
+      "markdown": "- ```\n  code\n\nParagraph after the list, with a [[link]] and a #tag.\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 33,
+                "offset": 47
+              },
+              "end": {
+                "line": 3,
+                "col": 41,
+                "offset": 55
+              }
+            },
+            "link": "link",
+            "original": "[[link]]",
+            "displayText": "link"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 48,
+                "offset": 62
+              },
+              "end": {
+                "line": 3,
+                "col": 52,
+                "offset": 66
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "sections": [
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 6,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 14
+              },
+              "end": {
+                "line": 3,
+                "col": 53,
+                "offset": 67
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 6,
+                "offset": 12
+              }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          5,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-begin_HyperMD-codeblock-begin-bg_HyperMD-codeblock-bg_HyperMD-list-line_HyperMD-list-line-1_HyperMD-list-line-nobullet"
+        ],
+        [
+          0,
+          2,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          2,
+          5,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock_list-1"
+        ],
+        [
+          6,
+          12,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg_HyperMD-list-line_HyperMD-list-line-nobullet"
+        ],
+        [
+          6,
+          12,
+          2,
+          "hmd-codeblock"
+        ],
+        [
+          13,
+          13,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          14,
+          67,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg_HyperMD-list-line_HyperMD-list-line-nobullet"
+        ],
+        [
+          14,
+          67,
+          2,
+          "hmd-codeblock"
+        ]
+      ]
+    },
+    {
+      "html": "<pre><code>$x^2$ is code\n</code></pre>",
+      "markdown": "    $x^2$ is code\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "code",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 17,
+                "offset": 17
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          4,
+          5,
+          1,
+          "formatting_formatting-math_formatting-math-begin_keyword_math"
+        ],
+        [
+          5,
+          6,
+          1,
+          "math_variable-2"
+        ],
+        [
+          6,
+          7,
+          1,
+          "math_tag"
+        ],
+        [
+          7,
+          8,
+          1,
+          "math_number"
+        ],
+        [
+          8,
+          9,
+          1,
+          "formatting_formatting-math_formatting-math-end_keyword_math_math-"
+        ],
+        [
+          9,
+          17,
+          1,
+          "hmd-indented-code_inline-code"
+        ]
+      ]
+    },
+    {
+      "html": "<pre><code>$$x\n</code></pre>\n<p>paragraph</p>\n<p>more</p>",
+      "markdown": "    $$x\nparagraph\n\nmore\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "code",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 7,
+                "offset": 7
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 0,
+                "offset": 8
+              },
+              "end": {
+                "line": 1,
+                "col": 9,
+                "offset": 17
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 19
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 23
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          7,
+          1,
+          "HyperMD-math"
+        ],
+        [
+          4,
+          6,
+          2,
+          "formatting_formatting-math_formatting-math-begin_keyword_math_math-block"
+        ],
+        [
+          6,
+          7,
+          2,
+          "math_variable-2"
+        ],
+        [
+          8,
+          17,
+          1,
+          "HyperMD-math"
+        ],
+        [
+          8,
+          17,
+          2,
+          "math_variable-2"
+        ],
+        [
+          18,
+          18,
+          1,
+          "HyperMD-math"
+        ],
+        [
+          19,
+          23,
+          1,
+          "HyperMD-math"
+        ],
+        [
+          19,
+          23,
+          2,
+          "math"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">k: \"[text]()\"</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nk: \"[text]()\"\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": null,
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          17,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          18,
+          21,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          22,
+          31,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          22,
+          24,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          24,
+          31,
+          2,
+          "header_header-1"
+        ],
+        [
+          33,
+          35,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          35,
+          41,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          41,
+          43,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          44,
+          45,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          45,
+          48,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">k: \"[text]xx\"</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nk: \"[text]xx\"\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 33
+              },
+              "end": {
+                "line": 5,
+                "col": 10,
+                "offset": 43
+              }
+            },
+            "link": "Target",
+            "original": "[[Target]]",
+            "displayText": "Target"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 11,
+                "offset": 44
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 48
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 22
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 31
+              }
+            },
+            "heading": "Heading",
+            "level": 1
+          }
+        ],
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 21
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 22
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 31
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 33
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 48
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "k": "[text]xx"
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 21
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          17,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          18,
+          21,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          22,
+          31,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          22,
+          24,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          24,
+          31,
+          2,
+          "header_header-1"
+        ],
+        [
+          33,
+          35,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          35,
+          41,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          41,
+          43,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          44,
+          45,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          45,
+          48,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">k: \"[text]( )\"</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nk: \"[text]( )\"\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": null,
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          18,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          19,
+          22,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          23,
+          32,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          23,
+          25,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          25,
+          32,
+          2,
+          "header_header-1"
+        ],
+        [
+          34,
+          36,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          36,
+          42,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          42,
+          44,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          45,
+          46,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          46,
+          49,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">k: \"[text]xxx\"</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nk: \"[text]xxx\"\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 34
+              },
+              "end": {
+                "line": 5,
+                "col": 10,
+                "offset": 44
+              }
+            },
+            "link": "Target",
+            "original": "[[Target]]",
+            "displayText": "Target"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 11,
+                "offset": 45
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 49
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 23
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 32
+              }
+            },
+            "heading": "Heading",
+            "level": 1
+          }
+        ],
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 22
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 23
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 32
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 34
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 49
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "k": "[text]xxx"
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 22
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          18,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          19,
+          22,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          23,
+          32,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          23,
+          25,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          25,
+          32,
+          2,
+          "header_header-1"
+        ],
+        [
+          34,
+          36,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          36,
+          42,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          42,
+          44,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          45,
+          46,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          46,
+          49,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">hasOwnProperty: 1</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nhasOwnProperty: 1\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": null,
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          18,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          18,
+          20,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          20,
+          21,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          22,
+          25,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          26,
+          35,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          26,
+          28,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          28,
+          35,
+          2,
+          "header_header-1"
+        ],
+        [
+          37,
+          39,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          39,
+          45,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          45,
+          47,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          48,
+          49,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          49,
+          52,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">hasOwnPropertx: 1</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nhasOwnPropertx: 1\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 37
+              },
+              "end": {
+                "line": 5,
+                "col": 10,
+                "offset": 47
+              }
+            },
+            "link": "Target",
+            "original": "[[Target]]",
+            "displayText": "Target"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 11,
+                "offset": 48
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 52
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 26
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 35
+              }
+            },
+            "heading": "Heading",
+            "level": 1
+          }
+        ],
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 25
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 26
+              },
+              "end": {
+                "line": 3,
+                "col": 9,
+                "offset": 35
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 37
+              },
+              "end": {
+                "line": 5,
+                "col": 15,
+                "offset": 52
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "hasOwnPropertx": 1
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 25
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          18,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          18,
+          20,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          20,
+          21,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          22,
+          25,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          26,
+          35,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          26,
+          28,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          28,
+          35,
+          2,
+          "header_header-1"
+        ],
+        [
+          37,
+          39,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          39,
+          45,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          45,
+          47,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          48,
+          49,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          49,
+          52,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">obj:\n  hasOwnProperty: 1</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nobj:\n  hasOwnProperty: 1\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": null,
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          7,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          9,
+          25,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          25,
+          27,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          27,
+          28,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          29,
+          32,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          33,
+          42,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          33,
+          35,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          35,
+          42,
+          2,
+          "header_header-1"
+        ],
+        [
+          44,
+          46,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          46,
+          52,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          52,
+          54,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          55,
+          56,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          56,
+          59,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">obj:\n  hasOwnPropertx: 1</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
+      "markdown": "---\nobj:\n  hasOwnPropertx: 1\n---\n# Heading\n\n[[Target]] #tag\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 6,
+                "col": 0,
+                "offset": 44
+              },
+              "end": {
+                "line": 6,
+                "col": 10,
+                "offset": 54
+              }
+            },
+            "link": "Target",
+            "original": "[[Target]]",
+            "displayText": "Target"
+          }
+        ],
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 6,
+                "col": 11,
+                "offset": 55
+              },
+              "end": {
+                "line": 6,
+                "col": 15,
+                "offset": 59
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "headings": [
+          {
+            "position": {
+              "start": {
+                "line": 4,
+                "col": 0,
+                "offset": 33
+              },
+              "end": {
+                "line": 4,
+                "col": 9,
+                "offset": 42
+              }
+            },
+            "heading": "Heading",
+            "level": 1
+          }
+        ],
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 3,
+                "col": 3,
+                "offset": 32
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "position": {
+              "start": {
+                "line": 4,
+                "col": 0,
+                "offset": 33
+              },
+              "end": {
+                "line": 4,
+                "col": 9,
+                "offset": 42
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 6,
+                "col": 0,
+                "offset": 44
+              },
+              "end": {
+                "line": 6,
+                "col": 15,
+                "offset": 59
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "obj": {
+            "hasOwnPropertx": 1
+          }
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 3,
+            "col": 3,
+            "offset": 32
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          7,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          9,
+          25,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          25,
+          27,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          27,
+          28,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          29,
+          32,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          33,
+          42,
+          1,
+          "HyperMD-header_HyperMD-header-1"
+        ],
+        [
+          33,
+          35,
+          2,
+          "formatting_formatting-header_formatting-header-1_header_header-1"
+        ],
+        [
+          35,
+          42,
+          2,
+          "header_header-1"
+        ],
+        [
+          44,
+          46,
+          1,
+          "formatting-link_formatting-link-start"
+        ],
+        [
+          46,
+          52,
+          1,
+          "hmd-internal-link"
+        ],
+        [
+          52,
+          54,
+          1,
+          "formatting-link_formatting-link-end"
+        ],
+        [
+          55,
+          56,
+          1,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_tag-tag"
+        ],
+        [
+          56,
+          59,
+          1,
+          "hashtag_hashtag-end_meta_tag-tag"
+        ]
+      ]
+    },
+    {
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-4a2bf395230f6c4d\" id=\"fnref-1-4a2bf395230f6c4d\"><a class=\"footnote-link\" data-footref=\"1\" href=\"#fn-1-4a2bf395230f6c4d\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-4a2bf395230f6c4d\" id=\"fn-1-4a2bf395230f6c4d\"><p>Note <a class=\"footnote-backref footnote-link\" href=\"#fnref-1-4a2bf395230f6c4d\">↩︎</a></p></li>\n</ol></section>",
+      "markdown": "Text[^1]\n\n[^1]: Note ^abc\n",
+      "metadata": {
+        "footnotes": [
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 10
+              },
+              "end": {
+                "line": 2,
+                "col": 15,
+                "offset": 25
+              }
+            },
+            "id": "1"
+          }
+        ],
+        "footnoteRefs": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 4,
+                "offset": 4
+              },
+              "end": {
+                "line": 0,
+                "col": 8,
+                "offset": 8
+              }
+            },
+            "id": "1"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 8,
+                "offset": 8
+              }
+            }
+          },
+          {
+            "type": "footnoteDefinition",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 10
+              },
+              "end": {
+                "line": 2,
+                "col": 15,
+                "offset": 25
+              }
+            },
+            "id": "abc"
+          },
+          {
+            "type": "text",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              },
+              "end": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              }
+            }
+          },
+          {
+            "type": "element",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              },
+              "end": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              }
+            },
+            "id": "abc"
+          }
+        ],
+        "blocks": {
+          "abc": {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              },
+              "end": {
+                "line": 3,
+                "col": 0,
+                "offset": 25
+              }
+            },
+            "id": "abc"
+          }
+        }
+      },
+      "nodes": [
+        [
+          4,
+          6,
+          1,
+          "footref_formatting_formatting-link_formatting-link-start_hmd-barelink"
+        ],
+        [
+          6,
+          7,
+          1,
+          "footref_hmd-barelink"
+        ],
+        [
+          7,
+          8,
+          1,
+          "footref_formatting_formatting-link_formatting-link-end_hmd-barelink"
+        ],
+        [
+          10,
+          25,
+          1,
+          "HyperMD-footnote"
+        ],
+        [
+          10,
+          12,
+          2,
+          "formatting_formatting-link_hmd-barelink_hmd-footnote_link"
+        ],
+        [
+          12,
+          13,
+          2,
+          "hmd-barelink_hmd-barelink_hmd-footnote_hmd-footnote_link"
+        ],
+        [
+          13,
+          15,
+          2,
+          "formatting_formatting-link_hmd-barelink_hmd-footnote_link"
+        ],
+        [
+          21,
+          25,
+          2,
+          "blockid"
+        ]
+      ]
+    },
+    {
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-c7fcf0ff764190c9\" id=\"fnref-1-c7fcf0ff764190c9\"><a class=\"footnote-link\" data-footref=\"[inline0\" href=\"#fn-1-c7fcf0ff764190c9\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-c7fcf0ff764190c9\" id=\"fn-1-c7fcf0ff764190c9\">note<a class=\"footnote-backref footnote-link\" href=\"#fnref-1-c7fcf0ff764190c9\">↩︎</a></li>\n</ol></section>",
+      "markdown": "Text^[note]\n",
+      "metadata": {
+        "footnotes": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 6,
+                "offset": 6
+              },
+              "end": {
+                "line": 0,
+                "col": 10,
+                "offset": 10
+              }
+            },
+            "id": "[inline0"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 11,
+                "offset": 11
+              }
+            }
+          },
+          {
+            "type": "text",
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 0,
+                "offset": 11
+              },
+              "end": {
+                "line": 1,
+                "col": 0,
+                "offset": 11
+              }
+            }
+          },
+          {
+            "type": "element",
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 0,
+                "offset": 11
+              },
+              "end": {
+                "line": 1,
+                "col": 0,
+                "offset": 11
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          4,
+          6,
+          1,
+          "footref_formatting-inline-footnote_inline-footnote_inline-footnote-start"
+        ],
+        [
+          6,
+          10,
+          1,
+          "footref_inline-footnote"
+        ],
+        [
+          10,
+          11,
+          1,
+          "footref_formatting-inline-footnote_inline-footnote_inline-footnote-end"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">a: 1</code></pre>\n<p>text</p>",
+      "markdown": "---\na: 1\n---   \ntext\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 16
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 20
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "a": 1
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 12
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          9,
+          15,
+          1,
+          "def_hmd-frontmatter"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">a: 1</code></pre>\n<p>text</p>",
+      "markdown": "---\na: 1\n---\t\ntext\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 0,
+                "offset": 14
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 18
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "a": 1
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 12
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          9,
+          13,
+          1,
+          "def_hmd-frontmatter"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">a: 1</code></pre>\n<p>x\ntext</p>",
+      "markdown": "---\na: 1\n---x\ntext\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 18
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "a": 1
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 12
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          9,
+          12,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          12,
+          13,
+          1,
+          "hmd-frontmatter"
+        ],
+        [
+          14,
+          18,
+          1,
+          "hmd-frontmatter"
+        ]
+      ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">a: 1</code></pre>\n<ul>\n<li>text</li>\n</ul>",
+      "markdown": "---\na: 1\n----\ntext\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              }
+            }
+          },
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 18
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 3,
+                "offset": 12
+              },
+              "end": {
+                "line": 3,
+                "col": 4,
+                "offset": 18
+              }
+            },
+            "parent": -2
+          }
+        ],
+        "frontmatter": {
+          "a": 1
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 2,
+            "col": 3,
+            "offset": 12
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          5,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          5,
+          7,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          7,
+          8,
+          1,
+          "hmd-frontmatter_number"
+        ],
+        [
+          9,
+          12,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          12,
+          13,
+          1,
+          "hmd-frontmatter"
+        ],
+        [
+          14,
+          18,
+          1,
+          "hmd-frontmatter"
+        ]
+      ]
+    }
+  ]
+}

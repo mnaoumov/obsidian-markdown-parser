@@ -10,14 +10,14 @@
  * removed when the run ends. Then it runs, each pinned to that version and writing to the output directory:
  *
  * - `scripts/oracle.ts` once per class-span seed, with the pinned file's `--per-set`.
- * - `scripts/spec-oracle.ts` and `scripts/quirk-probe-oracle.ts`.
+ * - `scripts/spec-oracle.ts`, `scripts/quirk-probe-oracle.ts` and `scripts/forum-issue-oracle.ts`.
  * - `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
  *
  * The output directory is `oracle/`, so a newer version's files land beside the pinned ones. A re-read of the pinned
  * version itself goes to a temporary directory instead, so it never overwrites the files the suites check against.
  *
  * Usage: `jiti scripts/oracle-refresh.ts [--obsidian-version <version>] [--out-dir <directory>] [--only <oracle>,...]
- * [--skip-drift]`, where an oracle is `classes`, `spec`, `quirk-probes` or `worker`.
+ * [--skip-drift]`, where an oracle is `classes`, `spec`, `quirk-probes`, `forum-issues` or `worker`.
  */
 
 import {
@@ -89,7 +89,7 @@ interface OitModule {
   connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
-const ORACLES = ['classes', 'spec', 'quirk-probes', 'worker'] as const;
+const ORACLES = ['classes', 'spec', 'quirk-probes', 'forum-issues', 'worker'] as const;
 type OracleName = typeof ORACLES[number];
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -174,6 +174,9 @@ try {
   }
   if (isWanted('quirk-probes')) {
     run('quirk-probe-oracle.ts', common);
+  }
+  if (isWanted('forum-issues')) {
+    run('forum-issue-oracle.ts', common);
   }
   if (isWanted('worker')) {
     const pinned = readOracleFile(workerMetadataOracleFileName(PINNED_OBSIDIAN_VERSION), PINNED_ORACLE_DIRECTORY) as WorkerMetadataOracleFile;
