@@ -348,7 +348,7 @@ describe('highlight', () => {
 
   /*
    * The classes the live editor of Obsidian 1.14.5 gave these documents once it had read HTML elsewhere. Before that it
-   * reads them differently, which is an Obsidian bug in the ledger (`docs/obsidian-bugs.md`).
+   * reads them differently, which is an Obsidian bug.
    */
   it('should leave HTML half open after a footnote reference mark that opens its line', () => {
     expect(spanClassesAt('[^<b>]', 0)).toBe('bracket footref formatting formatting-link formatting-link-start hmd-barelink tag');
