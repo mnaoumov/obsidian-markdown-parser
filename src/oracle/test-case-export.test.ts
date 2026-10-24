@@ -50,11 +50,13 @@ const ALL_SUITES = [
   SUITES.gfmNoSpecFailing,
   SUITES.metadata,
   SUITES.livePreviewAndSourceModeVsReadingView,
-  SUITES.metadataCacheIssues
+  SUITES.metadataFailing
 ];
 const EDITING_MODES_VS_READING_VIEW_CASES = 14;
 const METADATA_ISSUE_CASES = 10;
 const EXPECTED_METADATA_CASES = 6;
+const WORKER_THROWS_ON_BLANK_LINK_DESTINATION = 17;
+const WORKER_THROWS_ON_HAS_OWN_PROPERTY_KEY = 14;
 const QUIRK_PROBE_COUNT = 169;
 const COMMONMARK_NO_SPEC_FAILING_CASES = 70;
 const GFM_NO_SPEC_FAILING_CASES = 27;
@@ -121,9 +123,19 @@ describe('the exported test cases', () => {
   it('hold the forum issues: the editing modes\' disagreements with Reading view, and the metadata cache faults', () => {
     expect(SUITES.livePreviewAndSourceModeVsReadingView.cases).toHaveLength(EDITING_MODES_VS_READING_VIEW_CASES);
     expect(new Set(SUITES.livePreviewAndSourceModeVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661']));
-    expect(SUITES.metadataCacheIssues.cases).toHaveLength(METADATA_ISSUE_CASES);
-    expect(new Set(SUITES.metadataCacheIssues.cases.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4']));
-    expect(SUITES.metadataCacheIssues.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
+    const samples = SUITES.metadataFailing.cases.filter((testCase) => testCase.id.startsWith('issue-'));
+    expect(samples).toHaveLength(METADATA_ISSUE_CASES);
+    expect(new Set(samples.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4']));
+    expect(SUITES.metadataFailing.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
+  });
+
+  it('keep in the failing metadata file every worker document the worker threw on, unchanged, each under the issue of its trigger', () => {
+    const throws = SUITES.metadata.cases.filter((testCase) => testCase.metadata === null);
+    const failing = SUITES.metadataFailing.cases.slice(0, throws.length);
+    expect(failing.map(({ id, markdown, metadata, obsidianVersion }) => ({ id, markdown, metadata, obsidianVersion }))).toEqual(throws);
+    expect(SUITES.metadataFailing.cases).toHaveLength(throws.length + METADATA_ISSUE_CASES);
+    expect(failing.filter((testCase) => testCase.issue === 'issue-1')).toHaveLength(WORKER_THROWS_ON_BLANK_LINK_DESTINATION);
+    expect(failing.filter((testCase) => testCase.issue === 'issue-2')).toHaveLength(WORKER_THROWS_ON_HAS_OWN_PROPERTY_KEY);
   });
 
   it('give each editing mode case Source mode, Live Preview and Reading view, with one Source mode line per markdown line', () => {
@@ -137,7 +149,7 @@ describe('the exported test cases', () => {
     }
   });
   it('expect of the metadata issues what the worker gives once the fault is out', () => {
-    const byId = new Map(SUITES.metadataCacheIssues.cases.map((testCase) => [testCase.id, testCase]));
+    const byId = new Map(SUITES.metadataFailing.cases.map((testCase) => [testCase.id, testCase]));
     for (const id of ['issue-1-1', 'issue-1-2', 'issue-2-1', 'issue-2-2']) {
       expect(byId.get(id)?.metadata).toBeNull();
       expect(byId.get(id)?.expectedMetadata).toMatchObject({ headings: [{ heading: 'Heading' }], links: [{ link: 'Target' }], tags: [{ tag: '#tag' }] });

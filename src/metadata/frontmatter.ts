@@ -109,7 +109,7 @@ function addLinksOf(links: FrontmatterLinkCache[], parentKey: string, key: strin
 
   let destination = groups['destination'];
   if (destination === undefined) {
-    throw new WorkerFailure(`A markdown link with no destination in the front matter: ${value}`);
+    throw new WorkerFailure('blankLinkDestination', `A markdown link with no destination in the front matter: ${value}`);
   }
   if (destination.startsWith('<') && destination.endsWith('>')) {
     destination = destination.slice(1, -1).trim();
@@ -149,7 +149,7 @@ function addLinksOfObject(links: FrontmatterLinkCache[], path: string, value: un
 // The worker calls the object's own `hasOwnProperty` for each key, which throws when a key of that name hides it.
 function isOwnKey(value: object, key: string): boolean {
   if (typeof (value as OwnKeyCheck).hasOwnProperty !== 'function') {
-    throw new WorkerFailure('A front matter object whose hasOwnProperty is one of its keys.');
+    throw new WorkerFailure('hasOwnPropertyKey', 'A front matter object whose hasOwnProperty is one of its keys.');
   }
   return Object.hasOwn(value, key);
 }

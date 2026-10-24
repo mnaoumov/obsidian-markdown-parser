@@ -5,15 +5,22 @@
  */
 
 /**
+ * What makes the metadata worker throw: a front matter string that is a markdown link with no destination, or a front
+ * matter object with a key `hasOwnProperty`.
+ */
+export type WorkerFailureTrigger = 'blankLinkDestination' | 'hasOwnPropertyKey';
+
+/**
  * Thrown where the metadata worker throws while it builds the metadata, so it posts `null` for the document.
  */
 export class WorkerFailure extends Error {
   /**
    * Creates the failure.
    *
+   * @param trigger - What makes the worker throw.
    * @param message - Where the worker throws.
    */
-  public constructor(message: string) {
+  public constructor(public readonly trigger: WorkerFailureTrigger, message: string) {
     super(message);
     this.name = 'WorkerFailure';
   }
