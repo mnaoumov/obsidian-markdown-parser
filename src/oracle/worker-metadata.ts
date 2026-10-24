@@ -17,7 +17,7 @@ export interface WorkerMetadataDocument {
   readonly metadata: CachedMetadata | null;
 
   /**
-   * The piece set, or `conformance` for a document of the conformance corpus.
+   * The piece set, `conformance` for a document of the conformance corpus, or `pinned` for one kept whole.
    */
   readonly set: string;
 
