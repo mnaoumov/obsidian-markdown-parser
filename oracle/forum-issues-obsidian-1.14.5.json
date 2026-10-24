@@ -2477,7 +2477,7 @@
       ]
     },
     {
-      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-e0f08dee4bdafd8c\" id=\"fnref-1-e0f08dee4bdafd8c\"><a class=\"footnote-link\" data-footref=\"1\" href=\"#fn-1-e0f08dee4bdafd8c\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-e0f08dee4bdafd8c\" id=\"fn-1-e0f08dee4bdafd8c\"><p>Note <a class=\"footnote-backref footnote-link\" href=\"#fnref-1-e0f08dee4bdafd8c\">↩︎</a></p></li>\n</ol></section>",
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1\" id=\"fnref-1\"><a class=\"footnote-link\" data-footref=\"1\" href=\"#fn-1\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1\" id=\"fn-1\"><p>Note <a class=\"footnote-backref footnote-link\" href=\"#fnref-1\">↩︎</a></p></li>\n</ol></section>",
       "markdown": "Text[^1]\n\n[^1]: Note ^abc\n",
       "metadata": {
         "footnotes": [
@@ -2648,7 +2648,7 @@
       ]
     },
     {
-      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-be489a0a523e739b\" id=\"fnref-1-be489a0a523e739b\"><a class=\"footnote-link\" data-footref=\"[inline0\" href=\"#fn-1-be489a0a523e739b\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-be489a0a523e739b\" id=\"fn-1-be489a0a523e739b\">note<a class=\"footnote-backref footnote-link\" href=\"#fnref-1-be489a0a523e739b\">↩︎</a></li>\n</ol></section>",
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1\" id=\"fnref-1\"><a class=\"footnote-link\" data-footref=\"[inline0\" href=\"#fn-1\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1\" id=\"fn-1\">note<a class=\"footnote-backref footnote-link\" href=\"#fnref-1\">↩︎</a></li>\n</ol></section>",
       "markdown": "Text^[note]\n",
       "metadata": {
         "footnotes": [
