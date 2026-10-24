@@ -315,6 +315,13 @@ async function readRendered(text: string): Promise<RenderRead> {
               }
             }
           }
+          // The reading view gives every footnote id a random suffix per render, so the read would change on every run.
+          for (const name of ['data-footnote-id', 'href', 'id']) {
+            const value = node.getAttribute(name);
+            if (value !== null) {
+              node.setAttribute(name, value.replace(/(?<=^#?fn(?:ref)?-.+)-[0-9a-f]{16}$/u, ''));
+            }
+          }
           const attributes = [...node.attributes].map((attribute) => [attribute.name, attribute.value] as const);
           for (const [name] of attributes) {
             node.removeAttribute(name);
