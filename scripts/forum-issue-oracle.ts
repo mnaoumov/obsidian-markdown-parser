@@ -5,7 +5,10 @@
  * Obsidian instance driven over CDP (`obsidian-integration-testing`, installed globally), and writes its editor's tree
  * (as `scripts/oracle.ts` reads it), its reading view's DOM with `strictLineBreaks: true` (normalized as
  * `scripts/spec-oracle.ts` normalizes it) and its metadata worker's `CachedMetadata` to
- * `oracle/forum-issues-obsidian-<version>.json`.
+ * `oracle/forum-issues-obsidian-<version>.json`. For the samples where the editing modes and the reading view disagree it
+ * also reads Source mode's and Live Preview's `.cm-content` as the user sees it: the note gets an empty last line that
+ * holds the cursor, so Live Preview shows no source for the selection, and that line is left out of the HTML, read once
+ * the DOM stops changing, so math has rendered.
  *
  * Usage: `jiti scripts/forum-issue-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
  */
@@ -35,7 +38,10 @@ import type {
 import type { OracleNode } from '../src/oracle/oracle-file.ts';
 import type { SpecOracleMeta } from '../src/oracle/spec-oracle-file.ts';
 
-import { forumIssueDocuments } from '../src/oracle/forum-issues.ts';
+import {
+  EDITING_MODES_VS_READING_VIEW_SAMPLES,
+  forumIssueDocuments
+} from '../src/oracle/forum-issues.ts';
 
 interface App {
   metadataCache: MetadataCache;
@@ -71,9 +77,22 @@ interface DataAdapter {
   write: (path: string, data: string) => Promise<void>;
 }
 
+interface EditingModeRead {
+  readonly livePreviewHtml: string;
+  readonly sourceModeHtml: string;
+}
+
 interface Editor {
   cm: CodeMirrorEditor;
+  focus: () => void;
+  lastLine: () => number;
+  setCursor: (position: EditorPosition) => void;
   setValue: (text: string) => void;
+}
+
+interface EditorPosition {
+  ch: number;
+  line: number;
 }
 
 interface EditorState {
@@ -113,6 +132,8 @@ interface MarkdownRenderer {
 }
 
 interface MarkdownView {
+  // eslint-disable-next-line unicorn/name-replacements -- Obsidian's View names its element containerEl.
+  containerEl: HTMLElement;
   editor: Editor;
 }
 
@@ -202,6 +223,56 @@ const oit = await import(pathToFileURL(oitPath).href) as OitModule;
 
 // The connection is disposed by hand: `await using` needs a tslib helper this repo does not install.
 const conn = await oit.connectToCdp(obsidianVersion === undefined ? {} : { obsidianVersion });
+
+// Source mode's and Live Preview's DOM of `text`, each read once it has not changed for a few polls, so math has rendered.
+async function readEditingModes(text: string): Promise<EditingModeRead> {
+  return await conn.evalInObsidian({
+    callback: async ({ app, text: markdown }) => {
+      const POLL_MS = 100;
+      const MAX_POLLS = 100;
+      const STABLE_POLLS = 5;
+      // eslint-disable-next-line unicorn/consistent-function-scoping -- The callback runs inside Obsidian, which sees nothing outside it.
+      async function sleep(ms: number): Promise<void> {
+        await new Promise((resolve) => {
+          globalThis.setTimeout(resolve, ms);
+        });
+      }
+      async function readMode(isSourceMode: boolean): Promise<string> {
+        const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
+        await leaf.setViewState({ state: { file: 'forum-issue.md', mode: 'source', source: isSourceMode }, type: 'markdown' });
+        const { editor } = leaf.view;
+        editor.setValue(`${markdown}\n`);
+        editor.setCursor({ ch: 0, line: editor.lastLine() });
+        editor.focus();
+        const content = leaf.view.containerEl.querySelector('.cm-content');
+        if (content === null) {
+          throw new Error('The markdown view has no .cm-content');
+        }
+        let last = '';
+        let stablePolls = 0;
+        for (let polls = 0; polls < MAX_POLLS && stablePolls < STABLE_POLLS; polls++) {
+          await sleep(POLL_MS);
+          const html = content.getHTML();
+          stablePolls = html === last ? stablePolls + 1 : 0;
+          last = html;
+        }
+        const clone = content.cloneNode(true) as HTMLElement;
+        const cursorLine = clone.lastElementChild;
+        if (cursorLine?.matches('.cm-line.cm-active') !== true || cursorLine.getHTML() !== '<br>') {
+          throw new Error(`The appended line is not the last of ${JSON.stringify(markdown)}`);
+        }
+        cursorLine.remove();
+        return clone.getHTML();
+      }
+      const sourceModeHtml = await readMode(true);
+      const livePreviewHtml = await readMode(false);
+      // `readTree` reads the editor in Source mode, as `setUp` left it.
+      await readMode(true);
+      return { livePreviewHtml, sourceModeHtml };
+    },
+    input: { text }
+  });
+}
 
 async function readRendered(text: string): Promise<RenderRead> {
   return await conn.evalInObsidian({
@@ -348,6 +419,9 @@ try {
   const meta = await setUp();
   // As `scripts/oracle.ts` warms up the lazily loaded sub-modes; these documents use only the math one.
   await readUntilStable('$x$ and $$y$$\n$$\n\\frac{a}{b}\n$$\n');
+  // Math is typeset by MathJax, which loads on first use.
+  await readEditingModes('$x$\n');
+  const editingModeSamples = new Set(EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown));
   const reads: ForumIssueRead[] = [];
   for (const markdown of forumIssueDocuments()) {
     const tree = await readUntilStable(markdown);
@@ -355,7 +429,8 @@ try {
       throw new Error(`The editor rewrote ${JSON.stringify(markdown)} to ${JSON.stringify(tree.text)}`);
     }
     const rendered = await readRendered(markdown);
-    reads.push({ html: rendered.html, markdown, metadata: rendered.metadata, nodes: tree.nodes });
+    const editingModes = editingModeSamples.has(markdown) ? await readEditingModes(markdown) : {};
+    reads.push({ html: rendered.html, markdown, metadata: rendered.metadata, nodes: tree.nodes, ...editingModes });
   }
   const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });

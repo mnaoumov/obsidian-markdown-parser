@@ -18,10 +18,6 @@ import {
 } from './oracle-location.ts';
 import { QUIRK_PROBES } from './quirk-probes.ts';
 import {
-  classSetsOf,
-  lineStartsOf
-} from './score.ts';
-import {
   exampleKey,
   readingViewDifferences,
   SPEC_DIFFERENCES,
@@ -43,10 +39,10 @@ const ALL_SUITES = [
   SUITES.gfmDepartures,
   SUITES.quirks,
   SUITES.metadata,
-  SUITES.editorVsReadingView,
+  SUITES.livePreviewAndSourceModeVsReadingView,
   SUITES.metadataCacheIssues
 ];
-const EDITOR_VS_READING_VIEW_CASES = 14;
+const EDITING_MODES_VS_READING_VIEW_CASES = 14;
 const METADATA_ISSUE_CASES = 10;
 const EXPECTED_METADATA_CASES = 6;
 const SOFT_LINE_BREAKS = 'soft line breaks are hard';
@@ -89,39 +85,28 @@ describe('the exported test cases', () => {
   });
 
   it('carry the default line breaks\' HTML on exactly the examples it changes', () => {
-    const changed = SPEC_CASES.filter((testCase) => testCase.obsidianHtmlSoftBreaksAsHard !== undefined).map((testCase) => exampleKey(testCase));
+    const changed = SPEC_CASES.filter((testCase) => testCase.obsidianReadingViewHtmlSoftBreaksAsHard !== undefined).map((testCase) => exampleKey(testCase));
     expect(new Set(changed)).toEqual(new Set(strictLineBreakDifferences(SPEC)));
   });
 
-  it('hold the forum issues: the editor and reading view disagreements, and the metadata cache faults', () => {
-    expect(SUITES.editorVsReadingView.cases).toHaveLength(EDITOR_VS_READING_VIEW_CASES);
-    expect(new Set(SUITES.editorVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661']));
+  it('hold the forum issues: the editing modes\' disagreements with Reading view, and the metadata cache faults', () => {
+    expect(SUITES.livePreviewAndSourceModeVsReadingView.cases).toHaveLength(EDITING_MODES_VS_READING_VIEW_CASES);
+    expect(new Set(SUITES.livePreviewAndSourceModeVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661']));
     expect(SUITES.metadataCacheIssues.cases).toHaveLength(METADATA_ISSUE_CASES);
     expect(new Set(SUITES.metadataCacheIssues.cases.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4']));
     expect(SUITES.metadataCacheIssues.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
   });
 
-  it('give each editor case its lines with the classes the editor\'s tree gives each character and line', () => {
-    for (const testCase of SUITES.editorVsReadingView.cases) {
-      expect(testCase.editorLines.map((line) => line.text).join('\n')).toBe(testCase.markdown);
+  it('give each editing mode case Source mode, Live Preview and Reading view, with one Source mode line per markdown line', () => {
+    for (const testCase of SUITES.livePreviewAndSourceModeVsReadingView.cases) {
       const read = FORUM.reads.find((candidate) => candidate.markdown === testCase.markdown);
-      const fromTree = classSetsOf(testCase.markdown, read?.nodes ?? []);
-      const starts = lineStartsOf(testCase.markdown);
-      const tok = Array.from({ length: testCase.markdown.length }, () => new Set<string>());
-      for (const [index, line] of testCase.editorLines.entries()) {
-        for (const token of line.tokens) {
-          for (let column = token.from; column < token.to; column++) {
-            for (const cls of token.classes) {
-              tok[(starts[index] ?? 0) + column]?.add(cls);
-            }
-          }
-        }
-      }
-      expect(testCase.editorLines.map((line) => new Set(line.lineClasses))).toEqual(fromTree.line);
-      expect(tok).toEqual(fromTree.tok);
+      expect(testCase.obsidianSourceModeHtml).toBe(read?.sourceModeHtml);
+      expect(testCase.obsidianLivePreviewHtml).toBe(read?.livePreviewHtml);
+      expect(testCase.obsidianReadingViewHtml).toBe(read?.html);
+      expect(testCase.obsidianSourceModeHtml.match(/<div class="cm-line[ "]/gu)).toHaveLength(testCase.markdown.split('\n').length);
+      expect(testCase.differsIn.length).toBeGreaterThan(0);
     }
   });
-
   it('expect of the metadata issues what the worker gives once the fault is out', () => {
     const byId = new Map(SUITES.metadataCacheIssues.cases.map((testCase) => [testCase.id, testCase]));
     for (const id of ['issue-1-1', 'issue-1-2', 'issue-2-1', 'issue-2-2']) {
