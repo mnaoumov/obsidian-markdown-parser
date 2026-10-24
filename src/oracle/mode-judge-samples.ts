@@ -1,10 +1,11 @@
 /**
  * @file
  *
- * One readable note per candidate family the judge found (`mode-families.ts`): each is a minimal note
- * `reduceDifference` left, written out so a reader sees the construct, and checked to keep a difference of its family.
- * `scripts/editing-modes-oracle.ts` reads them from a live Obsidian, so each disagreement is confirmed on the real editor
- * before it is reported.
+ * One readable note per new family the judge found (`mode-families.ts`): each is a minimal note `reduceDifference`
+ * left, written out so a reader sees the construct, and checked to keep a difference of its family.
+ * `scripts/editing-modes-oracle.ts` reads them from a live Obsidian, so each disagreement is confirmed on the real editor.
+ * Each family's kind is the verdict on its note in the app: a candidate still to report, a known limit, a bug a forum
+ * topic already reports, or a minor one.
  */
 
 import type { EditingMode } from './forum-issues.ts';
@@ -56,7 +57,7 @@ export const JUDGED_SAMPLES: readonly JudgedSample[] = [
   sample('empty-list-item', '- a\n-\n- b\n', 'The editor reads the `-` alone on its line as text; the reading view reads an empty list item between the two others.'),
   sample('lazy-line-after-empty-quote-line', '> quote\n>\n    code\n', 'After the empty quote line the editor carries the quote onto the indented line; the reading view ends the quote and shows an indented code block.'),
   sample('tag-after-mark', '*#tag* and ==#tag==\n', 'The editor reads no tag right after the `*` or the `==`; the reading view and the worker read both tags.'),
-  sample('heading-in-quote', '> # Heading\n', 'The editor gives the heading in the quote no heading classes; the reading view and the worker read a level 1 heading.'),
+  sample('heading-in-quote', '> # Heading\n', 'The editor gives the heading in the quote no heading classes; the reading view shows a level 1 heading, which the worker leaves out of `headings`, as it does every heading in a quote.'),
   sample('block-on-list-item-first-line', '- > quote\n', 'The editor reads no quote opened on the list item\'s first line; the reading view shows a quote in the item.'),
   sample('table-with-empty-cells', '||\n|-|\n', 'The editor reads no table whose header row holds only an empty cell; the reading view shows a table.'),
   sample('line-after-indented-code', '    code\n[[Note]] and #tag\n', 'The editor styles no link or tag on the line right after the indented code; the reading view shows a paragraph with both.'),
