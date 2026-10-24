@@ -9,20 +9,19 @@
  */
 
 import type {
+  EditingMode,
   ForumIssueFile,
   ForumIssueRead
 } from './forum-issues.ts';
-import type { OracleNode } from './oracle-file.ts';
 import type { QuirkProbeFile } from './quirk-probes.ts';
 import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { SpecDifference } from './spec-quirks.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
 import {
-  EDITOR_VS_READING_VIEW_SAMPLES,
+  EDITING_MODES_VS_READING_VIEW_SAMPLES,
   METADATA_ISSUE_SAMPLES
 } from './forum-issues.ts';
-import { lineStartsOf } from './score.ts';
 import {
   exampleKey,
   readingViewDifferences,
@@ -31,53 +30,33 @@ import {
 } from './spec-quirks.ts';
 
 /**
- * One line as the editor styles it.
+ * One way the reading view departs from the spec on an example.
  */
-export interface EditorLine {
+export interface ExportedDeparture {
   /**
-   * The line classes, rendered on `.cm-line`.
+   * The behaviour, with the examples that show each part of it.
    */
-  readonly lineClasses: readonly string[];
+  readonly behaviour: string;
 
   /**
-   * The line's text.
+   * What kind of departure it is.
    */
-  readonly text: string;
+  readonly kind: SpecDifference['kind'];
 
   /**
-   * The styled spans of the line, in order; text outside them has no class.
+   * A short name.
    */
-  readonly tokens: readonly EditorToken[];
+  readonly name: string;
 }
 
 /**
- * A styled span of a line.
+ * A case that Live Preview or Source mode and the reading view read differently.
  */
-export interface EditorToken {
+export interface LivePreviewAndSourceModeVsReadingViewCase {
   /**
-   * The token classes, each rendered as `cm-<class>`.
+   * The editing modes that disagree with the reading view on it.
    */
-  readonly classes: readonly string[];
-
-  /**
-   * The first column.
-   */
-  readonly from: number;
-
-  /**
-   * The column after the last.
-   */
-  readonly to: number;
-}
-
-/**
- * A case on which the editor and the reading view read the same note differently.
- */
-export interface EditorVsReadingViewCase {
-  /**
-   * How the editor styles each line.
-   */
-  readonly editorLines: readonly EditorLine[];
+  readonly differsIn: readonly EditingMode[];
 
   /**
    * The forum topic that reports it.
@@ -110,34 +89,24 @@ export interface EditorVsReadingViewCase {
   readonly note: string;
 
   /**
+   * Live Preview's `.cm-content` inner HTML.
+   */
+  readonly obsidianLivePreviewHtml: string;
+
+  /**
    * The reading view's HTML, with `strictLineBreaks: true`.
    */
-  readonly obsidianHtml: string;
+  readonly obsidianReadingViewHtml: string;
+
+  /**
+   * Source mode's `.cm-content` inner HTML.
+   */
+  readonly obsidianSourceModeHtml: string;
 
   /**
    * The Obsidian version that read it.
    */
   readonly obsidianVersion: string;
-}
-
-/**
- * One way the reading view departs from the spec on an example.
- */
-export interface ExportedDeparture {
-  /**
-   * The behaviour, with the examples that show each part of it.
-   */
-  readonly behaviour: string;
-
-  /**
-   * What kind of departure it is.
-   */
-  readonly kind: SpecDifference['kind'];
-
-  /**
-   * A short name.
-   */
-  readonly name: string;
 }
 
 /**
@@ -237,7 +206,7 @@ export interface QuirkCase {
   /**
    * The reading view's HTML, with `strictLineBreaks: true`.
    */
-  readonly obsidianHtml: string;
+  readonly obsidianReadingViewHtml: string;
 
   /**
    * The Obsidian version that rendered it.
@@ -292,12 +261,12 @@ export interface SpecCase {
   /**
    * The reading view's HTML, with `strictLineBreaks: true`.
    */
-  readonly obsidianHtml: string;
+  readonly obsidianReadingViewHtml: string;
 
   /**
-   * The reading view's HTML with `strictLineBreaks: false`, the app's default; absent where it is `obsidianHtml`.
+   * The reading view's HTML with `strictLineBreaks: false`, the app's default; absent where it is `obsidianReadingViewHtml`.
    */
-  readonly obsidianHtmlSoftBreaksAsHard?: string;
+  readonly obsidianReadingViewHtmlSoftBreaksAsHard?: string;
 
   /**
    * The Obsidian version that rendered it.
@@ -350,11 +319,6 @@ export interface TestCaseSuites {
   readonly commonmarkDepartures: TestCaseSuite<SpecCase>;
 
   /**
-   * The notes the editor and the reading view read differently.
-   */
-  readonly editorVsReadingView: TestCaseSuite<EditorVsReadingViewCase>;
-
-  /**
    * The GFM spec's extension examples.
    */
   readonly gfm: TestCaseSuite<SpecCase>;
@@ -363,6 +327,11 @@ export interface TestCaseSuites {
    * The GFM spec's extension examples whose reading view, with `strictLineBreaks: true`, differs from the spec.
    */
   readonly gfmDepartures: TestCaseSuite<SpecCase>;
+
+  /**
+   * The notes that Live Preview or Source mode and the reading view read differently.
+   */
+  readonly livePreviewAndSourceModeVsReadingView: TestCaseSuite<LivePreviewAndSourceModeVsReadingViewCase>;
 
   /**
    * The metadata worker documents.
@@ -386,7 +355,7 @@ const SPEC_SUITE_NAMES: Readonly<Record<SpecCase['suite'], string>> = {
 };
 
 // What every spec suite's cases hold, after the sentence naming its examples.
-const SPEC_SUITE_ABOUT = 'with the spec\'s HTML (`commonMarkSpecHtml`), the reading view\'s HTML with `strictLineBreaks: true` (`obsidianHtml`), with the app\'s default `strictLineBreaks: false` where that differs (`obsidianHtmlSoftBreaksAsHard`), and the metadata worker\'s CachedMetadata. `departures` explains each example whose reading view differs from the spec: `quirk` is Obsidian\'s parser reading valid markdown differently, `syntax` is Obsidian syntax, `rendering` is the sanitizer or an embed changing the parser\'s HTML, and `comparison` is the spec\'s HTML holding an unclosed tag that a DOM closes. The reading view\'s HTML is its rendered DOM, serialized, without the code block copy button, the syntax highlighting and the attributes the view adds to blocks; compare it with the spec\'s after putting both through a DOM and dropping whitespace between tags.';
+const SPEC_SUITE_ABOUT = 'with the spec\'s HTML (`commonMarkSpecHtml`), the reading view\'s HTML with `strictLineBreaks: true` (`obsidianReadingViewHtml`), with the app\'s default `strictLineBreaks: false` where that differs (`obsidianReadingViewHtmlSoftBreaksAsHard`), and the metadata worker\'s CachedMetadata. `departures` explains each example whose reading view differs from the spec: `quirk` is Obsidian\'s parser reading valid markdown differently, `syntax` is Obsidian syntax, `rendering` is the sanitizer or an embed changing the parser\'s HTML, and `comparison` is the spec\'s HTML holding an unclosed tag that a DOM closes. The reading view\'s HTML is its rendered DOM, serialized, without the code block copy button, the syntax highlighting and the attributes the view adds to blocks; compare it with the spec\'s after putting both through a DOM and dropping whitespace between tags.';
 
 const QUIRK_NOTES: Readonly<Record<string, string>> = {
   autolink: 'Which `<...>` autolinks there are: Obsidian takes any scheme followed by `://`, and any non-whitespace holding an `@`.',
@@ -421,70 +390,38 @@ export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile
   return {
     commonmark: buildSpecSuite(spec, specCases, 'commonmark', null),
     commonmarkDepartures: buildSpecSuite(spec, specCases, 'commonmark', departing),
-    editorVsReadingView: buildEditorVsReadingViewSuite(forum),
     gfm: buildSpecSuite(spec, specCases, 'gfm', null),
     gfmDepartures: buildSpecSuite(spec, specCases, 'gfm', departing),
+    livePreviewAndSourceModeVsReadingView: buildLivePreviewAndSourceModeVsReadingViewSuite(forum),
     metadata: buildMetadataSuite(worker),
     metadataCacheIssues: buildMetadataIssueSuite(forum),
     quirks: buildQuirkSuite(probes)
   };
 }
 
-/**
- * Splits the editor's tree into lines: a top node whose classes are all `HyperMD-*` gives its line's classes, and every
- * other node a token on each line it covers.
- *
- * @param text - The document.
- * @param nodes - The editor's tree, as the oracle reads it.
- * @returns The lines.
- */
-export function editorLinesOf(text: string, nodes: readonly OracleNode[]): EditorLine[] {
-  const starts = lineStartsOf(text);
-  const lines = starts.map((start, index) => ({
-    lineClasses: [] as string[],
-    start,
-    text: text.slice(start, (starts[index + 1] ?? text.length + 1) - 1),
-    tokens: [] as EditorToken[]
-  }));
-  for (const [from, to, depth, name] of nodes) {
-    const classes = name.split('_').filter(Boolean);
-    if (depth === 1 && classes.length > 0 && classes.every((cls) => cls.startsWith('HyperMD-'))) {
-      lines.findLast((line) => line.start <= from)?.lineClasses.push(...classes);
-      continue;
-    }
-    for (const line of lines) {
-      const end = line.start + line.text.length;
-      if (from > end || to <= line.start) {
-        continue;
-      }
-      const tokenFrom = Math.max(from, line.start) - line.start;
-      const tokenTo = Math.min(to, end) - line.start;
-      if (tokenFrom < tokenTo) {
-        line.tokens.push({ classes, from: tokenFrom, to: tokenTo });
-      }
-    }
-  }
-  return lines.map(({ lineClasses, text: lineText, tokens }) => ({ lineClasses, text: lineText, tokens }));
-}
-
-function buildEditorVsReadingViewSuite(forum: ForumIssueFile): TestCaseSuite<EditorVsReadingViewCase> {
+function buildLivePreviewAndSourceModeVsReadingViewSuite(forum: ForumIssueFile): TestCaseSuite<LivePreviewAndSourceModeVsReadingViewCase> {
   const obsidianVersion = requireVersion(forum.meta.appVersion);
-  const cases = EDITOR_VS_READING_VIEW_SAMPLES.map((sample): EditorVsReadingViewCase => {
+  const cases = EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample): LivePreviewAndSourceModeVsReadingViewCase => {
     const read = forumRead(forum, sample.markdown);
+    if (read.sourceModeHtml === undefined || read.livePreviewHtml === undefined) {
+      throw new Error(`The forum issue oracle has no editing mode read of ${JSON.stringify(sample.markdown)}`);
+    }
     return {
-      editorLines: editorLinesOf(sample.markdown, read.nodes),
+      differsIn: sample.differsIn,
       forumUrl: sample.forumUrl,
       id: sample.id,
       issue: sample.issue,
       markdown: sample.markdown,
       metadata: read.metadata,
       note: sample.note,
-      obsidianHtml: read.html,
+      obsidianLivePreviewHtml: read.livePreviewHtml,
+      obsidianReadingViewHtml: read.html,
+      obsidianSourceModeHtml: read.sourceModeHtml,
       obsidianVersion
     };
   });
   return {
-    about: 'Notes that Obsidian\'s editor (Source mode and Live Preview) and its reading view read differently, each reported on the Obsidian forum (`forumUrl`). `editorLines` is how the editor styles each line: `lineClasses` go on `.cm-line`, and each token is a column range `[from, to)` of the line with its classes, each rendered as `cm-<class>`; text outside a token has no class. `obsidianHtml` is the reading view\'s HTML with `strictLineBreaks: true`, serialized as in the spec suites, and `metadata` the metadata worker\'s CachedMetadata, which reads the note as the reading view does. `note` names the disagreement. A test of a parser that serves both views expects them to agree.',
+    about: 'Notes that Obsidian\'s editing modes, Source mode and Live Preview, and its Reading view read differently, each reported on the Obsidian forum (`forumUrl`). Each case has all three as the user sees them: `obsidianSourceModeHtml` and `obsidianLivePreviewHtml` are the inner HTML of the editor\'s `.cm-content` in the default theme, read once math had rendered, with the cursor on an empty line appended to the note so that Live Preview shows no source for the selection, and that line left out; `obsidianReadingViewHtml` is the reading view\'s HTML with `strictLineBreaks: true`, serialized as in the spec suites. `metadata` is the metadata worker\'s CachedMetadata, which reads the note as Reading view does. `differsIn` lists the editing modes, `sourceMode` and `livePreview`, that disagree with Reading view, and `note` names the disagreement. A test of a parser that serves all three expects them to agree.',
     cases,
     obsidianVersion
   };
@@ -548,7 +485,7 @@ function buildQuirkSuite(probes: QuirkProbeFile): TestCaseSuite<QuirkCase> {
       markdown: probe.markdown,
       metadataSections: probe.sections,
       note,
-      obsidianHtml: probe.html,
+      obsidianReadingViewHtml: probe.html,
       obsidianVersion,
       quirk: probe.quirk,
       syntax: probe.preset
@@ -572,7 +509,7 @@ function buildSpecCases(spec: SpecOracleFile): SpecCase[] {
     }
   }
   return spec.examples.map((read): SpecCase => {
-    const obsidianHtml = read.htmlStrict;
+    const obsidianReadingViewHtml = read.htmlStrict;
     const softBreaksAsHard = read.html;
     const departures = departuresOf.get(exampleKey(read));
     return {
@@ -582,8 +519,8 @@ function buildSpecCases(spec: SpecOracleFile): SpecCase[] {
       id: `${read.suite}-${String(read.example)}`,
       markdown: read.markdown,
       metadata: read.metadata,
-      obsidianHtml,
-      ...(softBreaksAsHard !== obsidianHtml) && { obsidianHtmlSoftBreaksAsHard: softBreaksAsHard },
+      obsidianReadingViewHtml,
+      ...(softBreaksAsHard !== obsidianReadingViewHtml) && { obsidianReadingViewHtmlSoftBreaksAsHard: softBreaksAsHard },
       obsidianVersion,
       section: read.section,
       suite: read.suite
@@ -597,7 +534,7 @@ function buildSpecSuite(spec: SpecOracleFile, specCases: readonly SpecCase[], su
   const obsidianVersion = requireVersion(spec.meta.appVersion);
   const subset = departing === null
     ? `Every example of ${SPEC_SUITE_NAMES[suite]}`
-    : `The examples of ${SPEC_SUITE_NAMES[suite]} on which the reading view's HTML with \`strictLineBreaks: true\` (\`obsidianHtml\`) differs from the spec's, each the same case as in the full file; an example whose only departure is \`soft line breaks are hard\` matches the spec there and is left out`;
+    : `The examples of ${SPEC_SUITE_NAMES[suite]} on which the reading view's HTML with \`strictLineBreaks: true\` (\`obsidianReadingViewHtml\`) differs from the spec's, each the same case as in the full file; an example whose only departure is \`soft line breaks are hard\` matches the spec there and is left out`;
   return {
     about: `${subset}, ${SPEC_SUITE_ABOUT}`,
     cases,

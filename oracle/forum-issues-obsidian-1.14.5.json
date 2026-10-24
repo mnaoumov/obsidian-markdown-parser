@@ -45,7 +45,9 @@
           1,
           "formatting_formatting-highlight_formatting-highlight-end_highlight"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">a <img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-highlight\">marked</span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"> b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">a <span class=\"cm-formatting cm-formatting-highlight cm-highlight\">===</span><span class=\"cm-highlight\">marked</span><span class=\"cm-formatting cm-formatting-highlight cm-formatting-highlight-end cm-highlight\">===</span> b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>a <mark data-highlight=\"\">&gt;x</mark> b</p>",
@@ -69,7 +71,9 @@
           }
         ]
       },
-      "nodes": []
+      "nodes": [],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">a ==&gt;x== b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">a ==&gt;x== b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>a <mark data-highlight=\"\">&gt; next step</mark> b</p>",
@@ -93,7 +97,9 @@
           }
         ]
       },
-      "nodes": []
+      "nodes": [],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">a ==&gt; next step== b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">a ==&gt; next step== b</div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>a %%open</p>\n<h1>Heading</h1>\n<p>text</p>",
@@ -202,7 +208,9 @@
           1,
           "comment"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">a <span class=\"cm-comment cm-comment-start cm-formatting\">%%</span><span class=\"cm-comment\">open</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-header HyperMD-header-1\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-comment cm-header cm-header-1\">Heading</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-comment\">text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">a <span class=\"cm-comment cm-comment-start cm-formatting\">%%</span><span class=\"cm-comment\">open</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-header HyperMD-header-1\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-comment cm-formatting cm-formatting-header cm-formatting-header-1 cm-header cm-header-1\"># </span><span class=\"cm-comment cm-header cm-header-1\">Heading</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-comment\">text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>text %% inline</p>",
@@ -278,7 +286,9 @@
           2,
           "header_header-1"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">text <span class=\"cm-comment cm-comment-start cm-formatting\">%%</span><span class=\"cm-comment\"> inline</span></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-comment cm-comment-end cm-formatting\">%%</span></div><div class=\"cm-line\" dir=\"ltr\">after</div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-header HyperMD-header-1\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-header cm-header-1\">Heading</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">text <span class=\"cm-comment cm-comment-start cm-formatting\">%%</span><span class=\"cm-comment\"> inline</span></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-comment cm-comment-end cm-formatting\">%%</span></div><div class=\"cm-line\" dir=\"ltr\">after</div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-header HyperMD-header-1\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-header cm-formatting-header-1 cm-header cm-header-1\"># </span><span class=\"cm-header cm-header-1\">Heading</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>Cost is $$5 or more.</p>\n<ul>\n<li>item</li>\n</ul>\n<blockquote>\n<p>quote</p>\n</blockquote>\n<p>Later text with $$ in it.</p>",
@@ -431,7 +441,9 @@
           1,
           "formatting_formatting-math_formatting-math-end_keyword_math_math-"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">Cost is <img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><div class=\"math math-block cm-embed-block\" contenteditable=\"false\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\" display=\"true\"><mjx-math data-latex=\"5 or more.\n\n- item\n\n&gt; quote\n\nLater text with \" display=\"true\" class=\"TEX-N\"><mjx-mn data-latex=\"5\"><mjx-c class=\"mjx-c35\">5</mjx-c></mjx-mn><mjx-mi data-latex=\"o\"><mjx-c class=\"mjx-c1D45C\">𝑜</mjx-c></mjx-mi><mjx-mi data-latex=\"r\"><mjx-c class=\"mjx-c1D45F\">𝑟</mjx-c></mjx-mi><mjx-mi data-latex=\"m\"><mjx-c class=\"mjx-c1D45A\">𝑚</mjx-c></mjx-mi><mjx-mi data-latex=\"o\"><mjx-c class=\"mjx-c1D45C\">𝑜</mjx-c></mjx-mi><mjx-mi data-latex=\"r\"><mjx-c class=\"mjx-c1D45F\">𝑟</mjx-c></mjx-mi><mjx-mi data-latex=\"e\"><mjx-c class=\"mjx-c1D452\">𝑒</mjx-c></mjx-mi><mjx-mo data-latex=\".\"><mjx-c class=\"mjx-c2E\">.</mjx-c></mjx-mo><mjx-mo space=\"3\" data-latex=\"-\"><mjx-c class=\"mjx-c2212\">−</mjx-c></mjx-mo><mjx-mi space=\"3\" data-latex=\"i\"><mjx-c class=\"mjx-c1D456\">𝑖</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"e\"><mjx-c class=\"mjx-c1D452\">𝑒</mjx-c></mjx-mi><mjx-mi data-latex=\"m\"><mjx-c class=\"mjx-c1D45A\">𝑚</mjx-c></mjx-mi><mjx-mo space=\"4\" data-latex=\"&gt;\"><mjx-c class=\"mjx-c3E\">&gt;</mjx-c></mjx-mo><mjx-mi space=\"4\" data-latex=\"q\"><mjx-c class=\"mjx-c1D45E\">𝑞</mjx-c></mjx-mi><mjx-mi data-latex=\"u\"><mjx-c class=\"mjx-c1D462\">𝑢</mjx-c></mjx-mi><mjx-mi data-latex=\"o\"><mjx-c class=\"mjx-c1D45C\">𝑜</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"e\"><mjx-c class=\"mjx-c1D452\">𝑒</mjx-c></mjx-mi><mjx-mi data-latex=\"L\"><mjx-c class=\"mjx-c1D43F\">𝐿</mjx-c></mjx-mi><mjx-mi data-latex=\"a\"><mjx-c class=\"mjx-c1D44E\">𝑎</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"e\"><mjx-c class=\"mjx-c1D452\">𝑒</mjx-c></mjx-mi><mjx-mi data-latex=\"r\"><mjx-c class=\"mjx-c1D45F\">𝑟</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"e\"><mjx-c class=\"mjx-c1D452\">𝑒</mjx-c></mjx-mi><mjx-mi data-latex=\"x\"><mjx-c class=\"mjx-c1D465\">𝑥</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"w\"><mjx-c class=\"mjx-c1D464\">𝑤</mjx-c></mjx-mi><mjx-mi data-latex=\"i\"><mjx-c class=\"mjx-c1D456\">𝑖</mjx-c></mjx-mi><mjx-mi data-latex=\"t\"><mjx-c class=\"mjx-c1D461\">𝑡</mjx-c></mjx-mi><mjx-mi data-latex=\"h\"><mjx-c class=\"mjx-c210E\">ℎ</mjx-c></mjx-mi></mjx-math></mjx-container><div class=\"embed-actions\"><div class=\"embed-action edit-block-button\" aria-label=\"Edit this block\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon lucide-code-2\"><path d=\"m18 16 4-4-4-4\"></path><path d=\"m6 8-4 4 4 4\"></path><path d=\"m14.5 4-5 16\"></path></svg></div></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"> in it.</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">Cost is <span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math cm-math-block\" spellcheck=\"false\">$$</span><span class=\"cm-math cm-number\" spellcheck=\"false\">5</span><span class=\"cm-math\" spellcheck=\"false\"> </span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">or</span><span class=\"cm-math\" spellcheck=\"false\"> </span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">more</span><span class=\"cm-error cm-math\" spellcheck=\"false\">.</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\" style=\"text-indent: -16px; padding-inline-start: 16px;\"><span class=\"cm-math\" spellcheck=\"false\">- item</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\" style=\"text-indent: -16px; padding-inline-start: 16px;\"><span class=\"cm-math\" spellcheck=\"false\">&gt; quote</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-math\" spellcheck=\"false\">Later text with </span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-end cm-keyword cm-math cm-math-\" spellcheck=\"false\">$$</span> in it.</div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p>Run <code>npm install --save-dev</code> first.</p>",
@@ -480,7 +492,9 @@
           1,
           "inline-code"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\">Run <img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-inline-code\" spellcheck=\"false\">npm install</span></div><div class=\"cm-line\" dir=\"ltr\">--save-dev<img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-inline-code\" spellcheck=\"false\"> first.</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\">Run <span class=\"cm-formatting cm-formatting-code cm-inline-code\" spellcheck=\"false\">``</span><span class=\"cm-inline-code\" spellcheck=\"false\">npm install</span></div><div class=\"cm-line\" dir=\"ltr\">--save-dev<span class=\"cm-formatting cm-formatting-code cm-inline-code\" spellcheck=\"false\">``</span><span class=\"cm-inline-code\" spellcheck=\"false\"> first.</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p><a href=\"https://example.com\">Area <span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"\\pi r^2\"><mjx-mi data-latex=\"\\pi\"><mjx-c class=\"mjx-c1D70B\">𝜋</mjx-c></mjx-mi><mjx-msup data-latex=\"r^2\"><mjx-mi data-latex=\"r\"><mjx-c class=\"mjx-c1D45F\">𝑟</mjx-c></mjx-mi><mjx-script style=\"vertical-align: 0.363em;\"><mjx-mn data-latex=\"2\" size=\"s\"><mjx-c class=\"mjx-c32\">2</mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-math></mjx-container></span></a></p>",
@@ -541,7 +555,9 @@
           1,
           "formatting_formatting-link-string_string_url"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-link\"><span class=\"cm-underline\" tabindex=\"-1\" draggable=\"true\">Area $\\pi r^2$</span></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-link-string cm-string cm-url external-link\" contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-link cm-link\" spellcheck=\"false\">[</span><span class=\"cm-link\">Area $\\pi r^2$</span><span class=\"cm-formatting cm-formatting-link cm-link\" spellcheck=\"false\">]</span><span class=\"cm-formatting cm-formatting-link-string cm-string cm-url\" spellcheck=\"false\">(</span><span class=\"cm-string cm-url\" spellcheck=\"false\">https://example.com</span><span class=\"cm-formatting cm-formatting-link-string cm-string cm-url\" spellcheck=\"false\">)</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<p><span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"a\"><mjx-mi data-latex=\"a\"><mjx-c class=\"mjx-c1D44E\">𝑎</mjx-c></mjx-mi></mjx-math></mjx-container></span> is the first line.</p>\n<h2><span class=\"math math-inline\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math class=\"TEX-N\" data-latex=\"b\"><mjx-mi data-latex=\"b\"><mjx-c class=\"mjx-c1D44F\">𝑏</mjx-c></mjx-mi></mjx-math></mjx-container></span></h2>",
@@ -647,7 +663,9 @@
           2,
           "hr"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"math\" contenteditable=\"false\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math data-latex=\"a\" class=\"TEX-N\"><mjx-mi data-latex=\"a\"><mjx-c class=\"mjx-c1D44E\">𝑎</mjx-c></mjx-mi></mjx-math></mjx-container></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"> is the first line.</div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"math\" contenteditable=\"false\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math data-latex=\"b\" class=\"TEX-N\"><mjx-mi data-latex=\"b\"><mjx-c class=\"mjx-c1D44F\">𝑏</mjx-c></mjx-mi></mjx-math></mjx-container></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"hr cm-line\" contenteditable=\"false\"><br><hr></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math\" spellcheck=\"false\">$</span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">a</span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-end cm-keyword cm-math cm-math-\" spellcheck=\"false\">$</span> is the first line.</div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math\" spellcheck=\"false\">$</span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">b</span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-end cm-keyword cm-math cm-math-\" spellcheck=\"false\">$</span></div><div class=\"cm-line HyperMD-hr HyperMD-hr-bg\" dir=\"ltr\"><span class=\"cm-hr\">---</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<blockquote>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\" data-task=\"\"><input class=\"task-list-item-checkbox\" type=\"checkbox\">quoted task</li>\n<li class=\"task-list-item is-checked\" data-task=\"x\"><input checked=\"\" class=\"task-list-item-checkbox\" type=\"checkbox\">done quoted task</li>\n</ul>\n</blockquote>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\" data-task=\"\"><input class=\"task-list-item-checkbox\" type=\"checkbox\">normal task</li>\n</ul>",
@@ -845,7 +863,9 @@
           2,
           "list-1"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -44px; padding-inline-start: 44px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span> </span><span class=\"cm-quote cm-quote-1\">- </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">[</span><span class=\"cm-hmd-barelink cm-link cm-quote cm-quote-1\"> </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">]</span><span class=\"cm-quote cm-quote-1\"> quoted task</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -47px; padding-inline-start: 47px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span> </span><span class=\"cm-quote cm-quote-1\">- </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">[</span><span class=\"cm-hmd-barelink cm-link cm-quote cm-quote-1\">x</span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">]</span><span class=\"cm-quote cm-quote-1\"> done quoted task</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1 HyperMD-task-line\" data-task=\" \" dir=\"ltr\" style=\"text-indent: -31px; padding-inline-start: 31px;\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><label class=\"task-list-label\" contenteditable=\"false\"><input class=\"task-list-item-checkbox\" type=\"checkbox\" data-task=\" \"></label><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-list-1\"> normal task</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -44px; padding-inline-start: 44px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-quote cm-quote-1\">- </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">[</span><span class=\"cm-hmd-barelink cm-link cm-quote cm-quote-1\"> </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">]</span><span class=\"cm-quote cm-quote-1\"> quoted task</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -47px; padding-inline-start: 47px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-quote cm-quote-1\">- </span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">[</span><span class=\"cm-hmd-barelink cm-link cm-quote cm-quote-1\">x</span><span class=\"cm-formatting cm-formatting-link cm-hmd-barelink cm-link cm-quote cm-quote-1\" spellcheck=\"false\">]</span><span class=\"cm-quote cm-quote-1\"> done quoted task</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1 HyperMD-task-line\" dir=\"ltr\" style=\"text-indent: -43px; padding-inline-start: 43px;\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\">- </span><span class=\"cm-formatting cm-formatting-task cm-meta\">[ ]</span><span class=\"cm-list-1\"> normal task</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<blockquote>\n<pre><code>code\n</code></pre>\n</blockquote>\n<p>Paragraph after the quote, with a <a href=\"link\">link</a> and a <a class=\"tag\" href=\"#tag\">#tag</a>.</p>",
@@ -963,7 +983,9 @@
           1,
           "inline-code"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"auto\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span> </span><span class=\"cm-inline-code cm-quote cm-quote-1\" spellcheck=\"false\">```</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span> </span><span class=\"cm-inline-code cm-quote cm-quote-1\" spellcheck=\"false\">code</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-inline-code\" spellcheck=\"false\">Paragraph after the quote, with a [[link]] and a #tag.</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"auto\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-inline-code cm-quote cm-quote-1\" spellcheck=\"false\">```</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-inline-code cm-quote cm-quote-1\" spellcheck=\"false\">code</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-inline-code\" spellcheck=\"false\">Paragraph after the quote, with a [[link]] and a #tag.</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<ul>\n<li>\n<pre><code>code\n</code></pre>\n</li>\n</ul>\n<p>Paragraph after the list, with a <a href=\"link\">link</a> and a <a class=\"tag\" href=\"#tag\">#tag</a>.</p>",
@@ -1104,7 +1126,9 @@
           2,
           "hmd-codeblock"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-1 HyperMD-list-line-nobullet\" dir=\"auto\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock cm-list-1\" spellcheck=\"false\">```</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-nobullet\" dir=\"ltr\"><span class=\"cm-hmd-codeblock\" spellcheck=\"false\"><span class=\"cm-indent-spacing\">  </span>code</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-nobullet\" dir=\"ltr\"><span class=\"cm-hmd-codeblock\" spellcheck=\"false\">Paragraph after the list, with a [[link]] and a #tag.</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-1 HyperMD-list-line-nobullet\" dir=\"auto\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\">- </span><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock cm-list-1\" spellcheck=\"false\">```</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-nobullet\" dir=\"ltr\"><span class=\"cm-hmd-codeblock\" spellcheck=\"false\"><span class=\"cm-indent-spacing\">  </span>code</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-list-line HyperMD-list-line-nobullet\" dir=\"ltr\"><span class=\"cm-hmd-codeblock\" spellcheck=\"false\">Paragraph after the list, with a [[link]] and a #tag.</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<pre><code>$x^2$ is code\n</code></pre>",
@@ -1165,7 +1189,9 @@
           1,
           "hmd-indented-code_inline-code"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line\" dir=\"ltr\" style=\"text-indent: -36px; padding-inline-start: 36px;\"><span class=\"cm-indent\">    </span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"math\" contenteditable=\"false\"><mjx-container class=\"MathJax\" jax=\"CHTML\" overflow=\"overflow\"><mjx-math data-latex=\"x^2\" class=\"TEX-N\"><mjx-msup data-latex=\"x^2\"><mjx-mi data-latex=\"x\"><mjx-c class=\"mjx-c1D465\">𝑥</mjx-c></mjx-mi><mjx-script style=\"vertical-align: 0.363em;\"><mjx-mn size=\"s\" data-latex=\"2\"><mjx-c class=\"mjx-c32\">2</mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-math></mjx-container></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-hmd-indented-code cm-inline-code\" spellcheck=\"false\"> is code</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\" style=\"text-indent: -36px; padding-inline-start: 36px;\"><span class=\"cm-indent\">    </span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math\" spellcheck=\"false\">$</span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">x</span><span class=\"cm-math cm-tag\" spellcheck=\"false\">^</span><span class=\"cm-math cm-number\" spellcheck=\"false\">2</span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-end cm-keyword cm-math cm-math-\" spellcheck=\"false\">$</span><span class=\"cm-hmd-indented-code cm-inline-code\" spellcheck=\"false\"> is code</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<pre><code>$$x\n</code></pre>\n<p>paragraph</p>\n<p>more</p>",
@@ -1268,7 +1294,9 @@
           2,
           "math"
         ]
-      ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-math\" dir=\"ltr\" style=\"text-indent: -36px; padding-inline-start: 36px;\"><span class=\"cm-indent\">    </span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math cm-math-block\" spellcheck=\"false\">$$</span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">x</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">paragraph</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><span class=\"cm-math\" spellcheck=\"false\">more</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-math\" dir=\"ltr\" style=\"text-indent: -36px; padding-inline-start: 36px;\"><span class=\"cm-indent\">    </span><span class=\"cm-formatting cm-formatting-math cm-formatting-math-begin cm-keyword cm-math cm-math-block\" spellcheck=\"false\">$$</span><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">x</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><span class=\"cm-math cm-variable-2\" spellcheck=\"false\">paragraph</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><span class=\"cm-math\" spellcheck=\"false\">more</span></div><div class=\"cm-line HyperMD-math\" dir=\"ltr\"><br></div>"
     },
     {
       "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">k: \"[text]()\"</code></pre>\n<h1>Heading</h1>\n<p><a href=\"Target\">Target</a> <a class=\"tag\" href=\"#tag\">#tag</a></p>",
@@ -2449,7 +2477,7 @@
       ]
     },
     {
-      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-4a2bf395230f6c4d\" id=\"fnref-1-4a2bf395230f6c4d\"><a class=\"footnote-link\" data-footref=\"1\" href=\"#fn-1-4a2bf395230f6c4d\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-4a2bf395230f6c4d\" id=\"fn-1-4a2bf395230f6c4d\"><p>Note <a class=\"footnote-backref footnote-link\" href=\"#fnref-1-4a2bf395230f6c4d\">↩︎</a></p></li>\n</ol></section>",
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-e0f08dee4bdafd8c\" id=\"fnref-1-e0f08dee4bdafd8c\"><a class=\"footnote-link\" data-footref=\"1\" href=\"#fn-1-e0f08dee4bdafd8c\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-e0f08dee4bdafd8c\" id=\"fn-1-e0f08dee4bdafd8c\"><p>Note <a class=\"footnote-backref footnote-link\" href=\"#fnref-1-e0f08dee4bdafd8c\">↩︎</a></p></li>\n</ol></section>",
       "markdown": "Text[^1]\n\n[^1]: Note ^abc\n",
       "metadata": {
         "footnotes": [
@@ -2620,7 +2648,7 @@
       ]
     },
     {
-      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-c7fcf0ff764190c9\" id=\"fnref-1-c7fcf0ff764190c9\"><a class=\"footnote-link\" data-footref=\"[inline0\" href=\"#fn-1-c7fcf0ff764190c9\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-c7fcf0ff764190c9\" id=\"fn-1-c7fcf0ff764190c9\">note<a class=\"footnote-backref footnote-link\" href=\"#fnref-1-c7fcf0ff764190c9\">↩︎</a></li>\n</ol></section>",
+      "html": "<p>Text<sup class=\"footnote-ref\" data-footnote-id=\"fnref-1-be489a0a523e739b\" id=\"fnref-1-be489a0a523e739b\"><a class=\"footnote-link\" data-footref=\"[inline0\" href=\"#fn-1-be489a0a523e739b\">[1]</a></sup></p>\n\n\n<section class=\"footnotes\"><hr><ol>\n<li data-footnote-id=\"fn-1-be489a0a523e739b\" id=\"fn-1-be489a0a523e739b\">note<a class=\"footnote-backref footnote-link\" href=\"#fnref-1-be489a0a523e739b\">↩︎</a></li>\n</ol></section>",
       "markdown": "Text^[note]\n",
       "metadata": {
         "footnotes": [

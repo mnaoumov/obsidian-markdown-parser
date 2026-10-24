@@ -3,8 +3,9 @@
  *
  * The samples of the parser issues reported on the Obsidian forum, read from a live Obsidian by
  * `scripts/forum-issue-oracle.ts` into `oracle/forum-issues-obsidian-<version>.json`: the editor's tree, the reading
- * view's DOM and the metadata worker's `CachedMetadata` of each. Two kinds are kept: the places where the editor and the
- * reading view read the same note differently, and the notes whose metadata the worker drops or misplaces. The issues
+ * view's DOM and the metadata worker's `CachedMetadata` of each, and Source mode's and Live Preview's DOM of the first
+ * kind. Two kinds are kept: the places where the editing modes (Source mode and Live Preview) and the reading view read
+ * the same note differently, and the notes whose metadata the worker drops or misplaces. The issues
  * where the reading view departs from CommonMark are spec examples, which the spec oracle already holds.
  */
 
@@ -12,9 +13,19 @@ import type { OracleNode } from './oracle-file.ts';
 import type { SpecOracleMeta } from './spec-oracle-file.ts';
 
 /**
- * A note on which the editor and the reading view disagree.
+ * An editing mode, as Obsidian's UI names them: Source mode and Live Preview.
  */
-export interface EditorVsReadingViewSample {
+export type EditingMode = 'livePreview' | 'sourceMode';
+
+/**
+ * A note that Obsidian's editing modes and its reading view read differently.
+ */
+export interface EditingModesVsReadingViewSample {
+  /**
+   * The editing modes that disagree with the reading view on it.
+   */
+  readonly differsIn: readonly EditingMode[];
+
   /**
    * The forum topic that reports it.
    */
@@ -67,6 +78,12 @@ export interface ForumIssueRead {
   readonly html: string;
 
   /**
+   * Live Preview's `.cm-content` inner HTML, read with the cursor on an empty line appended to the note, and that line
+   * left out; read for the samples of {@link EDITING_MODES_VS_READING_VIEW_SAMPLES} only.
+   */
+  readonly livePreviewHtml?: string;
+
+  /**
    * The document.
    */
   readonly markdown: string;
@@ -80,6 +97,11 @@ export interface ForumIssueRead {
    * The editor's tree, in pre-order, without the root, as `scripts/oracle.ts` reads it.
    */
   readonly nodes: readonly OracleNode[];
+
+  /**
+   * Source mode's `.cm-content` inner HTML, read as {@link livePreviewHtml} is.
+   */
+  readonly sourceModeHtml?: string;
 }
 
 /**
@@ -154,12 +176,16 @@ interface WithSections {
 
 const FORUM = 'https://forum.obsidian.md/t/';
 
+// Both editing modes run the same parse, so a disagreement of its shows in both.
+const BOTH_EDITING_MODES: readonly EditingMode[] = ['livePreview', 'sourceMode'];
+
 /**
- * The notes on which the editor and the reading view disagree: issues 5 to 12 of the summary, and the issue of topic
- * 50661.
+ * The notes that the editing modes and the reading view read differently: issues 5 to 12 of the summary, and the issue
+ * of topic 50661.
  */
-export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[] = [
+export const EDITING_MODES_VS_READING_VIEW_SAMPLES: readonly EditingModesVsReadingViewSample[] = [
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119746`,
     id: 'issue-5-1',
     issue: 'issue-5',
@@ -167,6 +193,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor reads each `===` run as one highlight mark and highlights `marked`; the reading view highlights `=marked` and leaves the last `=` as text.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119746`,
     id: 'issue-5-2',
     issue: 'issue-5',
@@ -174,6 +201,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor opens no highlight before `>`; the reading view highlights `>x`.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119746`,
     id: 'issue-5-3',
     issue: 'issue-5',
@@ -181,6 +209,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor opens no highlight before `>`; the reading view highlights `> next step`.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119752`,
     id: 'issue-6-1',
     issue: 'issue-6',
@@ -188,6 +217,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor runs a `%%` opened mid-line and never closed as a comment to the end of the note; the reading view, as the help documents, makes no comment of it and shows the heading and `text`.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119752`,
     id: 'issue-6-2',
     issue: 'issue-6',
@@ -195,6 +225,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor closes the comment opened mid-line at the `%%` of the next line and shows `after` and the heading; the reading view opens a block comment at that line, which hides the rest of the note.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119755`,
     id: 'issue-7-1',
     issue: 'issue-7',
@@ -202,6 +233,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor keeps a `$$` left open in a paragraph open as math over the list and the quote, up to the next `$$`; the reading view shows four ordinary blocks with literal `$$`.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119756`,
     id: 'issue-8-1',
     issue: 'issue-8',
@@ -209,6 +241,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor ends a code span opened by two backticks at the end of its line and opens a new one at the closer; the reading view shows one code span across the line break.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119757`,
     id: 'issue-9-1',
     issue: 'issue-9',
@@ -216,6 +249,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor opens no math inside a markdown link\'s text; the reading view renders it.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119758`,
     id: 'issue-10-1',
     issue: 'issue-10',
@@ -223,6 +257,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor reads `$b$` and `---` as a line and a horizontal rule once an earlier line started with math; the reading view and the worker read a level 2 heading.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119759`,
     id: 'issue-11-1',
     issue: 'issue-11',
@@ -230,6 +265,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor styles the task markers of the quoted items as links, not as tasks; the reading view and the worker read all three items as tasks.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119760`,
     id: 'issue-12-1',
     issue: 'issue-12',
@@ -237,6 +273,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor keeps a fence left open in a quote open after the quote, so the next paragraph is code; the reading view ends the code block with the quote and the worker indexes the link and the tag.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119760`,
     id: 'issue-12-2',
     issue: 'issue-12',
@@ -244,6 +281,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor keeps a fence left open in a list item open after the item, so the next paragraph is code; the reading view ends the code block with the item and the worker indexes the link and the tag.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}50661`,
     id: 'issue-existing-50661-1',
     issue: 'issue-existing-50661',
@@ -251,6 +289,7 @@ export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[
     note: 'The editor reads a line indented four spaces that starts with math as math; the reading view reads an indented code block.'
   },
   {
+    differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}50661/2`,
     id: 'issue-existing-50661-2',
     issue: 'issue-existing-50661',
@@ -352,7 +391,7 @@ export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
  */
 export function forumIssueDocuments(): string[] {
   const all = [
-    ...EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown),
+    ...EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown),
     ...METADATA_ISSUE_SAMPLES.flatMap((sample) => sample.standIn === undefined ? [sample.markdown] : [sample.markdown, sample.standIn])
   ];
   return [...new Set(all)];

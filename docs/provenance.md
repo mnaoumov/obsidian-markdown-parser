@@ -49,7 +49,7 @@ The files are listed, with what each holds, in [`oracles.md`](oracles.md). Every
 
 | Oracle | How it reads Obsidian | What of the app it keeps |
 | --- | --- | --- |
-| Class spans, spec, quirk probes, forum issues | `scripts/oracle.ts`, `spec-oracle.ts`, `quirk-probe-oracle.ts` and `forum-issue-oracle.ts` open the document in a running Obsidian, through `obsidian-integration-testing` and the Chrome DevTools Protocol, and read the editor's tree, the worker's metadata and the reading view's DOM | Class names, `CachedMetadata` and HTML |
+| Class spans, spec, quirk probes, forum issues | `scripts/oracle.ts`, `spec-oracle.ts`, `quirk-probe-oracle.ts` and `forum-issue-oracle.ts` open the document in a running Obsidian, through `obsidian-integration-testing` and the Chrome DevTools Protocol, and read the editor's tree, the worker's metadata, the reading view's DOM and, for the forum issues, the DOM of Source mode and Live Preview | Class names, `CachedMetadata` and HTML |
 | Worker metadata | `scripts/worker-oracle.ts` loads `worker.js` from an Obsidian install at run time and runs it in a Node `vm` context, posting each document as the app posts it | `CachedMetadata` |
 
 `scripts/worker-oracle.ts` holds no code of the worker: it reads the file from the install it is pointed at, by default the `obsidian-versions` checkout beside this repository, and `scripts/oracle-refresh.ts` hands it the worker of the instance it reads, from a temporary file it deletes when the run ends.
