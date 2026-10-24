@@ -4,10 +4,11 @@
  * Writes the pinned oracles as plain JSON test cases another project can keep next to its own tests
  * (`src/oracle/test-case-export.ts`): the CommonMark and GFM spec examples, each as an `-all` file and a `-failing` one
  * with the examples Obsidian departs on, the quirk probes Obsidian departs from a reference implementation on
- * (`commonmark-no-spec-failing.json`, `gfm-no-spec-failing.json`), `metadata-cache.json`, the forum issues'
- * `live-preview-and-source-mode-vs-reading-view-failing.json` and `metadata-cache-issues.json`, the editing mode oracle's
- * `live-preview-and-source-mode-vs-reading-view-all.json`, and a `README.md` that
- * describes them. Nothing of this repository's code goes into the folder.
+ * (`commonmark-no-spec-failing.json`, `gfm-no-spec-failing.json`), the metadata worker documents as
+ * `metadata-cache-all.json` and `metadata-cache-failing.json` with the forum issues' samples, the editing mode oracle's
+ * `live-preview-and-source-mode-vs-reading-view-all.json` and the forum issues' and judged samples'
+ * `live-preview-and-source-mode-vs-reading-view-failing.json`, and a `README.md` that describes them. Nothing of this
+ * repository's code goes into the folder.
  *
  * It empties the folder first, so a file an earlier export wrote under another name cannot linger beside its successor.
  * It refuses to when the folder holds anything an export does not write: a subfolder, or a file other than `*.json`
@@ -81,10 +82,10 @@ function main(): void {
     ['gfm-spec-0.29.0.gfm.13-failing.json', suites.gfmFailing],
     ['commonmark-no-spec-failing.json', suites.commonmarkNoSpecFailing],
     ['gfm-no-spec-failing.json', suites.gfmNoSpecFailing],
-    ['metadata-cache.json', suites.metadata],
+    ['metadata-cache-all.json', suites.metadata],
+    ['metadata-cache-failing.json', suites.metadataFailing],
     ['live-preview-and-source-mode-vs-reading-view-all.json', suites.livePreviewAndSourceModeVsReadingViewAll],
-    ['live-preview-and-source-mode-vs-reading-view-failing.json', suites.livePreviewAndSourceModeVsReadingView],
-    ['metadata-cache-issues.json', suites.metadataCacheIssues]
+    ['live-preview-and-source-mode-vs-reading-view-failing.json', suites.livePreviewAndSourceModeVsReadingView]
   ];
   for (const [name, suite] of files) {
     writeFileSync(join(out, name), `${JSON.stringify(suite, null, JSON_INDENT)}\n`);
@@ -113,10 +114,10 @@ Each file is \`{ about, obsidianVersion, cases }\`, plus \`referenceImplementati
 - \`commonmark-spec-0.31.2-all.json\` and \`gfm-spec-0.29.0.gfm.13-all.json\`: the examples of the CommonMark 0.31.2 spec and the extension examples of the GFM 0.29.0.gfm.13 spec. \`commonMarkSpecHtml\` is the spec's HTML, \`obsidianReadingViewHtml\` the reading view's with \`strictLineBreaks: true\`, \`obsidianReadingViewHtmlSoftBreaksAsHard\` the reading view's with the default \`strictLineBreaks: false\` where it differs, and \`metadata\` the worker's \`CachedMetadata\`. \`departures\` lists why the reading view differs from the spec, where it does, each with a \`kind\` (\`quirk\`, \`syntax\`, \`rendering\` or \`comparison\`), a \`name\` and the \`behaviour\`. The \`id\` is \`<suite>-<example number>\`.
 - \`commonmark-spec-0.31.2-failing.json\` and \`gfm-spec-0.29.0.gfm.13-failing.json\`: the cases of the \`-all\` file whose \`obsidianReadingViewHtml\` differs from \`commonMarkSpecHtml\`. An example whose only departure is \`soft line breaks are hard\` is not in them: its \`obsidianReadingViewHtml\` matches the spec, and only \`obsidianReadingViewHtmlSoftBreaksAsHard\`, under the app's default, differs.
 - \`commonmark-no-spec-failing.json\` and \`gfm-no-spec-failing.json\`: the quirk probes, CommonMark ones and GFM table and strikethrough ones, on which \`obsidianReadingViewHtml\` (\`strictLineBreaks: true\`) differs from \`referenceHtml\`, each with the \`quirk\`, a \`note\` on it and the worker's \`metadataSections\` (\`<type>@<first line>-<last line>\`, lines from 0). The \`id\` is \`<quirk>-<probe number>\`, counted over the probes of that quirk in both files, so the numbers of the probes that agree are missing.
-- \`metadata-cache.json\`: documents and the worker's whole \`CachedMetadata\`, key order included, or \`null\` where the worker threw.
+- \`metadata-cache-all.json\`: documents and the worker's whole \`CachedMetadata\`, key order included, or \`null\` where the worker threw.
+- \`metadata-cache-failing.json\`: notes whose metadata the worker drops or misplaces, each under the forum issue it was reported as (\`issue-1\` to \`issue-4\` of the summary, with its \`forumUrl\`). First every document of \`metadata-cache-all.json\` the worker threw on, under the same id, then the forum samples, \`<issue>-<sample>\`. Each has the worker's \`metadata\`, \`null\` where it threw, a \`note\` on what goes wrong, and \`expectedMetadata\` where what the note should give is clear, built from the worker's own output as the \`note\` says; the documents of the full file carry none, since no stand-in of them was read. The forum issues where the reading view departs from CommonMark are not repeated: they are spec examples, in the spec files.
 - \`live-preview-and-source-mode-vs-reading-view-all.json\`: notes with all three of Obsidian's views, read as in the \`-failing\` file below: a sample of generated documents covering every piece set of the generator (\`set\` names it), and every case of the \`-failing\` file under the same \`id\`. It carries no judgement: on a generated document the views may agree or not.
 - \`live-preview-and-source-mode-vs-reading-view-failing.json\`: notes that Source mode or Live Preview and Reading view read differently: those reported on the Obsidian forum, each with the \`issue\` and \`forumUrl\` it belongs to, and one for each kind of disagreement found by comparing the views across generated documents, \`issue: judged\` with its \`family\` and no \`forumUrl\`, each confirmed on the live editor. Each case has a one-sentence \`note\`, and all three modes as the user sees them: \`obsidianSourceModeHtml\` and \`obsidianLivePreviewHtml\`, the inner HTML of the editor's \`.cm-content\` in the default theme, and \`obsidianReadingViewHtml\` (\`strictLineBreaks: true\`), with the worker's \`metadata\`, which sides with Reading view. The editing modes were read once math had rendered, with the cursor on an empty line appended to the note, so that Live Preview shows no source for the selection; that line is left out of the HTML. \`differsIn\` lists the editing modes, \`sourceMode\` and \`livePreview\`, that disagree with Reading view, so a test can pick its mode without diffing the HTML. The \`id\` is \`<issue>-<sample>\`: \`issue-5\` to \`issue-12\` follow the summary sent to the Obsidian team, and \`issue-existing-50661\` is the topic that had already reported its issue.
-- \`metadata-cache-issues.json\`: notes whose metadata the worker drops or misplaces (\`issue-1\` to \`issue-4\` of the summary, each with its \`forumUrl\`): the worker's \`metadata\`, \`null\` where it threw, and \`expectedMetadata\` where what the note should give is clear, built from the worker's own output as the case's \`note\` says. The forum issues where the reading view departs from CommonMark are not repeated: they are spec examples, in the spec files.
 `;
 }
 
