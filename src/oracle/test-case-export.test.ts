@@ -4,13 +4,16 @@ import {
   it
 } from 'vitest';
 
+import type { EditingModesFile } from './editing-modes.ts';
 import type { ForumIssueFile } from './forum-issues.ts';
 import type { QuirkProbeFile } from './quirk-probes.ts';
 import type { GfmReferenceFile } from './reference-html.ts';
 import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
+import { JUDGED_SAMPLES } from './mode-judge-samples.ts';
 import {
+  editingModesOracleFileName,
   forumIssueOracleFileName,
   PINNED_ORACLE_DIRECTORY,
   quirkProbeOracleFileName,
@@ -39,7 +42,8 @@ const PROBES = readOracleFile(quirkProbeOracleFileName()) as QuirkProbeFile;
 const WORKER = readOracleFile(workerMetadataOracleFileName()) as WorkerMetadataOracleFile;
 const FORUM = readOracleFile(forumIssueOracleFileName()) as ForumIssueFile;
 const GFM_REFERENCE = readOracleFile(GFM_REFERENCE_FILE_NAME, PINNED_ORACLE_DIRECTORY) as GfmReferenceFile;
-const SUITES = buildTestCaseSuites(SPEC, PROBES, WORKER, FORUM, GFM_REFERENCE);
+const EDITING_MODES = readOracleFile(editingModesOracleFileName()) as EditingModesFile;
+const SUITES = buildTestCaseSuites(SPEC, PROBES, WORKER, FORUM, GFM_REFERENCE, EDITING_MODES);
 const SPEC_CASES = [...SUITES.commonmark.cases, ...SUITES.gfm.cases];
 const ALL_SUITES = [
   SUITES.commonmark,
@@ -50,9 +54,10 @@ const ALL_SUITES = [
   SUITES.gfmNoSpecFailing,
   SUITES.metadata,
   SUITES.livePreviewAndSourceModeVsReadingView,
+  SUITES.livePreviewAndSourceModeVsReadingViewAll,
   SUITES.metadataCacheIssues
 ];
-const EDITING_MODES_VS_READING_VIEW_CASES = 14;
+const FORUM_EDITING_MODE_CASES = 14;
 const METADATA_ISSUE_CASES = 10;
 const EXPECTED_METADATA_CASES = 6;
 const QUIRK_PROBE_COUNT = 169;
@@ -119,8 +124,8 @@ describe('the exported test cases', () => {
   });
 
   it('hold the forum issues: the editing modes\' disagreements with Reading view, and the metadata cache faults', () => {
-    expect(SUITES.livePreviewAndSourceModeVsReadingView.cases).toHaveLength(EDITING_MODES_VS_READING_VIEW_CASES);
-    expect(new Set(SUITES.livePreviewAndSourceModeVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661']));
+    expect(SUITES.livePreviewAndSourceModeVsReadingView.cases).toHaveLength(FORUM_EDITING_MODE_CASES + JUDGED_SAMPLES.length);
+    expect(new Set(SUITES.livePreviewAndSourceModeVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661', 'judged']));
     expect(SUITES.metadataCacheIssues.cases).toHaveLength(METADATA_ISSUE_CASES);
     expect(new Set(SUITES.metadataCacheIssues.cases.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4']));
     expect(SUITES.metadataCacheIssues.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
@@ -128,7 +133,7 @@ describe('the exported test cases', () => {
 
   it('give each editing mode case Source mode, Live Preview and Reading view, with one Source mode line per markdown line', () => {
     for (const testCase of SUITES.livePreviewAndSourceModeVsReadingView.cases) {
-      const read = FORUM.reads.find((candidate) => candidate.markdown === testCase.markdown);
+      const read = testCase.issue === 'judged' ? EDITING_MODES.reads.find((candidate) => candidate.id === testCase.id) : FORUM.reads.find((candidate) => candidate.markdown === testCase.markdown);
       expect(testCase.obsidianSourceModeHtml).toBe(read?.sourceModeHtml);
       expect(testCase.obsidianLivePreviewHtml).toBe(read?.livePreviewHtml);
       expect(testCase.obsidianReadingViewHtml).toBe(read?.html);
@@ -136,6 +141,16 @@ describe('the exported test cases', () => {
       expect(testCase.differsIn.length).toBeGreaterThan(0);
     }
   });
+  it('hold in the all file every editing mode read and forum sample, and every failing case unchanged under its id', () => {
+    const all = SUITES.livePreviewAndSourceModeVsReadingViewAll.cases;
+    expect(all).toHaveLength(EDITING_MODES.reads.length + FORUM_EDITING_MODE_CASES);
+    const byId = new Map(all.map((testCase) => [testCase.id, testCase]));
+    for (const testCase of SUITES.livePreviewAndSourceModeVsReadingView.cases) {
+      const full = byId.get(testCase.id);
+      expect([full?.markdown, full?.obsidianSourceModeHtml, full?.obsidianLivePreviewHtml, full?.obsidianReadingViewHtml]).toEqual([testCase.markdown, testCase.obsidianSourceModeHtml, testCase.obsidianLivePreviewHtml, testCase.obsidianReadingViewHtml]);
+    }
+  });
+
   it('expect of the metadata issues what the worker gives once the fault is out', () => {
     const byId = new Map(SUITES.metadataCacheIssues.cases.map((testCase) => [testCase.id, testCase]));
     for (const id of ['issue-1-1', 'issue-1-2', 'issue-2-1', 'issue-2-2']) {

@@ -74,6 +74,16 @@ export function classOracleFileName(seed: number, version = oracleObsidianVersio
 }
 
 /**
+ * The name of an editing mode oracle file.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function editingModesOracleFileName(version = oracleObsidianVersion()): string {
+  return `editing-modes-obsidian-${version}.json`;
+}
+
+/**
  * The name of a forum issue oracle file.
  *
  * @param version - The Obsidian version.
