@@ -3,7 +3,7 @@
  *
  * The metadata worker oracle: runs Obsidian's own metadata worker, its `worker.js`, offline in a Node `vm` context, on
  * fuzzed documents built from piece sets of block and inline markdown and the Obsidian syntax, and on every document of
- * the conformance corpus, and writes each document's whole `CachedMetadata`, or the `null` the worker posts where it
+ * the conformance corpus and on a few pinned documents, and writes each document's whole `CachedMetadata`, or the `null` the worker posts where it
  * throws, to `oracle/worker-metadata-obsidian-<version>.json` (`src/oracle/worker-metadata.ts`). Besides the syntax,
  * piece sets of headings, markdown links and images, and YAML front matter cover the rest of the metadata.
  *
@@ -82,6 +82,12 @@ const HEADING = ['# H', '## a *b* c', '###### x ##', '# a [[l]] ^id', '#', '# ',
 const LINK = ['[t](a.md)', '[t](a%20b.md)', '[t](%zz)', '[t](a%E2.md)', '[t](./x)', '[t](../x:y)', '[t](x:y)', '[t](http://a)', '[t](#h)', '[t](<a b.md>)', '[t](a.md "T")', '[t](a.md \'T\')', '[t]()', '[](a.md)', '[*e* `c` [[w]] #g](a.md)', '[a\nb](c.md)', '[a  \nb](c.md)', '[a\\\nb](c.md)', '[![i](p.png)](a.md)', '[![i|100](http://x/p.png)](a.md)', '[![i](http://p)](a.md)', '![i](p.png)', '![](p.png)', '![i|100](p.png)', '![i|a|20x30](p.png)', '![i](p%20q.png)', '![i](%zz.png)', '![i](http://x/p.png)', '![i](<p q.png>)', '![i](p.png "T")', '[t](a&amp;b.md)', String.raw`[t](a\_b.md)`, '[t](\u{A0}a.md)', '[t](e\u{301}.md)', '[a ^[n] b](x.md)', '[a [^1] b](x.md)', '[^1]: d', '[l]: a.md', '[t][l]', '![i][l]', '<a.md>', '<x:y>', 'www.a.b', 'a@b.c', '[t](a.md) [u](b.md)', '[==h== ~~d~~ $m$](x.md)', '[%%c%%](x.md)', '[a&#10;](x.md)', '[x ^id](y.md)', 'text', '', '', '> [t](a.md)', '- [t](a.md)', '# [t](a.md)', '| [t](a.md) | b |', '|-|-|'];
 const YAML = ['a: 1', 'b: [x, y]', 'c: {d: e}', 'k: "[[L|x]]"', 'k: "[[ |a]]"', 'k: "[[a#b#c]]"', String.raw`k: "[[a\\]]"`, 'k: [[L]]', 'x: !!str 1', 'n: 0o17', 'h: 0x1F', 'f: .inf', 'nan: .nan', 'y: yes', 't: 2024-01-02', 'a: &A {p: 1}', 'b: *A', '<<: *A', '%YAML 1.1', '- item', 'm: |\n  block', 'e:', 'e: ~', 'b: !!binary aGVsbG8=', 'b: !!binary a#b', 's: !!set {a, b}', 'o: !!omap [{a: 1}]', 'bad: [', 'tab:\tx', '? complex\n: v', '[a, b]: c', '__proto__: 1', 'hasOwnProperty: 1', 'l: ["[[x]]", "[t](a b.md)"]', 'k: "[t](a b.md)"', 'k: "[t](./a%20b.md)"', 'k: "[t](http://x)"', 'k: "![i](<a b.png>)"', 'k: "[t](%zz)"', 'k: "[t]()"', 'k: "[t]( )"', String.raw`k: "[t](a.md \"T\")"`, 'k: {n: "[[a]]"}', '"": {x: "[[e]]"}', 'k: "[[a]] and [[b]]"', 'x: 9007199254740993', 'x: 1e3', '...', '# c', '---x'];
 /* eslint-enable unicorn/prefer-string-repeat -- The piece sets end here. */
+
+/*
+ * Documents the piece sets do not reach, kept whole: list items and quotes nested in each other, a tab between quote
+ * levels included, whose list items the projection once had to be measured on by hand.
+ */
+const PINNED = ['- > 1. first', '- >\t> 1. a', '> -\t> 1. a', '- > - > 1. a\n  > b', '1. > - a\n   > b', '- > 1. a\n  > 2. b'];
 
 /*
  * The piece sets: syntax alone, syntax among blocks and lists, syntax inside quotes, headings, markdown links and
@@ -172,6 +178,11 @@ for (const [set, pieces] of Object.entries(SETS)) {
     const text = `${frontmatterOf(set)}${lines.join('\n')}${random(FINAL_LINE_BREAK_ODDS) === 0 ? '' : '\n'}`;
     docs.push({ metadata: runWorker(text), set, text });
   }
+}
+
+// After the piece sets, so the seed still gives them the same documents.
+for (const text of PINNED) {
+  docs.push({ metadata: runWorker(text), set: 'pinned', text });
 }
 
 const oracleFile: WorkerMetadataOracleFile = { docs, meta: { appVersion, perSet, seed } };

@@ -105,12 +105,24 @@
         "sections": [
           {
             "type": "paragraph",
-            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 7, "offset": 26 } }
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 7, "offset": 7 } }
           }
         ]
       },
       "set": "conformance",
-      "text": "[[a]b]] and [[open\nclose]]"
+      "text": "[[a]b]]"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 7, "offset": 14 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[open\nclose]]"
     },
     {
       "metadata": {
@@ -212,6 +224,42 @@
       },
       "set": "conformance",
       "text": "a ==marked text== b"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 16, "offset": 16 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "a ===marked=== b"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "a ==>x== b"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "==a == b=="
     },
     {
       "metadata": {
@@ -360,6 +408,30 @@
       },
       "set": "conformance",
       "text": "text[^1] more"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 12, "offset": 12 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "text[^] more"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 31, "offset": 31 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "text[^a b] and [^ a] and [^a\tb]"
     },
     {
       "metadata": {
@@ -123728,6 +123800,160 @@
       },
       "set": "syntax",
       "text": "%% x %% y\n"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 12, "offset": 12 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 0, "offset": 0 },
+              "end": { "line": 0, "col": 12, "offset": 12 }
+            },
+            "parent": -1
+          },
+          {
+            "position": {
+              "start": { "line": 0, "col": 4, "offset": 4 },
+              "end": { "line": 0, "col": 12, "offset": 12 }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "- > 1. first"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 0, "offset": 0 },
+              "end": { "line": 0, "col": 10, "offset": 10 }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "- >\t> 1. a"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "blockquote",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 2, "offset": 2 },
+              "end": { "line": 0, "col": 10, "offset": 10 }
+            },
+            "parent": -1
+          },
+          {
+            "position": {
+              "start": { "line": 0, "col": 6, "offset": 6 },
+              "end": { "line": 0, "col": 10, "offset": 10 }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "> -\t> 1. a"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 5, "offset": 18 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 5, "offset": 18 } },
+            "parent": -1
+          },
+          {
+            "position": { "start": { "line": 0, "col": 4, "offset": 4 }, "end": { "line": 1, "col": 5, "offset": 18 } },
+            "parent": -1
+          },
+          {
+            "position": { "start": { "line": 0, "col": 8, "offset": 8 }, "end": { "line": 1, "col": 5, "offset": 18 } },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "- > - > 1. a\n  > b"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 6, "offset": 15 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 6, "offset": 15 } },
+            "parent": -1
+          },
+          {
+            "position": { "start": { "line": 0, "col": 5, "offset": 5 }, "end": { "line": 1, "col": 6, "offset": 15 } },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "1. > - a\n   > b"
+    },
+    {
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 8, "offset": 17 } }
+          }
+        ],
+        "listItems": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 1, "col": 8, "offset": 17 } },
+            "parent": -1
+          },
+          {
+            "position": { "start": { "line": 0, "col": 4, "offset": 4 }, "end": { "line": 0, "col": 8, "offset": 8 } },
+            "parent": -1
+          },
+          {
+            "position": {
+              "start": { "line": 1, "col": 4, "offset": 13 },
+              "end": { "line": 1, "col": 8, "offset": 17 }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "- > 1. a\n  > 2. b"
     }
   ],
   "meta": { "appVersion": "1.14.5", "perSet": 400, "seed": 12345 }
