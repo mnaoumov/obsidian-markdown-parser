@@ -58,11 +58,12 @@ npm run export:test-cases -- [--out <directory>]
 
 writes the pinned spec, quirk probe and metadata worker oracles as plain JSON into `dist/test-cases/` (`scripts/export-test-cases.ts`, built by `src/oracle/test-case-export.ts`), with a `README.md` on their format, for a project that keeps them next to its own tests. Every value is the spec's or Obsidian's own output, and nothing of this repository's code goes with them.
 
-- `commonmark-gfm-spec.json`: all 674 spec examples, each with the spec's HTML (`commonMarkSpecHtml`), the reading view's (`obsidianHtml`, `strictLineBreaks: true`, and `obsidianHtmlSoftBreaksAsHard` on the 66 examples the default `false` changes), the worker's `CachedMetadata`, and the `departures` from `SPEC_DIFFERENCES` on the 211 examples the reading view departs on.
+- `commonmark-0.31.2.json` and `gfm-0.29.0.gfm.13.json`: the 652 CommonMark examples and the 22 GFM extension examples, each with the spec's HTML (`commonMarkSpecHtml`), the reading view's (`obsidianHtml`, `strictLineBreaks: true`, and `obsidianHtmlSoftBreaksAsHard` on the 66 examples the default `false` changes), the worker's `CachedMetadata`, and the `departures` from `SPEC_DIFFERENCES` on the 260 examples that carry one.
+- `commonmark-0.31.2-departures.json` and `gfm-0.29.0.gfm.13-departures.json`: the 204 and 7 cases of those files, unchanged and under the same id, whose `obsidianHtml` differs from the spec's: the 211 examples the reading view departs on. The other 49 examples with a `departures` entry carry only `soft line breaks are hard`, so their `obsidianHtml` matches the spec and they stay in the full files only. A departure file is the full file filtered by `readingViewDifferences`, never a list of its own, so the two cannot drift.
 - `reading-view-quirks.json`: the 169 quirk probes, with the reading view's HTML, the worker's sections and a note on the quirk. The spec has no example for them, so they carry no spec HTML.
 - `metadata-cache.json`: the 3,255 worker documents with the worker's whole `CachedMetadata`.
 
-`src/oracle/test-case-export.test.ts` pins that each file holds every document of its oracle once and that the departures are the ones the spec suites explain.
+`src/oracle/test-case-export.test.ts` pins that each full file holds every document of its oracle once, that the departures are the ones the spec suites explain, and that the two departure files hold exactly the full files' cases the reading view departs on, 211 between them.
 
 ## The last run
 

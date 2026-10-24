@@ -180,7 +180,7 @@ npm run build               # both packages, into dist/lib/ and packages/metadat
 - **The demo plugin**: `npx jiti scripts/build-demo-plugin.ts`, then copy `dist/demo-plugin/` into a test vault as `.obsidian/plugins/markdown-parser-demo/` and enable **Markdown parser demo**. Its commands swap the parser in and out of every editor, compare the classes and the metadata with the app's own, and time a full parse and 50 keystrokes ([demo-plugin.md](demo-plugin.md)).
 - **The same, unattended on a vault**: `npx jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines <n>]`.
 - **The oracles against another Obsidian**: `npm run oracle:refresh -- --obsidian-version <version>` ([oracles.md](oracles.md)).
-- **The oracles as test cases for your own suites**: `npm run export:test-cases` writes the spec examples, the quirk probes and the metadata worker documents as plain JSON into `dist/test-cases/`, each case with both the spec's HTML and Obsidian's, and no code of this parser ([oracles.md](oracles.md#the-oracles-as-test-cases-for-another-project)).
+- **The oracles as test cases for your own suites**: `npm run export:test-cases` writes the spec examples, the quirk probes and the metadata worker documents as plain JSON into `dist/test-cases/`, each case with both the spec's HTML and Obsidian's, the CommonMark and GFM examples in files of their own, each beside a file of only the examples Obsidian departs on, and no code of this parser ([oracles.md](oracles.md#the-oracles-as-test-cases-for-another-project)).
 - **The editor's cost**: `npx jiti scripts/cm6-bench.ts [--lines <n>]`.
 - **The packages and their entry points**: [api.md](api.md). `obsidian-markdown-parser-metadata` is the metadata alone, with four small dependencies and no editor.
 
