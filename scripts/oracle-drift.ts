@@ -7,7 +7,8 @@
  * Per oracle it gives the documents both versions read from the same source (compared), those whose reading changed
  * between the versions (changed), and those only the newer read holds, which a corpus grown since the older read adds
  * (new). It then scores the parser on both versions: the editor's classes on every class-span document and spec
- * example, and the whole `CachedMetadata` on every worker document and spec example. Last, it runs the suites that
+ * example, and the whole `CachedMetadata` on every worker document and spec example, and both on every forum issue
+ * document. Last, it runs the suites that
  * check the parser against Obsidian on the newer version's files (`src/oracle/oracle-location.ts`), which covers the
  * reading view's HTML of the spec and the quirk probes.
  *
@@ -24,6 +25,10 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type {
+  ForumIssueFile,
+  ForumIssueRead
+} from '../src/oracle/forum-issues.ts';
+import type {
   OracleDocument,
   OracleFile
 } from '../src/oracle/oracle-file.ts';
@@ -38,6 +43,7 @@ import { parseMetadata } from '../src/metadata/metadata.ts';
 import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
+  forumIssueOracleFileName,
   ORACLE_DIRECTORY_VARIABLE,
   ORACLE_VERSION_VARIABLE,
   PINNED_OBSIDIAN_VERSION,
@@ -90,6 +96,7 @@ interface Score {
 const CONFORMANCE_SUITES = [
   'src/editor/highlight.test.ts',
   'src/editor/language.test.ts',
+  'src/oracle/forum-issues.test.ts',
   'src/oracle/quirk-probes.test.ts',
   'src/oracle/spec-quirks.test.ts',
   'src/oracle/worker-metadata.test.ts'
@@ -155,6 +162,33 @@ function compareReadings(name: string, from: Readings, to: Readings): Pick<Drift
 
 function formatScore(score: Score | undefined): string {
   return score === undefined ? '-' : `${String(score.total - score.failing.length)}/${String(score.total)}`;
+}
+
+function forumRows(): DriftRow[] {
+  const from = readOracleFile(forumIssueOracleFileName(fromVersion), fromDirectory) as ForumIssueFile;
+  const to = readOracleFile(forumIssueOracleFileName(toVersion), toDirectory) as ForumIssueFile;
+  function readings(file: ForumIssueFile, field: (read: ForumIssueRead) => unknown): Readings {
+    return new Map(file.reads.map((read) => [read.markdown, JSON.stringify([field(read)])]));
+  }
+  function editorDocuments(file: ForumIssueFile): OracleDocument[] {
+    return file.reads.map((read) => ({ id: read.markdown, nodes: read.nodes, set: 'forum', text: read.markdown }));
+  }
+  function metadataItems(file: ForumIssueFile): MetadataItem[] {
+    return file.reads.map((read) => ({ key: read.markdown, markdown: read.markdown, metadata: read.metadata }));
+  }
+  return [
+    {
+      ...compareReadings('forum issues, editor classes', readings(from, (read) => read.nodes), readings(to, (read) => read.nodes)),
+      parserFrom: scoreClasses(editorDocuments(from), fromVersion),
+      parserTo: scoreClasses(editorDocuments(to), toVersion)
+    },
+    {
+      ...compareReadings('forum issues, worker metadata', readings(from, (read) => read.metadata), readings(to, (read) => read.metadata)),
+      parserFrom: scoreMetadata(metadataItems(from)),
+      parserTo: scoreMetadata(metadataItems(to))
+    },
+    compareReadings('forum issues, reading view (strict line breaks)', readings(from, (read) => read.html), readings(to, (read) => read.html))
+  ];
 }
 
 // Whether both versions have the oracle file, whose name holds the version.
@@ -263,7 +297,8 @@ const oracles: readonly OracleSource[] = [
   })),
   { fileNameOf: specOracleFileName, name: 'spec', rowsOf: specRows },
   { fileNameOf: quirkProbeOracleFileName, name: 'quirk probes', rowsOf: (): DriftRow[] => [probeRow()] },
-  { fileNameOf: workerMetadataOracleFileName, name: 'worker metadata', rowsOf: (): DriftRow[] => [workerRow()] }
+  { fileNameOf: workerMetadataOracleFileName, name: 'worker metadata', rowsOf: (): DriftRow[] => [workerRow()] },
+  { fileNameOf: forumIssueOracleFileName, name: 'forum issues', rowsOf: forumRows }
 ];
 for (const { fileNameOf, name, rowsOf } of oracles) {
   if (hasBoth(fileNameOf)) {

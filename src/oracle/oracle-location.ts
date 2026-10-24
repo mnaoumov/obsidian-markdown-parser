@@ -74,6 +74,16 @@ export function classOracleFileName(seed: number, version = oracleObsidianVersio
 }
 
 /**
+ * The name of a forum issue oracle file.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function forumIssueOracleFileName(version = oracleObsidianVersion()): string {
+  return `forum-issues-obsidian-${version}.json`;
+}
+
+/**
  * The directory the suites read their oracles from.
  *
  * @returns The directory.

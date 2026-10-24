@@ -119,7 +119,7 @@ The tree is the editor's node for node, not only class for class: a token of a q
 - A row continues a table without outer pipes when it has an inner pipe after a first character that is not a pipe. A row continues a table with outer pipes when it starts with a pipe at column 0.
 - A table row is marked `HyperMD-table-<type>`, `HyperMD-table-row` and `HyperMD-table-row-<n>` by a separator read while its column count is 0. The type is 1 for a table without outer pipes and 2 for one with them, as in HyperMD. A row whose first token is spaces before a pipe skips the row count. Its separators then go unmarked, and so does the row.
 - In a table, the spaces beside a pipe are a token of their own with no classes. An unescaped pipe ends every inline span open in its cell before it is read: code, comments, emphasis, highlights, tags and links. A pipe inside an internal link keeps its `link-alias-pipe` class and ends the link. Math ends before a pipe, and HTML ends at a pipe read as text, a string or an attribute.
-- Front matter must open on the document's first line.
+- Front matter must open on the document's first line, with `---` and nothing else. It closes at a line of `---` followed by nothing but spaces and tabs, which all take the closer's classes; `---x` and `----` do not close it. The forum issue oracle found the trailing whitespace, which no corpus held.
 - Front matter is read by the YAML mode of CodeMirror 5.64.0, the release Obsidian bundles. Its key pattern differs from later releases: in `- [ ] [a]: /u` it reads everything from the space after `[` to `:` as a key, where 5.65 closes a flow sequence at `]`.
 
 ### Line starts the markdown mode never sees

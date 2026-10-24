@@ -8,19 +8,20 @@ Everything this repository claims about Obsidian is checked against oracle files
 | Spec | `spec-obsidian-<version>.json` | `scripts/spec-oracle.ts` | Every CommonMark 0.31.2 and GFM example: the editor's tree, the metadata worker's `CachedMetadata`, and the reading view's DOM with and without strict line breaks |
 | Quirk probes | `quirk-probes-obsidian-<version>.json` | `scripts/quirk-probe-oracle.ts` | The reading view's DOM and the worker's sections for each probe of `src/oracle/quirk-probes.ts` |
 | Worker metadata | `worker-metadata-obsidian-<version>.json` | `scripts/worker-oracle.ts` | The metadata worker's whole `CachedMetadata`, run offline, on fuzzed documents and the conformance corpus |
+| Forum issues | `forum-issues-obsidian-<version>.json` | `scripts/forum-issue-oracle.ts` | The editor's tree, the reading view's DOM with strict line breaks and the worker's `CachedMetadata` for each sample of the parser issues reported on the Obsidian forum (`src/oracle/forum-issues.ts`), and for the stand-in notes their expected metadata is built from |
 
 All of them are pinned to Obsidian 1.14.5. The version, the seeds and the directory are named once, in `src/oracle/oracle-location.ts`, and every suite that checks the parser against Obsidian reads its files through it.
 
 ## Re-reading every oracle from another Obsidian
 
 ```sh
-npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>] [--out-dir <directory>] [--only classes,spec,quirk-probes,worker] [--skip-drift]
+npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>] [--out-dir <directory>] [--only classes,spec,quirk-probes,forum-issues,worker] [--skip-drift]
 ```
 
 It needs a global `obsidian-integration-testing` install, which launches each Obsidian it reads in its own throw-away profile and vault. Without `--obsidian-version` it reads the installed Obsidian.
 
 1. It launches the version once, to learn its exact version number and to take its metadata worker, `worker.js`, from the instance (the app serves it beside its page). The worker goes to a temporary file outside the repository and is deleted when the run ends; none of the app's code is kept.
-2. It runs `scripts/oracle.ts` once per pinned seed, with the pinned file's `--per-set`, then `scripts/spec-oracle.ts` and `scripts/quirk-probe-oracle.ts`, each pinned to that exact version, and `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
+2. It runs `scripts/oracle.ts` once per pinned seed, with the pinned file's `--per-set`, then `scripts/spec-oracle.ts`, `scripts/quirk-probe-oracle.ts` and `scripts/forum-issue-oracle.ts`, each pinned to that exact version, and `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
 3. It writes the files to `oracle/`, named after the version, beside the pinned ones. A re-read of the pinned version itself goes to a temporary directory instead (`<tmp>/obsidian-oracles-<version>`), so it never overwrites the files the suites check against.
 4. It runs the drift report below.
 
@@ -56,14 +57,16 @@ The parser's score is shown on both versions because it is not 100% everywhere o
 npm run export:test-cases -- [--out <directory>]
 ```
 
-writes the pinned spec, quirk probe and metadata worker oracles as plain JSON into `dist/test-cases/` (`scripts/export-test-cases.ts`, built by `src/oracle/test-case-export.ts`), with a `README.md` on their format, for a project that keeps them next to its own tests. Every value is the spec's or Obsidian's own output, and nothing of this repository's code goes with them.
+writes the pinned spec, quirk probe, metadata worker and forum issue oracles as plain JSON into `dist/test-cases/` (`scripts/export-test-cases.ts`, built by `src/oracle/test-case-export.ts`), with a `README.md` on their format, for a project that keeps them next to its own tests. Every value is the spec's or Obsidian's own output, and nothing of this repository's code goes with them.
 
 - `commonmark-0.31.2.json` and `gfm-0.29.0.gfm.13.json`: the 652 CommonMark examples and the 22 GFM extension examples, each with the spec's HTML (`commonMarkSpecHtml`), the reading view's (`obsidianHtml`, `strictLineBreaks: true`, and `obsidianHtmlSoftBreaksAsHard` on the 66 examples the default `false` changes), the worker's `CachedMetadata`, and the `departures` from `SPEC_DIFFERENCES` on the 260 examples that carry one.
 - `commonmark-0.31.2-departures.json` and `gfm-0.29.0.gfm.13-departures.json`: the 204 and 7 cases of those files, unchanged and under the same id, whose `obsidianHtml` differs from the spec's: the 211 examples the reading view departs on. The other 49 examples with a `departures` entry carry only `soft line breaks are hard`, so their `obsidianHtml` matches the spec and they stay in the full files only. A departure file is the full file filtered by `readingViewDifferences`, never a list of its own, so the two cannot drift.
 - `reading-view-quirks.json`: the 169 quirk probes, with the reading view's HTML, the worker's sections and a note on the quirk. The spec has no example for them, so they carry no spec HTML.
 - `metadata-cache.json`: the 3,255 worker documents with the worker's whole `CachedMetadata`.
+- `editor-vs-reading-view.json`: the 14 samples of the forum issues where the editor and the reading view read a note differently (issues 5 to 12 of the summary sent to the team, and topic 50661, which had already reported its issue), each with its `forumUrl`, a one-sentence `note`, `editorLines` (per line, the line classes and the token spans with their classes, from the editor's tree), the reading view's HTML and the worker's `CachedMetadata`.
+- `metadata-cache-issues.json`: the 10 samples of the forum issues where the worker drops or misplaces metadata (issues 1 to 4), with the worker's `CachedMetadata` (`null` on the 4 where it throws) and, on 6 of them, `expectedMetadata`: for 1 and 2 the worker's metadata of a stand-in note of the same length without the trigger, the property put back; for 3 the worker's own metadata without the two zero-length sections, the block id on the footnote definition. Issue 4 is front matter whose closing line the worker and the editor read differently, so it carries no expected metadata. The forum issues where the reading view departs from CommonMark are spec examples, so they are in the spec files and not repeated.
 
-`src/oracle/test-case-export.test.ts` pins that each full file holds every document of its oracle once, that the departures are the ones the spec suites explain, and that the two departure files hold exactly the full files' cases the reading view departs on, 211 between them.
+`src/oracle/test-case-export.test.ts` pins that each full file holds every document of its oracle once, that the departures are the ones the spec suites explain, that the two departure files hold exactly the full files' cases the reading view departs on, 211 between them, and the forum files' counts, their editor lines against the editor's tree, and the expected metadata. `src/oracle/forum-issues.test.ts` pins the parser to the forum issue oracle: the editor's classes and the worker's metadata on every document. It found one gap, fixed with it: the editor closes front matter at `---` followed by spaces or tabs, and styles the whole line.
 
 ## The last run
 
