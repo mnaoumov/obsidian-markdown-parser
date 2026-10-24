@@ -114,6 +114,115 @@
     },
     {
       "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 0, "offset": 0 },
+              "end": { "line": 0, "col": 10, "offset": 10 }
+            },
+            "link": "a==b==",
+            "original": "[[a==b==]]",
+            "displayText": "a==b=="
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[a==b==]]"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 0, "offset": 0 },
+              "end": { "line": 0, "col": 11, "offset": 11 }
+            },
+            "link": "a%%b%%c",
+            "original": "[[a%%b%%c]]",
+            "displayText": "a%%b%%c"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 11, "offset": 11 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[a%%b%%c]]"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } },
+            "link": "a%%b",
+            "original": "[[a%%b]]",
+            "displayText": "a%%b"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 14, "offset": 14 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[a%%b]] %%c%%"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } },
+            "link": "a^[b",
+            "original": "[[a^[b]]",
+            "displayText": "a^[b"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[a^[b]]"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": { "line": 0, "col": 0, "offset": 0 },
+              "end": { "line": 0, "col": 10, "offset": 10 }
+            },
+            "link": "a[^b]c",
+            "original": "[[a[^b]c]]",
+            "displayText": "a[^b]c"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ]
+      },
+      "set": "conformance",
+      "text": "[[a[^b]c]]"
+    },
+    {
+      "metadata": {
         "sections": [
           {
             "type": "paragraph",
@@ -123954,6 +124063,46 @@
       },
       "set": "pinned",
       "text": "- > 1. a\n  > 2. b"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } },
+            "link": "a%%b",
+            "original": "[[a%%b]]",
+            "displayText": "a%%b"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } }
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "[[a%%b]]"
+    },
+    {
+      "metadata": {
+        "links": [
+          {
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 8, "offset": 8 } },
+            "link": "a%%b",
+            "original": "[[a%%b]]",
+            "displayText": "a%%b"
+          }
+        ],
+        "sections": [
+          {
+            "type": "paragraph",
+            "position": { "start": { "line": 0, "col": 0, "offset": 0 }, "end": { "line": 0, "col": 10, "offset": 10 } }
+          }
+        ]
+      },
+      "set": "pinned",
+      "text": "[[a%%b]]%%"
     }
   ],
   "meta": { "appVersion": "1.14.5", "perSet": 400, "seed": 12345 }

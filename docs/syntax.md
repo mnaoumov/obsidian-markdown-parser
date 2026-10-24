@@ -15,7 +15,7 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 
 | Construct | Nodes | Rule |
 | --- | --- | --- |
-| Internal link, embed | `InternalLink`, `Embed`, with `InternalLinkMark`, `InternalLinkPath`, `InternalLinkSubpath`, `InternalLinkAliasMark`, `InternalLinkAlias` | `[[` or `![[`, then content with no line break, closed by the first `]]`. A `]` inside the content does not end it, so `[[a]b]]` links to `a]b`, as the editor, the metadata worker and the reading view of Obsidian 1.14.5 read it. The subpath starts at the first `#` and the alias at the first `\|`. In a table the alias pipe is written `\|`, and the backslash belongs to the alias mark. |
+| Internal link, embed | `InternalLink`, `Embed`, with `InternalLinkMark`, `InternalLinkPath`, `InternalLinkSubpath`, `InternalLinkAliasMark`, `InternalLinkAlias` | `[[` or `![[`, then content with no line break, closed by the first `]]`. A `]` inside the content does not end it, so `[[a]b]]` links to `a]b`, as the editor, the metadata worker and the reading view of Obsidian 1.14.5 read it. The content is the link's target: no inline syntax opens inside it (see [below](#inline-syntax-inside-an-internal-link)). The subpath starts at the first `#` and the alias at the first `\|`. In a table the alias pipe is written `\|`, and the backslash belongs to the alias mark. |
 | Tag | `Tag`, with `TagMark`, `TagName` | `#` at the start of the inline content or after whitespace, followed by tag characters (anything but whitespace, ASCII punctuation other than `-`, `/` and `_`, and the General and Supplemental Punctuation blocks). A name of digits only is no tag. |
 | Comment | `ObsidianComment`, `ObsidianCommentBlock`, with `ObsidianCommentMark` | Inline `%%` to the next `%%`, across lines of its paragraph. An unclosed one runs to the end of the paragraph. A line that starts with `%%` and does not close it opens a comment block, which spans blank lines up to the line holding the next `%%`, or to the end of its container. The names carry the `Obsidian` prefix because `@lezer/markdown` already names HTML comments `Comment` and `CommentBlock`. |
 | Math | `InlineMath`, `MathBlock`, with `MathMark` | `$` before a non-space opens inline math when a later `$` on the line follows a non-space, and the first `$` no backslash escapes closes it. `$$` always opens, and closes at the next `$$`. A line that starts with `$$` and does not close it opens a math block, like a comment block. |
@@ -27,6 +27,20 @@ The rules follow the editor's tokenizer (`src/editor/`), because it is the only 
 | Callout | `Callout`, with `QuoteMark`, `CalloutMark` (holding `CalloutType` and `CalloutFold`) and `CalloutTitle` | A quote whose content opens with `[!type]`, optionally followed by `+` or `-`. The rest of the line is the title. Lines continuing the quote are the content. Lines with no `>` right after the title line continue it, as in the editor, and become the content's first paragraph. |
 | Task | `Task`, with `TaskMarker` | A list item opening with `[c]` for any one character `c`, followed by whitespace. |
 | Front matter | `FrontMatter`, with `FrontMatterMark` and `FrontMatterContent` | A first line of exactly `---`, up to the next line of exactly `---`. Like in the editor, front matter that never closes runs to the end of the document. |
+
+### Inline syntax inside an internal link
+
+Here the tree departs from the editor on purpose. The editor reads some inline syntax inside an internal link's content, and the tree reads the content as the link's target, as the metadata worker and the reading view do. Each was read from Obsidian 1.14.5 on 2026-10-23:
+
+| Document | The editor | The metadata worker | The reading view |
+| --- | --- | --- | --- |
+| `[[a==b==]]` | marks the two inner `=` as highlight marks inside the link | one link to `a==b==` | one link showing `a==b==` |
+| `[[a%%b]]`, `[[a%%b%%c]]` | opens a comment at the first `%%`, which runs on past the link into the following paragraphs, and the next `%%` toggles it | one link to `a%%b`, `a%%b%%c` | one link |
+| `[[a%%b]]%%` | the `%%` after the link closes the comment the link opened | one link to `a%%b`; the last `%%` is text | one link, then `%%` as text |
+| `[[a^[b]]` | opens an inline footnote at `^[` inside the link | one link to `a^[b` | one link |
+| `[[a[^b]c]]` | reads `[^b]` as a footnote reference and ends the link there, leaving `c]]` as text | one link to `a[^b]c` | one link |
+
+A link's content is a file name and a subpath, and the worker resolves it as one, so the reading the tree gives is the one that tells what the link points to. The class tokenizer still gives the editor's classes here ([phase-1.md](phase-1.md#inline-syntax)), as every other class does. The editor's reading is bug B30 in [obsidian-bugs.md](obsidian-bugs.md#b30-a--highlight-or-footnote-inside-an-internal-link). The conformance cases `internal link content holds no highlight`, `... no comment`, `... no inline footnote` and `... no footnote reference`, and `a %% inside internal link content does not pair with one after the link`, pin the reading in all three adapters and the `remark-parse` 8 engine, and the worker oracle holds each document's metadata.
 
 `src/syntax/lezer.test.ts` runs the corpus. It also edits 400 oracle documents and checks that an incremental parse after each edit gives the same tree as a full parse.
 

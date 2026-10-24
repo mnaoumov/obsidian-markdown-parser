@@ -52,6 +52,7 @@ The components are the editor (Source mode and Live Preview), the metadata cache
 | B27 | A setext heading takes only one line | reading view, editor, CommonMark | CommonMark in the adapters; flag | [112786](https://forum.obsidian.md/t/112786) |
 | B28 | Live Preview hides a backslash at the start of an indented code block | editor, reading view | fixed in the tree | not posted yet |
 | B29 | A footnote reference before HTML breaks HTML in every note until restart | editor | reads as a warm editor does | not posted yet |
+| B30 | A `%%`, highlight or footnote inside an internal link | editor, reading view, metadata cache | fixed in the tree | not posted yet |
 
 "Fixed in the tree" means the `@lezer/markdown` tree reads the sample as the reading view does, while the class tokenizer still reproduces the editor. "CommonMark in the adapters" means the `@lezer/markdown`, micromark and markdown-it adapters read it as CommonMark does, while `parseRemark` reproduces the reading view.
 
@@ -633,6 +634,26 @@ Opened first after a restart, then any note holding `Plain text and <b>bold</b> 
 **Pinned by:** `src/editor/highlight.test.ts`, "should leave HTML half open after a footnote reference mark that opens its line".
 
 **Forum:** not posted yet (draft 29). Related, not a duplicate: <https://forum.obsidian.md/t/63314>.
+
+### B30. A `%%`, highlight or footnote inside an internal link
+
+**Obsidian:** the editor reads a `%%`, a highlight's `==`, an inline footnote's `^[` and a footnote reference inside an internal link's content as that syntax, while the reading view and the metadata cache read the whole content as the link's target. A `%%` opens a comment that runs on past the link: in Source mode and Live Preview the next paragraph is styled as a comment. A footnote reference ends the link in the editor, which leaves the rest of it as text.
+
+```markdown
+[[Note%%draft]]
+
+This line is plain text.
+```
+
+Also `[[Note==v2==]]`, which marks two of its `=` as highlight marks, `[[Note^[x]]`, which opens an inline footnote, and `[[Note[^1]x]]`, where `x]]` is text in the editor. The reading view shows each as one link to the whole content, and `getFileCache` lists `Note%%draft`, `Note==v2==`, `Note^[x` and `Note[^1]x` as its targets.
+
+**Components:** the editor against the reading view and the metadata cache.
+
+**This parser:** fixed in the tree. The class tokenizer reproduces the editor ([phase-1.md](phase-1.md#inline-syntax)). The Lezer tree, the micromark and markdown-it adapters, `parseRemark` and `parseMetadata` read one link to the whole content, as the reading view and the metadata cache do ([syntax.md](syntax.md#inline-syntax-inside-an-internal-link)). The fix would go in the editor's mode: read an internal link's content as text up to its `]]`.
+
+**Pinned by:** `src/editor/highlight.test.ts`, "should end an internal link at a footnote reference inside it" and "should read each character of an internal link as inline markdown that leaves the state as it was"; the conformance cases named in [syntax.md](syntax.md#inline-syntax-inside-an-internal-link); and the worker oracle's rows for them.
+
+**Forum:** not posted yet (draft 30).
 
 ## Not bugs any more
 

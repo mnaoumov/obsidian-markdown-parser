@@ -85,9 +85,19 @@ const YAML = ['a: 1', 'b: [x, y]', 'c: {d: e}', 'k: "[[L|x]]"', 'k: "[[ |a]]"', 
 
 /*
  * Documents the piece sets do not reach, kept whole: list items and quotes nested in each other, a tab between quote
- * levels included, whose list items the projection once had to be measured on by hand.
+ * levels included, whose list items the projection once had to be measured on by hand, and a `%%` inside an internal
+ * link's content, where the editor opens a comment.
  */
-const PINNED = ['- > 1. first', '- >\t> 1. a', '> -\t> 1. a', '- > - > 1. a\n  > b', '1. > - a\n   > b', '- > 1. a\n  > 2. b'];
+const PINNED = [
+  '- > 1. first',
+  '- >\t> 1. a',
+  '> -\t> 1. a',
+  '- > - > 1. a\n  > b',
+  '1. > - a\n   > b',
+  '- > 1. a\n  > 2. b',
+  '[[a%%b]]',
+  '[[a%%b]]%%'
+];
 
 /*
  * The piece sets: syntax alone, syntax among blocks and lists, syntax inside quotes, headings, markdown links and

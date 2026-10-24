@@ -61,7 +61,7 @@ The callout and the task are [Obsidian's edits](#obsidians-edits) to `blockquote
 
 ## Where the worker and the editor differ
 
-`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 33 of its 42 cases as the editor does. The other 9 are places where the worker reads the syntax differently, each checked against the worker itself, or for a highlight, which `CachedMetadata` does not list, against the reading view of Obsidian 1.14.5:
+`src/remark/conformance.test.ts` reads the conformance corpus, which follows the editor, with the engine, on the nodes both have: a task compared on its marker and a callout on its type, since the tree has no node for either. The engine reads 38 of its 47 cases as the editor does. The other 9 are places where the worker reads the syntax differently, each checked against the worker itself, or for a highlight, which `CachedMetadata` does not list, against the reading view of Obsidian 1.14.5:
 
 | Case | The worker |
 | --- | --- |

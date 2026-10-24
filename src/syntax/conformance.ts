@@ -78,6 +78,39 @@ export const CONFORMANCE_CASES: readonly ConformanceCase[] = [
     name: 'internal link content may hold a ]'
   },
   {
+    expected: [[N.InternalLink, '[[a==b==]]'], [N.InternalLinkMark, '[['], [N.InternalLinkPath, 'a==b=='], [N.InternalLinkMark, ']]']],
+    markdown: '[[a==b==]]',
+    name: 'internal link content holds no highlight'
+  },
+  {
+    expected: [[N.InternalLink, '[[a%%b%%c]]'], [N.InternalLinkMark, '[['], [N.InternalLinkPath, 'a%%b%%c'], [N.InternalLinkMark, ']]']],
+    markdown: '[[a%%b%%c]]',
+    name: 'internal link content holds no comment'
+  },
+  {
+    expected: [
+      [N.InternalLink, '[[a%%b]]'],
+      [N.InternalLinkMark, '[['],
+      [N.InternalLinkPath, 'a%%b'],
+      [N.InternalLinkMark, ']]'],
+      [N.Comment, '%%c%%'],
+      [N.CommentMark, '%%'],
+      [N.CommentMark, '%%']
+    ],
+    markdown: '[[a%%b]] %%c%%',
+    name: 'a %% inside internal link content does not pair with one after the link'
+  },
+  {
+    expected: [[N.InternalLink, '[[a^[b]]'], [N.InternalLinkMark, '[['], [N.InternalLinkPath, 'a^[b'], [N.InternalLinkMark, ']]']],
+    markdown: '[[a^[b]]',
+    name: 'internal link content holds no inline footnote'
+  },
+  {
+    expected: [[N.InternalLink, '[[a[^b]c]]'], [N.InternalLinkMark, '[['], [N.InternalLinkPath, 'a[^b]c'], [N.InternalLinkMark, ']]']],
+    markdown: '[[a[^b]c]]',
+    name: 'internal link content holds no footnote reference'
+  },
+  {
     expected: [],
     markdown: '[[open\nclose]]',
     name: 'internal link content holds no line break'
