@@ -6,9 +6,11 @@
  * the forum, each with the markdown and what Obsidian gave for it. Every value is the spec's, a reference
  * implementation's or Obsidian's own output: nothing of this repository's parser goes into a case. A quirk probe's
  * `referenceHtml` comes from `commonmark.js` or `cmark-gfm` (`reference-html.ts`), and the one value built here is a
- * metadata issue's `expectedMetadata`, which is the worker's own output with the fault taken out.
+ * metadata issue's `expectedMetadata`, which is the worker's own output with the fault taken out. The parser only sorts
+ * the worker documents the worker threw on by their trigger, which picks each one's forum issue and note.
  */
 
+import type { WorkerFailureTrigger } from '../metadata/link-path.ts';
 import type {
   EditingMode,
   ForumIssueFile,
@@ -23,6 +25,7 @@ import type { SpecOracleFile } from './spec-oracle-file.ts';
 import type { SpecDifference } from './spec-quirks.ts';
 import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
+import { workerFailureOf } from '../metadata/metadata.ts';
 import {
   EDITING_MODES_VS_READING_VIEW_SAMPLES,
   METADATA_ISSUE_SAMPLES
@@ -148,7 +151,7 @@ export interface MetadataCase {
 /**
  * A note whose metadata the worker drops or misplaces.
  */
-export interface MetadataIssueCase {
+export interface MetadataFailingCase {
   /**
    * The metadata the note should have; absent where what it should be is not clear.
    */
@@ -160,7 +163,7 @@ export interface MetadataIssueCase {
   readonly forumUrl: string;
 
   /**
-   * The case id, `<issue>-<sample>`.
+   * The case id: a worker document's id in the full file, or `<issue>-<sample>` for a forum sample.
    */
   readonly id: string;
 
@@ -366,9 +369,9 @@ export interface TestCaseSuites {
   readonly metadata: TestCaseSuite<MetadataCase>;
 
   /**
-   * The notes whose metadata the worker drops or misplaces.
+   * The notes whose metadata the worker drops or misplaces: the worker documents it throws on, and the forum samples.
    */
-  readonly metadataCacheIssues: TestCaseSuite<MetadataIssueCase>;
+  readonly metadataFailing: TestCaseSuite<MetadataFailingCase>;
 }
 
 const SPEC_SUITE_NAMES: Readonly<Record<SpecCase['suite'], string>> = {
@@ -387,6 +390,23 @@ const NO_SPEC_SUITE_ABOUT: Readonly<Record<QuirkProbeRead['preset'], string>> = 
 const NO_SPEC_REFERENCE_SPEC: Readonly<Record<QuirkProbeRead['preset'], string>> = {
   commonmark: 'all 652 examples of the CommonMark 0.31.2 spec',
   gfm: 'all 22 extension examples of the GFM 0.29.0.gfm.13 spec, run with the extensions the spec\'s tests use (table, autolink, tagfilter, strikethrough, tasklist)'
+};
+
+// The forum issue a trigger of a worker throw was reported as, and the note of a worker document it throws on.
+interface WorkerFailureIssue {
+  readonly issue: string;
+  readonly note: string;
+}
+
+const WORKER_FAILURE_ISSUES: Readonly<Record<WorkerFailureTrigger, WorkerFailureIssue>> = {
+  blankLinkDestination: {
+    issue: 'issue-1',
+    note: 'A property value that is a markdown link with an empty or blank destination makes the worker throw, so the note has no metadata at all.'
+  },
+  hasOwnPropertyKey: {
+    issue: 'issue-2',
+    note: 'A property named `hasOwnProperty`, at any depth, makes the worker throw, so the note has no metadata at all.'
+  }
 };
 
 const QUIRK_NOTES: Readonly<Record<string, string>> = {
@@ -429,7 +449,7 @@ export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile
     gfmNoSpecFailing: buildNoSpecSuite(probes, 'gfm', gfmReference.meta.implementation, (markdown) => gfmReferenceHtml(gfmReference, markdown)),
     livePreviewAndSourceModeVsReadingView: buildLivePreviewAndSourceModeVsReadingViewSuite(forum),
     metadata: buildMetadataSuite(worker),
-    metadataCacheIssues: buildMetadataIssueSuite(forum)
+    metadataFailing: buildMetadataFailingSuite(worker, forum)
   };
 }
 
@@ -461,9 +481,26 @@ function buildLivePreviewAndSourceModeVsReadingViewSuite(forum: ForumIssueFile):
   };
 }
 
-function buildMetadataIssueSuite(forum: ForumIssueFile): TestCaseSuite<MetadataIssueCase> {
+// The worker documents the worker threw on, each with the forum issue of its trigger, then the forum samples.
+function buildMetadataFailingSuite(worker: WorkerMetadataOracleFile, forum: ForumIssueFile): TestCaseSuite<MetadataFailingCase> {
   const obsidianVersion = requireVersion(forum.meta.appVersion);
-  const cases = METADATA_ISSUE_SAMPLES.map((sample): MetadataIssueCase => {
+  const throws = buildMetadataSuite(worker).cases.filter((testCase) => testCase.metadata === null).map((testCase): MetadataFailingCase => {
+    const failure = workerFailureOf(testCase.markdown);
+    if (failure === null) {
+      throw new Error(`The worker threw on ${testCase.id}, and no known trigger explains it`);
+    }
+    const { issue, note } = WORKER_FAILURE_ISSUES[failure.trigger];
+    return {
+      forumUrl: forumUrlOf(issue),
+      id: testCase.id,
+      issue,
+      markdown: testCase.markdown,
+      metadata: testCase.metadata,
+      note: `${note} No stand-in of this document was read, so it has no expected metadata; the samples of ${issue} carry it.`,
+      obsidianVersion: testCase.obsidianVersion
+    };
+  });
+  const samples = METADATA_ISSUE_SAMPLES.map((sample): MetadataFailingCase => {
     const { metadata } = forumRead(forum, sample.markdown);
     const standIn = sample.standIn === undefined ? null : forumRead(forum, sample.standIn).metadata;
     return {
@@ -478,8 +515,8 @@ function buildMetadataIssueSuite(forum: ForumIssueFile): TestCaseSuite<MetadataI
     };
   });
   return {
-    about: 'Notes whose metadata Obsidian\'s metadata worker drops or misplaces, each reported on the Obsidian forum (`forumUrl`). `metadata` is the CachedMetadata the worker posted, as JSON with its key order, or null where it threw and the note lost all its metadata. `expectedMetadata`, where what the note should give is clear, is that metadata as it should be, built from the worker\'s own output as `note` says; it is absent where the right answer is the team\'s call.',
-    cases,
+    about: 'Notes whose metadata Obsidian\'s metadata worker drops or misplaces, each under the issue reported on the Obsidian forum (`issue`, `forumUrl`): first every document of the full file the worker threw on, under the same id, then the forum samples, `<issue>-<sample>`. `metadata` is the CachedMetadata the worker posted, as JSON with its key order, or null where it threw and the note lost all its metadata. `expectedMetadata`, where what the note should give is clear, is that metadata as it should be, built from the worker\'s own output as `note` says; it is absent where the right answer is the team\'s call, and on the full file\'s documents, for which no stand-in was read.',
+    cases: [...throws, ...samples],
     obsidianVersion
   };
 }
@@ -592,6 +629,14 @@ function forumRead(forum: ForumIssueFile, markdown: string): ForumIssueRead {
     throw new Error(`The forum issue oracle has no read of ${JSON.stringify(markdown)}`);
   }
   return read;
+}
+
+function forumUrlOf(issue: string): string {
+  const sample = METADATA_ISSUE_SAMPLES.find((candidate) => candidate.issue === issue);
+  if (sample === undefined) {
+    throw new Error(`No forum sample of ${issue}`);
+  }
+  return sample.forumUrl;
 }
 
 function requireVersion(version: null | string): string {

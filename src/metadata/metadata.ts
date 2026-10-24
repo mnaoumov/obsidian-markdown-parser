@@ -117,12 +117,29 @@ const ORIGIN: RemarkPoint = { column: 1, line: 1, offset: 0 };
  * front matter string `[text]()` makes it do.
  */
 export function parseMetadata(markdown: string): CachedMetadata | null {
-  const text = new TextDecoder().decode(new TextEncoder().encode(markdown));
   try {
-    return metadataOf(text, parseRemark(text, { shouldReadSoftLineBreaksAsHard: true }));
+    return metadataOrFailure(markdown);
   } catch (error) {
     if (error instanceof WorkerFailure) {
       return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Why Obsidian's metadata worker throws on a document, where {@link parseMetadata} gives `null`.
+ *
+ * @param markdown - The document.
+ * @returns The failure, naming what makes the worker throw; `null` where the worker posts metadata.
+ */
+export function workerFailureOf(markdown: string): null | WorkerFailure {
+  try {
+    metadataOrFailure(markdown);
+    return null;
+  } catch (error) {
+    if (error instanceof WorkerFailure) {
+      return error;
     }
     throw error;
   }
@@ -366,6 +383,12 @@ function metadataOf(text: string, root: RemarkRoot): CachedMetadata {
   }
 
   return withoutEmptyFields(metadata);
+}
+
+// Throws `WorkerFailure` where the worker throws.
+function metadataOrFailure(markdown: string): CachedMetadata {
+  const text = new TextDecoder().decode(new TextEncoder().encode(markdown));
+  return metadataOf(text, parseRemark(text, { shouldReadSoftLineBreaksAsHard: true }));
 }
 
 /*
