@@ -14,6 +14,7 @@ import type { WorkerMetadataOracleFile } from './worker-metadata.ts';
 
 import {
   exampleKey,
+  readingViewDifferences,
   SPEC_DIFFERENCES,
   specDifferenceKeys
 } from './spec-quirks.ts';
@@ -189,9 +190,29 @@ export interface TestCaseSuite<Case> {
 }
 
 /**
- * The three exported suites.
+ * The exported suites.
  */
 export interface TestCaseSuites {
+  /**
+   * The CommonMark spec examples.
+   */
+  readonly commonmark: TestCaseSuite<SpecCase>;
+
+  /**
+   * The CommonMark spec examples whose reading view, with `strictLineBreaks: true`, differs from the spec.
+   */
+  readonly commonmarkDepartures: TestCaseSuite<SpecCase>;
+
+  /**
+   * The GFM spec's extension examples.
+   */
+  readonly gfm: TestCaseSuite<SpecCase>;
+
+  /**
+   * The GFM spec's extension examples whose reading view, with `strictLineBreaks: true`, differs from the spec.
+   */
+  readonly gfmDepartures: TestCaseSuite<SpecCase>;
+
   /**
    * The metadata worker documents.
    */
@@ -201,12 +222,15 @@ export interface TestCaseSuites {
    * The reading-view quirk probes.
    */
   readonly quirks: TestCaseSuite<QuirkCase>;
-
-  /**
-   * The CommonMark and GFM spec examples.
-   */
-  readonly spec: TestCaseSuite<SpecCase>;
 }
+
+const SPEC_SUITE_NAMES: Readonly<Record<SpecCase['suite'], string>> = {
+  commonmark: 'the CommonMark 0.31.2 spec',
+  gfm: 'the GFM 0.29.0.gfm.13 spec\'s extension examples'
+};
+
+// What every spec suite's cases hold, after the sentence naming its examples.
+const SPEC_SUITE_ABOUT = 'with the spec\'s HTML (`commonMarkSpecHtml`), the reading view\'s HTML with `strictLineBreaks: true` (`obsidianHtml`), with the app\'s default `strictLineBreaks: false` where that differs (`obsidianHtmlSoftBreaksAsHard`), and the metadata worker\'s CachedMetadata. `departures` explains each example whose reading view differs from the spec: `quirk` is Obsidian\'s parser reading valid markdown differently, `syntax` is Obsidian syntax, `rendering` is the sanitizer or an embed changing the parser\'s HTML, and `comparison` is the spec\'s HTML holding an unclosed tag that a DOM closes. The reading view\'s HTML is its rendered DOM, serialized, without the code block copy button, the syntax highlighting and the attributes the view adds to blocks; compare it with the spec\'s after putting both through a DOM and dropping whitespace between tags.';
 
 const QUIRK_NOTES: Readonly<Record<string, string>> = {
   autolink: 'Which `<...>` autolinks there are: Obsidian takes any scheme followed by `://`, and any non-whitespace holding an `@`.',
@@ -226,7 +250,8 @@ const QUIRK_NOTES: Readonly<Record<string, string>> = {
 };
 
 /**
- * Builds the three suites from the oracle files.
+ * Builds the suites from the oracle files. A departure suite is its full suite filtered by the reading view's HTML, so
+ * the two cannot drift apart.
  *
  * @param spec - The spec oracle.
  * @param probes - The quirk probe oracle.
@@ -234,10 +259,15 @@ const QUIRK_NOTES: Readonly<Record<string, string>> = {
  * @returns The suites.
  */
 export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile, worker: WorkerMetadataOracleFile): TestCaseSuites {
+  const specCases = buildSpecCases(spec);
+  const departing = new Set(readingViewDifferences(spec));
   return {
+    commonmark: buildSpecSuite(spec, specCases, 'commonmark', null),
+    commonmarkDepartures: buildSpecSuite(spec, specCases, 'commonmark', departing),
+    gfm: buildSpecSuite(spec, specCases, 'gfm', null),
+    gfmDepartures: buildSpecSuite(spec, specCases, 'gfm', departing),
     metadata: buildMetadataSuite(worker),
-    quirks: buildQuirkSuite(probes),
-    spec: buildSpecSuite(spec)
+    quirks: buildQuirkSuite(probes)
   };
 }
 
@@ -289,7 +319,7 @@ function buildQuirkSuite(probes: QuirkProbeFile): TestCaseSuite<QuirkCase> {
   };
 }
 
-function buildSpecSuite(spec: SpecOracleFile): TestCaseSuite<SpecCase> {
+function buildSpecCases(spec: SpecOracleFile): SpecCase[] {
   const obsidianVersion = requireVersion(spec.meta.appVersion);
   const departuresOf = new Map<string, ExportedDeparture[]>();
   for (const difference of SPEC_DIFFERENCES) {
@@ -299,7 +329,7 @@ function buildSpecSuite(spec: SpecOracleFile): TestCaseSuite<SpecCase> {
       departuresOf.set(key, departures);
     }
   }
-  const cases = spec.examples.map((read): SpecCase => {
+  return spec.examples.map((read): SpecCase => {
     const obsidianHtml = read.htmlStrict;
     const softBreaksAsHard = read.html;
     const departures = departuresOf.get(exampleKey(read));
@@ -317,8 +347,17 @@ function buildSpecSuite(spec: SpecOracleFile): TestCaseSuite<SpecCase> {
       suite: read.suite
     };
   });
+}
+
+// `departing` holds the keys of the examples to keep, or is null for the whole suite.
+function buildSpecSuite(spec: SpecOracleFile, specCases: readonly SpecCase[], suite: SpecCase['suite'], departing: null | ReadonlySet<string>): TestCaseSuite<SpecCase> {
+  const cases = specCases.filter((testCase) => testCase.suite === suite && (departing?.has(exampleKey(testCase)) ?? true));
+  const obsidianVersion = requireVersion(spec.meta.appVersion);
+  const subset = departing === null
+    ? `Every example of ${SPEC_SUITE_NAMES[suite]}`
+    : `The examples of ${SPEC_SUITE_NAMES[suite]} on which the reading view's HTML with \`strictLineBreaks: true\` (\`obsidianHtml\`) differs from the spec's, each the same case as in the full file; an example whose only departure is \`soft line breaks are hard\` matches the spec there and is left out`;
   return {
-    about: 'Every example of the CommonMark 0.31.2 spec and the extension examples of the GFM 0.29.0.gfm.13 spec, with the spec\'s HTML (`commonMarkSpecHtml`), the reading view\'s HTML with `strictLineBreaks: true` (`obsidianHtml`), with the app\'s default `strictLineBreaks: false` where that differs (`obsidianHtmlSoftBreaksAsHard`), and the metadata worker\'s CachedMetadata. `departures` explains each example whose reading view differs from the spec: `quirk` is Obsidian\'s parser reading valid markdown differently, `syntax` is Obsidian syntax, `rendering` is the sanitizer or an embed changing the parser\'s HTML, and `comparison` is the spec\'s HTML holding an unclosed tag that a DOM closes. The reading view\'s HTML is its rendered DOM, serialized, without the code block copy button, the syntax highlighting and the attributes the view adds to blocks; compare it with the spec\'s after putting both through a DOM and dropping whitespace between tags.',
+    about: `${subset}, ${SPEC_SUITE_ABOUT}`,
     cases,
     obsidianVersion
   };
