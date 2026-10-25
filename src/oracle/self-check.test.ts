@@ -19,6 +19,7 @@ import {
   judgePadding,
   judgeRename,
   judgeRender,
+  judgeShape,
   judgeShift,
   reduceFinding
 } from './self-check.ts';
@@ -29,6 +30,7 @@ const SAMPLES_PER_KEY = 5;
 // The families the judges must find from generated notes alone: every bug reported from a note somebody wrote by hand,
 // and the known and by-design behaviours, so their verdicts can be redone from the judges' own output.
 const REDISCOVERED_FAMILIES: readonly string[] = [
+  'blocks-record',
   'colored-highlight-residue',
   'comment-footnote-backlink',
   'comment-indexed',
@@ -41,10 +43,11 @@ const REDISCOVERED_FAMILIES: readonly string[] = [
   'heading-raw-source',
   'lazy-callout-offset',
   'unclosed-comment-swallows',
-  'undefined-footnote-brackets'
+  'undefined-footnote-brackets',
+  'utf16-columns'
 ];
 
-// Notes every relation holds on, but the escaped closer of their highlights, links and embeds.
+// Notes every relation holds on, but the escaped closer of their highlights, links and embeds, and the shape of the API.
 const CLEAN_NOTES: readonly string[] = [
   '# Heading\n\nText with [[target]], ![[image.png]], #tag and ==mark==.\n',
   '- a [[target]]\n- b #tag\n  - c\n',
@@ -60,7 +63,7 @@ function keysOf(findings: readonly SelfCheckFinding[]): string[] {
 describe('the self-check judges', () => {
   it('flag nothing but the escaped closer on notes every other relation holds on', () => {
     const keys = CLEAN_NOTES.flatMap((note) => keysOf(judgeNote(note)).map((key) => `${note}: ${key}`));
-    expect(keys.filter((key) => !/: escape:(?:highlight|internalLink|embed)-closer$/u.test(key))).toEqual([]);
+    expect(keys.filter((key) => !/: (?:escape:(?:highlight|internalLink|embed)-closer|shape:.*)$/u.test(key))).toEqual([]);
   });
 
   it('see a link on a line that opens a block comment placed 2 characters early', () => {
@@ -94,6 +97,11 @@ describe('the self-check judges', () => {
   it('see a backslash before a closing delimiter ignored and one before an opening delimiter honored', () => {
     expect(keysOf(judgeEscapes('a ==text== b [[target]]\n'))).toEqual(['escape:highlight-closer', 'escape:internalLink-closer']);
     expect(keysOf(judgeEscapes('a $x$ b\n'))).toEqual([]);
+  });
+
+  it('see blocks as a record and columns counted in UTF-16 code units', () => {
+    expect(keysOf(judgeShape('para [[target]] ^blockid\n'))).toEqual(['shape:blocks-record', 'shape:columns-astral', 'shape:columns-combining']);
+    expect(keysOf(judgeShape('[[target]] at the start\n'))).toEqual([]);
   });
 
   it('keep every position when a paragraph is prepended', () => {
