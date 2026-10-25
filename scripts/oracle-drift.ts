@@ -8,7 +8,7 @@
  * between the versions (changed), and those only the newer read holds, which a corpus grown since the older read adds
  * (new). It then scores the parser on both versions: the editor's classes on every class-span document and spec
  * example, and the whole `CachedMetadata` on every worker document and spec example, and both on every forum issue
- * and editing mode document. Last, it runs the suites that
+ * and editing mode document, and the cache on every live surface note. Last, it runs the suites that
  * check the parser against Obsidian on the newer version's files (`src/oracle/oracle-location.ts`), which covers the
  * reading view's HTML of the spec and the quirk probes.
  *
@@ -33,6 +33,10 @@ import type {
   ForumIssueRead
 } from '../src/oracle/forum-issues.ts';
 import type {
+  LiveSurfaceFile,
+  LiveSurfaceRead
+} from '../src/oracle/live-surfaces.ts';
+import type {
   OracleDocument,
   OracleFile
 } from '../src/oracle/oracle-file.ts';
@@ -49,6 +53,7 @@ import {
   classOracleFileName,
   editingModesOracleFileName,
   forumIssueOracleFileName,
+  liveSurfacesOracleFileName,
   ORACLE_DIRECTORY_VARIABLE,
   ORACLE_VERSION_VARIABLE,
   PINNED_OBSIDIAN_VERSION,
@@ -242,6 +247,33 @@ function listKeys(keys: readonly string[]): string {
  * The documents the parser differs on in the newer read and not in the older one: those both read, where the newer
  * reading drifted from the parser, and those only the newer read holds, which no oracle of the older version covered.
  */
+function liveSurfaceRows(): DriftRow[] {
+  const from = readOracleFile(liveSurfacesOracleFileName(fromVersion), fromDirectory) as LiveSurfaceFile;
+  const to = readOracleFile(liveSurfacesOracleFileName(toVersion), toDirectory) as LiveSurfaceFile;
+  function readings(file: LiveSurfaceFile, field: (read: LiveSurfaceRead) => unknown): Readings {
+    return new Map(file.reads.map((read) => [read.markdown, JSON.stringify([field(read)])]));
+  }
+  function metadataItems(file: LiveSurfaceFile): MetadataItem[] {
+    return file.reads.map((read) => ({ key: read.markdown, markdown: read.markdown, metadata: read.cache }));
+  }
+  function row(name: string, field: (read: LiveSurfaceRead) => unknown): DriftRow {
+    return compareReadings(`live surfaces, ${name}`, readings(from, field), readings(to, field));
+  }
+  return [
+    {
+      ...compareReadings('live surfaces, cache', readings(from, (read) => read.cache), readings(to, (read) => read.cache)),
+      parserFrom: scoreMetadata(metadataItems(from)),
+      parserTo: scoreMetadata(metadataItems(to))
+    },
+    row('cache after opening', (read) => read.cacheAfterOpen),
+    row('resolvedLinks and unresolvedLinks', (read) => [read.resolvedLinks, read.unresolvedLinks]),
+    row('Backlinks', (read) => read.backlinks),
+    row('Outline', (read) => read.outline),
+    row('renameFile and back', (read) => [read.renamedText, read.roundTripText]),
+    row('processFrontMatter', (read) => [read.processedText, read.processError])
+  ];
+}
+
 function parserMissesOf(row: DriftRow): ParserMisses {
   const fromFailing = new Set(row.parserFrom?.failing);
   const misses = (row.parserTo?.failing ?? []).filter((key) => !fromFailing.has(key));
@@ -333,7 +365,8 @@ const oracles: readonly OracleSource[] = [
   { fileNameOf: quirkProbeOracleFileName, name: 'quirk probes', rowsOf: (): DriftRow[] => [probeRow()] },
   { fileNameOf: workerMetadataOracleFileName, name: 'worker metadata', rowsOf: (): DriftRow[] => [workerRow()] },
   { fileNameOf: forumIssueOracleFileName, name: 'forum issues', rowsOf: forumRows },
-  { fileNameOf: editingModesOracleFileName, name: 'editing modes', rowsOf: editingModesRows }
+  { fileNameOf: editingModesOracleFileName, name: 'editing modes', rowsOf: editingModesRows },
+  { fileNameOf: liveSurfacesOracleFileName, name: 'live surfaces', rowsOf: liveSurfaceRows }
 ];
 for (const { fileNameOf, name, rowsOf } of oracles) {
   if (hasBoth(fileNameOf)) {

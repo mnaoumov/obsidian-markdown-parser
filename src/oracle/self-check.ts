@@ -534,6 +534,17 @@ export function reduceFinding(text: string, key: string): string {
   return hasKey(text) ? minimizeNote(text, hasKey) : text;
 }
 
+/**
+ * The text a node shows in the reading view: its HTML with the tags taken out and the five escapes HTML uses decoded.
+ *
+ * @param node - The node.
+ * @returns The text.
+ */
+export function shownText(node: RemarkNode): string {
+  const html = renderRemarkHtml({ children: [node], type: 'root' });
+  return html.replaceAll(/<[^>]*>/gu, '').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#x27;', '\'').replaceAll('&amp;', '&');
+}
+
 // The start offsets of a field's items in the cache; an inline footnote with content, which the cache lists among the footnotes from its content on, counts as a reference at its `^[`.
 function cacheOffsets(metadata: CachedMetadata, field: 'embeds' | 'footnoteRefs' | 'headings' | 'links' | 'tags'): number[] {
   const offsets = (metadata[field] ?? []).map((item) => item.position.start.offset);
@@ -681,7 +692,6 @@ function rangeOf(node: RemarkNode): null | Range {
   const { position } = node;
   return position === undefined ? null : { from: position.start.offset, to: position.end.offset };
 }
-
 function shiftValue(value: unknown, by: number, field: string): unknown {
   if (Array.isArray(value)) {
     return value.map((item: unknown) => shiftValue(item, by, field));
@@ -702,11 +712,6 @@ function shiftValue(value: unknown, by: number, field: string): unknown {
     shifted[key] = shiftValue(item, by, field);
   }
   return shifted;
-}
-// The text a node shows in the reading view: its HTML with the tags taken out and the five escapes HTML uses decoded.
-function shownText(node: RemarkNode): string {
-  const html = renderRemarkHtml({ children: [node], type: 'root' });
-  return html.replaceAll(/<[^>]*>/gu, '').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#x27;', '\'').replaceAll('&amp;', '&');
 }
 
 function structureOf(metadata: CachedMetadata): Map<string, string> {
