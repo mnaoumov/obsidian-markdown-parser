@@ -289,12 +289,18 @@ export function judgeIndependence(text: string): SelfCheckFinding[] {
     if (index === 0 || chunk.trim() === '') {
       continue;
     }
-    const alone = parseMetadata(chunk);
+    // Front matter opens only a note, so a block that would read as front matter alone is read after a blank line.
+    let prefix = '';
+    let alone = parseMetadata(chunk);
+    if (alone?.frontmatterPosition !== undefined) {
+      prefix = '\n\n';
+      alone = parseMetadata(prefix + chunk);
+    }
     if (alone === null) {
       continue;
     }
     const inContext = independenceFacts(whole, start, start + chunk.length);
-    const byItself = independenceFacts(alone, 0, chunk.length);
+    const byItself = independenceFacts(alone, prefix.length, prefix.length + chunk.length);
     for (const [field, facts] of byItself) {
       const contextFacts = inContext.get(field) ?? [];
       if (facts.join('\n') !== contextFacts.join('\n')) {
