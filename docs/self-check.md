@@ -10,7 +10,7 @@ npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--
 
 ## The relations
 
-`src/oracle/self-check.ts` judges a note with nine relations:
+`src/oracle/self-check.ts` judges a note with ten relations:
 
 | Judge | The relation |
 | --- | --- |
@@ -23,6 +23,7 @@ npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--
 | `render` | The cache and Reading view find the same headings, links, embeds, tags and footnote references, and a heading has the same text in both. An item the cache finds inside a comment, which Reading view hides, gets a key of its own. A colored highlight shows nothing of its color marker. |
 | `fidelity` | A Reading view text node holds its own source, once backslash escapes are taken out, container marks are dropped and whitespace is collapsed. |
 | `conservation` | Every word of the source is either shown, or hidden by something that hides it by design: a comment, the front matter, a link destination, the lines of a definition up to a blank line, or a callout's type. |
+| `shape` | Every item field of the cache is a list, as `links` is. A column counts graphemes, as a reader counts characters: inserting an emoji and a space, or a letter with a combining mark and a space, before the first link, embed, tag or footnote reference that follows a space moves its column by 2, the graphemes it inserts. A correct parser could count either unit; the judge asks for graphemes so that the API's choice of UTF-16 code units, the unit of `offset` and of CodeMirror, is found and recorded rather than assumed. |
 
 The cache is `parseMetadata`, which gives the metadata worker's output exactly on every oracle document, and Reading view is the `remark-parse` 8 engine, which gives its HTML. So the judges run offline and at fuzzing speed. 4,000 generated notes plus the 3,284 worker oracle documents take about 30 s. Whatever the judges flag is Obsidian's behaviour, as far as the oracles measure it.
 
@@ -46,7 +47,7 @@ Each reduced note goes into a family of `src/oracle/self-check-families.ts`, and
 
 ## The last run
 
-On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,284 notes) gave 62 keys, all in 23 families:
+On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,284 notes) gave 65 keys, all in 25 families:
 
 | Family | Verdict | What it is |
 | --- | --- | --- |
@@ -66,6 +67,8 @@ On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,28
 | `unclosed-fence-swallows` | expected | An unclosed fence or `$$` runs to the end. |
 | `comment-indexed` | expected | Links, embeds and tags inside a comment are indexed. |
 | `duplicate-block-id` | expected | A block id used twice names only the first block that carries it. |
+| `blocks-record` | expected | `blocks` is a record keyed by block id, where every other item field is a list, as `obsidian.d.ts` declares it. |
+| `utf16-columns` | expected | A column counts UTF-16 code units, not graphemes: an emoji or a combining mark before a link moves it one column more than a reader sees. |
 | `escaped-closer-other` | minor | The escaped closer on `%%` and `~~`. |
 | `undecodable-destination` | minor | A link whose destination `decodeURI` refuses is shown but not cached. |
 | `footnote-in-inline-footnote` | minor | A footnote reference inside an inline footnote shows as nothing. |
@@ -105,6 +108,5 @@ The notes cannot be reduced offline, since only the app reads them, so each find
 ## What the judges cannot find yet
 
 - **A disagreement with other parsers.** A GFM task item whose body is read again as blocks, and any character accepted as a task status, are wrong only by the GFM spec. Finding them needs a differential against the reference engines.
-- **API shape.** `blocks` being a record, and columns counting UTF-16 code units, are design choices, not inconsistencies.
 - **Live surfaces beyond the sample.** The live judges see only the 400 notes the oracle read, and only the four targets they link to, so a shape that needs another note, a folder or a name clash to show is out of their reach.
 - **Editor-only behaviour,** such as a `%%` that opens a comment in a list item, belongs to the mode judge.

@@ -271,6 +271,20 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
   },
   {
     forumUrl: null,
+    id: 'blocks-record',
+    kind: 'expected',
+    matches: (key) => key === 'shape:blocks-record',
+    note: '`blocks` is a record keyed by block id, where every other item field of `CachedMetadata` is a list: API design, as `obsidian.d.ts` declares it, so a consumer walks it with `Object.values`.'
+  },
+  {
+    forumUrl: null,
+    id: 'utf16-columns',
+    kind: 'expected',
+    matches: (key) => key.startsWith('shape:columns-'),
+    note: 'A column counts UTF-16 code units, not graphemes: an emoji before a link moves it 2 columns, a letter with a combining mark 2 where a reader sees 1. API design, the same unit as `offset` and as CodeMirror\'s positions.'
+  },
+  {
+    forumUrl: null,
     id: 'tree-position',
     kind: 'judge',
     matches: (key) => ['conservation', 'fidelity'].includes(judgeOf(key)),

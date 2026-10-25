@@ -14,6 +14,7 @@
  * - `render`: the cache and the reading view find the same headings, links, embeds, tags and footnote references.
  * - `fidelity`: the reading view's text is its source, escapes and container marks aside.
  * - `conservation`: every word of the source is shown, or hidden by a construct that hides it by design.
+ * - `shape`: every item field of the cache is a list, and a column counts graphemes, as a reader counts characters.
  *
  * The cache is `parseMetadata`, equal to the metadata worker's output on every oracle document, and the reading view is
  * the `remark-parse` 8 engine, equal to the reading view's HTML; so each judge runs offline, at fuzzing speed, and what
@@ -60,12 +61,12 @@ export interface SelfCheckFinding {
 /**
  * A self-check judge.
  */
-export type SelfCheckJudge = 'conservation' | 'escape' | 'fidelity' | 'independence' | 'offset' | 'padding' | 'rename' | 'render' | 'shift';
+export type SelfCheckJudge = 'conservation' | 'escape' | 'fidelity' | 'independence' | 'offset' | 'padding' | 'rename' | 'render' | 'shape' | 'shift';
 
 /**
  * Every judge, in the order {@link judgeNote} runs them.
  */
-export const SELF_CHECK_JUDGES: readonly SelfCheckJudge[] = ['offset', 'shift', 'padding', 'rename', 'escape', 'independence', 'render', 'fidelity', 'conservation'];
+export const SELF_CHECK_JUDGES: readonly SelfCheckJudge[] = ['offset', 'shift', 'padding', 'rename', 'escape', 'independence', 'render', 'fidelity', 'conservation', 'shape'];
 
 /**
  * What the shift relation prepends.
@@ -82,6 +83,12 @@ export const PADDING_LENGTHS: readonly number[] = [1100, 4200];
  * The link a simulated rename writes.
  */
 export const RENAMED_LINK = '[[renamed]]';
+
+/**
+ * What the shape judge's column relation inserts: one grapheme and a space each, the grapheme an astral character of
+ * two UTF-16 code units, or a letter with a combining mark.
+ */
+export const COLUMN_PROBES: Readonly<Record<'astral' | 'combining', string>> = { astral: '\u{1F600} ', combining: 'é ' };
 
 interface Delimiters {
   readonly closer: string;
@@ -321,7 +328,8 @@ export function judgeNote(text: string): SelfCheckFinding[] {
     ...judgeIndependence(text),
     ...judgeRender(text, metadata, tree),
     ...judgeFidelity(text, tree),
-    ...judgeConservation(text, tree)
+    ...judgeConservation(text, tree),
+    ...judgeShape(text, metadata)
   ]);
 }
 
@@ -486,6 +494,52 @@ export function judgeRender(text: string, metadata: CachedMetadata | null = pars
       findings.push({ detail: `the cache's heading ${JSON.stringify(cached.heading)} shows as ${JSON.stringify(shown)}`, judge: 'render', key: 'render:heading-text' });
     }
   });
+  return findings;
+}
+
+/**
+ * The shape judge: every item field of the cache is a list, as `links` is, and a column counts graphemes, as a reader
+ * counts characters: inserting one of {@link COLUMN_PROBES} before the first inline construct after a space moves its
+ * column by the probe's graphemes.
+ *
+ * @param text - The note.
+ * @param metadata - Its metadata.
+ * @returns The findings, keyed by the field that is no list, or by the probe whose column moves otherwise.
+ */
+export function judgeShape(text: string, metadata: CachedMetadata | null = parseMetadata(text)): SelfCheckFinding[] {
+  if (metadata === null) {
+    return [];
+  }
+  const findings: SelfCheckFinding[] = [];
+  for (const field of [...ITEM_FIELDS, 'frontmatterLinks', 'sections'] as const) {
+    const value: unknown = metadata[field];
+    if (value !== undefined && !Array.isArray(value)) {
+      findings.push({ detail: `${field} is a record keyed by ${JSON.stringify(Object.keys(value as object))}, not a list`, judge: 'shape', key: `shape:${field}-record` });
+    }
+  }
+  const inline = (['links', 'embeds', 'tags', 'footnoteRefs'] as const).flatMap((field) => (metadata[field] ?? []).map((item) => ({ field, start: item.position.start })));
+  const target = inline.find(({ start }) => start.col > 0 && /[ \t]/u.test(text.charAt(start.offset - 1)));
+  if (target === undefined) {
+    return findings;
+  }
+  const segmenter = new Intl.Segmenter();
+  for (const kind of ['astral', 'combining'] as const) {
+    const probe = COLUMN_PROBES[kind];
+    const probed = parseMetadata(text.slice(0, target.start.offset) + probe + text.slice(target.start.offset));
+    const moved = (probed?.[target.field] ?? []).find((item) => item.position.start.offset === target.start.offset + probe.length);
+    if (moved === undefined) {
+      continue;
+    }
+    const graphemes = [...segmenter.segment(probe)].length;
+    const shift = moved.position.start.col - target.start.col;
+    if (shift !== graphemes) {
+      findings.push({
+        detail: `inserting ${JSON.stringify(probe)}, ${String(graphemes)} graphemes, moves the column of ${target.field} by ${String(shift)}`,
+        judge: 'shape',
+        key: `shape:columns-${kind}`
+      });
+    }
+  }
   return findings;
 }
 
@@ -674,6 +728,9 @@ function judgeOne(judge: SelfCheckJudge, text: string): SelfCheckFinding[] {
     }
     case 'render': {
       return judgeRender(text);
+    }
+    case 'shape': {
+      return judgeShape(text);
     }
     case 'shift': {
       return judgeShift(text);
