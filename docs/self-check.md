@@ -131,8 +131,7 @@ The notes cannot be reduced offline, since only the app reads them, so each find
 
 | Family | Verdict | Findings | What it is |
 | --- | --- | --- | --- |
-| `first-open-offset` | bug, not reported | 3 | Opening a note with a table in the editor rewrote its cache with a link offset 76 past its line and column, the note's length plus 1, and the Backlinks view then marked the wrong span. It hit the first note opened, and the second note's Backlinks. |
-| `rename-reformats-table` | bug, not reported | 2 | A rename of a link in a table re-pads the whole table, and splits a `[[target\|alias]]` in a cell at its `\|` into a column of its own. |
+| `editor-reformats-table` | bug, not reported | 5 | Live Preview writes every table back to the file padded to its column widths, with no edit: when the note is left for another one, or already on opening when a math span or a fenced code block with a language follows the table. A cell with more `\|` than the header gets a header column, so an unescaped `[[target\|alias]]` is split in two. The cache, the Backlinks view and the rename then read the padded text: a link offset moved by the padding, a Backlinks span marked on it, and a rename body that changed outside its links. A rename of a note never opened leaves its table alone. |
 | `comment-line-offset` | bug, [t/119821](https://forum.obsidian.md/t/119821) | 17 | The real rename corrupts a link on a line that opens a `%%` block comment, as the simulated one predicts. |
 | `front-matter-restyled` | expected | 114 | `processFrontMatter`, and a rename that updates a front matter link, write the whole front matter back in the YAML library's style (`tags: [a]` becomes a block list). |
 | `outline-embed-source` | minor | 14 | An embed or image in a heading shows in the Outline as its link path. |

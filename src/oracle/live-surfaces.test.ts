@@ -28,13 +28,12 @@ import { liveSurfaceFamilyCounts } from './release-differential.ts';
 // The families the pinned reading falls into: a family that stops being found, or one that appears, fails the suite.
 const FOUND_FAMILIES: readonly string[] = [
   'comment-line-offset',
-  'first-open-offset',
+  'editor-reformats-table',
   'front-matter-restyled',
   'outline-embed-source',
   'outline-escaped-bracket',
   'outline-inline-footnote',
-  'outline-undefined-reference',
-  'rename-reformats-table'
+  'outline-undefined-reference'
 ];
 
 const file = readOracleFile(liveSurfacesOracleFileName()) as LiveSurfaceFile;
