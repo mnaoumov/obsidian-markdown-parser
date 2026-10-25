@@ -314,17 +314,10 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
   },
   {
     forumUrl: null,
-    id: 'first-open-offset',
+    id: 'editor-reformats-table',
     kind: 'bug',
-    matches: (key, markdown) => (key === 'openFile:cache' || judgeOf(key) === 'backlinks') && TABLE_ROW_PATTERN.test(markdown),
-    note: 'Opening a note with a table in the editor can rewrite its cache with a link offset that disagrees with its line and column, by the note\'s length plus 1; the Backlinks view then marks the wrong span. Seen on the first note opened in a session, and in the Backlinks view of the second.'
-  },
-  {
-    forumUrl: null,
-    id: 'rename-reformats-table',
-    kind: 'bug',
-    matches: (key, markdown) => key === 'renameFile:body' && TABLE_ROW_PATTERN.test(markdown),
-    note: 'Renaming a file a link in a table points at rewrites the whole table, padding every cell to its column\'s width, and a `[[target|alias]]` in a cell is split at its `|` into a column of its own: the rename changes text it does not own.'
+    matches: (key, markdown) => (key === 'openFile:cache' || key === 'renameFile:body' || judgeOf(key) === 'backlinks') && TABLE_ROW_PATTERN.test(markdown),
+    note: 'Live Preview writes every table of a note back to the file padded to its column widths, with no edit: when the note is left for another one, or already on opening when a math span or a fenced code block with a language follows the table. A cell with more `|` than the header gets a header column of its own, so an unescaped `[[target|alias]]` is split into two cells. The cache, the Backlinks view and a later rename then read the padded text, which is what shifts their offsets; a rename of a note never opened leaves its table as it is.'
   },
   {
     forumUrl: null,
