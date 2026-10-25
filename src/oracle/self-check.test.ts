@@ -89,6 +89,11 @@ describe('the self-check judges', () => {
     expect(keysOf(judgeIndependence(note))).toEqual(['independence:sections']);
   });
 
+  it('read a block that would open front matter alone after a blank line, as it stands in the note', () => {
+    expect(judgeIndependence('Intro\n\n---\nk: v\n---\n')).toEqual([]);
+    expect(judgeIndependence('\n\n---\nk: v\n---')).toEqual([]);
+  });
+
   it('see an undefined footnote reference lose its brackets', () => {
     expect(keysOf(judgeFidelity('A claim[^source] I will cite later.\n'))).toEqual(['fidelity:paragraph']);
   });
