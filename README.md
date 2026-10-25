@@ -41,8 +41,9 @@ Beside matching Obsidian, the oracles and engines make a test suite for Obsidian
 1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([docs/spec-suites.md](docs/spec-suites.md)).
 2. **The mode judge** compares the editor (by `editor` we mean `Source mode` or `Live Preview`) with Reading view on every oracle document (`npm run mode-judge`, [docs/mode-judge.md](docs/mode-judge.md)).
 3. **The self-check judges** find where Obsidian is wrong but consistent with itself. They check reference-free relations over notes from a grammar of every construct: positions slice their construct, a prefix shifts everything, padding keeps the structure, a rename leaves the rest alone, an escape removes its construct, a block reads the same alone and in context, and the cache agrees with Reading view (`npm run self-check`, [docs/self-check.md](docs/self-check.md)).
+4. **The engine differential** finds where Obsidian is wrong only by the spec. It renders the grammar's CommonMark and GFM notes with Reading view's engine and with `micromark`, `markdown-it` and `commonmark.js`, and flags where the references agree and Obsidian does not (`npm run self-check -- --engines`, [docs/self-check.md](docs/self-check.md#the-engine-differential)).
 
-`npm run oracle:refresh` re-reads the oracles from a new Obsidian build, and the three finders then run on that build's behaviour.
+`npm run oracle:refresh` re-reads the oracles from a new Obsidian build, and the first three finders then run on that build's behaviour.
 
 What is ported from open-source code, what was learned by reading Obsidian's code, what was only measured, and what the oracle files hold are in [docs/provenance.md](docs/provenance.md).
 
