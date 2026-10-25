@@ -28,7 +28,7 @@ import type {
 } from '../src/oracle/forum-issues.ts';
 
 import {
-  EDITING_MODES_VS_READING_VIEW_SAMPLES,
+  EDITOR_VS_READING_VIEW_SAMPLES,
   forumIssueDocuments
 } from '../src/oracle/forum-issues.ts';
 import { connectObsidianReader } from './obsidian-reads.ts';
@@ -46,7 +46,7 @@ const { values } = parseArgs({
 const reader = await connectObsidianReader(values['obsidian-version'], 'forum-issue.md');
 
 try {
-  const editingModeSamples = new Set(EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown));
+  const editingModeSamples = new Set(EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown));
   const reads: ForumIssueRead[] = [];
   for (const markdown of forumIssueDocuments()) {
     const tree = await reader.readUntilStable(markdown);

@@ -39,7 +39,7 @@ Every oracle is pinned to Obsidian 1.14.5. To re-read all of them from another O
 Beside matching Obsidian, the oracles and engines make a test suite for Obsidian itself. Each of the bug finders below sorts what it finds into families with verdicts. Extend them rather than starting over:
 
 1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([docs/spec-suites.md](docs/spec-suites.md)).
-2. **The mode judge** compares the editing modes with Reading view on every oracle document (`npm run mode-judge`, [docs/mode-judge.md](docs/mode-judge.md)).
+2. **The mode judge** compares the editor (by `editor` we mean `Source mode` or `Live Preview`) with Reading view on every oracle document (`npm run mode-judge`, [docs/mode-judge.md](docs/mode-judge.md)).
 3. **The self-check judges** find where Obsidian is wrong but consistent with itself. They check reference-free relations over notes from a grammar of every construct: positions slice their construct, a prefix shifts everything, padding keeps the structure, a rename leaves the rest alone, an escape removes its construct, a block reads the same alone and in context, and the cache agrees with Reading view (`npm run self-check`, [docs/self-check.md](docs/self-check.md)).
 
 `npm run oracle:refresh` re-reads the oracles from a new Obsidian build, and the three finders then run on that build's behaviour.

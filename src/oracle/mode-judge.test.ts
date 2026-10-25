@@ -6,7 +6,7 @@ import {
 
 import type { ForumIssueFile } from './forum-issues.ts';
 
-import { EDITING_MODES_VS_READING_VIEW_SAMPLES } from './forum-issues.ts';
+import { EDITOR_VS_READING_VIEW_SAMPLES } from './forum-issues.ts';
 import {
   familyOf,
   MODE_FAMILIES
@@ -47,7 +47,7 @@ function familiesOf(markdown: string): (null | string)[] {
 
 describe('the mode judge', () => {
   it('flags every forum issue sample, on the editor\'s own tree', () => {
-    const missed = EDITING_MODES_VS_READING_VIEW_SAMPLES.filter((sample) => {
+    const missed = EDITOR_VS_READING_VIEW_SAMPLES.filter((sample) => {
       const read = FORUM.reads.find((candidate) => candidate.markdown === sample.markdown);
       return read === undefined || judgeModes(read.markdown, read.nodes).length === 0;
     });
@@ -55,7 +55,7 @@ describe('the mode judge', () => {
   });
 
   it('puts some difference of every forum issue sample into a family of its issue', () => {
-    const unmatched = EDITING_MODES_VS_READING_VIEW_SAMPLES.filter((sample) => {
+    const unmatched = EDITOR_VS_READING_VIEW_SAMPLES.filter((sample) => {
       const issues = new Set(familiesOf(sample.markdown).map((id) => MODE_FAMILIES.find((family) => family.id === id)?.issue));
       return !issues.has(sample.issue);
     });

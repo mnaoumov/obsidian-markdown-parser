@@ -35,7 +35,7 @@ export interface ModeFamily {
   readonly id: string;
 
   /**
-   * The forum issue that reports it, as in `EDITING_MODES_VS_READING_VIEW_SAMPLES`, for a known family.
+   * The forum issue that reports it, as in `EDITOR_VS_READING_VIEW_SAMPLES`, for a known family.
    */
   readonly issue?: string;
 
