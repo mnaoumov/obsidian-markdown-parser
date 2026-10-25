@@ -53,7 +53,7 @@ The worker also reads the Obsidian syntax by rules of its own. On the 47 cases o
 | The `@lezer/markdown` tree | the conformance corpus; the CommonMark 0.31.2 suite with the `commonmark` preset; the editor's classes per construct (`scripts/syntax-diff.ts`) | every conformance case; 651 of 652 spec examples; the per-construct agreement in [syntax.md](syntax.md#measured-against-the-live-editor), where every difference is block structure, not a rule of the syntax |
 | The micromark and markdown-it adapters | the same corpus and suites, and the Lezer tree (`scripts/adapter-diff.ts`) | every conformance case; 652 of 652 spec examples; the same Obsidian nodes as the Lezer tree on 28,551 and 28,681 of 29,596 documents |
 | The `remark-parse` 8 engine | npm `remark-parse` 8.0.3 with Obsidian's three tokenizers; the reading view's HTML of the spec examples and 169 probes | the same tree, positions included, on 240,843 documents; the reading view's HTML on every `quirk` and `syntax` row of the spec but five examples the browser or the sanitizer changes after the parse |
-| `parseMetadata` | the worker's own `worker.js`, run offline on 3,255 documents; the live app's metadata of all 674 spec examples | equal as JSON, key order included, on all of them; 0 differences inside Obsidian on 115 notes |
+| `parseMetadata` | the worker's own `worker.js`, run offline on 3,284 documents; the live app's metadata of all 674 spec examples | equal as JSON, key order included, on all of them; 0 differences inside Obsidian on 115 notes |
 
 Every oracle is pinned to Obsidian 1.14.5 and re-read from a newer one with `npm run oracle:refresh` ([oracles.md](oracles.md)).
 

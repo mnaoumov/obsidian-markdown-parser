@@ -8,7 +8,7 @@ The repository is private and nothing in it has been published.
 
 - **The editor's classes are reproduced exactly.** All 46,508 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
 - **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is 14 to 17% faster than the stock language's, and a keystroke costs the same as the stock one, in live preview too.
-- **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,255 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
+- **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,284 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
 - **The Obsidian syntax is defined once** and ships for `@lezer/markdown`, micromark with mdast, and markdown-it, each checked against one conformance corpus and the CommonMark 0.31.2 suite.
 - **It is three engines, not the single Lezer parser asked for.** Each of Obsidian's three outputs comes from a different kind of parser today, and each engine here is that kind of parser. What one engine would take is costed below, and it turns on one question for the team.
 
@@ -112,7 +112,7 @@ The `remark-parse` 8 port gives the same tree, positions included, as npm `remar
 
 ### 7. `CachedMetadata`: yes
 
-`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,255 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 116 notes, the 100,001-line note included, in 646 ms for all of them.
+`parseMetadata` gives the worker's whole `CachedMetadata`, equal as JSON with key order: headings, links and embeds, the markdown links the worker counts, tags, footnotes, reference definitions, list items, sections, block ids, and front matter, or `null` where the worker throws ([metadata.md](metadata.md)). It is pinned to 3,284 worker documents and the live app's metadata of all 674 spec examples, and outside the repository it gave 0 differences on 180,000 more fuzzed documents. Inside Obsidian it matched the metadata cache on all 116 notes, the 100,001-line note included, in 646 ms for all of them.
 
 ### 8. Keeping up with Obsidian: yes
 
