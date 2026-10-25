@@ -94,6 +94,16 @@ export function forumIssueOracleFileName(version = oracleObsidianVersion()): str
 }
 
 /**
+ * The name of a link parity oracle file.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function linkParityOracleFileName(version = oracleObsidianVersion()): string {
+  return `link-parity-obsidian-${version}.json`;
+}
+
+/**
  * The name of a live surface oracle file.
  *
  * @param version - The Obsidian version.

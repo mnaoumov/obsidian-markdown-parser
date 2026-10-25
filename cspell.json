@@ -55,6 +55,8 @@
     "lheading",
     "linkify",
     "linkinator",
+    "linkpath",
+    "linktext",
     "lockfiles",
     "Marijn",
     "mdlang",
@@ -90,6 +92,7 @@
     "ungated",
     "uppercased",
     "Vitaly",
+    "wikilink",
     "wikilinks",
     "xmpp"
   ]
