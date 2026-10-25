@@ -49,6 +49,7 @@ const COMMENT_LINE_PATTERN = /^(?:[ \t>]|[-*+][ \t]|\d{1,9}[.)][ \t]|\[.\][ \t]|
 // continued with no `>`.
 const LAZY_CALLOUT_PATTERN = /^(?:[-*+]|\d{1,9}[.)])[ \t]+(?:\[.\][ \t]+)?>[ \t]*\[!.*\n(?![ \t])|^(?:>[ \t]*)+\[!.*\n(?![ \t>])/mu;
 const UNCLOSED_FENCE_PATTERN = /^(?:```|~~~|\$\$)/u;
+const TABLE_ROW_PATTERN = /^\|.*\|[ \t]*$/mu;
 
 function judgeOf(key: string): string {
   return key.split(':', 1)[0] ?? '';
@@ -62,7 +63,7 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
     forumUrl: `${FORUM}119821`,
     id: 'comment-line-offset',
     kind: 'bug',
-    matches: (key, markdown) => ['offset', 'padding', 'rename'].includes(judgeOf(key)) && key !== 'offset:listItems' && COMMENT_LINE_PATTERN.test(markdown),
+    matches: (key, markdown) => ['offset', 'padding', 'rename', 'renameFile'].includes(judgeOf(key)) && key !== 'offset:listItems' && COMMENT_LINE_PATTERN.test(markdown),
     note: 'On a line that opens a `%%` block comment, every position the cache gives is 2 characters early, as if the `%%` were not there: a link\'s `original` is cut, and renaming its target rewrites the wrong characters.'
   },
   {
@@ -218,6 +219,55 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
     kind: 'minor',
     matches: (key, markdown) => ['offset:footnotes', 'offset:listItems'].includes(key) || (judgeOf(key) === 'independence' && markdown.includes('\n\n ')),
     note: 'A list item or footnote definition indented by up to 3 spaces starts at its line\'s start rather than at its marker, so its position depends on what comes before it.'
+  },
+  {
+    forumUrl: null,
+    id: 'first-open-offset',
+    kind: 'bug',
+    matches: (key, markdown) => (key === 'openFile:cache' || judgeOf(key) === 'backlinks') && TABLE_ROW_PATTERN.test(markdown),
+    note: 'Opening a note with a table in the editor can rewrite its cache with a link offset that disagrees with its line and column, by the note\'s length plus 1; the Backlinks view then marks the wrong span. Seen on the first note opened in a session, and in the Backlinks view of the second.'
+  },
+  {
+    forumUrl: null,
+    id: 'rename-reformats-table',
+    kind: 'bug',
+    matches: (key, markdown) => key === 'renameFile:body' && TABLE_ROW_PATTERN.test(markdown),
+    note: 'Renaming a file a link in a table points at rewrites the whole table, padding every cell to its column\'s width, and a `[[target|alias]]` in a cell is split at its `|` into a column of its own: the rename changes text it does not own.'
+  },
+  {
+    forumUrl: null,
+    id: 'front-matter-restyled',
+    kind: 'expected',
+    matches: (key) => ['processFrontMatter:restyled', 'renameFile:front-matter'].includes(key),
+    note: 'A `processFrontMatter`, and a rename that updates a link in the front matter, write the whole front matter back in the YAML library\'s style, so `tags: [a]` becomes a block list: the API hands the values over as an object, so their spelling is not kept. Undocumented in `obsidian.d.ts`.'
+  },
+  {
+    forumUrl: null,
+    id: 'outline-inline-footnote',
+    kind: 'bug',
+    matches: (key, markdown) => key === 'outline:text' && markdown.includes('^['),
+    note: 'An inline footnote in a heading shows in the Outline view as a numbered list of its text after the heading, with no reference mark where it stands.'
+  },
+  {
+    forumUrl: null,
+    id: 'outline-escaped-bracket',
+    kind: 'bug',
+    matches: (key, markdown) => key === 'outline:text' && markdown.includes(String.raw`\[[`),
+    note: 'A heading holding `\\[[escaped]]` shows `[escaped]` in the Outline view, one bracket on each side lost, where Reading view shows `[[escaped]]`.'
+  },
+  {
+    forumUrl: null,
+    id: 'outline-undefined-reference',
+    kind: 'minor',
+    matches: (key, markdown) => key === 'outline:text' && /\]\[[^\]]*\]/u.test(markdown),
+    note: 'A reference link with no definition in a heading shows as its text alone in the Outline view, where Reading view shows it as typed, brackets included.'
+  },
+  {
+    forumUrl: null,
+    id: 'outline-embed-source',
+    kind: 'minor',
+    matches: (key, markdown) => key === 'outline:text' && markdown.includes('!['),
+    note: 'An embed or an image in a heading shows in the Outline view as its link path, `target#Heading` or `pic.png`, where Reading view shows the embed, the image or its alias.'
   },
   {
     forumUrl: null,

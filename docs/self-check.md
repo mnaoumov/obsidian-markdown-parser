@@ -76,9 +76,35 @@ On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,28
 
 `src/oracle/self-check.test.ts` is the acceptance test. From generated notes alone, with no pinned shape, the judges must find every bug family above that was first reported from a hand-written note, plus the known and by-design families. They must also leave no finding unclassified. A family that stops being found, or a new key with no family, fails the suite.
 
+## The live surfaces
+
+Some surfaces exist only in the app: the Outline and Backlinks views, `resolvedLinks`, a real `fileManager.renameFile` and `processFrontMatter`. `scripts/live-surfaces-oracle.ts` reads them for the first 400 grammar notes, written into one vault with the four files they link to (`target.md`, `page.md`, `image.png`, `pic.png`), into `oracle/live-surfaces-obsidian-<version>.json` ([oracles.md](oracles.md)). The read takes about 2.5 minutes. `src/oracle/live-surfaces.ts` then judges each note offline against its cache, as the app held it before the note was opened, and against the `remark-parse` 8 engine:
+
+| Judge | The relation |
+| --- | --- |
+| `openFile` | Opening the note in the editor leaves its cache as the worker gave it. |
+| `resolvedLinks` | Every cached link, embed and front matter link is counted once, under the file it resolves to in `resolvedLinks` or under its link path in `unresolvedLinks`. |
+| `backlinks` | `getBacklinksForFile` of each target, and the Backlinks view of it, hold exactly the note's links to that target, at the cache's positions and front matter keys. The count the view shows is the number of matches it lists. |
+| `outline` | The Outline view lists the cache's headings, nested by their levels, each showing the text Reading view shows. |
+| `renameFile` | Renaming every target changes the note only inside the cached links to it, each getting the new name: the rename the `rename` judge simulates from the cache's positions. Renaming them back gives the note back. |
+| `processFrontMatter` | Setting one key leaves the body byte for byte, keeps every other value, and changes the front matter only by the added line. |
+
+The notes cannot be reduced offline, since only the app reads them, so each finding carries the lines it lies on and is sorted into a family by those lines. `src/oracle/live-surfaces.test.ts` pins the cache to `parseMetadata`, and requires the pinned reading to fall into exactly the families below. On 1.14.5, `resolvedLinks`, `getBacklinksForFile`, the Outline's count and nesting, the body after `processFrontMatter`, and every rename round trip whose forward rename was right all held on all 400 notes. What broke:
+
+| Family | Verdict | Findings | What it is |
+| --- | --- | --- | --- |
+| `first-open-offset` | bug, not reported | 3 | Opening a note with a table in the editor rewrote its cache with a link offset 76 past its line and column, the note's length plus 1, and the Backlinks view then marked the wrong span. It hit the first note opened, and the second note's Backlinks. |
+| `rename-reformats-table` | bug, not reported | 2 | A rename of a link in a table re-pads the whole table, and splits a `[[target\|alias]]` in a cell at its `\|` into a column of its own. |
+| `comment-line-offset` | bug, [t/119821](https://forum.obsidian.md/t/119821) | 17 | The real rename corrupts a link on a line that opens a `%%` block comment, as the simulated one predicts. |
+| `front-matter-restyled` | expected | 114 | `processFrontMatter`, and a rename that updates a front matter link, write the whole front matter back in the YAML library's style (`tags: [a]` becomes a block list). |
+| `outline-embed-source` | minor | 14 | An embed or image in a heading shows in the Outline as its link path. |
+| `outline-inline-footnote` | bug, not reported | 12 | An inline footnote in a heading shows in the Outline as a numbered list after the heading. |
+| `outline-undefined-reference` | minor | 6 | An undefined reference link in a heading shows in the Outline as its text alone. |
+| `outline-escaped-bracket` | bug, not reported | 5 | `\[[escaped]]` in a heading shows in the Outline as `[escaped]`. |
+
 ## What the judges cannot find yet
 
 - **A disagreement with other parsers.** A GFM task item whose body is read again as blocks, and any character accepted as a task status, are wrong only by the GFM spec. Finding them needs a differential against the reference engines.
 - **API shape.** `blocks` being a record, and columns counting UTF-16 code units, are design choices, not inconsistencies.
-- **Live surfaces.** Backlinks, the outline, `resolvedLinks`, a real `fileManager.renameFile` and `processFrontMatter` exist only in the app. The `rename` judge simulates a rename from the cache's positions, which is what the app's rename uses.
+- **Live surfaces beyond the sample.** The live judges see only the 400 notes the oracle read, and only the four targets they link to, so a shape that needs another note, a folder or a name clash to show is out of their reach.
 - **Editor-only behaviour,** such as a `%%` that opens a comment in a list item, belongs to the mode judge.

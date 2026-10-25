@@ -94,6 +94,16 @@ export function forumIssueOracleFileName(version = oracleObsidianVersion()): str
 }
 
 /**
+ * The name of a live surface oracle file.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function liveSurfacesOracleFileName(version = oracleObsidianVersion()): string {
+  return `live-surfaces-obsidian-${version}.json`;
+}
+
+/**
  * The directory the suites read their oracles from.
  *
  * @returns The directory.
