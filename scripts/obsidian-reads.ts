@@ -185,6 +185,11 @@ interface MetadataCache {
   computeMetadataAsync: (data: ArrayBuffer) => Promise<unknown>;
 }
 
+interface ModePoll {
+  readonly hasCursorLine: boolean;
+  readonly html: string;
+}
+
 interface NodeType {
   name: string;
 }
@@ -240,6 +245,9 @@ interface Workspace {
 const MAX_READS = 20;
 const SETTLE_MS = 30;
 const PARSE_TIMEOUT_MS = 10_000;
+const MODE_POLL_MS = 100;
+const MODE_MAX_POLLS = 100;
+const MODE_STABLE_POLLS = 5;
 
 /**
  * Connects to an owned Obsidian and sets it up for the reads: a plugin that hands out `@codemirror/language`, the note
@@ -265,46 +273,57 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     return { livePreviewHtml, sourceModeHtml };
   }
 
-  // One mode's DOM, in an eval of its own: a DOM that never settles takes the polls' cap, which three modes in one eval overran.
+  /*
+   * One mode's DOM, read once it has not changed for a few polls. Each poll is its own eval and the wait between them is
+   * Node's: a renderer whose window is not in front throttles its own timers, which held one eval of in-page polls past
+   * the 30-second cap of an eval.
+   */
   async function readMode(text: string, isSourceMode: boolean): Promise<string> {
-    return await conn.evalInObsidian({
+    await conn.evalInObsidian({
       callback: async ({ app, isSource, notePath: note, text: markdown }) => {
-        // eslint-disable-next-line unicorn/consistent-function-scoping -- The callback runs inside Obsidian, which sees nothing outside it.
-        async function sleep(ms: number): Promise<void> {
-          await new Promise((resolve) => {
-            globalThis.setTimeout(resolve, ms);
-          });
-        }
         const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
         await leaf.setViewState({ state: { file: note, mode: 'source', source: isSource }, type: 'markdown' });
         const { editor } = leaf.view;
         editor.setValue(`${markdown}\n`);
         editor.setCursor({ ch: 0, line: editor.lastLine() });
         editor.focus();
+      },
+      input: { isSource: isSourceMode, notePath, text }
+    });
+    let last: ModePoll | null = null;
+    let stablePolls = 0;
+    for (let polls = 0; polls < MODE_MAX_POLLS && stablePolls < MODE_STABLE_POLLS; polls++) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, MODE_POLL_MS);
+      });
+      const next = await readModePoll();
+      stablePolls = next.html === last?.html ? stablePolls + 1 : 0;
+      last = next;
+    }
+    if (last?.hasCursorLine !== true) {
+      throw new Error(`The appended line is not the last of ${JSON.stringify(text)}`);
+    }
+    return last.html;
+  }
+
+  // One poll of the DOM of the mode `readMode` set, without the appended line the cursor sits on.
+  async function readModePoll(): Promise<ModePoll> {
+    return await conn.evalInObsidian({
+      callback: ({ app }) => {
+        const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
         const content = leaf.view.containerEl.querySelector('.cm-content');
         if (content === null) {
           throw new Error('The markdown view has no .cm-content');
         }
-        const POLL_MS = 100;
-        const MAX_POLLS = 100;
-        const STABLE_POLLS = 5;
-        let last = '';
-        let stablePolls = 0;
-        for (let polls = 0; polls < MAX_POLLS && stablePolls < STABLE_POLLS; polls++) {
-          await sleep(POLL_MS);
-          const html = content.getHTML();
-          stablePolls = html === last ? stablePolls + 1 : 0;
-          last = html;
-        }
         const clone = content.cloneNode(true) as HTMLElement;
         const cursorLine = clone.lastElementChild;
-        if (cursorLine?.matches('.cm-line.cm-active') !== true || cursorLine.getHTML() !== '<br>') {
-          throw new Error(`The appended line is not the last of ${JSON.stringify(markdown)}`);
+        const hasCursorLine = cursorLine?.matches('.cm-line.cm-active') === true && cursorLine.getHTML() === '<br>';
+        if (hasCursorLine) {
+          cursorLine.remove();
         }
-        cursorLine.remove();
-        return clone.getHTML();
+        return { hasCursorLine, html: clone.getHTML() };
       },
-      input: { isSource: isSourceMode, notePath, text }
+      input: {}
     });
   }
 
