@@ -18,6 +18,7 @@ import type { ClassSets } from './score.ts';
 
 import { highlight } from '../editor/highlight.ts';
 import { parseRemark } from '../remark/parse.ts';
+import { minimizeNote } from './ddmin.ts';
 import { oracleObsidianVersion } from './oracle-location.ts';
 import {
   classSetsOf,
@@ -402,13 +403,7 @@ export function reduceDifference(text: string, key: string): string {
   function hasKey(candidate: string): boolean {
     return judgeModesPredicted(candidate).some((difference) => differenceKey(difference) === key);
   }
-  if (!hasKey(text)) {
-    return text;
-  }
-  const lines = minimizeSequence(text.split('\n'), (candidate) => hasKey(candidate.join('\n')));
-  // Graphemes, so a reduction never splits an emoji or a combining mark.
-  const graphemes = Array.from(new Intl.Segmenter().segment(lines.join('\n')), (segment) => segment.segment);
-  return minimizeSequence(graphemes, (candidate) => hasKey(candidate.join(''))).join('');
+  return hasKey(text) ? minimizeNote(text, hasKey) : text;
 }
 
 /**
@@ -521,35 +516,4 @@ function commentOffsets(sets: ClassSets): Set<number> {
     }
   }
   return offsets;
-}
-
-// The first of `items` less one chunk of `size` that `isKept` still holds for, or `null`.
-function keptComplement<Item>(items: readonly Item[], size: number, isKept: (candidate: readonly Item[]) => boolean): null | readonly Item[] {
-  for (let start = 0; start < items.length; start += size) {
-    const complement = [...items.slice(0, start), ...items.slice(start + size)];
-    if (complement.length > 0 && isKept(complement)) {
-      return complement;
-    }
-  }
-  return null;
-}
-
-// Zeller's ddmin: drops ever smaller chunks of `items` while `isKept` still holds, down to chunks of one.
-function minimizeSequence<Item>(items: readonly Item[], isKept: (candidate: readonly Item[]) => boolean): readonly Item[] {
-  const HALVES = 2;
-  let current = items;
-  let chunks = HALVES;
-  while (current.length >= HALVES) {
-    const complement = keptComplement(current, Math.ceil(current.length / chunks), isKept);
-    if (complement !== null) {
-      current = complement;
-      chunks = Math.max(chunks - 1, HALVES);
-      continue;
-    }
-    if (chunks >= current.length) {
-      break;
-    }
-    chunks = Math.min(chunks * HALVES, current.length);
-  }
-  return current;
 }
