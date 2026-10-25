@@ -58,17 +58,37 @@ const ALL_SUITES = [
   SUITES.metadataFailing
 ];
 const FORUM_EDITING_MODE_CASES = 14;
-const METADATA_ISSUE_CASES = 10;
-const EXPECTED_METADATA_CASES = 6;
+const METADATA_ISSUE_CASES = 13;
+const EXPECTED_METADATA_CASES = 9;
 const WORKER_THROWS_ON_BLANK_LINK_DESTINATION = 17;
 const WORKER_THROWS_ON_HAS_OWN_PROPERTY_KEY = 14;
 const QUIRK_PROBE_COUNT = 169;
 const COMMONMARK_NO_SPEC_FAILING_CASES = 70;
 const GFM_NO_SPEC_FAILING_CASES = 27;
 const SOFT_LINE_BREAKS = 'soft line breaks are hard';
+const MISPLACED_LINK_CASES = 3;
+const LINK_SOURCE = '[[target]]';
 
 interface IdentifiedCase {
   readonly id: string;
+}
+
+interface Link {
+  readonly original: string;
+  readonly position: LinkPosition;
+}
+
+interface LinkPoint {
+  readonly offset: number;
+}
+
+interface LinkPosition {
+  readonly end: LinkPoint;
+  readonly start: LinkPoint;
+}
+
+interface WithLinks {
+  readonly links: readonly Link[];
 }
 
 function ids(cases: readonly IdentifiedCase[]): Set<string> {
@@ -130,7 +150,7 @@ describe('the exported test cases', () => {
     expect(new Set(SUITES.livePreviewAndSourceModeVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661', 'judged']));
     const samples = SUITES.metadataFailing.cases.filter((testCase) => testCase.id.startsWith('issue-'));
     expect(samples).toHaveLength(METADATA_ISSUE_CASES);
-    expect(new Set(samples.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4']));
+    expect(new Set(samples.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4', 'issue-topic-119821']));
     expect(SUITES.metadataFailing.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
   });
 
@@ -175,6 +195,18 @@ describe('the exported test cases', () => {
     expect(byId.get('issue-2-2')?.expectedMetadata).toMatchObject({ frontmatter: { obj: { hasOwnProperty: 1 } } });
     for (const id of ['issue-3-1', 'issue-3-2']) {
       expect(byId.get(id)?.expectedMetadata).toMatchObject({ sections: [{ type: 'paragraph' }, ...id === 'issue-3-1' ? [{ id: 'abc', type: 'footnoteDefinition' }] : []] });
+    }
+  });
+
+  it('expect of the misplaced links the link where its source text is', () => {
+    const samples = SUITES.metadataFailing.cases.filter((testCase) => testCase.issue === 'issue-topic-119821');
+    expect(samples).toHaveLength(MISPLACED_LINK_CASES);
+    for (const testCase of samples) {
+      const [actual] = (testCase.metadata as WithLinks).links;
+      const [expected] = (testCase.expectedMetadata as WithLinks).links;
+      expect(actual?.original).not.toBe(LINK_SOURCE);
+      expect(testCase.markdown.slice(expected?.position.start.offset, expected?.position.end.offset)).toBe(LINK_SOURCE);
+      expect(expected?.original).toBe(LINK_SOURCE);
     }
   });
 
