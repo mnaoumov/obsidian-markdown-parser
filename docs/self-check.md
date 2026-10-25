@@ -5,10 +5,10 @@ The other bug finders compare two readings: Obsidian against the CommonMark and 
 The self-check judges find those. Each one checks a relation that a correct parser keeps, and none of them needs a reference output:
 
 ```sh
-npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--live-surfaces] [--out <file>]
+npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--engines] [--live-surfaces] [--out <file>]
 ```
 
-`--live-surfaces` also judges the live surface oracle ([below](#the-live-surfaces)) and reports its families as a table of their own.
+`--engines` also runs the engine differential ([below](#the-engine-differential)) over as many generated notes of CommonMark and GFM alone. `--live-surfaces` also judges the live surface oracle ([below](#the-live-surfaces)) and reports its families as a table of their own.
 
 ## The relations
 
@@ -45,7 +45,8 @@ Each reduced note goes into a family of `src/oracle/self-check-families.ts`, and
 - `known`: an open topic or the team already has it.
 - `expected`: by design or documented.
 - `minor`: shows only in notes nobody writes.
-- `judge`: a limit of the judge itself, where Obsidian is right.
+- `quirk`: a deviation of `remark-parse` 8 from the spec that the spec suites already measure ([spec-suites.md](spec-suites.md#obsidians-quirks)). Only the engine differential gives these.
+- `judge`: a limit of the judge itself, where Obsidian is right or is not judged.
 
 ## The last run
 
@@ -80,6 +81,38 @@ On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,28
 | `tree-position` | judge | A Reading view text node is placed off its source. This shows only through the cache's positions. |
 
 `src/oracle/self-check.test.ts` is the acceptance test. From generated notes alone, with no pinned shape, the judges must find every bug family above that was first reported from a hand-written note, plus the known and by-design families. They must also leave no finding unclassified. A family that stops being found, or a new key with no family, fails the suite.
+
+## The engine differential
+
+The relations above cannot see a bug that is wrong only by the spec: a GFM task item whose text is read again as blocks, or any character taken as a task status, is consistent with itself everywhere. `src/oracle/engine-differential.ts` finds those by asking other parsers. The grammar has a second mode for it, `generateNotes({ syntax: 'gfm' })`, which draws only CommonMark and GFM constructs (no Obsidian syntax, block ids, callouts or front matter) and adds task marks of `[X]`, `[?]`, `[-]` and `[/]`. Each note is rendered by four engines:
+
+| Engine | Role |
+| --- | --- |
+| `remark-parse-8` | Judged: the `remark-parse` 8 engine with Obsidian's edits, which is Reading view. |
+| `micromark` | Reference: with its GFM table, strikethrough and autolink literal extensions. |
+| `markdown-it` | Reference: its default preset, with raw HTML and `linkify` (no fuzzy links). |
+| `commonmark.js` | Reference, only for a note the GFM extensions of `micromark` change nothing in, since it knows none of them. |
+
+Each engine's HTML goes through `parse5` into one token sequence: element names, the attributes that carry meaning (a link's destination and title, an image's source and text, an ordered list's start), and text with its white space collapsed. Three differences are made equal first, because they are not what the differential looks for. A paragraph directly in a list item is read as its content, since `remark-parse` 8 decides looseness by its own rule (the `looseList` quirk). No reference runs a task extension, so the GFM rule is applied to their output (a list item whose first block is a paragraph opening on `[ ]`, `[x]` or `[X]` and white space is a task), and the judged engine's checkbox is read as the same mark. `markdown-it`'s `<s>` is read as `<del>`.
+
+When the references agree and the judged engine does not, the key is `engines:obsidian:<its token>-vs-<theirs>`, named by the first token that differs. When the references disagree, the note is a spec question and the judged engine is not judged on it. The key then names the reference alone against the other two (`engines:references:micromark-alone:...`), or the pair. The findings are reduced and sorted like the others, into the families at the head of `self-check-families.ts`. The judge is no part of `judgeNote`, which reads Obsidian syntax the references do not know. It takes about 2 ms a note.
+
+On 2026-10-25, 4,000 notes (seed 20261024) gave 59 keys, all in 10 families:
+
+| Family | Verdict | What it is |
+| --- | --- | --- |
+| `task-body-blocks` | known | A task item's text after its mark is read again as blocks: `- [ ] # H` holds a heading, `- [ ] > q` a quote, `- [ ] [r]: u` a definition, where GFM reads a paragraph. |
+| `task-status-any-character` | expected | Any character between a task's brackets makes a task, checked unless it is a space. GFM reads only a space, `x` or `X`. |
+| `open-reference-bracket-dropped` | bug, not yet read in the app | A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`. |
+| `task-without-text` | minor | A task mark with nothing after it makes a task. The spec has no example either way. |
+| `engine-container-continuation` | quirk | A list item or quote goes on where CommonMark ends it, or ends where a lazy line continues it. |
+| `engine-table` | quirk | A table where GFM reads none, or one that ends where GFM takes a line with no pipe as a row. |
+| `engine-setext-heading` | quirk | A setext heading underlines only a one-line paragraph, and takes a lazy `=` or `-` line. |
+| `engine-link-definition` | quirk | A definition CommonMark rejects: a blank label, an unescaped `[`, no destination, an unbalanced `)`, a title never closed. |
+| `engine-autolink-literal` | quirk | A bare URL right after a character that is not a space: GFM links `]http://m` and leaves `shttp://x.c`, and `remark-parse` 8 does the opposite. |
+| `references-disagree` | judge | `micromark` alone on an ordered list not numbered 1 that opens a quote straight after a paragraph, and `markdown-it` alone on a definition in a quote followed by a lazy line. |
+
+The acceptance test runs the differential on 4,000 notes. It must find `task-body-blocks` and `task-status-any-character` and leave nothing unclassified.
 
 ## The live surfaces
 
@@ -119,6 +152,6 @@ npm run oracle:differential -- --to-version <version> [--to-dir <directory>] [--
 
 ## What the judges cannot find yet
 
-- **A disagreement with other parsers.** A GFM task item whose body is read again as blocks, and any character accepted as a task status, are wrong only by the GFM spec. Finding them needs a differential against the reference engines.
+- **The spec on Obsidian syntax.** The engine differential reads notes of CommonMark and GFM alone, so it cannot see a spec construct read wrongly next to an internal link, a comment or a callout. No reference knows those.
 - **Live surfaces beyond the sample.** The live judges see only the 400 notes the oracle read, and only the four targets they link to, so a shape that needs another note, a folder or a name clash to show is out of their reach.
 - **Editor-only behaviour,** such as a `%%` that opens a comment in a list item, belongs to the mode judge.

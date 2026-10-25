@@ -4,12 +4,14 @@
  * Runs the self-check judges (`src/oracle/self-check.ts`) over generated notes (`src/oracle/note-grammar.ts`) and,
  * with `--oracles`, over every worker oracle document too. Up to `--per-key` notes of each key are reduced to minimal ones and
  * each put into a family (`src/oracle/self-check-families.ts`). Prints a table of the families and writes them, with their
- * reduced notes, to `dist/self-check/report.json`. With `--live-surfaces` it also judges the live surface oracle
- * (`src/oracle/live-surfaces.ts`) and adds its families as a table of their own, under `liveSurfaces`.
+ * reduced notes, to `dist/self-check/report.json`. With `--engines` it also runs the engine differential
+ * (`src/oracle/engine-differential.ts`) over as many generated notes of CommonMark and GFM alone. With `--live-surfaces`
+ * it also judges the live surface oracle (`src/oracle/live-surfaces.ts`) and adds its families as a table of their
+ * own, under `liveSurfaces`.
  *
  * The oracles are the pinned version's, or those `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY` name.
  *
- * Usage: `jiti scripts/self-check.ts [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--live-surfaces] [--out <file>]`.
+ * Usage: `jiti scripts/self-check.ts [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--engines] [--live-surfaces] [--out <file>]`.
  */
 
 import {
@@ -26,8 +28,10 @@ import { parseArgs } from 'node:util';
 import type { LiveSurfaceFile } from '../src/oracle/live-surfaces.ts';
 import type { FamilyCount } from '../src/oracle/release-differential.ts';
 import type { SelfCheckFamilyKind } from '../src/oracle/self-check-families.ts';
+import type { SelfCheckFinding } from '../src/oracle/self-check.ts';
 import type { WorkerMetadataOracleFile } from '../src/oracle/worker-metadata.ts';
 
+import { judgeEngines } from '../src/oracle/engine-differential.ts';
 import { generateNotes } from '../src/oracle/note-grammar.ts';
 import {
   liveSurfacesOracleFileName,
@@ -57,6 +61,7 @@ interface KeyReport {
 }
 
 interface NoteSource {
+  readonly judge: (text: string) => SelfCheckFinding[];
   readonly source: string;
   readonly text: string;
 }
@@ -89,6 +94,7 @@ const JSON_INDENT = 2;
 const { values } = parseArgs({
   options: {
     'count': { type: 'string' },
+    'engines': { type: 'boolean' },
     'live-surfaces': { type: 'boolean' },
     'oracles': { type: 'boolean' },
     'out': { type: 'string' },
@@ -101,17 +107,21 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outPath = values.out ?? join(root, 'dist', 'self-check', 'report.json');
 const count = values.count === undefined ? DEFAULT_COUNT : Number(values.count);
 const perKey = values['per-key'] === undefined ? DEFAULT_PER_KEY : Number(values['per-key']);
-const notes: NoteSource[] = generateNotes({ count, ...(values.seed !== undefined && { seed: Number(values.seed) }) })
-  .map((note) => ({ source: note.id, text: note.text }));
+const seedOption = values.seed === undefined ? {} : { seed: Number(values.seed) };
+const notes: NoteSource[] = generateNotes({ count, ...seedOption })
+  .map((note) => ({ judge: judgeNote, source: note.id, text: note.text }));
 if (values.oracles) {
   const worker = readOracleFile(workerMetadataOracleFileName()) as WorkerMetadataOracleFile;
-  notes.push(...worker.docs.map((document, index) => ({ source: `worker-${String(index)}`, text: document.text })));
+  notes.push(...worker.docs.map((document, index) => ({ judge: judgeNote, source: `worker-${String(index)}`, text: document.text })));
+}
+if (values.engines) {
+  notes.push(...generateNotes({ count, ...seedOption, syntax: 'gfm' }).map((note) => ({ judge: judgeEngines, source: note.id, text: note.text })));
 }
 
 const keys = new Map<string, KeyReport>();
 const keyReports: KeyReport[] = [];
 for (const note of notes) {
-  for (const finding of judgeNote(note.text)) {
+  for (const finding of note.judge(note.text)) {
     const report = keys.get(finding.key);
     if (report === undefined) {
       const created = { count: 1, key: finding.key, samples: [{ detail: finding.detail, source: note.source, text: note.text }] };

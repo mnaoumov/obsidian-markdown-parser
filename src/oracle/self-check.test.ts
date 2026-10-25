@@ -6,6 +6,7 @@ import {
 
 import type { SelfCheckFinding } from './self-check.ts';
 
+import { judgeEngines } from './engine-differential.ts';
 import { generateNotes } from './note-grammar.ts';
 import { CORPUS_TEST_TIMEOUT_MS } from './oracle-location.ts';
 import { selfCheckFamilyOf } from './self-check-families.ts';
@@ -46,6 +47,9 @@ const REDISCOVERED_FAMILIES: readonly string[] = [
   'undefined-footnote-brackets',
   'utf16-columns'
 ];
+
+// The families the engine differential must find: the two reported task item shapes, wrong only by the GFM spec.
+const SPEC_ONLY_FAMILIES: readonly string[] = ['task-body-blocks', 'task-status-any-character'];
 
 // Notes every relation holds on, but the escaped closer of their highlights, links and embeds, and the shape of the API.
 const CLEAN_NOTES: readonly string[] = [
@@ -110,6 +114,39 @@ describe('the self-check judges', () => {
 
   it('reduce a finding to a minimal note', () => {
     expect(reduceFinding('Some text.\n\n> # Heading\n\nMore text.\n', 'render:headings-only-in-render')).toBe('>#');
+  });
+
+  it('see a task item\'s text read as blocks, and any character read as a task status, where the references agree', () => {
+    expect(keysOf(judgeEngines('- [ ] # Heading\n'))).toEqual(['engines:obsidian:h1-vs-text']);
+    expect(keysOf(judgeEngines('- [?] task\n'))).toEqual(['engines:obsidian:li [x]-vs-li']);
+    expect(judgeEngines('- [x] done ~~struck~~\n- [ ] open https://example.com\n\n| a | b |\n| - | - |\n| c | d |\n')).toEqual([]);
+    expect(reduceFinding('Intro.\n\n- [ ] # Heading\n', 'engines:obsidian:h1-vs-text')).toBe('- [ ] #');
+  });
+
+  it('name the reference alone when the references disagree, and leave the engine unjudged', () => {
+    expect(keysOf(judgeEngines('"\n>2)\n'))).toEqual(['engines:references:micromark-alone:p-vs-ol']);
+  });
+
+  it('rediscover the families wrong only by the spec from generated notes of CommonMark and GFM alone', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
+    const families = new Set<string>();
+    const samples = new Map<string, string[]>();
+    const generated = generateNotes({ count: ACCEPTANCE_NOTES, syntax: 'gfm' });
+    for (const note of generated) {
+      for (const finding of judgeEngines(note.text)) {
+        const list = samples.get(finding.key) ?? [];
+        if (list.length < SAMPLES_PER_KEY) {
+          list.push(note.text);
+        }
+        samples.set(finding.key, list);
+      }
+    }
+    for (const [key, notes] of samples) {
+      for (const note of notes) {
+        families.add(selfCheckFamilyOf(key, reduceFinding(note, key))?.id ?? `unclassified:${key}`);
+      }
+    }
+    expect(SPEC_ONLY_FAMILIES.filter((id) => !families.has(id))).toEqual([]);
+    expect([...families].filter((id) => id.startsWith('unclassified:'))).toEqual([]);
   });
 
   it('rediscover every family of hand-reported shapes from generated notes alone', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {

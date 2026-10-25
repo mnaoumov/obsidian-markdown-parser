@@ -36,10 +36,11 @@ export interface SelfCheckFamily {
 
 /**
  * A family's verdict: `bug` for one reported or to report, `known` for one an open forum topic or the team already
- * has, `expected` for behaviour by design or documented, `minor` for one only notes nobody writes show, and `judge`
- * for a limit of the judge itself, where Obsidian is right.
+ * has, `expected` for behaviour by design or documented, `minor` for one only notes nobody writes show, `quirk` for a
+ * deviation of `remark-parse` 8 from the spec that the spec suites already measure (`docs/spec-suites.md`), and `judge`
+ * for a limit of the judge itself, where Obsidian is right or is not judged.
  */
-export type SelfCheckFamilyKind = 'bug' | 'expected' | 'judge' | 'known' | 'minor';
+export type SelfCheckFamilyKind = 'bug' | 'expected' | 'judge' | 'known' | 'minor' | 'quirk';
 
 const FORUM = 'https://forum.obsidian.md/t/';
 
@@ -50,15 +51,106 @@ const COMMENT_LINE_PATTERN = /^(?:[ \t>]|[-*+][ \t]|\d{1,9}[.)][ \t]|\[.\][ \t]|
 const LAZY_CALLOUT_PATTERN = /^(?:[-*+]|\d{1,9}[.)])[ \t]+(?:\[.\][ \t]+)?>[ \t]*\[!.*\n(?![ \t])|^(?:>[ \t]*)+\[!.*\n(?![ \t>])/mu;
 const UNCLOSED_FENCE_PATTERN = /^(?:```|~~~|\$\$)/u;
 const TABLE_ROW_PATTERN = /^\|.*\|[ \t]*$/mu;
+// A task item whose text opens on what would open a block: a heading, quote, list item, fence, thematic break, table row or definition.
+const TASK_BLOCK_BODY_PATTERN = /^[ \t>]*(?:[-*+]|\d{1,9}[.)])[ \t]+\[.\][ \t]+(?:#{1,6}(?:[ \t]|$)|>|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|```|\*\*\*|\||\[[^\]]*\]:)/mu;
+// A task mark of a character the GFM spec does not read as a status, or a task mark with no text after it.
+const TASK_STATUS_PATTERN = /^[ \t>]*(?:[-*+]|\d{1,9}[.)])[ \t]+\[[^ xX]\]/mu;
+const EMPTY_TASK_PATTERN = /^[ \t>]*(?:[-*+]|\d{1,9}[.)])[ \t]+\[.\][ \t]*$/mu;
+const SETEXT_UNDERLINE_PATTERN = /^[ \t>]*(?:=+|-+)[ \t]*$/mu;
+const TABLE_DELIMITER_PATTERN = /^[ \t>]*[|:-][ \t|:-]*$/mu;
+const LINK_DEFINITION_PATTERN = /\[[^\]]*\]:/u;
+// A key where the references close a container, a code block or a paragraph that the engine goes on with.
+const CONTINUATION_KEY_PATTERN = /-vs-\/(?:blockquote|code|li|p|pre)$|^engines:obsidian:text-vs-\/\w+$/u;
+const OBSIDIAN_ENGINE_KEY = 'engines:obsidian:';
+// A `[` after a closing bracket, with no `]` after it.
+const DROPPED_BRACKET_PATTERN = /\]\[[^\]]*$/u;
+const AUTOLINK_AFTER_TEXT_PATTERN = /[^\s*_~(]https?:\/\//u;
+// A quote line, and a line after it with no `>`.
+const LAZY_AFTER_QUOTE_PATTERN = /^>.*\n(?!>)/mu;
 
 function judgeOf(key: string): string {
   return key.split(':', 1)[0] ?? '';
 }
 
+// The engine differential's families: the two from the spec alone first, then what `remark-parse` 8 is known to read otherwise.
+const ENGINE_FAMILIES: readonly SelfCheckFamily[] = [
+  {
+    forumUrl: null,
+    id: 'task-body-blocks',
+    kind: 'known',
+    matches: (key, markdown) => key.startsWith(OBSIDIAN_ENGINE_KEY) && TASK_BLOCK_BODY_PATTERN.test(markdown),
+    note: 'A task item\'s text after its mark is read again as blocks, where the GFM spec reads it as the start of a paragraph: `- [ ] # H` holds a heading, `- [ ] > q` a quote, `- [ ] [r]: u` a definition. The team has it already.'
+  },
+  {
+    forumUrl: null,
+    id: 'task-status-any-character',
+    kind: 'expected',
+    matches: (key, markdown) => key.startsWith(`${OBSIDIAN_ENGINE_KEY}li [`) && TASK_STATUS_PATTERN.test(markdown),
+    note: 'Any character between a task\'s brackets makes a task, checked unless it is a space: `- [?] a` is a checked task, where the GFM spec reads only a space, `x` or `X` as a status. By design: themes and plugins give the other characters their own looks.'
+  },
+  {
+    forumUrl: null,
+    id: 'task-without-text',
+    kind: 'minor',
+    matches: (key, markdown) => key.startsWith(`${OBSIDIAN_ENGINE_KEY}li [`) && EMPTY_TASK_PATTERN.test(markdown),
+    note: 'A task mark with no text after it, `- [ ]`, makes a task; the references read the mark as text, the GFM rule needing white space after it, and the spec has no example of either reading.'
+  },
+  {
+    forumUrl: null,
+    id: 'engine-table',
+    kind: 'quirk',
+    matches: (key, markdown) => key.startsWith(OBSIDIAN_ENGINE_KEY) && markdown.includes('|') && TABLE_DELIMITER_PATTERN.test(markdown),
+    note: 'A table where GFM reads none, or one that ends where GFM goes on: a delimiter row with a space in a cell or on a lazy line, a table interrupting a list item\'s text, and a row with no pipe after a table, which GFM reads as a row. `remark-parse` 8 with Obsidian\'s table edits, the `gfmTable` quirk.'
+  },
+  {
+    forumUrl: null,
+    id: 'engine-setext-heading',
+    kind: 'quirk',
+    matches: (key, markdown) => key.startsWith(OBSIDIAN_ENGINE_KEY) && SETEXT_UNDERLINE_PATTERN.test(markdown) && /h[12]|\/p|text-vs-text/u.test(key),
+    note: 'A setext heading where CommonMark reads a paragraph, or the other way: `remark-parse` 8 underlines only a one-line paragraph, and takes a lazy `=` or `-` line in a quote or list item as the underline. The `setextHeading` quirk.'
+  },
+  {
+    forumUrl: null,
+    id: 'engine-link-definition',
+    kind: 'quirk',
+    matches: (key, markdown) => key.startsWith(OBSIDIAN_ENGINE_KEY) && LINK_DEFINITION_PATTERN.test(markdown),
+    note: 'A link reference definition CommonMark rejects, or one whose title it reads otherwise: a blank label, an unescaped `[` in it, no destination, an unbalanced `)`, or a title opened and never closed. The `linkDefinition` quirk.'
+  },
+  {
+    forumUrl: null,
+    id: 'open-reference-bracket-dropped',
+    kind: 'bug',
+    matches: (key, markdown) => key === `${OBSIDIAN_ENGINE_KEY}text-vs-text` && DROPPED_BRACKET_PATTERN.test(markdown),
+    note: 'A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`, `a [][` reads `a []`. Every reference shows it, and the source keeps it. A candidate, not yet read in the app.'
+  },
+  {
+    forumUrl: null,
+    id: 'engine-autolink-literal',
+    kind: 'quirk',
+    matches: (key, markdown) => key.startsWith(OBSIDIAN_ENGINE_KEY) && AUTOLINK_AFTER_TEXT_PATTERN.test(markdown),
+    note: 'A bare URL straight after a character that is no space: GFM\'s autolink literal links `]http://m` and leaves `shttp://x.c`, `remark-parse` 8 the other way round. The `autolink` quirk.'
+  },
+  {
+    forumUrl: null,
+    id: 'engine-container-continuation',
+    kind: 'quirk',
+    matches: (key, markdown) => CONTINUATION_KEY_PATTERN.test(key) || /^engines:obsidian:(?:(?:blockquote|h\d|ol|ul)-vs-\/|\/(?:blockquote|li|p)-vs-text$)/u.test(key) || (key === `${OBSIDIAN_ENGINE_KEY}text-vs-text` && LAZY_AFTER_QUOTE_PATTERN.test(markdown)),
+    note: 'A list item or quote goes on where CommonMark ends it: a line with no indentation after an empty list item or a closed fence, a lazy line after a quote whose last block is no paragraph, and an unclosed fence that takes the lazy lines after it. The `listItem` and `emptyListItem` quirks, and `remark-parse` 8\'s lazy lines.'
+  },
+  {
+    forumUrl: null,
+    id: 'references-disagree',
+    kind: 'judge',
+    matches: (key) => key.startsWith('engines:references:'),
+    note: 'The reference engines read the note differently, so it is a spec question and the engine is not judged on it. `micromark` and `markdown-it` part on an ordered list not numbered 1 that opens a quote straight after a paragraph, and on a definition in a quote or list item followed by a lazy line.'
+  }
+];
+
 /**
  * The families, the first that matches winning.
  */
 export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
+  ...ENGINE_FAMILIES,
   {
     forumUrl: `${FORUM}119821`,
     id: 'comment-line-offset',

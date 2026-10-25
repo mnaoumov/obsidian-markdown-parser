@@ -65,7 +65,20 @@ export interface GenerateNotesOptions {
    * @default 20261024
    */
   readonly seed?: number;
+
+  /**
+   * Which syntax the notes use: `obsidian` for every construct, or `gfm` for CommonMark and GFM alone, which every
+   * engine of the engine differential (`engine-differential.ts`) reads, with task items of any status character.
+   *
+   * @default 'obsidian'
+   */
+  readonly syntax?: NoteSyntax;
 }
+
+/**
+ * The syntax of generated notes: see {@link GenerateNotesOptions.syntax}.
+ */
+export type NoteSyntax = 'gfm' | 'obsidian';
 
 /**
  * The plain word the grammar uses as filler, and the only word the padding relation stretches.
@@ -148,64 +161,129 @@ const CALLOUT_TYPES: readonly string[] = ['note', 'tip', 'warning'];
 
 const LIST_MARKERS: readonly string[] = ['- ', '* ', '1. ', '2) ', '- [ ] ', '- [x] ', '1. [ ] '];
 
+// The task markers of the GFM notes: the spec's three statuses, and characters Obsidian also reads as one.
+const GFM_LIST_MARKERS: readonly string[] = ['- ', '* ', '1. ', '2) ', '- [ ] ', '- [x] ', '- [X] ', '1. [ ] ', '- [?] ', '- [-] ', '* [/] '];
+
+// The inline atoms of the GFM notes: those every engine of the differential reads as CommonMark or GFM.
+const GFM_INLINE_ATOMS: readonly string[] = INLINE_ATOMS.filter((atom) => !/\[\[|\]\]|#|\[\^|\^\[|==|%%|\$/u.test(atom));
+
+type ContainerKind = 'callout' | 'list' | 'quote';
+
+// What one syntax draws from.
+interface Grammar {
+  readonly containerKinds: readonly ContainerKind[];
+  readonly hasBlockIds: boolean;
+  readonly hasFrontMatter: boolean;
+  readonly inlineAtoms: readonly string[];
+  readonly leafBlocks: readonly LeafBlock[];
+  readonly listMarkers: readonly string[];
+}
+
 type Rand = (k: number) => number;
 
-const CONTAINER_KINDS = 3;
 const CODE_INDENT_WIDTH = 4;
 const FOUR_SPACES = ' '.repeat(CODE_INDENT_WIDTH);
 const COIN_SIDES = 2;
 
-type LeafBlock = (rand: Rand, blockId: string) => string[];
+type LeafBlock = (rand: Rand, blockId: string, grammar: Grammar) => string[];
 
 function definition(rand: Rand): string[] {
   return [isHeads(rand) ? '[ref]: https://example.com' : '[ref]: page.md "Title"'];
 }
 
-function openedParagraph(rand: Rand, blockId: string): string[] {
-  const opener = pick(rand, PARAGRAPH_OPENERS);
-  return [isHeads(rand) ? opener : `${opener} ${inline(rand, 0)}${blockId}`];
+function heading(rand: Rand, blockId: string, grammar: Grammar): string[] {
+  const level = 1 + rand(MAX_HEADING_LEVEL);
+  return [`${'#'.repeat(level)} ${inline(rand, level + 1, grammar)}${blockId}`];
 }
 
-function paragraph(rand: Rand, blockId: string): string[] {
-  const lines = [inline(rand, 0)];
+function openedParagraph(rand: Rand, blockId: string, grammar: Grammar): string[] {
+  const opener = pick(rand, PARAGRAPH_OPENERS);
+  return [isHeads(rand) ? opener : `${opener} ${inline(rand, 0, grammar)}${blockId}`];
+}
+
+function paragraph(rand: Rand, blockId: string, grammar: Grammar): string[] {
+  const lines = [inline(rand, 0, grammar)];
   if (rand(SECOND_LINE_ONE_IN) === 0) {
-    lines.push(inline(rand, 0));
+    lines.push(inline(rand, 0, grammar));
   }
   return [...lines.slice(0, -1), `${lines.at(-1) ?? ''}${blockId}`];
 }
 
+function setextHeading(rand: Rand, _blockId: string, grammar: Grammar): string[] {
+  return [inline(rand, 0, grammar), isHeads(rand) ? '===' : '---'];
+}
+
+function table(rand: Rand, _blockId: string, grammar: Grammar): string[] {
+  return ['| a | b |', '| - | - |', `| ${inline(rand, '| '.length, grammar)} | ${FILLER_WORD} |`];
+}
+
+function thematicBreak(): string[] {
+  return ['***'];
+}
+
 // The leaf blocks; definitions and paragraphs opening on a quote or a parenthesis are listed twice, since what they do to each other needs both in a row.
 const LEAF_BLOCKS: readonly LeafBlock[] = [
-  (rand, blockId): string[] => {
-    const level = 1 + rand(MAX_HEADING_LEVEL);
-    return [`${'#'.repeat(level)} ${inline(rand, level + 1)}${blockId}`];
-  },
-  (rand): string[] => [inline(rand, 0), isHeads(rand) ? '===' : '---'],
-  (rand): string[] => ['%%', inline(rand, 0), '%%'],
-  (rand): string[] => {
+  heading,
+  setextHeading,
+  (rand, _blockId, grammar): string[] => ['%%', inline(rand, 0, grammar), '%%'],
+  (rand, _blockId, grammar): string[] => {
     // A `%%` that opens a block comment with text on its line, closed on a later line or never.
-    const lines = [`%% ${inline(rand, '%% '.length)}`, inline(rand, 0)];
+    const lines = [`%% ${inline(rand, '%% '.length, grammar)}`, inline(rand, 0, grammar)];
     return isHeads(rand) ? [...lines, '%%'] : lines;
   },
-  (rand): string[] => {
+  (rand, _blockId, grammar): string[] => {
     const label = isHeads(rand) ? '1' : 'note';
-    const lines = [`[^${label}]: ${inline(rand, label.length + '[^]: '.length)}`];
+    const lines = [`[^${label}]: ${inline(rand, label.length + '[^]: '.length, grammar)}`];
     if (rand(SECOND_LINE_ONE_IN) === 0) {
-      lines.push(`${FOUR_SPACES}${inline(rand, FOUR_SPACES.length)}`);
+      lines.push(`${FOUR_SPACES}${inline(rand, FOUR_SPACES.length, grammar)}`);
     }
     return lines;
   },
   definition,
   definition,
-  (rand): string[] => ['| a | b |', '| - | - |', `| ${inline(rand, '| '.length)} | ${FILLER_WORD} |`],
+  table,
   (): string[] => ['```', 'code [[not a link]] #nottag', '```'],
   (): string[] => ['$$', 'x^2 + [[not a link]]', '$$'],
-  (): string[] => ['***'],
+  thematicBreak,
   openedParagraph,
   openedParagraph,
   paragraph,
   paragraph
 ];
+
+// The leaf blocks of the GFM notes: those of CommonMark and GFM, with a fence holding nothing another syntax reads.
+const GFM_LEAF_BLOCKS: readonly LeafBlock[] = [
+  heading,
+  setextHeading,
+  definition,
+  definition,
+  table,
+  (): string[] => ['```', 'code *not emphasis*', '```'],
+  thematicBreak,
+  openedParagraph,
+  openedParagraph,
+  paragraph,
+  paragraph
+];
+
+const GRAMMARS: Readonly<Record<NoteSyntax, Grammar>> = {
+  gfm: {
+    containerKinds: ['quote', 'list'],
+    hasBlockIds: false,
+    hasFrontMatter: false,
+    inlineAtoms: GFM_INLINE_ATOMS,
+    leafBlocks: GFM_LEAF_BLOCKS,
+    listMarkers: GFM_LIST_MARKERS
+  },
+  obsidian: {
+    containerKinds: ['quote', 'callout', 'list'],
+    hasBlockIds: true,
+    hasFrontMatter: true,
+    inlineAtoms: INLINE_ATOMS,
+    leafBlocks: LEAF_BLOCKS,
+    listMarkers: LIST_MARKERS
+  }
+};
 
 /**
  * Generates notes. The same options always give the same notes.
@@ -214,7 +292,8 @@ const LEAF_BLOCKS: readonly LeafBlock[] = [
  * @returns The notes.
  */
 export function generateNotes(options: GenerateNotesOptions = {}): GeneratedNote[] {
-  const { count = DEFAULT_COUNT, maxDepth = DEFAULT_MAX_DEPTH, seed = DEFAULT_SEED } = options;
+  const { count = DEFAULT_COUNT, maxDepth = DEFAULT_MAX_DEPTH, seed = DEFAULT_SEED, syntax = 'obsidian' } = options;
+  const grammar = GRAMMARS[syntax];
   const rand = mulberry32(seed);
   const notes: GeneratedNote[] = [];
   for (let index = 0; index < count; index++) {
@@ -225,10 +304,11 @@ export function generateNotes(options: GenerateNotesOptions = {}): GeneratedNote
       if (blockIndex > 0) {
         separators.push(rand(BLANK_SEPARATOR_ONE_IN) === 0 ? '\n' : '\n\n');
       }
-      blocks.push(block(rand, maxDepth).join('\n'));
+      blocks.push(block(rand, maxDepth, grammar).join('\n'));
     }
-    const frontMatter = rand(FRONT_MATTER_ONE_IN) === 0 ? '---\nk: "[[target]]"\ntags: [a]\n---\n' : '';
-    notes.push({ blocks, frontMatter, id: `grammar-${String(seed)}-${String(index)}`, separators, text: joinBlocks(blocks, separators, frontMatter) });
+    const frontMatter = rand(FRONT_MATTER_ONE_IN) === 0 && grammar.hasFrontMatter ? '---\nk: "[[target]]"\ntags: [a]\n---\n' : '';
+    const id = syntax === 'obsidian' ? `grammar-${String(seed)}-${String(index)}` : `grammar-${syntax}-${String(seed)}-${String(index)}`;
+    notes.push({ blocks, frontMatter, id, separators, text: joinBlocks(blocks, separators, frontMatter) });
   }
   return notes;
 }
@@ -245,34 +325,37 @@ export function joinBlocks(blocks: readonly string[], separators: readonly strin
   return `${frontMatter + blocks.map((text, index) => (separators[index - 1] ?? '') + text).join('')}\n`;
 }
 
-function block(rand: Rand, depth: number): string[] {
-  return depth > 0 && rand(CONTAINER_ONE_IN) === 0 ? container(rand, depth) : leafBlock(rand);
+function block(rand: Rand, depth: number, grammar: Grammar): string[] {
+  return depth > 0 && rand(CONTAINER_ONE_IN) === 0 ? container(rand, depth, grammar) : leafBlock(rand, grammar);
 }
 
-function container(rand: Rand, depth: number): string[] {
-  const inner = block(rand, depth - 1);
+function container(rand: Rand, depth: number, grammar: Grammar): string[] {
+  const inner = block(rand, depth - 1, grammar);
   const isLazy = rand(LAZY_ONE_IN) === 0;
-  switch (rand(CONTAINER_KINDS)) {
-    case 0: {
-      return prefixLines(inner, '> ', isLazy ? '' : '> ');
-    }
-    case 1: {
+  switch (pick(rand, grammar.containerKinds)) {
+    case 'callout': {
       const type = pick(rand, CALLOUT_TYPES);
-      const title = isHeads(rand) ? '' : ` ${inline(rand, 0)}`;
+      const title = isHeads(rand) ? '' : ` ${inline(rand, 0, grammar)}`;
       return [`> [!${type}]${title}`, ...prefixLines(inner, '> ', isLazy ? '' : '> ')];
     }
-    default: {
-      const marker = pick(rand, LIST_MARKERS);
+    case 'list': {
+      const marker = pick(rand, grammar.listMarkers);
       return prefixLines(inner, marker, isLazy ? '' : ' '.repeat(marker.replace(/\[.\] $/u, '').length));
+    }
+    case 'quote': {
+      return prefixLines(inner, '> ', isLazy ? '' : '> ');
+    }
+    default: {
+      throw new Error('Unknown container kind');
     }
   }
 }
 
-function inline(rand: Rand, lead: number): string {
+function inline(rand: Rand, lead: number, grammar: Grammar): string {
   const atoms: string[] = [];
   const count = 1 + rand(MAX_INLINE_ATOMS);
   for (let index = 0; index < count; index++) {
-    atoms.push(pick(rand, INLINE_ATOMS));
+    atoms.push(pick(rand, grammar.inlineAtoms));
   }
   if (rand(LONG_FILLER_ONE_IN) === 0) {
     const used = lead + atoms.join(' ').length + 1;
@@ -286,9 +369,9 @@ function isHeads(rand: Rand): boolean {
   return rand(COIN_SIDES) === 0;
 }
 
-function leafBlock(rand: Rand): string[] {
-  const blockId = isHeads(rand) ? ' ^blockid' : '';
-  return pick(rand, LEAF_BLOCKS)(rand, blockId);
+function leafBlock(rand: Rand, grammar: Grammar): string[] {
+  const blockId = isHeads(rand) && grammar.hasBlockIds ? ' ^blockid' : '';
+  return pick(rand, grammar.leafBlocks)(rand, blockId, grammar);
 }
 /* eslint-disable no-bitwise -- Mulberry32 is defined by its 32-bit integer operations. */
 // Mulberry32: the corpus's linear congruential generator makes some runs of draws impossible, such as a definition and then a

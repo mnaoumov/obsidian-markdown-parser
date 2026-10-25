@@ -35,6 +35,7 @@ import { parseMetadata } from '../metadata/metadata.ts';
 import { renderRemarkHtml } from '../remark/html.ts';
 import { parseRemark } from '../remark/parse.ts';
 import { minimizeNote } from './ddmin.ts';
+import { judgeEngines } from './engine-differential.ts';
 import { FILLER_WORD } from './note-grammar.ts';
 import { compareCodeUnits } from './score.ts';
 
@@ -61,10 +62,11 @@ export interface SelfCheckFinding {
 /**
  * A self-check judge.
  */
-export type SelfCheckJudge = 'conservation' | 'escape' | 'fidelity' | 'independence' | 'offset' | 'padding' | 'rename' | 'render' | 'shape' | 'shift';
+export type SelfCheckJudge = 'conservation' | 'engines' | 'escape' | 'fidelity' | 'independence' | 'offset' | 'padding' | 'rename' | 'render' | 'shape' | 'shift';
 
 /**
- * Every judge, in the order {@link judgeNote} runs them.
+ * Every judge {@link judgeNote} runs, in its order. The `engines` judge (`engine-differential.ts`) is not one of them:
+ * it reads only notes of CommonMark and GFM alone, so it runs on the grammar's `gfm` notes, by {@link reduceFinding} too.
  */
 export const SELF_CHECK_JUDGES: readonly SelfCheckJudge[] = ['offset', 'shift', 'padding', 'rename', 'escape', 'independence', 'render', 'fidelity', 'conservation', 'shape'];
 
@@ -707,6 +709,9 @@ function judgeOne(judge: SelfCheckJudge, text: string): SelfCheckFinding[] {
   switch (judge) {
     case 'conservation': {
       return judgeConservation(text);
+    }
+    case 'engines': {
+      return judgeEngines(text);
     }
     case 'escape': {
       return judgeEscapes(text);
