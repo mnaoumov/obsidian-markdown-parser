@@ -3121,6 +3121,403 @@
           "hmd-frontmatter"
         ]
       ]
+    },
+    {
+      "html": "<p>after</p>",
+      "markdown": "%% see [[target]] here\nmore\n%%\n\nafter\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 5,
+                "offset": 5
+              },
+              "end": {
+                "line": 0,
+                "col": 15,
+                "offset": 15
+              }
+            },
+            "link": "target",
+            "original": "e [[target",
+            "displayText": "target"
+          }
+        ],
+        "sections": [
+          {
+            "type": "comment",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 2,
+                "offset": 30
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 4,
+                "col": 0,
+                "offset": 32
+              },
+              "end": {
+                "line": 4,
+                "col": 5,
+                "offset": 37
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          2,
+          1,
+          "comment_comment-start_formatting"
+        ],
+        [
+          2,
+          7,
+          1,
+          "comment"
+        ],
+        [
+          7,
+          9,
+          1,
+          "comment_formatting-link_formatting-link-start"
+        ],
+        [
+          9,
+          15,
+          1,
+          "comment_hmd-internal-link"
+        ],
+        [
+          15,
+          17,
+          1,
+          "comment_formatting-link_formatting-link-end"
+        ],
+        [
+          17,
+          22,
+          1,
+          "comment"
+        ],
+        [
+          23,
+          27,
+          1,
+          "comment"
+        ],
+        [
+          28,
+          30,
+          1,
+          "comment_comment-end_formatting"
+        ]
+      ]
+    },
+    {
+      "html": "<ul>\n<li></li>\n</ul>",
+      "markdown": "- %% see [[target]] here\n  more\n  %%\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 7,
+                "offset": 7
+              },
+              "end": {
+                "line": 0,
+                "col": 17,
+                "offset": 17
+              }
+            },
+            "link": "target",
+            "original": "e [[target",
+            "displayText": "target"
+          }
+        ],
+        "sections": [
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 4,
+                "offset": 36
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 4,
+                "offset": 36
+              }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          24,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1"
+        ],
+        [
+          0,
+          2,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          2,
+          4,
+          2,
+          "comment_comment-start_formatting_list-1"
+        ],
+        [
+          4,
+          9,
+          2,
+          "comment_list-1"
+        ],
+        [
+          9,
+          11,
+          2,
+          "comment_formatting-link_formatting-link-start_list-1"
+        ],
+        [
+          11,
+          17,
+          2,
+          "comment_hmd-internal-link_list-1"
+        ],
+        [
+          17,
+          19,
+          2,
+          "comment_formatting-link_formatting-link-end_list-1"
+        ],
+        [
+          19,
+          24,
+          2,
+          "comment_list-1"
+        ],
+        [
+          25,
+          31,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1_HyperMD-list-line-nobullet"
+        ],
+        [
+          25,
+          27,
+          2,
+          "comment_hmd-list-indent_hmd-list-indent-1"
+        ],
+        [
+          27,
+          31,
+          2,
+          "comment_list-1"
+        ],
+        [
+          32,
+          36,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1_HyperMD-list-line-nobullet"
+        ],
+        [
+          32,
+          34,
+          2,
+          "comment_hmd-list-indent_hmd-list-indent-1"
+        ],
+        [
+          34,
+          36,
+          2,
+          "comment_comment-end_formatting_list-1"
+        ]
+      ]
+    },
+    {
+      "html": "<ol>\n<li>\n<div class=\"callout node-insert-event\" data-callout=\"note\" data-callout-fold=\"\" data-callout-metadata=\"\"><div class=\"callout-title\"><div class=\"callout-icon\"><svg height=\"16\" width=\"16\"></svg></div><div class=\"callout-title-inner\">T</div></div><div class=\"callout-content\">\n<p>ab cd <a href=\"target\">target</a> end</p>\n</div></div>\n</li>\n</ol>",
+      "markdown": "1. > [!note] T\n> ab cd [[target]] end\n",
+      "metadata": {
+        "links": [
+          {
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 9,
+                "offset": 24
+              },
+              "end": {
+                "line": 1,
+                "col": 19,
+                "offset": 34
+              }
+            },
+            "link": "target",
+            "original": "[target]] ",
+            "displayText": "target"
+          }
+        ],
+        "sections": [
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 22,
+                "offset": 37
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "col": 22,
+                "offset": 37
+              }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          14,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1"
+        ],
+        [
+          0,
+          3,
+          2,
+          "formatting_formatting-list_formatting-list-ol_list-1"
+        ],
+        [
+          3,
+          5,
+          2,
+          "list-1"
+        ],
+        [
+          5,
+          6,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_list-1"
+        ],
+        [
+          6,
+          11,
+          2,
+          "hmd-barelink_link_list-1"
+        ],
+        [
+          11,
+          12,
+          2,
+          "formatting_formatting-link_hmd-barelink_link_list-1"
+        ],
+        [
+          12,
+          14,
+          2,
+          "list-1"
+        ],
+        [
+          15,
+          37,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          15,
+          17,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          17,
+          23,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          23,
+          25,
+          2,
+          "formatting-link_formatting-link-start_quote_quote-1"
+        ],
+        [
+          25,
+          31,
+          2,
+          "hmd-internal-link_quote_quote-1"
+        ],
+        [
+          31,
+          33,
+          2,
+          "formatting-link_formatting-link-end_quote_quote-1"
+        ],
+        [
+          33,
+          37,
+          2,
+          "quote_quote-1"
+        ]
+      ]
     }
   ]
 }

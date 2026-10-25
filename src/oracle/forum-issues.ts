@@ -125,7 +125,8 @@ export interface MetadataIssueSample {
   readonly id: string;
 
   /**
-   * The issue, `issue-<n>` in the order of the summary sent to the Obsidian team.
+   * The issue: `issue-<n>` in the order of the summary sent to the Obsidian team, or `issue-topic-<topic>` for an issue
+   * reported after the summary.
    */
   readonly issue: string;
 
@@ -150,6 +151,22 @@ interface BlockCache {
   readonly position: SectionPosition;
 }
 
+interface Link {
+  readonly original: string;
+  readonly position: LinkPosition;
+}
+
+interface LinkPoint {
+  readonly col: number;
+  readonly line: number;
+  readonly offset: number;
+}
+
+interface LinkPosition {
+  readonly end: LinkPoint;
+  readonly start: LinkPoint;
+}
+
 interface Section {
   readonly id?: string;
   readonly position: SectionPosition;
@@ -169,12 +186,19 @@ interface WithFrontmatter {
   readonly frontmatter?: Record<string, unknown>;
 }
 
+interface WithLinks {
+  readonly links?: readonly Link[];
+}
+
 interface WithSections {
   readonly blocks?: Record<string, BlockCache>;
   readonly sections?: readonly Section[];
 }
 
 const FORUM = 'https://forum.obsidian.md/t/';
+
+// The worker places a link on a block comment's opening line as if the comment's `%%` were not there.
+const COMMENT_MARK_LENGTH = '%%'.length;
 
 // Both editing modes run the same parse, so a disagreement of its shows in both.
 const BOTH_EDITING_MODES: readonly EditingMode[] = ['livePreview', 'sourceMode'];
@@ -299,7 +323,7 @@ export const EDITING_MODES_VS_READING_VIEW_SAMPLES: readonly EditingModesVsReadi
 ];
 
 /**
- * The notes whose metadata the worker drops or misplaces: issues 1 to 4 of the summary.
+ * The notes whose metadata the worker drops or misplaces: issues 1 to 4 of the summary, and the issue of topic 119821.
  */
 export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
   {
@@ -381,6 +405,30 @@ export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
     issue: 'issue-4',
     markdown: '---\na: 1\n----\ntext\n',
     note: 'The worker reads front matter closed by `----` and an empty list item after it, while the editor styles the next line as front matter, `getFrontMatterInfo` returns `exists: false` and `processFrontMatter` adds a second front matter block; which side is right is the team\'s call, so no metadata is expected.'
+  },
+  {
+    expectedOf: (actual) => withFirstLinkShifted(actual, COMMENT_MARK_LENGTH, '[[target]]'),
+    forumUrl: `${FORUM}119821`,
+    id: 'issue-topic-119821-1',
+    issue: 'issue-topic-119821',
+    markdown: '%% see [[target]] here\nmore\n%%\n\nafter\n',
+    note: 'A link on the opening line of a `%%` block comment is placed 2 characters early, as if the `%%` were not there, so its `original` is `e [[target` and renaming `target` corrupts the line. The expected metadata moves the link 2 characters on.'
+  },
+  {
+    expectedOf: (actual) => withFirstLinkShifted(actual, COMMENT_MARK_LENGTH, '[[target]]'),
+    forumUrl: `${FORUM}119821`,
+    id: 'issue-topic-119821-2',
+    issue: 'issue-topic-119821',
+    markdown: '- %% see [[target]] here\n  more\n  %%\n',
+    note: 'A link on the opening line of a `%%` block comment in a list item is placed 2 characters early, so its `original` is `e [[target` and renaming `target` corrupts the line. The expected metadata moves the link 2 characters on.'
+  },
+  {
+    expectedOf: (actual) => withFirstLinkShifted(actual, -1, '[[target]]'),
+    forumUrl: `${FORUM}119821`,
+    id: 'issue-topic-119821-3',
+    issue: 'issue-topic-119821',
+    markdown: '1. > [!note] T\n> ab cd [[target]] end\n',
+    note: 'A link on a callout\'s unindented `>` line in a list item is placed 1 character late, so its `original` is `[target]] ` and renaming `target` corrupts the line; the same line indented under the item is placed right. The expected metadata moves the link 1 character back.'
   }
 ];
 
@@ -395,6 +443,22 @@ export function forumIssueDocuments(): string[] {
     ...METADATA_ISSUE_SAMPLES.flatMap((sample) => sample.standIn === undefined ? [sample.markdown] : [sample.markdown, sample.standIn])
   ];
   return [...new Set(all)];
+}
+
+// Moves the first link `by` characters along its line and gives it the source text it then covers.
+function withFirstLinkShifted(metadata: unknown, by: number, original: string): unknown {
+  const { links = [] } = metadata as WithLinks;
+  const [first, ...rest] = links;
+  if (first === undefined) {
+    throw new Error('No link to move');
+  }
+  function shift(point: LinkPoint): LinkPoint {
+    return { ...point, col: point.col + by, offset: point.offset + by };
+  }
+  return {
+    ...metadata as object,
+    links: [{ ...first, original, position: { end: shift(first.position.end), start: shift(first.position.start) } }, ...rest]
+  };
 }
 
 function withFrontmatterKey(metadata: unknown, path: readonly string[], from: string, to: string): unknown {
