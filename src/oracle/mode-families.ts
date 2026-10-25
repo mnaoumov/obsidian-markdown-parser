@@ -25,6 +25,11 @@ export interface ModeFamily {
   readonly forumUrl?: string;
 
   /**
+   * The obsidian-help page that documents it, for an expected family.
+   */
+  readonly helpUrl?: string;
+
+  /**
    * The family id.
    */
   readonly id: string;
@@ -59,8 +64,8 @@ export type ModeFamilyKind =
    */
   | 'candidate'
   /**
-  The editor shows it by design, such as a mark it has not seen closed yet while it is being typed, or as a known limit
-  of Live Preview, such as one the team closed on the forum.
+  The editor shows it by design, such as a mark it has not seen closed yet while it is being typed, or as a limit of Live
+  Preview that obsidian-help documents.
    */
   | 'expected'
   /**
@@ -204,7 +209,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   {
     forumUrl: 'https://forum.obsidian.md/t/104674',
     id: 'html-block-ends-at-line',
-    kind: 'expected',
+    kind: 'candidate',
     matches: (key, reduced) => key.side === 'editor' && /^<\/?[A-Za-z][^\n]*\n/mu.test(reduced),
     note: 'The editor ends at its own line an HTML block that the reading view runs on to the next empty line, so the editor styles markdown the reading view shows as raw HTML.'
   },
@@ -217,6 +222,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/29589',
+    helpUrl: 'https://help.obsidian.md/html#No%20Markdown%20inside%20HTML',
     id: 'inline-html-before-internal-link',
     kind: 'expected',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'internalLink') && /<[a-z]+>\[\[/u.test(reduced),
@@ -229,8 +235,9 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'After an empty quote line the editor carries the quote onto the next line, which the reading view reads as a block of its own.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/29582',
     id: 'block-on-list-item-first-line',
-    kind: 'expected',
+    kind: 'known',
     matches: (key, reduced) => key.side === 'readingView' && /^\s*(?:>+ ?)*(?:[-*+]|\d+[.)])[ \t]+(?:>|\*\*\*|[-*+] |#)/mu.test(reduced),
     note: 'The editor reads no quote, thematic break, heading or nested list item opened on a list item\'s first line.'
   },
@@ -251,19 +258,20 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   {
     forumUrl: 'https://forum.obsidian.md/t/30367',
     id: 'ordered-item-interrupts-paragraph',
-    kind: 'expected',
+    kind: 'candidate',
     matches: (key, reduced) => isKey(key, 'editor', /^(?:list|task)$/u) && /\S\n(?!1[.)])\d+[.)] /u.test(reduced),
     note: 'In the editor an ordered list item not numbered 1 interrupts a paragraph, which CommonMark and the reading view keep going.'
   },
   {
     id: 'empty-list-item',
-    kind: 'expected',
+    kind: 'candidate',
     matches: (key, reduced) => ((key.side === 'readingView' && key.fact === 'list') && /^(?:[-*+]|\d+[.)])$/mu.test(reduced)) || (isKey(key, 'editor', /^heading-\d$/u) && /^[-*+]\n/u.test(reduced)),
     note: 'The editor reads a list marker alone on its line as text; the reading view reads an empty list item.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/112786',
     id: 'one-dash-setext-underline',
-    kind: 'expected',
+    kind: 'known',
     matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'heading-2') && reduced.endsWith('\n-'),
     note: 'The editor reads a setext underline of one `-` as an empty list item; the reading view reads a heading.'
   },
@@ -360,9 +368,9 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'In a table row, the editor pairs `$` marks from two cells into one math span.'
   },
   {
-    forumUrl: 'https://forum.obsidian.md/t/29589',
+    forumUrl: 'https://forum.obsidian.md/t/31041',
     id: 'emphasis-around-inline-html',
-    kind: 'expected',
+    kind: 'known',
     matches: (key, reduced) => isKey(key, 'readingView', /^(?:em|strong)$/u) && /[*_]<|>[*_]/u.test(reduced),
     note: 'The editor reads no emphasis that opens or closes next to an inline HTML tag.'
   },
