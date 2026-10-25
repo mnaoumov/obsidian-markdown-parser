@@ -33,7 +33,7 @@ import {
   JUDGED_SET
 } from './editing-modes.ts';
 import {
-  EDITING_MODES_VS_READING_VIEW_SAMPLES,
+  EDITOR_VS_READING_VIEW_SAMPLES,
   METADATA_ISSUE_SAMPLES
 } from './forum-issues.ts';
 import { JUDGED_SAMPLES } from './mode-judge-samples.ts';
@@ -51,29 +51,9 @@ import {
 } from './spec-quirks.ts';
 
 /**
- * One way the reading view departs from the spec on an example.
- */
-export interface ExportedDeparture {
-  /**
-   * The behaviour, with the examples that show each part of it.
-   */
-  readonly behaviour: string;
-
-  /**
-   * What kind of departure it is.
-   */
-  readonly kind: SpecDifference['kind'];
-
-  /**
-   * A short name.
-   */
-  readonly name: string;
-}
-
-/**
  * A note with all three of Obsidian's views of it: Source mode, Live Preview and the reading view.
  */
-export interface LivePreviewAndSourceModeAndReadingViewCase {
+export interface EditorAndReadingViewCase {
   /**
    * The case id: the corpus id, a forum issue sample's or a judged sample's.
    */
@@ -116,9 +96,9 @@ export interface LivePreviewAndSourceModeAndReadingViewCase {
 }
 
 /**
- * A case that Live Preview or Source mode and the reading view read differently.
+ * A case that the editor, Source mode or Live Preview, and the reading view read differently.
  */
-export interface LivePreviewAndSourceModeVsReadingViewCase {
+export interface EditorVsReadingViewCase {
   /**
    * The editing modes that disagree with the reading view on it.
    */
@@ -178,6 +158,26 @@ export interface LivePreviewAndSourceModeVsReadingViewCase {
    * The Obsidian version that read it.
    */
   readonly obsidianVersion: string;
+}
+
+/**
+ * One way the reading view departs from the spec on an example.
+ */
+export interface ExportedDeparture {
+  /**
+   * The behaviour, with the examples that show each part of it.
+   */
+  readonly behaviour: string;
+
+  /**
+   * What kind of departure it is.
+   */
+  readonly kind: SpecDifference['kind'];
+
+  /**
+   * A short name.
+   */
+  readonly name: string;
 }
 
 /**
@@ -401,6 +401,16 @@ export interface TestCaseSuites {
   readonly commonmarkNoSpecFailing: TestCaseSuite<NoSpecCase>;
 
   /**
+   * The notes that the editor, Source mode or Live Preview, and the reading view read differently.
+   */
+  readonly editorVsReadingView: TestCaseSuite<EditorVsReadingViewCase>;
+
+  /**
+   * A bounded sample of notes with all three views: the editing mode oracle's, and the forum issue samples.
+   */
+  readonly editorVsReadingViewAll: TestCaseSuite<EditorAndReadingViewCase>;
+
+  /**
    * The GFM spec's extension examples.
    */
   readonly gfm: TestCaseSuite<SpecCase>;
@@ -414,16 +424,6 @@ export interface TestCaseSuites {
    * The GFM quirk probes whose reading view differs from `cmark-gfm`.
    */
   readonly gfmNoSpecFailing: TestCaseSuite<NoSpecCase>;
-
-  /**
-   * The notes that Live Preview or Source mode and the reading view read differently.
-   */
-  readonly livePreviewAndSourceModeVsReadingView: TestCaseSuite<LivePreviewAndSourceModeVsReadingViewCase>;
-
-  /**
-   * A bounded sample of notes with all three views: the editing mode oracle's, and the forum issue samples.
-   */
-  readonly livePreviewAndSourceModeVsReadingViewAll: TestCaseSuite<LivePreviewAndSourceModeAndReadingViewCase>;
 
   /**
    * The metadata worker documents.
@@ -507,19 +507,19 @@ export function buildTestCaseSuites(spec: SpecOracleFile, probes: QuirkProbeFile
     commonmark: buildSpecSuite(spec, specCases, 'commonmark', null),
     commonmarkFailing: buildSpecSuite(spec, specCases, 'commonmark', departing),
     commonmarkNoSpecFailing: buildNoSpecSuite(probes, 'commonmark', COMMONMARK_REFERENCE_IMPLEMENTATION, renderCommonMarkReference),
+    editorVsReadingView: buildEditorVsReadingViewSuite(forum, editingModes),
+    editorVsReadingViewAll: buildEditorAndReadingViewSuite(forum, editingModes),
     gfm: buildSpecSuite(spec, specCases, 'gfm', null),
     gfmFailing: buildSpecSuite(spec, specCases, 'gfm', departing),
     gfmNoSpecFailing: buildNoSpecSuite(probes, 'gfm', gfmReference.meta.implementation, (markdown) => gfmReferenceHtml(gfmReference, markdown)),
-    livePreviewAndSourceModeVsReadingView: buildLivePreviewAndSourceModeVsReadingViewSuite(forum, editingModes),
-    livePreviewAndSourceModeVsReadingViewAll: buildLivePreviewAndSourceModeAndReadingViewSuite(forum, editingModes),
     metadata: buildMetadataSuite(worker),
     metadataFailing: buildMetadataFailingSuite(worker, forum)
   };
 }
 
-function buildLivePreviewAndSourceModeAndReadingViewSuite(forum: ForumIssueFile, editingModes: EditingModesFile): TestCaseSuite<LivePreviewAndSourceModeAndReadingViewCase> {
+function buildEditorAndReadingViewSuite(forum: ForumIssueFile, editingModes: EditingModesFile): TestCaseSuite<EditorAndReadingViewCase> {
   const obsidianVersion = requireVersion(editingModes.meta.appVersion);
-  const forumCases = EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample): LivePreviewAndSourceModeAndReadingViewCase => {
+  const forumCases = EDITOR_VS_READING_VIEW_SAMPLES.map((sample): EditorAndReadingViewCase => {
     const read = forumRead(forum, sample.markdown);
     if (read.sourceModeHtml === undefined || read.livePreviewHtml === undefined) {
       throw new Error(`The forum issue oracle has no editing mode read of ${JSON.stringify(sample.markdown)}`);
@@ -536,7 +536,7 @@ function buildLivePreviewAndSourceModeAndReadingViewSuite(forum: ForumIssueFile,
     };
   });
   const cases = [
-    ...editingModes.reads.map((read): LivePreviewAndSourceModeAndReadingViewCase => ({
+    ...editingModes.reads.map((read): EditorAndReadingViewCase => ({
       id: read.id,
       markdown: read.markdown,
       metadata: read.metadata,
@@ -549,15 +549,15 @@ function buildLivePreviewAndSourceModeAndReadingViewSuite(forum: ForumIssueFile,
     ...forumCases
   ];
   return {
-    about: `Notes with all three of Obsidian's views of them, read from the live app: the first ${String(EDITING_MODES_PER_SET)} documents of each piece set of the generated corpus (\`set\` names it), the notes on which the mode judge found a new disagreement between the editing modes and Reading view (\`set: judged\`), and the forum issue samples (\`set: forum\`). \`obsidianSourceModeHtml\` and \`obsidianLivePreviewHtml\` are the inner HTML of the editor's \`.cm-content\` in the default theme, read once the DOM had stopped changing, so math had rendered, with the cursor on an empty line appended to the note so that Live Preview shows no source for the selection, and that line left out; \`obsidianReadingViewHtml\` is the reading view's HTML with \`strictLineBreaks: true\`, serialized as in the spec suites; \`metadata\` is the metadata worker's CachedMetadata. A test of a parser that serves all three can expect each, and the \`-failing\` file names the cases on which they disagree.`,
+    about: `Notes with all three of Obsidian's views of them, read from the live app: the first ${String(EDITING_MODES_PER_SET)} documents of each piece set of the generated corpus (\`set\` names it), the notes on which the mode judge found a new disagreement between the editor and Reading view (\`set: judged\`), and the forum issue samples (\`set: forum\`). \`obsidianSourceModeHtml\` and \`obsidianLivePreviewHtml\` are the inner HTML of the editor's \`.cm-content\` in the default theme, read once the DOM had stopped changing, so math had rendered, with the cursor on an empty line appended to the note so that Live Preview shows no source for the selection, and that line left out; \`obsidianReadingViewHtml\` is the reading view's HTML with \`strictLineBreaks: true\`, serialized as in the spec suites; \`metadata\` is the metadata worker's CachedMetadata. A test of a parser that serves all three can expect each, and the \`-failing\` file names the cases on which they disagree.`,
     cases,
     obsidianVersion
   };
 }
 
-function buildLivePreviewAndSourceModeVsReadingViewSuite(forum: ForumIssueFile, editingModes: EditingModesFile): TestCaseSuite<LivePreviewAndSourceModeVsReadingViewCase> {
+function buildEditorVsReadingViewSuite(forum: ForumIssueFile, editingModes: EditingModesFile): TestCaseSuite<EditorVsReadingViewCase> {
   const obsidianVersion = requireVersion(forum.meta.appVersion);
-  const judgedCases = JUDGED_SAMPLES.map((sample): LivePreviewAndSourceModeVsReadingViewCase => {
+  const judgedCases = JUDGED_SAMPLES.map((sample): EditorVsReadingViewCase => {
     const read = editingModes.reads.find((candidate) => candidate.id === sample.id && candidate.markdown === sample.markdown);
     if (read === undefined) {
       throw new Error(`The editing mode oracle has no read of ${sample.id}`);
@@ -576,7 +576,7 @@ function buildLivePreviewAndSourceModeVsReadingViewSuite(forum: ForumIssueFile, 
       obsidianVersion: requireVersion(editingModes.meta.appVersion)
     };
   });
-  const forumCases = EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample): LivePreviewAndSourceModeVsReadingViewCase => {
+  const forumCases = EDITOR_VS_READING_VIEW_SAMPLES.map((sample): EditorVsReadingViewCase => {
     const read = forumRead(forum, sample.markdown);
     if (read.sourceModeHtml === undefined || read.livePreviewHtml === undefined) {
       throw new Error(`The forum issue oracle has no editing mode read of ${JSON.stringify(sample.markdown)}`);
@@ -598,7 +598,7 @@ function buildLivePreviewAndSourceModeVsReadingViewSuite(forum: ForumIssueFile, 
   const cases = [...forumCases, ...judgedCases];
   return {
     about:
-      'Notes that Obsidian\'s editing modes, Source mode and Live Preview, and its Reading view read differently: the samples of the issues reported on the Obsidian forum (`forumUrl`), and one note for each new kind of disagreement the mode judge found across the oracle corpora (`issue: judged`, with its `family`), each confirmed on the live editor\'s tree. Each case is under the same `id` in the `-all` file. Each case has all three as the user sees them: `obsidianSourceModeHtml` and `obsidianLivePreviewHtml` are the inner HTML of the editor\'s `.cm-content` in the default theme, read once math had rendered, with the cursor on an empty line appended to the note so that Live Preview shows no source for the selection, and that line left out; `obsidianReadingViewHtml` is the reading view\'s HTML with `strictLineBreaks: true`, serialized as in the spec suites. `metadata` is the metadata worker\'s CachedMetadata, which reads the note as Reading view does. `differsIn` lists the editing modes, `sourceMode` and `livePreview`, that disagree with Reading view, and `note` names the disagreement. A test of a parser that serves all three expects them to agree.',
+      'Notes that Obsidian\'s editor and its Reading view read differently, where by `editor` we mean `Source mode` or `Live Preview`: the samples of the issues reported on the Obsidian forum (`forumUrl`), and one note for each new kind of disagreement the mode judge found across the oracle corpora (`issue: judged`, with its `family`), each confirmed on the live editor\'s tree. Each case is under the same `id` in the `-all` file. Each case has all three as the user sees them: `obsidianSourceModeHtml` and `obsidianLivePreviewHtml` are the inner HTML of the editor\'s `.cm-content` in the default theme, read once math had rendered, with the cursor on an empty line appended to the note so that Live Preview shows no source for the selection, and that line left out; `obsidianReadingViewHtml` is the reading view\'s HTML with `strictLineBreaks: true`, serialized as in the spec suites. `metadata` is the metadata worker\'s CachedMetadata, which reads the note as Reading view does. `differsIn` lists the editing modes, `sourceMode` and `livePreview`, that disagree with Reading view, and `note` names the disagreement. A test of a parser that serves all three expects them to agree.',
     cases,
     obsidianVersion
   };

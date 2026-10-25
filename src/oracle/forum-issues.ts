@@ -20,7 +20,7 @@ export type EditingMode = 'livePreview' | 'sourceMode';
 /**
  * A note that Obsidian's editing modes and its reading view read differently.
  */
-export interface EditingModesVsReadingViewSample {
+export interface EditorVsReadingViewSample {
   /**
    * The editing modes that disagree with the reading view on it.
    */
@@ -79,7 +79,7 @@ export interface ForumIssueRead {
 
   /**
    * Live Preview's `.cm-content` inner HTML, read with the cursor on an empty line appended to the note, and that line
-   * left out; read for the samples of {@link EDITING_MODES_VS_READING_VIEW_SAMPLES} only.
+   * left out; read for the samples of {@link EDITOR_VS_READING_VIEW_SAMPLES} only.
    */
   readonly livePreviewHtml?: string;
 
@@ -207,7 +207,7 @@ const BOTH_EDITING_MODES: readonly EditingMode[] = ['livePreview', 'sourceMode']
  * The notes that the editing modes and the reading view read differently: issues 5 to 12 of the summary, and the issue
  * of topic 50661.
  */
-export const EDITING_MODES_VS_READING_VIEW_SAMPLES: readonly EditingModesVsReadingViewSample[] = [
+export const EDITOR_VS_READING_VIEW_SAMPLES: readonly EditorVsReadingViewSample[] = [
   {
     differsIn: BOTH_EDITING_MODES,
     forumUrl: `${FORUM}119746`,
@@ -439,7 +439,7 @@ export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
  */
 export function forumIssueDocuments(): string[] {
   const all = [
-    ...EDITING_MODES_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown),
+    ...EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown),
     ...METADATA_ISSUE_SAMPLES.flatMap((sample) => sample.standIn === undefined ? [sample.markdown] : [sample.markdown, sample.standIn])
   ];
   return [...new Set(all)];
