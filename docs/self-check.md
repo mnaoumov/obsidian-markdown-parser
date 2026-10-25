@@ -5,8 +5,10 @@ The other bug finders compare two readings: Obsidian against the CommonMark and 
 The self-check judges find those. Each one checks a relation that a correct parser keeps, and none of them needs a reference output:
 
 ```sh
-npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--out <file>]
+npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--live-surfaces] [--out <file>]
 ```
+
+`--live-surfaces` also judges the live surface oracle ([below](#the-live-surfaces)) and reports its families as a table of their own.
 
 ## The relations
 
@@ -104,6 +106,16 @@ The notes cannot be reduced offline, since only the app reads them, so each find
 | `outline-inline-footnote` | bug, not reported | 12 | An inline footnote in a heading shows in the Outline as a numbered list after the heading. |
 | `outline-undefined-reference` | minor | 6 | An undefined reference link in a heading shows in the Outline as its text alone. |
 | `outline-escaped-bracket` | bug, not reported | 5 | `\[[escaped]]` in a heading shows in the Outline as `[escaped]`. |
+
+## A new Obsidian build
+
+The judges above run on this repository's engines, which match the pinned oracles, so a new public or Catalyst build reaches them only through oracles read from it. The release differential runs the bug finders on two versions' oracles and diffs their family tables:
+
+```sh
+npm run oracle:differential -- --to-version <version> [--to-dir <directory>] [--from-version <version>] [--from-dir <directory>] [--out-dir <directory>]
+```
+
+`npm run oracle:refresh` runs it after the drift report, unless `--skip-differential` ([oracles.md](oracles.md#the-release-differential)). Per version it runs the mode judge, whose editor side is the build's class-span trees, and `npm run self-check -- --count 0 --live-surfaces`, which judges the build's live surface oracle. The offline relations of the table above are left out: they judge `parseMetadata` and the `remark-parse` 8 engine, which no build changes, so their families move only when the notes' text does.
 
 ## What the judges cannot find yet
 

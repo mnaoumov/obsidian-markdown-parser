@@ -2,7 +2,8 @@
  * @file
  *
  * Re-reads every oracle from one Obsidian version, then reports the drift from the pinned version
- * (`scripts/oracle-drift.ts`).
+ * (`scripts/oracle-drift.ts`) and the release differential of the bug finders' families
+ * (`scripts/release-differential.ts`).
  *
  * It resolves the version first, by launching it once over CDP (`obsidian-integration-testing`, installed globally):
  * the installed one, or the one `--obsidian-version` names (`x.y.z`, `public-latest` or `catalyst-latest`). From that
@@ -18,7 +19,7 @@
  * version itself goes to a temporary directory instead, so it never overwrites the files the suites check against.
  *
  * Usage: `jiti scripts/oracle-refresh.ts [--obsidian-version <version>] [--out-dir <directory>] [--only <oracle>,...]
- * [--skip-drift]`, where an oracle is `classes`, `spec`, `quirk-probes`, `forum-issues`, `editing-modes`, `live-surfaces` or
+ * [--skip-drift] [--skip-differential]`, where an oracle is `classes`, `spec`, `quirk-probes`, `forum-issues`, `editing-modes`, `live-surfaces` or
  * `worker`.
  */
 
@@ -103,6 +104,7 @@ const { values } = parseArgs({
     'obsidian-version': { type: 'string' },
     'only': { type: 'string' },
     'out-dir': { type: 'string' },
+    'skip-differential': { type: 'boolean' },
     'skip-drift': { type: 'boolean' }
   }
 });
@@ -198,4 +200,11 @@ if (!values['skip-drift']) {
   console.log('');
   const result = spawnSync(process.execPath, [jitiCli, join(here, 'oracle-drift.ts'), '--to-version', version, '--to-dir', outDirectory], { cwd: repoRoot, stdio: 'inherit' });
   process.exitCode = result.status ?? 1;
+}
+if (!values['skip-differential']) {
+  console.log('');
+  const result = spawnSync(process.execPath, [jitiCli, join(here, 'release-differential.ts'), '--to-version', version, '--to-dir', outDirectory], { cwd: repoRoot, stdio: 'inherit' });
+  if (result.status !== 0) {
+    process.exitCode = result.status ?? 1;
+  }
 }

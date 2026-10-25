@@ -12,7 +12,6 @@ import type {
 
 import { parseMetadata } from '../metadata/metadata.ts';
 import {
-  judgeLiveSurfaceFile,
   judgeOutline,
   judgeProcessFrontMatter,
   judgeRenameFile,
@@ -24,7 +23,7 @@ import {
   liveSurfacesOracleFileName,
   readOracleFile
 } from './oracle-location.ts';
-import { selfCheckFamilyOf } from './self-check-families.ts';
+import { liveSurfaceFamilyCounts } from './release-differential.ts';
 
 // The families the pinned reading falls into: a family that stops being found, or one that appears, fails the suite.
 const FOUND_FAMILIES: readonly string[] = [
@@ -71,13 +70,8 @@ describe('the live surface oracle', () => {
   });
 
   it('sorts every finding into a known family', () => {
-    const families = new Set<string>();
-    for (const findings of judgeLiveSurfaceFile(file).values()) {
-      for (const finding of findings) {
-        families.add(selfCheckFamilyOf(finding.key, finding.excerpt)?.id ?? `unclassified:${finding.key}`);
-      }
-    }
-    expect([...families].toSorted((left, right) => left.localeCompare(right))).toEqual(FOUND_FAMILIES);
+    const families = liveSurfaceFamilyCounts(file).map((family) => family.id);
+    expect(families.toSorted((left, right) => left.localeCompare(right))).toEqual(FOUND_FAMILIES);
   });
 });
 
