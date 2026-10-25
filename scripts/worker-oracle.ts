@@ -83,10 +83,18 @@ const LINK = ['[t](a.md)', '[t](a%20b.md)', '[t](%zz)', '[t](a%E2.md)', '[t](./x
 const YAML = ['a: 1', 'b: [x, y]', 'c: {d: e}', 'k: "[[L|x]]"', 'k: "[[ |a]]"', 'k: "[[a#b#c]]"', String.raw`k: "[[a\\]]"`, 'k: [[L]]', 'x: !!str 1', 'n: 0o17', 'h: 0x1F', 'f: .inf', 'nan: .nan', 'y: yes', 't: 2024-01-02', 'a: &A {p: 1}', 'b: *A', '<<: *A', '%YAML 1.1', '- item', 'm: |\n  block', 'e:', 'e: ~', 'b: !!binary aGVsbG8=', 'b: !!binary a#b', 's: !!set {a, b}', 'o: !!omap [{a: 1}]', 'bad: [', 'tab:\tx', '? complex\n: v', '[a, b]: c', '__proto__: 1', 'hasOwnProperty: 1', 'l: ["[[x]]", "[t](a b.md)"]', 'k: "[t](a b.md)"', 'k: "[t](./a%20b.md)"', 'k: "[t](http://x)"', 'k: "![i](<a b.png>)"', 'k: "[t](%zz)"', 'k: "[t]()"', 'k: "[t]( )"', String.raw`k: "[t](a.md \"T\")"`, 'k: {n: "[[a]]"}', '"": {x: "[[e]]"}', 'k: "[[a]] and [[b]]"', 'x: 9007199254740993', 'x: 1e3', '...', '# c', '---x'];
 /* eslint-enable unicorn/prefer-string-repeat -- The piece sets end here. */
 
+// The offset, from a footnote definition's start, from which on the worker no longer ends the definition at a line that would interrupt it.
+const FOOTNOTE_DEFINITION_SCAN_LIMIT = 1024;
+
 /*
  * Documents the piece sets do not reach, kept whole: list items and quotes nested in each other, a tab between quote
  * levels included, whose list items the projection once had to be measured on by hand, and a `%%` inside an internal
- * link's content, where the editor opens a comment.
+ * link's content, where the editor opens a comment. Then the shapes of the parser findings another parity harness
+ * reported, each checked on the live app: positions on the line that opens a block comment and on a callout's lazy line
+ * inside a list item, which the worker reports short or past the text (a rename rewrites a link at that wrong place),
+ * comments, footnote references and definitions inside and around them, setext headings in containers, tabs before
+ * indented code, task item bodies, a footnote definition whose ender lies past the worker's scan limit, and a link
+ * reference definition that takes a quoted paragraph after a blank line as its title.
  */
 const PINNED = [
   '- > 1. first',
@@ -96,7 +104,36 @@ const PINNED = [
   '1. > - a\n   > b',
   '- > 1. a\n  > 2. b',
   '[[a%%b]]',
-  '[[a%%b]]%%'
+  '[[a%%b]]%%',
+  '%%open\n\n# Heading\n\nbody [^1]\n\n[^1]: x',
+  'a %%open\n\n# Heading\n\nbody [^1]\n\n[^1]: x',
+  '%% | ![[==mark==]], [[target]]',
+  '%%c%% | ![[==mark==]], [[target]]',
+  '%%\nhidden\n%% [^a]: sees [^b]\n\n[^b]: b body\n\ntail',
+  '- %% see [[target]] here\n  more %%',
+  '1. > [!note] T\n> ab cd [[target]] end',
+  '1. > [!note] T\n   > ab cd [[target]] end',
+  'inline ^[^9] real[^7]',
+  '[^1](u)\n\n[^1]: one',
+  'use[^1] and [^2]',
+  '%%\n[^1]: buried\n%%\n\nuse[^1]\n\n[^1]: real',
+  'Text[^1] and more.\n\n%% check [^1] later %%\n\n[^1]: the note',
+  '> text\n> ---',
+  '- item\n  ===',
+  '[ref]: /url\n  \tcode',
+  '  \t%%\n[^1]: def',
+  '- \tp\n\n  [^1]: def',
+  '- item\n\n\t   [^1]: def\n\nuse[^1]',
+  '> [!note]\n>\tcode[^2]\n\n[^2]: d',
+  '- [ ] 1.\n- [ ] 1) text\n- [ ] - bullet\n- [ ] > quote',
+  '- [/] a\n- [-] b\n- [>] c\n- [!] d',
+  longFootnoteDefinition(FOOTNOTE_DEFINITION_SCAN_LIMIT - 1, '# ender'),
+  longFootnoteDefinition(FOOTNOTE_DEFINITION_SCAN_LIMIT, '# ender'),
+  longFootnoteDefinition(FOOTNOTE_DEFINITION_SCAN_LIMIT, '[^2]: second'),
+  '[foo]: /url\n\n\'tit [^1]\nle\'\n\n[^1]: x',
+  '[1]: https://example.com\n\n"To be or not to be."\n\nNext paragraph.',
+  '[1]: https://example.com\n\n"Unclosed quote\n\nNext paragraph with a [link][1].',
+  'a[^a[b]c]\n\n[^a[b]: d'
 ];
 
 /*
@@ -170,6 +207,17 @@ function loadWorker(path: string): (text: string) => CachedMetadata | null {
     scope.onmessage?.({ data: { metadataCache: new TextEncoder().encode(text).buffer } });
     return last;
   };
+}
+
+// A footnote definition of lazy lines whose next line, `ender`, starts `enderOffset` characters after the definition's start.
+function longFootnoteDefinition(enderOffset: number, ender: string): string {
+  const LINE = 'word word word';
+  let definition = '[^1]: x';
+  while (definition.length + 1 + LINE.length < enderOffset - 1) {
+    definition += `\n${LINE}`;
+  }
+  definition = `${definition}\n`.padEnd(enderOffset - 1, 'w');
+  return `${definition}\n${ender}\n\nafter\n\nuse[^1] and [^2]`;
 }
 
 function noop(): void {

@@ -65,7 +65,35 @@ describe('parseMetadata', () => {
     );
     expect(parseMetadata('')).toEqual({});
   });
+
+  it('lists only the footnote references that have a definition, and the labels inside a comment among them', () => {
+    expect(parseMetadata('use[^1] and [^2]')?.footnoteRefs).toBeUndefined();
+    const metadata = parseMetadata('%%\n[^1]: buried\n%%\n\nuse[^1]\n\n[^1]: real');
+    expect(metadata?.footnotes?.map(({ position }) => position.start.line)).toEqual([6]);
+    expect(metadata?.footnoteRefs?.map(({ position }) => position.start.line)).toEqual([1, 4]);
+  });
+
+  it('ends a footnote definition at a heading only while the heading starts less than 1,024 characters after it', () => {
+    expect(parseMetadata(footnoteDefinitionBefore(1023, '# ender'))?.headings?.map(({ heading }) => heading)).toEqual(['ender']);
+    expect(parseMetadata(footnoteDefinitionBefore(1024, '# ender'))?.headings).toBeUndefined();
+  });
+
+  it('takes a quoted paragraph after a link reference definition and a blank line as the definition\'s title', () => {
+    const metadata = parseMetadata('[1]: https://example.com\n\n"To be or not to be."\n\nNext paragraph.');
+    expect(metadata?.sections?.map(({ position, type }) => `${type}@${String(position.start.line)}-${String(position.end.line)}`)).toEqual(['definition@0-2', 'paragraph@4-4']);
+  });
+
+  it('gives the columns of the line that opens a comment block 2 short, and those of a callout\'s lazy line in a list item 1 past', () => {
+    expect(parseMetadata('%% see [[target]] here\n%%')?.links?.[0]?.position.start.col).toBe(5);
+    expect(parseMetadata('1. > [!note] T\n> ab cd [[target]] end')?.links?.[0]?.position.start.col).toBe(9);
+    expect(parseMetadata('1. > [!note] T\n   > ab cd [[target]] end')?.links?.[0]?.position.start.col).toBe(11);
+  });
 });
+
+// A one-line footnote definition followed by `line`, which starts `lineOffset` characters after the definition's start.
+function footnoteDefinitionBefore(lineOffset: number, line: string): string {
+  return `${'[^1]: '.padEnd(lineOffset - 1, 'w')}\n${line}\n\nuse[^1]`;
+}
 
 describe('parseRemark with soft line breaks read as hard', () => {
   it('makes a line feed after any spaces a break', () => {
