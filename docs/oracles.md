@@ -80,6 +80,14 @@ An `-all` file holds every case of its source and a `-failing` file only the cas
 - **The parser matches 1.14.5 exactly as it matched 1.14.4**, and the conformance suites pass on its files. Its CodeMirror 5 is still 5.64.0, so the `codemirror` pin holds.
 - **So the pin moved to 1.14.5**, the scripts and suites that name their files were re-pointed, and the 1.14.4 files were removed. The numbers they record did not change, since the readings did not.
 
+### A re-check: 1.15.0 again, and the oracles added since
+
+2026-10-25, against the insider build of 1.15.0 then current, after the editor was seen giving a closing `*` the `formatting-em-end` class. Only the spec, quirk probe and forum issue oracles were re-read, into a temporary directory, the last of them added after the run below.
+
+- **Nothing new changed.** The same 142 spec examples changed in the editor's classes, and nothing else: the worker, both reading views, all 169 quirk probes and all 31 forum issue documents read as on 1.14.5.
+- **The parser is exact as before**: 661 of the 674 spec examples' classes on both versions, and all 31 forum issue documents, and the `spec-quirks`, `quirk-probes` and `forum-issues` suites pass on the 1.15.0 files.
+- The editing mode oracle was not read: one read of a mode overran the 30-second cap of an eval twice on a loaded machine.
+
 ### The run before: 1.15.0, an insider build
 
 2026-10-22, against Obsidian 1.15.0, an insider build (the public release was then 1.14.5). The re-read went to a temporary directory and took about 70 minutes; the files were not added to `oracle/`, and the pin stayed on 1.14.4.
