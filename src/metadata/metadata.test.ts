@@ -73,9 +73,11 @@ describe('parseMetadata', () => {
     expect(metadata?.footnoteRefs?.map(({ position }) => position.start.line)).toEqual([1, 4]);
   });
 
-  it('ends a footnote definition at a heading only while the heading starts less than 1,024 characters after it', () => {
+  it('ends a footnote definition at a line only when the line\'s marker lies in the definition\'s first 1,024 characters', () => {
     expect(parseMetadata(footnoteDefinitionBefore(1023, '# ender'))?.headings?.map(({ heading }) => heading)).toEqual(['ender']);
     expect(parseMetadata(footnoteDefinitionBefore(1024, '# ender'))?.headings).toBeUndefined();
+    expect(parseMetadata(footnoteDefinitionBefore(1019, '[^2]: x'))?.footnotes?.map(({ id }) => id)).toEqual(['1', '2']);
+    expect(parseMetadata(footnoteDefinitionBefore(1020, '[^2]: x'))?.footnotes?.map(({ id }) => id)).toEqual(['1']);
   });
 
   it('takes a quoted paragraph after a link reference definition and a blank line as the definition\'s title', () => {

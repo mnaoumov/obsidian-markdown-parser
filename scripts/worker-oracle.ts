@@ -83,7 +83,7 @@ const LINK = ['[t](a.md)', '[t](a%20b.md)', '[t](%zz)', '[t](a%E2.md)', '[t](./x
 const YAML = ['a: 1', 'b: [x, y]', 'c: {d: e}', 'k: "[[L|x]]"', 'k: "[[ |a]]"', 'k: "[[a#b#c]]"', String.raw`k: "[[a\\]]"`, 'k: [[L]]', 'x: !!str 1', 'n: 0o17', 'h: 0x1F', 'f: .inf', 'nan: .nan', 'y: yes', 't: 2024-01-02', 'a: &A {p: 1}', 'b: *A', '<<: *A', '%YAML 1.1', '- item', 'm: |\n  block', 'e:', 'e: ~', 'b: !!binary aGVsbG8=', 'b: !!binary a#b', 's: !!set {a, b}', 'o: !!omap [{a: 1}]', 'bad: [', 'tab:\tx', '? complex\n: v', '[a, b]: c', '__proto__: 1', 'hasOwnProperty: 1', 'l: ["[[x]]", "[t](a b.md)"]', 'k: "[t](a b.md)"', 'k: "[t](./a%20b.md)"', 'k: "[t](http://x)"', 'k: "![i](<a b.png>)"', 'k: "[t](%zz)"', 'k: "[t]()"', 'k: "[t]( )"', String.raw`k: "[t](a.md \"T\")"`, 'k: {n: "[[a]]"}', '"": {x: "[[e]]"}', 'k: "[[a]] and [[b]]"', 'x: 9007199254740993', 'x: 1e3', '...', '# c', '---x'];
 /* eslint-enable unicorn/prefer-string-repeat -- The piece sets end here. */
 
-// The offset, from a footnote definition's start, from which on the worker no longer ends the definition at a line that would interrupt it.
+// How many characters of a footnote definition, from its start, the worker looks in for the marker of a line that ends it.
 const FOOTNOTE_DEFINITION_SCAN_LIMIT = 1024;
 
 /*
