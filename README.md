@@ -34,6 +34,16 @@ To read a new oracle from a live Obsidian, run `npx jiti scripts/oracle.ts --see
 
 Every oracle is pinned to Obsidian 1.14.5. To re-read all of them from another Obsidian and see what changed, run `npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>]`: it writes that version's oracles beside the pinned ones, then reports, per oracle, the readings that changed between the versions and whether the parser matches the new ones. `npm run oracle:drift -- --to-version <version>` gives the same report for oracles already read. How it works and the last run are in [docs/oracles.md](docs/oracles.md).
 
+## How it tests Obsidian
+
+Beside matching Obsidian, the oracles and engines make a test suite for Obsidian itself. Each of the bug finders below sorts what it finds into families with verdicts. Extend them rather than starting over:
+
+1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([docs/spec-suites.md](docs/spec-suites.md)).
+2. **The mode judge** compares the editing modes with Reading view on every oracle document (`npm run mode-judge`, [docs/mode-judge.md](docs/mode-judge.md)).
+3. **The self-check judges** find where Obsidian is wrong but consistent with itself. They check reference-free relations over notes from a grammar of every construct: positions slice their construct, a prefix shifts everything, padding keeps the structure, a rename leaves the rest alone, an escape removes its construct, a block reads the same alone and in context, and the cache agrees with Reading view (`npm run self-check`, [docs/self-check.md](docs/self-check.md)).
+
+`npm run oracle:refresh` re-reads the oracles from a new Obsidian build, and the three finders then run on that build's behaviour.
+
 What is ported from open-source code, what was learned by reading Obsidian's code, what was only measured, and what the oracle files hold are in [docs/provenance.md](docs/provenance.md).
 
 The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.

@@ -72,6 +72,7 @@
     "oracle:drift": "jiti scripts/oracle-drift.ts",
     "oracle:reference": "jiti scripts/reference-oracle.ts",
     "oracle:refresh": "jiti scripts/oracle-refresh.ts",
+    "self-check": "jiti scripts/self-check.ts",
     "prepare": "jiti scripts/prepare.ts",
     "spellcheck": "jiti scripts/spellcheck.ts",
     "test": "jiti scripts/test.ts",
