@@ -17,7 +17,7 @@ All of them are pinned to Obsidian 1.14.5. The version, the seeds and the direct
 ## Re-reading every oracle from another Obsidian
 
 ```sh
-npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>] [--out-dir <directory>] [--only classes,spec,quirk-probes,forum-issues,editing-modes,live-surfaces,worker] [--skip-drift]
+npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>] [--out-dir <directory>] [--only classes,spec,quirk-probes,forum-issues,editing-modes,live-surfaces,worker] [--skip-drift] [--skip-differential]
 ```
 
 It needs a global `obsidian-integration-testing` install, which launches each Obsidian it reads in its own throw-away profile and vault. Without `--obsidian-version` it reads the installed Obsidian.
@@ -25,7 +25,7 @@ It needs a global `obsidian-integration-testing` install, which launches each Ob
 1. It launches the version once, to learn its exact version number and to take its metadata worker, `worker.js`, from the instance (the app serves it beside its page). The worker goes to a temporary file outside the repository and is deleted when the run ends; none of the app's code is kept.
 2. It runs `scripts/oracle.ts` once per pinned seed, with the pinned file's `--per-set`, then `scripts/spec-oracle.ts`, `scripts/quirk-probe-oracle.ts`, `scripts/forum-issue-oracle.ts`, `scripts/editing-modes-oracle.ts` and `scripts/live-surfaces-oracle.ts`, each pinned to that exact version, and `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
 3. It writes the files to `oracle/`, named after the version, beside the pinned ones. A re-read of the pinned version itself goes to a temporary directory instead (`<tmp>/obsidian-oracles-<version>`), so it never overwrites the files the suites check against.
-4. It runs the drift report below.
+4. It runs the drift report below, then the release differential.
 
 A class-span re-read follows the corpus as it is now. Every pinned file holds the current corpus, 4,228 documents per seed: seeds 3141 and 6174 were first read from it, and the other nine were read again from it on 2026-10-22 and replaced. When a piece set is added or grows, that also moves what a seed draws for the sets after it, so most documents of a later re-read have another text under the same id, and the report counts them as new rather than compared until the files are read again.
 
@@ -46,10 +46,27 @@ Then it runs the suites that check the parser against Obsidian (`highlight`, `la
 
 The parser's score is shown on both versions because it is not 100% everywhere on the pinned one: 25 spec examples differ in the editor's classes on 1.14.5 too. A new version is judged by what it changes, not by that baseline.
 
+## The release differential
+
+```sh
+npm run oracle:differential -- --to-version <version> [--to-dir <directory>] [--from-version <version>] [--from-dir <directory>] [--out-dir <directory>]
+```
+
+The drift report asks whether the parser still matches a new build. The differential asks what the build changes in the bugs the judges find ([`mode-judge.md`](mode-judge.md), [`self-check.md`](self-check.md#a-new-obsidian-build)): a family appearing is a new candidate, one vanishing may be a fix to confirm and close on the forum, and a count moving is a family growing or shrinking. `scripts/release-differential.ts` runs, once per version in a child process pointed at that version's files by `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY`:
+
+- **The mode judge** on the class-span trees, spec examples and worker documents. Its editor side is the build's own trees; the spec examples and worker documents are judged on the class tokenizer's prediction for that version.
+- **The live surface judges** on the build's live surface oracle (`self-check --count 0 --live-surfaces`).
+
+A judge whose oracle either version lacks is skipped, and the report names the missing file, so a partial re-read (`--only`) still gives the tables it can. Each table names how many documents it judged on each version. When those differ, the corpus moved under the oracles, and a count can move with it rather than with the build: the drift report's `new` column says which documents. It writes `report.md`, and each version's raw `mode-judge.json` and `self-check.json` under `from/` and `to/`, to `dist/release-differential/<from>-to-<to>/`. It is a report, not a gate, and exits 0 unless a judge fails.
+
+Both judges' Reading view side is the `remark-parse` 8 engine, which matches the pinned version. The drift report shows whether a build changed the reading view; until the engine follows such a change, the differential cannot see what it does to the families.
+
+2026-10-25, the first runs. The pinned 1.14.5 against itself moved no family: 45 mode judge families with 9,626 findings over 50,466 documents, and the 8 live surface families with 173 findings over 400 notes, those [`self-check.md`](self-check.md#the-live-surfaces) records. 1.14.4, from the re-read kept in a temporary directory, against 1.14.5 changed 5 mode judge families by 8 findings in all and added or removed none. That came from the corpus, not the build: the class-span corpora of the two are the same texts, but that worker oracle holds 48 documents fewer, so 50,418 were judged. It has no live surface oracle, so that table was skipped.
+
 ## Moving to a new Obsidian
 
 1. `npm run oracle:refresh -- --obsidian-version <version>`.
-2. Where readings changed, fix the parser until the drift report and the suites are clean on the new files.
+2. Where readings changed, fix the parser until the drift report and the suites are clean on the new files. Read the release differential's report for families that appeared or vanished, and sort each new one into a family, or close its forum topic when one vanished.
 3. Change `PINNED_OBSIDIAN_VERSION` to the new version, so the conformance suites and the next report start from it.
 4. Re-point what records numbers on particular files rather than checking conformance, and re-record those numbers: the `syntax-score`, `lezer`, `micromark` and `markdown-it` suites and the `adapter-diff`, `cm6-bench`, `oracle-diff` and `syntax-diff` scripts name the pinned version's files themselves. Remove the old files only after that.
 

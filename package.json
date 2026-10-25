@@ -69,6 +69,7 @@
     "lint:md": "jiti scripts/lint-md.ts",
     "lint:md:fix": "jiti scripts/lint-md-fix.ts",
     "mode-judge": "jiti scripts/mode-judge.ts",
+    "oracle:differential": "jiti scripts/release-differential.ts",
     "oracle:drift": "jiti scripts/oracle-drift.ts",
     "oracle:reference": "jiti scripts/reference-oracle.ts",
     "oracle:refresh": "jiti scripts/oracle-refresh.ts",

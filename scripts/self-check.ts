@@ -4,9 +4,12 @@
  * Runs the self-check judges (`src/oracle/self-check.ts`) over generated notes (`src/oracle/note-grammar.ts`) and,
  * with `--oracles`, over every worker oracle document too. Up to `--per-key` notes of each key are reduced to minimal ones and
  * each put into a family (`src/oracle/self-check-families.ts`). Prints a table of the families and writes them, with their
- * reduced notes, to `dist/self-check/report.json`.
+ * reduced notes, to `dist/self-check/report.json`. With `--live-surfaces` it also judges the live surface oracle
+ * (`src/oracle/live-surfaces.ts`) and adds its families as a table of their own, under `liveSurfaces`.
  *
- * Usage: `jiti scripts/self-check.ts [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--out <file>]`.
+ * The oracles are the pinned version's, or those `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY` name.
+ *
+ * Usage: `jiti scripts/self-check.ts [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--live-surfaces] [--out <file>]`.
  */
 
 import {
@@ -20,14 +23,18 @@ import {
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
+import type { LiveSurfaceFile } from '../src/oracle/live-surfaces.ts';
+import type { FamilyCount } from '../src/oracle/release-differential.ts';
 import type { SelfCheckFamilyKind } from '../src/oracle/self-check-families.ts';
 import type { WorkerMetadataOracleFile } from '../src/oracle/worker-metadata.ts';
 
 import { generateNotes } from '../src/oracle/note-grammar.ts';
 import {
+  liveSurfacesOracleFileName,
   readOracleFile,
   workerMetadataOracleFileName
 } from '../src/oracle/oracle-location.ts';
+import { liveSurfaceFamilyCounts } from '../src/oracle/release-differential.ts';
 import { selfCheckFamilyOf } from '../src/oracle/self-check-families.ts';
 import {
   judgeNote,
@@ -82,6 +89,7 @@ const JSON_INDENT = 2;
 const { values } = parseArgs({
   options: {
     'count': { type: 'string' },
+    'live-surfaces': { type: 'boolean' },
     'oracles': { type: 'boolean' },
     'out': { type: 'string' },
     'per-key': { type: 'string' },
@@ -155,6 +163,17 @@ for (const family of sorted) {
     console.log(`    ${String(reduced.count).padStart(COUNT_WIDTH)}  ${reduced.key}  ${JSON.stringify(reduced.markdown)}`);
   }
 }
+let liveSurfaces: FamilyCount[] | undefined;
+let liveSurfaceNotes: number | undefined;
+if (values['live-surfaces']) {
+  const liveSurfaceFile = readOracleFile(liveSurfacesOracleFileName()) as LiveSurfaceFile;
+  liveSurfaces = liveSurfaceFamilyCounts(liveSurfaceFile);
+  liveSurfaceNotes = liveSurfaceFile.reads.length;
+  console.log(`\nLive surfaces: ${String(liveSurfaceNotes)} notes, ${String(liveSurfaces.length)} families\n`);
+  for (const family of liveSurfaces) {
+    console.log(`${family.kind.padEnd('unclassified'.length)} ${String(family.total).padStart(COUNT_WIDTH)}  ${family.id}`);
+  }
+}
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, `${JSON.stringify({ families: sorted, notes: notes.length }, null, JSON_INDENT)}\n`);
+writeFileSync(outPath, `${JSON.stringify({ families: sorted, notes: notes.length, ...(liveSurfaces !== undefined && { liveSurfaceNotes, liveSurfaces }) }, null, JSON_INDENT)}\n`);
 console.log(`\nWrote ${outPath}`);
