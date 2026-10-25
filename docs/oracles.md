@@ -125,4 +125,4 @@ An `-all` file holds every case of its source and a `-failing` file only the cas
 - The spec examples' editor classes were 649 of 674 exact on both reads: the 25 others differ on the pinned file too.
 - The class-span re-reads of the nine seeds read from older corpora then replaced their pinned files, so every pinned file holds the current corpus, and the suites and scripts that record numbers on them were re-recorded.
 
-The first runs also showed that a renderer whose window is not in front throttles its timers, which held a batch of reads past the 30-second cap of one eval. `scripts/oracle.ts` now makes each read its own eval and waits between reads from Node.
+The first runs also showed that a renderer whose window is not in front throttles its timers, which held a batch of reads past the 30-second cap of one eval. `scripts/oracle.ts` now makes each read its own eval and waits between reads from Node. The editing mode reads of `scripts/obsidian-reads.ts` hit the same cap on a loaded machine on 2026-10-25, waiting for Source mode's and Live Preview's DOM to settle inside one eval, and now poll it the same way.
