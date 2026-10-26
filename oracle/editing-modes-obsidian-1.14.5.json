@@ -68039,6 +68039,130 @@
       "sourceModeHtml": "<div class=\"cm-line\" dir=\"ltr\"><span class=\"cm-em cm-formatting cm-formatting-em\">*</span><span class=\"cm-em\">#tag</span><span class=\"cm-em cm-formatting cm-formatting-em\">*</span> and <span class=\"cm-formatting cm-formatting-highlight cm-highlight\">==</span><span class=\"cm-highlight\">#tag</span><span class=\"cm-formatting cm-formatting-highlight cm-formatting-highlight-end cm-highlight\">==</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
     },
     {
+      "id": "judged-tag-after-quote-marker",
+      "markdown": ">#tag text\n\n> #tag text\n",
+      "set": "judged",
+      "html": "<blockquote>\n<p><a class=\"tag\" href=\"#tag\">#tag</a> text</p>\n</blockquote>\n<blockquote>\n<p><a class=\"tag\" href=\"#tag\">#tag</a> text</p>\n</blockquote>",
+      "metadata": {
+        "tags": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 1,
+                "offset": 1
+              },
+              "end": {
+                "line": 0,
+                "col": 5,
+                "offset": 5
+              }
+            },
+            "tag": "#tag"
+          },
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 2,
+                "offset": 14
+              },
+              "end": {
+                "line": 2,
+                "col": 6,
+                "offset": 18
+              }
+            },
+            "tag": "#tag"
+          }
+        ],
+        "sections": [
+          {
+            "type": "blockquote",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 10,
+                "offset": 10
+              }
+            }
+          },
+          {
+            "type": "blockquote",
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 0,
+                "offset": 12
+              },
+              "end": {
+                "line": 2,
+                "col": 11,
+                "offset": 23
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          10,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          0,
+          1,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          1,
+          10,
+          2,
+          "quote_quote-1"
+        ],
+        [
+          12,
+          23,
+          1,
+          "HyperMD-quote_HyperMD-quote-1"
+        ],
+        [
+          12,
+          14,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_quote_quote-1"
+        ],
+        [
+          14,
+          15,
+          2,
+          "formatting_formatting-hashtag_hashtag_hashtag-begin_meta_quote_quote-1_tag-tag"
+        ],
+        [
+          15,
+          18,
+          2,
+          "hashtag_hashtag-end_meta_quote_quote-1_tag-tag"
+        ],
+        [
+          18,
+          23,
+          2,
+          "quote_quote-1"
+        ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -10px; padding-inline-start: 10px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span></span><span class=\"cm-quote cm-quote-1\">#tag text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -24px; padding-inline-start: 24px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\"><span class=\"cm-transparent\">&gt;</span> </span><span class=\"cm-formatting cm-formatting-hashtag cm-hashtag cm-hashtag-begin cm-meta cm-quote cm-quote-1 cm-tag-tag\" spellcheck=\"false\">#</span><span class=\"cm-hashtag cm-hashtag-end cm-meta cm-quote cm-quote-1 cm-tag-tag\" spellcheck=\"false\">tag</span><span class=\"cm-quote cm-quote-1\"> text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -10px; padding-inline-start: 10px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt;</span><span class=\"cm-quote cm-quote-1\">#tag text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1\" dir=\"ltr\" style=\"text-indent: -24px; padding-inline-start: 24px;\"><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-formatting cm-formatting-hashtag cm-hashtag cm-hashtag-begin cm-meta cm-quote cm-quote-1 cm-tag-tag\" spellcheck=\"false\">#</span><span class=\"cm-hashtag cm-hashtag-end cm-meta cm-quote cm-quote-1 cm-tag-tag\" spellcheck=\"false\">tag</span><span class=\"cm-quote cm-quote-1\"> text</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>"
+    },
+    {
       "id": "judged-heading-in-quote",
       "markdown": "> # Heading\n",
       "set": "judged",

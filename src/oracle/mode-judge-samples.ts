@@ -57,6 +57,7 @@ export const JUDGED_SAMPLES: readonly JudgedSample[] = [
   sample('empty-list-item', '- a\n-\n- b\n', 'The editor reads the `-` alone on its line as text; the reading view reads an empty list item between the two others.'),
   sample('lazy-line-after-empty-quote-line', '> quote\n>\n    code\n', 'After the empty quote line the editor carries the quote onto the indented line; the reading view ends the quote and shows an indented code block.'),
   sample('tag-after-mark', '*#tag* and ==#tag==\n', 'The editor reads no tag right after the `*` or the `==`; the reading view and the worker read both tags.'),
+  sample('tag-after-quote-marker', '>#tag text\n\n> #tag text\n', 'The editor reads no tag right after the `>` with no space, and reads the one after `> `; the reading view and the worker read both tags.'),
   sample('heading-in-quote', '> # Heading\n', 'The editor gives the heading in the quote no heading classes; the reading view shows a level 1 heading, which the worker leaves out of `headings`, as it does every heading in a quote.'),
   sample('block-on-list-item-first-line', '- > quote\n', 'The editor reads no quote opened on the list item\'s first line; the reading view shows a quote in the item.'),
   sample('table-with-empty-cells', '||\n|-|\n', 'The editor reads no table whose header row holds only an empty cell; the reading view shows a table.'),

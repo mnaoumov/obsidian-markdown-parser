@@ -88,10 +88,11 @@ The run covered 50,466 documents: the 46,508 class-span documents, all 674 spec 
 | known ([topic 34124](https://forum.obsidian.md/t/34124)) | setext-in-quote | 22 | `>k\n>-` |
 | minor | math-across-table-cells | 20 | `\|$$\|\n\|-\|` |
 | known ([topic 31041](https://forum.obsidian.md/t/31041)) | emphasis-around-inline-html | 11 | `*<r>*` |
+| candidate | tag-after-quote-marker | 9 | `>#t` |
 | minor | setext-under-special-line | 8 | `^a\n---` |
 | candidate | comment-block-edge | 6 | `-\n%%%` |
 | minor | fence-info-with-backtick | 0 | |
-| none | unclassified | 36 | `>#t` |
+| none | unclassified | 27 | `==$==$` |
 
 ### What keeping the cause changed
 
@@ -112,7 +113,7 @@ Two families are new, one changed kind and one moved:
 3. **`lazy-line-after-empty-quote-line` is minor again.** It was minor on 2026-10-24 and moved to known on 2026-10-25 only because the owner's callout note reduced into it. That note now has its own family, so what is left is a line after an empty quote line, such as an indented line, `</div>` or `---`, as it was first judged.
 4. `math-across-table-cells` now comes before the `$$` families, since a reduction can drop the cell boundary between the two marks and leave `|$$|`.
 
-The 36 unclassified notes have no family. The most common is `>#t`, a tag right after a quote marker with no space, which the editor does not read and the reading view does, in 9 reduced documents. With a space, `> #t`, both sides read the tag. It has not been judged, since no live read covers it yet. The rest are one to three documents each.
+That left 36 unclassified notes. The most common was `>#t`, a tag right after a quote marker with no space, which the editor does not read and the reading view does, in 9 reduced documents. It was read live on 2026-10-26 and is the candidate family `tag-after-quote-marker` now (below). The 27 left have no family, and each is one to three documents.
 
 `emphasis-pairing` was a quirk family until 2026-10-25. It is known now, because an open topic in Bug reports, tagged `upstream-bug`, reports it: [topic 26871](https://forum.obsidian.md/t/26871), *Reading mode: Bug when italics and bold are applied to a text that has a space*. [Topic 82094](https://forum.obsidian.md/t/82094) was closed as its duplicate. Its note `*italic **bold&italic***` is CommonMark example 414, and Reading view on 1.14.5 renders that example as `<p>*foo <strong>bar*</strong></p>`, where CommonMark gives emphasis around strong emphasis.
 
@@ -124,13 +125,14 @@ That note itself does not land in this family. The editor reads it as CommonMark
 
 `src/oracle/mode-judge-samples.ts` writes out one readable note for each family the run found new, except `comment-block-edge`, whose five notes show no single behaviour. `scripts/editing-modes-oracle.ts` read each of those notes from Obsidian 1.14.5, in Source mode, Live Preview and Reading view, together with the editor's tree and the worker's metadata. `src/oracle/editing-modes.test.ts` checks that each one still shows a difference of its family on the live editor's tree. They are the `judged` cases of the `-failing` export. Each note says what the two sides do.
 
-Each of the 29 notes was judged on 2026-10-24 from its live read in all three modes, with realistic variants run through the judge, and the forum's Bug reports and Bug graveyard were searched for each. The eight first judged expected were then judged again: each one's note was read on 1.15.0 (Catalyst) too, which gave the same Reading view, Live Preview and metadata as 1.14.5, obsidian-help was searched for a sentence documenting it, and the team's reply on each closed topic was read. The kind in the table above is the verdict:
+Each of the 29 notes of the first run was judged on 2026-10-24 from its live read in all three modes, with realistic variants run through the judge, and the forum's Bug reports and Bug graveyard were searched for each. The eight first judged expected were then judged again: each one's note was read on 1.15.0 (Catalyst) too, which gave the same Reading view, Live Preview and metadata as 1.14.5, obsidian-help was searched for a sentence documenting it, and the team's reply on each closed topic was read. The kind in the table above is the verdict:
 
-1. **Candidates, to report (6):**
+1. **Candidates, to report (7):**
    1. `triple-backtick-mid-line` (`` Use ```js for fences `` mid-line makes the rest of the note, headings included, inline code in the editor), `indented-fence-closer` (a closing fence indented by one to three spaces leaves the rest of the note code in the editor) and `fence-in-quote-nested-quote` (Live Preview draws a nested quote border on a `>>` line inside a quoted fence). No forum topic reports them.
    2. `empty-list-item`: `- a`, `-`, `- b` is one list of three items in Reading view, in the metadata cache and in CommonMark (example 281), and the editor shows the middle `-` as plain text. Typing a dash and a space already makes a bullet, so the "while it is being typed" reading does not hold for a saved note.
    3. `html-block-ends-at-line`: Reading view and the metadata cache follow CommonMark, and an HTML block runs on to the next empty line. Topic 104674 was closed by a moderator saying so. But the editor ends the block at its own line, so after `<hr>` or `</div>` Live Preview shows a working, clickable `[[link]]` and a styled `#tag` that are not indexed. That is what misled the topic's reporter.
    4. `ordered-item-interrupts-paragraph`: topic 30367 was not closed as by design. Its reporter could no longer reproduce it, because the condition is the paragraph right above the list. `text` followed by `2. item` still reproduces it.
+   5. `tag-after-quote-marker`, judged on 2026-10-26: in `>#tag text`, Source mode and Live Preview show `#tag` as plain quote text, while Reading view links the tag and the metadata cache indexes it. In `> #tag text`, with a space, all three read the tag. Obsidian 1.15.0 (Catalyst) reads the note the same way. The editor's rule is the one behind `tag-after-mark`: a tag opens only at the start of a line or after whitespace, and the quote marker is neither. Topic 14361 reports only the emphasis case, and a forum search found no topic for the quote, so this is its own family. A report can point at topic 14361 as the same rule.
 
    Posting is the owner's call.
 2. **Known, already reported by an open topic (8):** `heading-in-quote` and `setext-in-quote` (headings in a quote), `tag-after-mark` (`*#tag*`), `unfinished-html-tag` (`a<b` in prose takes the next lines, past an empty line, into a tag, so a heading after it loses its classes), `inline-math-across-lines`, `one-dash-setext-underline` (case 5 of topic 112786), `block-on-list-item-first-line` (topic 29582 for the quote, which the team acknowledged, and topic 117996 for a list or heading after the marker) and `emphasis-around-inline-html` (feature request 31041, where the team moved bold around `<u>` after saying it is not supported). `lazy-line-after-empty-quote-line` was counted here from 2026-10-25 until the reducer kept the cause, and is minor again (above).
