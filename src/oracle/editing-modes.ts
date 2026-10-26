@@ -17,6 +17,8 @@ import { JUDGED_SAMPLES } from './mode-judge-samples.ts';
 import {
   classOracleFileName,
   MAIN_CLASS_ORACLE_SEED,
+  PINNED_OBSIDIAN_VERSION,
+  PINNED_ORACLE_DIRECTORY,
   readOracleFile
 } from './oracle-location.ts';
 
@@ -98,12 +100,13 @@ export interface EditingModesRead extends EditingModesDocument {
 
 /**
  * Every document the oracle reads: the first {@link EDITING_MODES_PER_SET} of each piece set of the main class-span
- * oracle, then the judged samples.
+ * oracle, then the judged samples. The corpus is the pinned version's, whichever version the oracle is read from, so
+ * a re-read of this oracle alone needs no class-span oracle of its version.
  *
  * @returns The documents.
  */
 export function editingModesDocuments(): EditingModesDocument[] {
-  const corpus = readOracleFile(classOracleFileName(MAIN_CLASS_ORACLE_SEED)) as OracleFile;
+  const corpus = readOracleFile(classOracleFileName(MAIN_CLASS_ORACLE_SEED, PINNED_OBSIDIAN_VERSION), PINNED_ORACLE_DIRECTORY) as OracleFile;
   const countPerSet = new Map<string, number>();
   const documents: EditingModesDocument[] = [];
   for (const document of corpus.docs) {

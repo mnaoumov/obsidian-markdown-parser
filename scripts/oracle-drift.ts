@@ -10,7 +10,8 @@
  * example, and the whole `CachedMetadata` on every worker document and spec example, and both on every forum issue
  * and editing mode document, and the cache on every live surface note. Last, it runs the suites that
  * check the parser against Obsidian on the newer version's files (`src/oracle/oracle-location.ts`), which covers the
- * reading view's HTML of the spec and the quirk probes.
+ * reading view's HTML of the spec and the quirk probes. A suite whose oracles the newer version lacks, as a re-read
+ * limited by `oracle-refresh.ts --only` leaves them, is skipped, and the report says which file it missed.
  *
  * It exits 1 when the parser does not match the newer version where it matches the older one, or a suite fails.
  *
@@ -66,6 +67,12 @@ import {
 import { compareDocument } from '../src/oracle/score.ts';
 import { exampleKey } from '../src/oracle/spec-quirks.ts';
 
+// A suite that checks the parser against Obsidian, and the oracle files it reads.
+interface ConformanceSuite {
+  readonly fileNamesOf: (version: string) => readonly string[];
+  readonly path: string;
+}
+
 interface DriftRow {
   readonly added: ReadonlySet<string>;
   readonly changed: readonly string[];
@@ -103,14 +110,14 @@ interface Score {
 }
 
 // The suites that check the parser against Obsidian, and read their oracles through `oracle-location.ts`.
-const CONFORMANCE_SUITES = [
-  'src/editor/highlight.test.ts',
-  'src/editor/language.test.ts',
-  'src/oracle/editing-modes.test.ts',
-  'src/oracle/forum-issues.test.ts',
-  'src/oracle/quirk-probes.test.ts',
-  'src/oracle/spec-quirks.test.ts',
-  'src/oracle/worker-metadata.test.ts'
+const CONFORMANCE_SUITES: readonly ConformanceSuite[] = [
+  { fileNamesOf: classFileNames, path: 'src/editor/highlight.test.ts' },
+  { fileNamesOf: classFileNames, path: 'src/editor/language.test.ts' },
+  { fileNamesOf: (version) => [editingModesOracleFileName(version)], path: 'src/oracle/editing-modes.test.ts' },
+  { fileNamesOf: (version) => [forumIssueOracleFileName(version)], path: 'src/oracle/forum-issues.test.ts' },
+  { fileNamesOf: (version) => [quirkProbeOracleFileName(version)], path: 'src/oracle/quirk-probes.test.ts' },
+  { fileNamesOf: (version) => [specOracleFileName(version)], path: 'src/oracle/spec-quirks.test.ts' },
+  { fileNamesOf: (version) => [workerMetadataOracleFileName(version), specOracleFileName(version)], path: 'src/oracle/worker-metadata.test.ts' }
 ];
 const DEFAULT_EXAMPLES = 5;
 
@@ -133,6 +140,10 @@ const fromVersion = values['from-version'];
 const fromDirectory = values['from-dir'];
 const toDirectory = values['to-dir'];
 const examples = Number(values.examples);
+
+function classFileNames(version: string): string[] {
+  return CLASS_ORACLE_SEEDS.map((seed) => classOracleFileName(seed, version));
+}
 
 // A class-span document is keyed by its id and the text it was built as, so a corpus that changed under an id is new.
 function classKey(document: OracleDocument): string {
@@ -388,15 +399,34 @@ console.log(
   `\n${String(changedTotal)} reading(s) changed between the versions. The parser differs on ${String(driftedTotal)} document(s) both versions read, where it matched ${fromVersion}, and on ${String(uncoveredTotal)} new document(s).`
 );
 
+// The first oracle file a suite reads that the newer version lacks, which a re-read limited by `--only` leaves out.
+function missingSuiteFile(suite: ConformanceSuite): string | undefined {
+  return suite.fileNamesOf(toVersion).find((fileName) => !existsSync(join(toDirectory, fileName)));
+}
+
 let isSuitesPassed = true;
 if (!values['skip-tests']) {
   console.log(`\nRunning the conformance suites on ${toVersion}'s oracles:`);
-  const result = spawnSync(process.execPath, [join(PINNED_ORACLE_DIRECTORY, '..', 'node_modules', 'vitest', 'vitest.mjs'), 'run', ...CONFORMANCE_SUITES], {
-    env: { ...process.env, [ORACLE_DIRECTORY_VARIABLE]: toDirectory, [ORACLE_VERSION_VARIABLE]: toVersion },
-    stdio: 'inherit'
-  });
-  isSuitesPassed = result.status === 0;
-  console.log(isSuitesPassed ? 'The conformance suites pass.' : 'The conformance suites FAIL on the newer version.');
+  const suites: string[] = [];
+  for (const suite of CONFORMANCE_SUITES) {
+    const missing = missingSuiteFile(suite);
+    if (missing === undefined) {
+      suites.push(suite.path);
+    } else {
+      console.log(`${suite.path}: skipped, no ${missing} in ${toDirectory}`);
+    }
+  }
+  // With no file named, vitest would run every suite in the repository, so an empty list runs nothing.
+  if (suites.length === 0) {
+    console.log(`No conformance suite has its oracles in ${toDirectory}.`);
+  } else {
+    const result = spawnSync(process.execPath, [join(PINNED_ORACLE_DIRECTORY, '..', 'node_modules', 'vitest', 'vitest.mjs'), 'run', ...suites], {
+      env: { ...process.env, [ORACLE_DIRECTORY_VARIABLE]: toDirectory, [ORACLE_VERSION_VARIABLE]: toVersion },
+      stdio: 'inherit'
+    });
+    isSuitesPassed = result.status === 0;
+    console.log(isSuitesPassed ? 'The conformance suites pass.' : 'The conformance suites FAIL on the newer version.');
+  }
 }
 
 if (!isSuitesPassed || regressionTotal > 0) {
