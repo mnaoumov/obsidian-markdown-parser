@@ -17,6 +17,13 @@ describe('renderRemarkHtml', () => {
     expect(render('a')).toBe('<p>a</p>\n');
   });
 
+  it('drops a [ after a shortcut reference when no ] closes it, as Reading view does', () => {
+    expect(render('[x][')).toBe('<p>[x]</p>\n');
+    expect(render('a [][')).toBe('<p>a []</p>\n');
+    expect(render('[x][z')).toBe('<p>[x]z</p>\n');
+    expect(render('[text][ref][\n\n[ref]: /u')).toBe('<p><a href="/u">text</a>[</p>\n');
+  });
+
   it('renders tasks as checkboxes, and marks their list', () => {
     expect(render('- [?] a\n- [ ] b')).toBe(
       '<ul class="contains-task-list">\n<li class="task-list-item"><input checked="" disabled="" type="checkbox"> a</li>\n<li class="task-list-item"><input disabled="" type="checkbox"> b</li>\n</ul>\n'
