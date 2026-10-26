@@ -62,7 +62,7 @@ The run covered 50,437 documents: the 46,508 class-span documents, all 674 spec 
 | candidate | fence-in-quote-nested-quote | 338 | `` >```\n>> `` |
 | candidate (closed [topic 104674](https://forum.obsidian.md/t/104674)) | html-block-ends-at-line | 321 | `"</v>\n- "` |
 | candidate | empty-list-item | 313 | `-` |
-| minor | lazy-line-after-empty-quote-line | 284 | `>\n-` |
+| known ([topic 57053](https://forum.obsidian.md/t/57053)) | lazy-line-after-empty-quote-line | 284 | `>\n-` |
 | known ([topic 14361](https://forum.obsidian.md/t/14361)) | tag-after-mark | 276 | `*#t*` |
 | candidate | triple-backtick-mid-line | 257 | `` -```\n- `` |
 | known ([topic 73772](https://forum.obsidian.md/t/73772)) | heading-in-quote | 172 | `>#` |
@@ -90,6 +90,8 @@ The run covered 50,437 documents: the 46,508 class-span documents, all 674 spec 
 | minor | math-across-table-cells | 3 | `\|$\|$\n\|-\|` |
 | none | unclassified | 21 | `*\n=\n---` |
 
+`lazy-line-after-empty-quote-line` was a minor family until 2026-10-25. It is known now, because one of the owner's ordinary notes lands in it: a callout in a nested list item, followed by the next item (topic 80930, closed as a duplicate of the open [topic 57053](https://forum.obsidian.md/t/57053), *Live Preview: Support callouts in list items*, tagged `repro` and `editor-parser`). The editor carries the quote onto that item, and Live Preview, read live on 1.14.5, draws one embed that holds the callout as an indented code block and the item as a list of its own. The reducer brings the note down to `>\n-`, a bare `-` after an empty quote line, which shows the same key by another path, so the family's id and pattern stay and its note names both. A reducer that also kept both sides' facts of the differing line would separate the two, but it moves a dozen other families and leaves 163 notes unclassified, so it was left for now. The live read is pinned in `src/oracle/forum-issues.test.ts`.
+
 `emphasis-pairing` was a quirk family until 2026-10-25. It is known now, because an open topic in Bug reports, tagged `upstream-bug`, reports it: [topic 26871](https://forum.obsidian.md/t/26871), *Reading mode: Bug when italics and bold are applied to a text that has a space*. [Topic 82094](https://forum.obsidian.md/t/82094) was closed as its duplicate. Its note `*italic **bold&italic***` is CommonMark example 414, and Reading view on 1.14.5 renders that example as `<p>*foo <strong>bar*</strong></p>`, where CommonMark gives emphasis around strong emphasis.
 
 That note itself does not land in this family. The editor reads it as CommonMark does, so the reading view's `<strong>` matches the editor's, and the one fact that differs is the emphasis the reading view drops. The reducer keeps that fact in the smallest note that still has it, `*i`, a mark left open, so the note falls into `unclosed-inline-mark`. That reduction is correct: the judge compares the two modes, and the editor is right on this note. What is wrong only by the spec belongs to the engine differential, whose `engine-emphasis-pairing` family finds the note's shape in generated notes ([self-check.md](self-check.md#the-engine-differential)).
@@ -109,11 +111,11 @@ Each of the 29 notes was judged on 2026-10-24 from its live read in all three mo
    4. `ordered-item-interrupts-paragraph`: topic 30367 was not closed as by design. Its reporter could no longer reproduce it, because the condition is the paragraph right above the list. `text` followed by `2. item` still reproduces it.
 
    Posting is the owner's call.
-2. **Known, already reported by an open topic (8):** `heading-in-quote` and `setext-in-quote` (headings in a quote), `tag-after-mark` (`*#tag*`), `unfinished-html-tag` (`a<b` in prose takes the next lines, past an empty line, into a tag, so a heading after it loses its classes), `inline-math-across-lines`, `one-dash-setext-underline` (case 5 of topic 112786), `block-on-list-item-first-line` (topic 29582 for the quote, which the team acknowledged, and topic 117996 for a list or heading after the marker) and `emphasis-around-inline-html` (feature request 31041, where the team moved bold around `<u>` after saying it is not supported).
+2. **Known, already reported by an open topic (9):** `heading-in-quote` and `setext-in-quote` (headings in a quote), `tag-after-mark` (`*#tag*`), `unfinished-html-tag` (`a<b` in prose takes the next lines, past an empty line, into a tag, so a heading after it loses its classes), `inline-math-across-lines`, `one-dash-setext-underline` (case 5 of topic 112786), `block-on-list-item-first-line` (topic 29582 for the quote, which the team acknowledged, and topic 117996 for a list or heading after the marker), `emphasis-around-inline-html` (feature request 31041, where the team moved bold around `<u>` after saying it is not supported) and `lazy-line-after-empty-quote-line` (topic 57053, moved from minor on 2026-10-25, above).
 3. **Expected (2):**
    1. `inline-html-before-internal-link` is documented in obsidian-help: *HTML content* says that Obsidian does not render Markdown inside HTML elements, by design, and that a link inside an inline tag only appears to work in Reading view. Topic 29589 was closed on the same grounds.
    2. `unclosed-front-matter` is the editor treating `---` on the first line as properties before the closing `---` has been typed, which is how the help tells you to add properties. No page says that Reading view and the index ignore properties that are never closed.
-4. **Minor (13):** the remaining families show only in notes nobody writes on purpose, such as `||\n|-|`, `[[[[Note]]`, `$$$$` or `==a ==b==`. Their realistic variants agree on both sides: `==a\nb==`, `==if a == b==`, `# H\n    code` and `> quote\n>\n- item` give no difference.
+4. **Minor (12):** the remaining families show only in notes nobody writes on purpose, such as `||\n|-|`, `[[[[Note]]`, `$$$$` or `==a ==b==`. Their realistic variants agree on both sides: `==a\nb==`, `==if a == b==`, `# H\n    code` and `> quote\n>\n- item` give no difference.
 
 Two of these rules are undocumented and come with a draft obsidian-help change. One is that an HTML block ends only at a blank line, under *HTML content*. The other is that properties need their closing `---`, under *Properties*.
 

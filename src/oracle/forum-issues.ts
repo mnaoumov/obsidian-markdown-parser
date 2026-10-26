@@ -4,9 +4,11 @@
  * The samples of the parser issues reported on the Obsidian forum, read from a live Obsidian by
  * `scripts/forum-issue-oracle.ts` into `oracle/forum-issues-obsidian-<version>.json`: the editor's tree, the reading
  * view's DOM and the metadata worker's `CachedMetadata` of each, and Source mode's and Live Preview's DOM of the first
- * kind. Two kinds are kept: the places where the editing modes (Source mode and Live Preview) and the reading view read
- * the same note differently, and the notes whose metadata the worker drops or misplaces. The issues
- * where the reading view departs from CommonMark are spec examples, which the spec oracle already holds.
+ * and third kinds. Three kinds are kept: the places where the editing modes (Source mode and Live Preview) and the
+ * reading view read the same note differently, the notes whose metadata the worker drops or misplaces, and the notes of
+ * the owner's own earlier forum reports that the parser models but no other oracle reads, whose reading view code
+ * blocks are also kept as Prism highlighted them. The issues where the reading view departs from CommonMark are spec
+ * examples, which the spec oracle already holds.
  */
 
 import type { OracleNode } from './oracle-file.ts';
@@ -73,13 +75,19 @@ export interface ForumIssueFile {
  */
 export interface ForumIssueRead {
   /**
+   * The inner HTML of each of the reading view's code blocks as Prism highlighted it, which {@link html} normalizes
+   * away; read for the samples of {@link OWNER_REPORT_SAMPLES} only.
+   */
+  readonly highlightedCode?: readonly string[];
+
+  /**
    * The reading view's DOM with `strictLineBreaks: true`, normalized as `scripts/spec-oracle.ts` normalizes it.
    */
   readonly html: string;
 
   /**
    * Live Preview's `.cm-content` inner HTML, read with the cursor on an empty line appended to the note, and that line
-   * left out; read for the samples of {@link EDITOR_VS_READING_VIEW_SAMPLES} only.
+   * left out; read for the samples of {@link EDITOR_VS_READING_VIEW_SAMPLES} and {@link OWNER_REPORT_SAMPLES} only.
    */
   readonly livePreviewHtml?: string;
 
@@ -144,6 +152,31 @@ export interface MetadataIssueSample {
    * A note of the same length without the trigger, whose metadata {@link expectedOf} starts from.
    */
   readonly standIn?: string;
+}
+
+/**
+ * A note of one of the owner's earlier forum reports that the parser models but no other oracle reads.
+ */
+export interface OwnerReportSample {
+  /**
+   * The forum topic of the report.
+   */
+  readonly forumUrl: string;
+
+  /**
+   * The case id, `owner-<topic>-<sample>`.
+   */
+  readonly id: string;
+
+  /**
+   * The note, as the report gives it.
+   */
+  readonly markdown: string;
+
+  /**
+   * What the report says, and what Obsidian 1.14.5 does with the note, in one or two sentences.
+   */
+  readonly note: string;
 }
 
 interface BlockCache {
@@ -433,6 +466,42 @@ export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
 ];
 
 /**
+ * The notes of the owner's earlier forum reports that the parser models but no other oracle reads.
+ */
+export const OWNER_REPORT_SAMPLES: readonly OwnerReportSample[] = [
+  {
+    forumUrl: `${FORUM}38294`,
+    id: 'owner-38294-1',
+    markdown: '---\nproblem1: Single quote \' and YAML syntax highlighter\nproblem2: "Escaping quotes \\" and YAML syntax highligher"\nafter: plain\n---\ntext\n',
+    note: 'Source mode styles front matter with CodeMirror 5\'s `yaml` mode, which still opens a string at the `\'` inside a plain scalar and still ends a double-quoted string at its escaped `\\"`, as the report says; a team member said in 2022 that it no longer happens, which holds only for Live Preview, where the Properties widget replaces the text. Prism reads both values right.'
+  },
+  {
+    forumUrl: `${FORUM}49620`,
+    id: 'owner-49620-1',
+    markdown: '```markdown\n---\ntitle: test\n---\n```\n',
+    note: 'Inside a `markdown` fence both editing modes give `---` the `hr` class and `title: test` and the second `---` the `header-2` class, but Live Preview draws no rule, so the fix of 1.5.4 holds; styling the fence\'s markdown is by design (topic 76476).'
+  },
+  {
+    forumUrl: `${FORUM}53597`,
+    id: 'owner-53597-1',
+    markdown: '```markdown\n![](image.png)\n![t](image.png)\n```\n',
+    note: 'Live Preview draws no image inside a `markdown` fence (topic 49620). The reading view\'s Prism still highlights `![t](image.png)` and leaves `![](image.png)`, with its empty alt text, plain, as the open report says.'
+  },
+  {
+    forumUrl: `${FORUM}76476`,
+    id: 'owner-76476-1',
+    markdown: '```markdown\n**This should not appear bold**\n```\n',
+    note: 'Inside a `markdown` fence both editing modes give the text the `strong` class and Prism gives it `token bold`, which the team ruled by design in 2024.'
+  },
+  {
+    forumUrl: `${FORUM}80930`,
+    id: 'owner-80930-1',
+    markdown: '- List item 1\n- List item 2\n  - Subitem 2.1\n  - Subitem 2.2\n    > [!NOTE] Callout title\n    > Callout line 1\n    > Callout line 2\n  - Subitem 2.3\n- List item 3\n',
+    note: 'The editor carries the callout in `Subitem 2.2` lazily onto `Subitem 2.3`, and Live Preview draws one embed holding the callout as an indented code block and `Subitem 2.3` as a list of its own; the reading view renders the callout inside `Subitem 2.2` and `Subitem 2.3` as its sibling. The report was closed as a duplicate of the open topic 57053.'
+  }
+];
+
+/**
  * Every document the oracle reads, each once: the samples and the stand-ins.
  *
  * @returns The documents.
@@ -440,7 +509,8 @@ export const METADATA_ISSUE_SAMPLES: readonly MetadataIssueSample[] = [
 export function forumIssueDocuments(): string[] {
   const all = [
     ...EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown),
-    ...METADATA_ISSUE_SAMPLES.flatMap((sample) => sample.standIn === undefined ? [sample.markdown] : [sample.markdown, sample.standIn])
+    ...METADATA_ISSUE_SAMPLES.flatMap((sample) => sample.standIn === undefined ? [sample.markdown] : [sample.markdown, sample.standIn]),
+    ...OWNER_REPORT_SAMPLES.map((sample) => sample.markdown)
   ];
   return [...new Set(all)];
 }

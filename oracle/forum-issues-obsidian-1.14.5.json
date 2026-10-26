@@ -3518,6 +3518,729 @@
           "quote_quote-1"
         ]
       ]
+    },
+    {
+      "html": "<pre style=\"display: none;\"><code class=\"language-yaml\">problem1: Single quote ' and YAML syntax highlighter\nproblem2: \"Escaping quotes \\\" and YAML syntax highligher\"\nafter: plain</code></pre>\n<p>text</p>",
+      "markdown": "---\nproblem1: Single quote ' and YAML syntax highlighter\nproblem2: \"Escaping quotes \\\" and YAML syntax highligher\"\nafter: plain\n---\ntext\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "yaml",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 4,
+                "col": 3,
+                "offset": 131
+              }
+            }
+          },
+          {
+            "type": "paragraph",
+            "position": {
+              "start": {
+                "line": 5,
+                "col": 0,
+                "offset": 132
+              },
+              "end": {
+                "line": 5,
+                "col": 4,
+                "offset": 136
+              }
+            }
+          }
+        ],
+        "frontmatter": {
+          "problem1": "Single quote ' and YAML syntax highlighter",
+          "problem2": "Escaping quotes \" and YAML syntax highligher",
+          "after": "plain"
+        },
+        "frontmatterPosition": {
+          "start": {
+            "line": 0,
+            "col": 0,
+            "offset": 0
+          },
+          "end": {
+            "line": 4,
+            "col": 3,
+            "offset": 131
+          }
+        },
+        "frontmatterLinks": []
+      },
+      "nodes": [
+        [
+          0,
+          3,
+          1,
+          "def_hmd-frontmatter"
+        ],
+        [
+          4,
+          12,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          12,
+          14,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          14,
+          27,
+          1,
+          "hmd-frontmatter"
+        ],
+        [
+          27,
+          56,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          57,
+          65,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          65,
+          67,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          67,
+          86,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          86,
+          113,
+          1,
+          "hmd-frontmatter"
+        ],
+        [
+          113,
+          114,
+          1,
+          "hmd-frontmatter_string"
+        ],
+        [
+          115,
+          120,
+          1,
+          "atom_hmd-frontmatter"
+        ],
+        [
+          120,
+          122,
+          1,
+          "hmd-frontmatter_meta"
+        ],
+        [
+          122,
+          127,
+          1,
+          "hmd-frontmatter"
+        ],
+        [
+          128,
+          131,
+          1,
+          "def_hmd-frontmatter"
+        ]
+      ],
+      "livePreviewHtml": "<div contenteditable=\"false\"></div><div class=\"cm-line\" dir=\"ltr\">text</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-def cm-hmd-frontmatter\" spellcheck=\"false\">---</span></div><div class=\"cm-line\"><span class=\"cm-atom cm-hmd-frontmatter\" spellcheck=\"false\">problem1</span><span class=\"cm-hmd-frontmatter cm-meta\" spellcheck=\"false\">: </span><span class=\"cm-hmd-frontmatter\" spellcheck=\"false\">Single quote </span><span class=\"cm-hmd-frontmatter cm-string\" spellcheck=\"false\">' and YAML syntax highlighter</span></div><div class=\"cm-line\"><span class=\"cm-atom cm-hmd-frontmatter\" spellcheck=\"false\">problem2</span><span class=\"cm-hmd-frontmatter cm-meta\" spellcheck=\"false\">: </span><span class=\"cm-hmd-frontmatter cm-string\" spellcheck=\"false\">\"Escaping quotes \\\"</span><span class=\"cm-hmd-frontmatter\" spellcheck=\"false\"> and YAML syntax highligher</span><span class=\"cm-hmd-frontmatter cm-string\" spellcheck=\"false\">\"</span></div><div class=\"cm-line\"><span class=\"cm-atom cm-hmd-frontmatter\" spellcheck=\"false\">after</span><span class=\"cm-hmd-frontmatter cm-meta\" spellcheck=\"false\">: </span><span class=\"cm-hmd-frontmatter\" spellcheck=\"false\">plain</span></div><div class=\"cm-line\"><span class=\"cm-def cm-hmd-frontmatter\" spellcheck=\"false\">---</span></div><div class=\"cm-line\" dir=\"ltr\">text</div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "highlightedCode": [
+        "<span class=\"token key atrule\">problem1</span><span class=\"token punctuation\">:</span> Single quote ' and YAML syntax highlighter\n<span class=\"token key atrule\">problem2</span><span class=\"token punctuation\">:</span> <span class=\"token string\">\"Escaping quotes \\\" and YAML syntax highligher\"</span>\n<span class=\"token key atrule\">after</span><span class=\"token punctuation\">:</span> plain"
+      ]
+    },
+    {
+      "html": "<pre><code class=\"language-markdown\">---\ntitle: test\n---\n</code></pre>",
+      "markdown": "```markdown\n---\ntitle: test\n---\n```\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "code",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 4,
+                "col": 3,
+                "offset": 35
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          11,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-begin_HyperMD-codeblock-begin-bg_HyperMD-codeblock-bg"
+        ],
+        [
+          0,
+          11,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ],
+        [
+          12,
+          15,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          12,
+          15,
+          2,
+          "hmd-codeblock_hr"
+        ],
+        [
+          16,
+          27,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          16,
+          27,
+          2,
+          "header_header-2_hmd-codeblock"
+        ],
+        [
+          28,
+          31,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          28,
+          31,
+          2,
+          "header_header-2_hmd-codeblock"
+        ],
+        [
+          32,
+          35,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg_HyperMD-codeblock-end_HyperMD-codeblock-end-bg"
+        ],
+        [
+          32,
+          35,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"code-block-flair\" aria-label=\"Copy\" contenteditable=\"false\">Markdown</span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-hr\" spellcheck=\"false\">---</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-header cm-header-2 cm-hmd-codeblock\" spellcheck=\"false\">title: test</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-header cm-header-2 cm-hmd-codeblock\" spellcheck=\"false\">---</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```markdown</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-hr\" spellcheck=\"false\">---</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-header cm-header-2 cm-hmd-codeblock\" spellcheck=\"false\">title: test</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-header cm-header-2 cm-hmd-codeblock\" spellcheck=\"false\">---</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "highlightedCode": [
+        "<span class=\"token front-matter-block\"><span class=\"token punctuation\">---</span>\n<span class=\"token front-matter yaml language-yaml\">title: test</span>\n<span class=\"token punctuation\">---</span></span>\n"
+      ]
+    },
+    {
+      "html": "<pre><code class=\"language-markdown\">![](image.png)\n![t](image.png)\n</code></pre>",
+      "markdown": "```markdown\n![](image.png)\n![t](image.png)\n```\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "code",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 3,
+                "col": 3,
+                "offset": 46
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          11,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-begin_HyperMD-codeblock-begin-bg_HyperMD-codeblock-bg"
+        ],
+        [
+          0,
+          11,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ],
+        [
+          12,
+          26,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          12,
+          13,
+          2,
+          "hmd-codeblock_image_image-marker"
+        ],
+        [
+          13,
+          15,
+          2,
+          "hmd-codeblock_image_image-alt-text_link"
+        ],
+        [
+          15,
+          26,
+          2,
+          "hmd-codeblock_string_url"
+        ],
+        [
+          27,
+          42,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          27,
+          28,
+          2,
+          "hmd-codeblock_image_image-marker"
+        ],
+        [
+          28,
+          31,
+          2,
+          "hmd-codeblock_image_image-alt-text_link"
+        ],
+        [
+          31,
+          42,
+          2,
+          "hmd-codeblock_string_url"
+        ],
+        [
+          43,
+          46,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg_HyperMD-codeblock-end_HyperMD-codeblock-end-bg"
+        ],
+        [
+          43,
+          46,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"code-block-flair\" aria-label=\"Copy\" contenteditable=\"false\">Markdown</span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-image cm-image-marker\" spellcheck=\"false\">!</span><span class=\"cm-hmd-codeblock cm-image cm-image-alt-text cm-link\" spellcheck=\"false\">[]</span><span class=\"cm-hmd-codeblock cm-string cm-url\" spellcheck=\"false\">(image.png)</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-image cm-image-marker\" spellcheck=\"false\">!</span><span class=\"cm-hmd-codeblock cm-image cm-image-alt-text cm-link\" spellcheck=\"false\">[t]</span><span class=\"cm-hmd-codeblock cm-string cm-url\" spellcheck=\"false\">(image.png)</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```markdown</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-image cm-image-marker\" spellcheck=\"false\">!</span><span class=\"cm-hmd-codeblock cm-image cm-image-alt-text cm-link\" spellcheck=\"false\">[]</span><span class=\"cm-hmd-codeblock cm-string cm-url\" spellcheck=\"false\">(image.png)</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-image cm-image-marker\" spellcheck=\"false\">!</span><span class=\"cm-hmd-codeblock cm-image cm-image-alt-text cm-link\" spellcheck=\"false\">[t]</span><span class=\"cm-hmd-codeblock cm-string cm-url\" spellcheck=\"false\">(image.png)</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "highlightedCode": [
+        "![](image.png)\n<span class=\"token url\"><span class=\"token operator\">!</span>[<span class=\"token content\">t</span>](<span class=\"token url\">image.png</span>)</span>\n"
+      ]
+    },
+    {
+      "html": "<pre><code class=\"language-markdown\">**This should not appear bold**\n</code></pre>",
+      "markdown": "```markdown\n**This should not appear bold**\n```\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "code",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 2,
+                "col": 3,
+                "offset": 47
+              }
+            }
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          11,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-begin_HyperMD-codeblock-begin-bg_HyperMD-codeblock-bg"
+        ],
+        [
+          0,
+          11,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ],
+        [
+          12,
+          43,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg"
+        ],
+        [
+          12,
+          43,
+          2,
+          "hmd-codeblock_strong"
+        ],
+        [
+          44,
+          47,
+          1,
+          "HyperMD-codeblock_HyperMD-codeblock-bg_HyperMD-codeblock-end_HyperMD-codeblock-end-bg"
+        ],
+        [
+          44,
+          47,
+          2,
+          "formatting_formatting-code-block_hmd-codeblock"
+        ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"code-block-flair\" aria-label=\"Copy\" contenteditable=\"false\">Markdown</span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-strong\" spellcheck=\"false\">**This should not appear bold**</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span contenteditable=\"false\"></span><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-begin HyperMD-codeblock-begin-bg HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```markdown</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg\" dir=\"ltr\"><span class=\"cm-hmd-codeblock cm-strong\" spellcheck=\"false\">**This should not appear bold**</span></div><div class=\"cm-line HyperMD-codeblock HyperMD-codeblock-bg HyperMD-codeblock-end HyperMD-codeblock-end-bg\" dir=\"ltr\"><span class=\"cm-formatting cm-formatting-code-block cm-hmd-codeblock\" spellcheck=\"false\">```</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "highlightedCode": [
+        "<span class=\"token bold\"><span class=\"token punctuation\">**</span><span class=\"token content\">This should not appear bold</span><span class=\"token punctuation\">**</span></span>\n"
+      ]
+    },
+    {
+      "html": "<ul>\n<li>List item 1</li>\n<li>List item 2\n<ul>\n<li>Subitem 2.1</li>\n<li>Subitem 2.2\n<div class=\"callout node-insert-event\" data-callout=\"note\" data-callout-fold=\"\" data-callout-metadata=\"\"><div class=\"callout-title\"><div class=\"callout-icon\"><svg height=\"16\" width=\"16\"></svg></div><div class=\"callout-title-inner\">Callout title</div></div><div class=\"callout-content\">\n<p>Callout line 1\nCallout line 2</p>\n</div></div>\n</li>\n<li>Subitem 2.3</li>\n</ul>\n</li>\n<li>List item 3</li>\n</ul>",
+      "markdown": "- List item 1\n- List item 2\n  - Subitem 2.1\n  - Subitem 2.2\n    > [!NOTE] Callout title\n    > Callout line 1\n    > Callout line 2\n  - Subitem 2.3\n- List item 3\n",
+      "metadata": {
+        "sections": [
+          {
+            "type": "list",
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 8,
+                "col": 13,
+                "offset": 159
+              }
+            }
+          }
+        ],
+        "listItems": [
+          {
+            "position": {
+              "start": {
+                "line": 0,
+                "col": 0,
+                "offset": 0
+              },
+              "end": {
+                "line": 0,
+                "col": 13,
+                "offset": 13
+              }
+            },
+            "parent": -1
+          },
+          {
+            "position": {
+              "start": {
+                "line": 1,
+                "col": 0,
+                "offset": 14
+              },
+              "end": {
+                "line": 1,
+                "col": 13,
+                "offset": 27
+              }
+            },
+            "parent": -1
+          },
+          {
+            "position": {
+              "start": {
+                "line": 2,
+                "col": 2,
+                "offset": 30
+              },
+              "end": {
+                "line": 2,
+                "col": 15,
+                "offset": 43
+              }
+            },
+            "parent": 1
+          },
+          {
+            "position": {
+              "start": {
+                "line": 3,
+                "col": 2,
+                "offset": 46
+              },
+              "end": {
+                "line": 6,
+                "col": 20,
+                "offset": 129
+              }
+            },
+            "parent": 1
+          },
+          {
+            "position": {
+              "start": {
+                "line": 7,
+                "col": 2,
+                "offset": 132
+              },
+              "end": {
+                "line": 7,
+                "col": 15,
+                "offset": 145
+              }
+            },
+            "parent": 1
+          },
+          {
+            "position": {
+              "start": {
+                "line": 8,
+                "col": 0,
+                "offset": 146
+              },
+              "end": {
+                "line": 8,
+                "col": 13,
+                "offset": 159
+              }
+            },
+            "parent": -1
+          }
+        ]
+      },
+      "nodes": [
+        [
+          0,
+          13,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1"
+        ],
+        [
+          0,
+          2,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          2,
+          13,
+          2,
+          "list-1"
+        ],
+        [
+          14,
+          27,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1"
+        ],
+        [
+          14,
+          16,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          16,
+          27,
+          2,
+          "list-1"
+        ],
+        [
+          28,
+          43,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-2"
+        ],
+        [
+          28,
+          30,
+          2,
+          "hmd-list-indent_hmd-list-indent-1"
+        ],
+        [
+          30,
+          32,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-2"
+        ],
+        [
+          32,
+          43,
+          2,
+          "list-2"
+        ],
+        [
+          44,
+          59,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-2"
+        ],
+        [
+          44,
+          46,
+          2,
+          "hmd-list-indent_hmd-list-indent-2"
+        ],
+        [
+          46,
+          48,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-2"
+        ],
+        [
+          48,
+          59,
+          2,
+          "list-2"
+        ],
+        [
+          60,
+          87,
+          1,
+          "HyperMD-callout_HyperMD-list-line_HyperMD-list-line-2_HyperMD-list-line-nobullet_HyperMD-quote_HyperMD-quote-1_HyperMD-quote-lazy"
+        ],
+        [
+          60,
+          64,
+          2,
+          "hmd-list-indent_hmd-list-indent-2"
+        ],
+        [
+          64,
+          74,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_hmd-callout_list-2_quote_quote-1"
+        ],
+        [
+          74,
+          87,
+          2,
+          "list-2_quote_quote-1"
+        ],
+        [
+          88,
+          108,
+          1,
+          "HyperMD-quote_HyperMD-quote-1_HyperMD-quote-lazy"
+        ],
+        [
+          88,
+          92,
+          2,
+          "hmd-indent-in-quote"
+        ],
+        [
+          92,
+          94,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_list-2_quote_quote-1"
+        ],
+        [
+          94,
+          108,
+          2,
+          "list-2_quote_quote-1"
+        ],
+        [
+          109,
+          129,
+          1,
+          "HyperMD-quote_HyperMD-quote-1_HyperMD-quote-lazy"
+        ],
+        [
+          109,
+          113,
+          2,
+          "hmd-indent-in-quote"
+        ],
+        [
+          113,
+          115,
+          2,
+          "formatting_formatting-quote_formatting-quote-1_list-2_quote_quote-1"
+        ],
+        [
+          115,
+          129,
+          2,
+          "list-2_quote_quote-1"
+        ],
+        [
+          130,
+          145,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-2_HyperMD-quote_HyperMD-quote-1_HyperMD-quote-lazy"
+        ],
+        [
+          130,
+          132,
+          2,
+          "hmd-indent-in-quote"
+        ],
+        [
+          132,
+          134,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-2"
+        ],
+        [
+          134,
+          145,
+          2,
+          "list-2"
+        ],
+        [
+          146,
+          159,
+          1,
+          "HyperMD-list-line_HyperMD-list-line-1"
+        ],
+        [
+          146,
+          148,
+          2,
+          "formatting_formatting-list_formatting-list-ul_list-1"
+        ],
+        [
+          148,
+          159,
+          2,
+          "list-1"
+        ]
+      ],
+      "livePreviewHtml": "<div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -22px; padding-inline-start: 22px;\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-list-1\">List item 1</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -22px; padding-inline-start: 22px;\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-list-1\">List item 2</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-2\" dir=\"ltr\" style=\"text-indent: -31px; padding-inline-start: 31px;\"><span class=\"cm-hmd-list-indent cm-hmd-list-indent-1\"><span class=\"cm-indent-spacing\">  </span></span><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-2\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-list-2\">Subitem 2.1</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-2\" dir=\"ltr\" style=\"text-indent: -31px; padding-inline-start: 31px;\"><span class=\"cm-hmd-list-indent cm-hmd-list-indent-2\"><span class=\"cm-indent-spacing\">  </span></span><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-2\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-list-2\">Subitem 2.2</span></div><div class=\"cm-embed-block cm-callout\" tabindex=\"-1\" contenteditable=\"false\"><div class=\"markdown-rendered show-indentation-guide\"><pre><code>&gt; [!NOTE] Callout title\n&gt; Callout line 1\n&gt; Callout line 2\n</code><button class=\"copy-code-button\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon lucide-copy\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg></button></pre>\n<ul>\n<li dir=\"auto\">Subitem 2.3</li>\n</ul></div><div class=\"embed-actions\"><div class=\"embed-action edit-block-button\" aria-label=\"Edit this block\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon lucide-code-2\"><path d=\"m18 16 4-4-4-4\"></path><path d=\"m6 8-4 4 4 4\"></path><path d=\"m14.5 4-5 16\"></path></svg></div></div></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -22px; padding-inline-start: 22px;\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\"><span class=\"list-bullet\">-</span> </span><span class=\"cm-list-1\">List item 3</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "sourceModeHtml": "<div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -10px; padding-inline-start: 10px;\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\">- </span><span class=\"cm-list-1\">List item 1</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -10px; padding-inline-start: 10px;\"><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\">- </span><span class=\"cm-list-1\">List item 2</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-2\" dir=\"ltr\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-hmd-list-indent cm-hmd-list-indent-1\"><span class=\"cm-indent-spacing\">  </span></span><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-2\">- </span><span class=\"cm-list-2\">Subitem 2.1</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-2\" dir=\"ltr\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-hmd-list-indent cm-hmd-list-indent-2\"><span class=\"cm-indent-spacing\">  </span></span><div class=\"cm-fold-indicator\" contenteditable=\"false\"><div class=\"collapse-indicator collapse-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"svg-icon right-triangle\"><path d=\"M3 8L12 17L21 8\"></path></svg></div></div><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-2\">- </span><span class=\"cm-list-2\">Subitem 2.2</span></div><div class=\"cm-line HyperMD-callout HyperMD-list-line HyperMD-list-line-2 HyperMD-list-line-nobullet HyperMD-quote HyperMD-quote-1 HyperMD-quote-lazy\" dir=\"ltr\" style=\"text-indent: -51px; padding-inline-start: 51px;\"><span class=\"cm-hmd-list-indent cm-hmd-list-indent-2\"><span class=\"cm-indent\">    </span></span><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-hmd-callout cm-list-2 cm-quote cm-quote-1\">&gt; [!NOTE] </span><span class=\"cm-list-2 cm-quote cm-quote-1\">Callout title</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1 HyperMD-quote-lazy\" dir=\"ltr\" style=\"text-indent: -51px; padding-inline-start: 51px;\"><span class=\"cm-hmd-indent-in-quote\"><span class=\"cm-indent\">    </span></span><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-list-2 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-list-2 cm-quote cm-quote-1\">Callout line 1</span></div><div class=\"cm-line HyperMD-quote HyperMD-quote-1 HyperMD-quote-lazy\" dir=\"ltr\" style=\"text-indent: -51px; padding-inline-start: 51px;\"><span class=\"cm-hmd-indent-in-quote\"><span class=\"cm-indent\">    </span></span><span class=\"cm-formatting cm-formatting-quote cm-formatting-quote-1 cm-list-2 cm-quote cm-quote-1\">&gt; </span><span class=\"cm-list-2 cm-quote cm-quote-1\">Callout line 2</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-2 HyperMD-quote HyperMD-quote-1 HyperMD-quote-lazy\" dir=\"ltr\" style=\"text-indent: -19px; padding-inline-start: 19px;\"><span class=\"cm-hmd-indent-in-quote\"><span class=\"cm-indent-spacing\">  </span></span><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-2\">- </span><span class=\"cm-list-2\">Subitem 2.3</span></div><div class=\"cm-line HyperMD-list-line HyperMD-list-line-1\" dir=\"ltr\" style=\"text-indent: -10px; padding-inline-start: 10px;\"><span class=\"cm-formatting cm-formatting-list cm-formatting-list-ul cm-list-1\">- </span><span class=\"cm-list-1\">List item 3</span></div><div class=\"cm-line\" dir=\"ltr\"><br></div>",
+      "highlightedCode": []
     }
   ]
 }

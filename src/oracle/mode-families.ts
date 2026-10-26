@@ -229,10 +229,12 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'The editor styles no internal link right after an inline HTML tag.'
   },
   {
+    // The reducer brings a quote in a nested list item, which the editor carries onto the next item, down to `>\n-` too.
+    forumUrl: 'https://forum.obsidian.md/t/57053',
     id: 'lazy-line-after-empty-quote-line',
-    kind: 'minor',
+    kind: 'known',
     matches: (key, reduced) => isKey(key, 'editor', /^(?:quote-\d|thematicBreak)$/u) && /^>+\s*\n/mu.test(reduced),
-    note: 'After an empty quote line the editor carries the quote onto the next line, which the reading view reads as a block of its own.'
+    note: 'After an empty quote line, or after a quote in a nested list item, the editor carries the quote onto the next line, even a list item, which the reading view reads as a block of its own; Live Preview then draws a callout in a nested list item as code and takes the next item into it.'
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/29582',
