@@ -1,0 +1,170 @@
+{
+  "meta": {
+    "appVersion": "1.14.5",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+    "vault": "temp-vault-WbtfDn"
+  },
+  "reads": {
+    "folder-root-collision": {
+      "generated": [],
+      "links": [
+        {
+          "destination": "A.md",
+          "link": "A",
+          "original": "[[A]]"
+        },
+        {
+          "destination": "A.md",
+          "link": "A.md",
+          "original": "[x](A.md)"
+        },
+        {
+          "destination": "link-cases/F/A.md",
+          "link": "./A.md",
+          "original": "[x](./A.md)"
+        },
+        {
+          "destination": "A.md",
+          "link": "/A.md",
+          "original": "[x](/A.md)"
+        }
+      ],
+      "text": "[[A]]\n\n[x](A.md)\n\n[x](./A.md)\n\n[x](/A.md)\n"
+    },
+    "folder-root-collision-generated": {
+      "generated": [
+        "[[link-cases/F/A]]",
+        "[A](link-cases/F/A.md)"
+      ],
+      "links": [
+        {
+          "destination": "link-cases/F/A.md",
+          "link": "link-cases/F/A",
+          "original": "[[link-cases/F/A]]"
+        },
+        {
+          "destination": "link-cases/F/A.md",
+          "link": "link-cases/F/A.md",
+          "original": "[A](link-cases/F/A.md)"
+        }
+      ],
+      "text": "[[link-cases/F/A]]\n\n[A](link-cases/F/A.md)\n"
+    },
+    "spaced-name-rename": {
+      "generated": [],
+      "links": [
+        {
+          "destination": "link-cases/spaced/c d.md",
+          "link": "c d.md",
+          "original": "[x](<c d.md>)"
+        },
+        {
+          "destination": "link-cases/spaced/c d.md",
+          "link": "c d.md",
+          "original": "[y](<c d.md>)"
+        },
+        {
+          "destination": "link-cases/spaced/c d.md",
+          "link": "c d.md",
+          "original": "[z](c%20d.md)"
+        },
+        {
+          "destination": "link-cases/spaced/c d.md",
+          "link": "c d",
+          "original": "[[c d]]"
+        }
+      ],
+      "text": "[x](<c d.md>)\n\n[y](<c d.md>)\n\n[z](c%20d.md)\n\n[[c d]]\n"
+    },
+    "extensionless": {
+      "generated": [],
+      "links": [
+        {
+          "destination": null,
+          "link": "file",
+          "original": "[[file]]"
+        },
+        {
+          "destination": null,
+          "link": "file",
+          "original": "[x](file)"
+        },
+        {
+          "destination": null,
+          "link": "file",
+          "original": "![[file]]"
+        },
+        {
+          "destination": null,
+          "link": "link-cases/extensionless/file",
+          "original": "[[link-cases/extensionless/file]]"
+        }
+      ],
+      "text": "[[file]]\n\n[x](file)\n\n![[file]]\n\n[[link-cases/extensionless/file]]\n"
+    },
+    "extensionless-generated": {
+      "generated": [
+        "[[link-cases/extensionless/file]]",
+        "[](link-cases/extensionless/file)"
+      ],
+      "links": [
+        {
+          "destination": null,
+          "link": "link-cases/extensionless/file",
+          "original": "[[link-cases/extensionless/file]]"
+        },
+        {
+          "destination": null,
+          "link": "link-cases/extensionless/file",
+          "original": "[](link-cases/extensionless/file)"
+        }
+      ],
+      "text": "[[link-cases/extensionless/file]]\n\n[](link-cases/extensionless/file)\n"
+    },
+    "attachment-generated": {
+      "generated": [
+        "[[pic.png]]",
+        "[](pic.png)"
+      ],
+      "links": [
+        {
+          "destination": "link-cases/attachment/pic.png",
+          "link": "pic.png",
+          "original": "[[pic.png]]"
+        },
+        {
+          "destination": "link-cases/attachment/pic.png",
+          "link": "pic.png",
+          "original": "[](pic.png)"
+        }
+      ],
+      "text": "[[pic.png]]\n\n[](pic.png)\n"
+    },
+    "merge-relative-links": {
+      "generated": [],
+      "links": [
+        {
+          "destination": null,
+          "link": "../assets/i.png",
+          "original": "![](../assets/i.png)"
+        },
+        {
+          "destination": null,
+          "link": "./j.png",
+          "original": "![](./j.png)"
+        },
+        {
+          "destination": "link-cases/merge/assets/i.png",
+          "link": "i.png",
+          "original": "![[i.png]]"
+        },
+        {
+          "destination": null,
+          "link": "../assets/i.png",
+          "original": "[[../assets/i.png]]"
+        }
+      ],
+      "text": "destination\n\nsource\n\n![](../assets/i.png)\n\n![](./j.png)\n\n![[i.png]]\n\n[[../assets/i.png]]\n"
+    }
+  }
+}
