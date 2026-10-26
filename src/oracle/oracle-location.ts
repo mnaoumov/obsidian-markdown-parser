@@ -178,6 +178,16 @@ export function specialNamesAndroidOracleFileName(version = PINNED_ANDROID_OBSID
 }
 
 /**
+ * The name of a special note name oracle file of the normalization sweep.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function specialNamesNormalizationOracleFileName(version = oracleObsidianVersion()): string {
+  return `special-names-normalization-obsidian-${version}.json`;
+}
+
+/**
  * The name of a special note name oracle file.
  *
  * @param version - The Obsidian version.

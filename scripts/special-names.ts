@@ -4,8 +4,9 @@
  * Prints the special note name oracle's judgement as markdown tables: per name, how each vault surface fared, then what
  * the file explorer's rename does with each checked name (`src/oracle/special-names.ts`, `docs/special-names.md`).
  *
- * Usage: `jiti scripts/special-names.ts [--obsidian-version <version>] [--android] [--details]`. `--details` adds what
- * every surface did, not only the ones that failed, and `--android` judges the Android oracle. The oracle is read from
+ * Usage: `jiti scripts/special-names.ts [--obsidian-version <version>] [--android | --normalization] [--details]`. `--details`
+ * adds what every surface did, not only the ones that failed, `--android` judges the Android oracle and `--normalization`
+ * the normalization sweep's. The oracle is read from
  * `ORACLE_DIRECTORY`, by default `oracle/`.
  */
 
@@ -16,19 +17,26 @@ import type { SpecialNamesFile } from '../src/oracle/special-names.ts';
 import {
   readOracleFile,
   specialNamesAndroidOracleFileName,
+  specialNamesNormalizationOracleFileName,
   specialNamesOracleFileName
 } from '../src/oracle/oracle-location.ts';
 import {
   ANDROID_SPECIAL_NAMES,
   judgeSpecialNames,
+  NORMALIZATION_NAMES,
   SPECIAL_NAME_SURFACES,
   SPECIAL_NAMES
 } from '../src/oracle/special-names.ts';
 
-const { values } = parseArgs({ options: { 'android': { type: 'boolean' }, 'details': { type: 'boolean' }, 'obsidian-version': { type: 'string' } } });
+const { values } = parseArgs({ options: { 'android': { type: 'boolean' }, 'details': { type: 'boolean' }, 'normalization': { type: 'boolean' }, 'obsidian-version': { type: 'string' } } });
 const isAndroid = values.android === true;
-const names = isAndroid ? ANDROID_SPECIAL_NAMES : SPECIAL_NAMES;
-const file = readOracleFile((isAndroid ? specialNamesAndroidOracleFileName : specialNamesOracleFileName)(values['obsidian-version'])) as SpecialNamesFile;
+let names = isAndroid ? ANDROID_SPECIAL_NAMES : SPECIAL_NAMES;
+let fileNameOf = isAndroid ? specialNamesAndroidOracleFileName : specialNamesOracleFileName;
+if (values.normalization === true) {
+  names = NORMALIZATION_NAMES;
+  fileNameOf = specialNamesNormalizationOracleFileName;
+}
+const file = readOracleFile(fileNameOf(values['obsidian-version'])) as SpecialNamesFile;
 const verdicts = judgeSpecialNames(file, names);
 const MARK = { documented: 'doc', fails: '**fails**', ok: 'ok' } as const;
 
@@ -58,7 +66,10 @@ for (const { name } of names) {
     }
   }
 }
-console.log('\n| Typed name | Saved | Message |\n| --- | --- | --- |');
-for (const check of file.renameChecks) {
-  console.log(`| ${code(check.name)} | ${check.saved ? 'yes' : 'no'} | ${check.message ?? '-'} |`);
+// The normalization sweep types no rename.
+if (file.renameChecks.length > 0) {
+  console.log('\n| Typed name | Saved | Message |\n| --- | --- | --- |');
+  for (const check of file.renameChecks) {
+    console.log(`| ${code(check.name)} | ${check.saved ? 'yes' : 'no'} | ${check.message ?? '-'} |`);
+  }
 }

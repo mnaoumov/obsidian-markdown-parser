@@ -110,6 +110,59 @@ What was found on Android, beyond the desktop's findings above, which all hold t
 | 7. Trailing dots and spaces in folders | - | Nothing to report. |
 | 8. Folding in app storage | file system | Nothing to report on its own. It matters to a vault synced from a case-sensitive system, which is where the Sync question goes. |
 
+## Names in neither normal form
+
+```sh
+npx jiti scripts/special-names-oracle.ts --normalization [--obsidian-version <version>] [--out-dir <directory>]
+npm run special-names -- --normalization [--details]
+```
+
+The sweep above tried names that are wholly NFC or wholly NFD. `--normalization` sweeps 21 names (`NORMALIZATION_NAMES`) that are neither, or that test how far normalization goes, through the same surfaces:
+
+| Group | Names |
+| --- | --- |
+| Mixed form | `m` + composed `é` + decomposed `й` (U+0438 U+0306), and `k` + decomposed `é` (U+0065 U+0301) + composed `й`: each equals neither its NFC nor its NFD |
+| Mark order | `e` + U+0302 U+0323, two marks in the order NFD does not use; and `o` with the same two marks in both orders at once, the non-canonical one written last |
+| Three spellings at once | `néй` composed, decomposed and mixed, the mixed one written last; and `péй` the same, the composed one written last |
+| Typed in other spellings | `qéй` composed, with links also typed in two mixed spellings |
+| Bare combining mark | U+0301 at the start of a name, and after a space in the middle of one |
+| Compatibility characters | `ﬁx` (U+FB01), `Ａx` (U+FF21) and `x²`, each beside `fix`, `Ax` and `x2`, the names NFKC would make of them |
+
+Beyond the surfaces, the sweep reads, for each name:
+
+| Read | What is read |
+| --- | --- |
+| file on disk | the file the vault note reads (`adapter.files[path].realpath`), before and after its rename round trips, and after the rename onto the name |
+| lookups | what `getAbstractFileByPath` finds under the path in each spelling: the name as written, its NFC, its NFD and any typed spelling |
+| typed links | for each spelling, a linker on disk with one link typed by hand as a wikilink, a markdown link with its destination percent-encoded, and one with it in angle brackets: the note `resolvedLinks` maps it to, the link path the metadata cache holds, the `data-href` of its anchor in Reading view and the note a click on it opens, and the note the editor's "Follow link under cursor" opens from the linker's own text, with any note that created |
+| spelling renames | `fileManager.renameFile` of a second file of the name to each other spelling of it and back, with the vault path and the file on disk after each |
+
+The oracle is pinned to 1.14.5 (`oracle/special-names-normalization-obsidian-1.14.5.json`). The 1.15.0 insider build, read on 2026-10-26, gives the same reads on every name, apart from the order of the quick switcher's other offers. `src/oracle/special-names.test.ts` pins them. NTFS stores a name exactly as written and compares names code unit by code unit (apart from letter case), so on Windows every difference below comes from Obsidian, not from the file system.
+
+What was found:
+
+1. **The vault path of a note is the NFC of its file's name, whatever form that name is in, and the file keeps its own name on disk.** A mixed form, a non-canonical order of marks or a decomposed name, alone, works on every surface, as finding 5 found for a decomposed one. The explorer shows the NFC name.
+2. **Two or three spellings of one name are one note, and the vault keeps the file it saw last, whichever form it is in.** With the mixed `néй` written last, the vault reads the mixed file under the composed path, and the composed file, which a user would call the "real" one, is hidden. The other spellings are hidden as finding 5 describes: no surface shows them, and an edit of the note goes to the kept file only.
+3. **`getAbstractFileByPath` finds a note under its NFC spelling only.** The file's own name on disk, NFD or mixed, finds nothing, so a plugin that takes a path from the file system or from another app has to normalize it first. This was already reported for `getFileByPath` and a decomposed name, in post 4 of [t/95629](https://forum.obsidian.md/t/nfd-nfc-normalization-issues-with-wiki-links-in-obsidian/95629).
+4. **A link typed in any spelling but NFC resolves everywhere except where the editor follows it, and there it creates a second note.** The metadata cache composes every link it reads: the cached link path is NFC, so `resolvedLinks`, backlinks and the graph count the link as resolved, and Reading view's anchor carries the NFC path, so a click there opens the note. The vault keeps the note's text as written, though, and the editor's "Follow link under cursor" follows the text: for an NFD or mixed link, wikilink or markdown, percent-encoded or not, it creates `néй 1.md` beside `néй.md` and opens that. A bare `[[name]]` passed to `workspace.openLinkText` creates the note at the vault root. This is the first report of [t/95629](https://forum.obsidian.md/t/nfd-nfc-normalization-issues-with-wiki-links-in-obsidian/95629) (macOS, 1.8.3, where links built from `os.listdir()` names created new notes when clicked), still there on 1.14.5 and 1.15.0. It also holds for mixed forms and for markdown links. A **defect**: one link, one target, two outcomes depending on the view.
+5. **A rename to another spelling of the same name is accepted and does nothing.** `fileManager.renameFile` resolves without an error, and both the vault path and the name on disk stay as they were. Every rename to a different name, though, writes the NFC spelling on disk: a mixed `néи◌̆.md` renamed away and back is `néй.md` afterwards, and a plainly named note renamed onto a mixed name is stored composed. So Obsidian can change a file's normal form only as a side effect of a real rename.
+6. **A hidden NFC file strands a moved note.** Where the kept file is not the NFC spelling and a hidden file is, as with the mixed `néй` written last, moving or renaming the note away works, but moving it back is refused with "Destination file already exists!". The refusal names a file no surface shows, and nothing in the vault holds that path any more. The hidden file stays out of the vault after the note leaves, even 10 seconds later, until something writes to it on disk, when the vault indexes it. Where the hidden spelling is not NFC, as with `o` and its marks in the canonical order or the decomposed `café`, the round trip works, since Windows keeps NFC and NFD as two names. A **defect by rule 1**, and a sharper form of finding 5.
+7. **A combining mark with no base character, at the start of a name or after a space, works on every surface.** Such a name is already NFC and NFD, so nothing changes it.
+8. **No layer applies compatibility normalization (NFKC or NFKD).** `ﬁx.md` and `fix.md`, `Ａx.md` and `Ax.md`, and `x².md` and `x2.md` are two notes each, on every surface, with links, lookups and renames keeping them apart.
+
+| Finding | Verdict | Goes to |
+| --- | --- | --- |
+| 1. NFC vault paths | by design | Nothing on its own; it is where the others come from. |
+| 2. Several spellings | defect, rule 1 | A reply on [t/95629](https://forum.obsidian.md/t/nfd-nfc-normalization-issues-with-wiki-links-in-obsidian/95629), with findings 4 and 6: mixed forms shadow as NFD ones do, and the last file written wins. |
+| 3. `getAbstractFileByPath` | known | Already in post 4 of t/95629. |
+| 4. The editor's follow creates a note | defect | The same reply, as the measurement that the topic's first report still holds on 1.14.5 and 1.15.0, for every non-NFC spelling and for markdown links too. |
+| 5. Spelling renames | by design | Nothing to report. |
+| 6. A stranded note | defect, rule 1 | The same reply. |
+| 7. Bare marks | - | Nothing to report. |
+| 8. No NFKC | - | Nothing to report. |
+
+Not measured here: Android, whose app storage folds an NFC name and its NFD into one file (finding 8 of [On Android](#on-android)), so that some of these pairs never reach the app there; macOS, where APFS keeps a name's form but compares names regardless of it, and HFS+ stored them decomposed; and Obsidian Sync, which the owned test instance has no account for.
+
 ## The full table
 
 `npm run special-names`, on the pinned 1.14.5. `ok` works, `doc` fails where the help documents it, **fails** fails where it does not. In the table, `␣` stands for a space at the start or end of a code span, `⍽` for a no-break space, and `◌` for the base of a combining mark.
@@ -459,3 +512,106 @@ Every surface that is not `ok`, with what it did:
 | `r\s` | no | - |
 | `rs.` | yes | - |
 | `rs␣` | yes | - |
+
+## The full table of names in neither normal form
+
+`npm run special-names -- --normalization`, on the pinned 1.14.5, with the same marks as above.
+
+| Name | indexed | explorer | open | switcher | search | link | backlinks | graph | embed | property | uri | rename | move | rename-onto |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `plain` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `méи◌̆` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `ke◌́й` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `e◌̂◌̣` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `o◌̣◌̂` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | ok |
+| `o◌̂◌̣` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | **fails** |
+| `néй` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | ok |
+| `ne◌́и◌̆` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** |
+| `néи◌̆` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | **fails** | **fails** | **fails** |
+| `pe◌́и◌̆` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | ok |
+| `péи◌̆` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** |
+| `péй` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | **fails** |
+| `qéй` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `◌́x` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x ◌́y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `ﬁx` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `fix` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `Ａx` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `Ax` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x²` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x2` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+
+| Name | Surface | Status | What it did |
+| --- | --- | --- | --- |
+| `o◌̣◌̂` | indexed | fails | `not indexed` |
+| `o◌̣◌̂` | explorer | fails | `no item` |
+| `o◌̣◌̂` | open | fails | `nothing to open` |
+| `o◌̣◌̂` | switcher | fails | `not offered among 2` |
+| `o◌̣◌̂` | search | fails | `finds nothing` |
+| `o◌̣◌̂` | link | fails | `[[o◌̣◌̂]] does not resolve` |
+| `o◌̣◌̂` | backlinks | fails | `no backlink` |
+| `o◌̣◌̂` | graph | fails | `no node, no edge` |
+| `o◌̣◌̂` | embed | fails | `does not show the note` |
+| `o◌̣◌̂` | property | fails | `does not resolve` |
+| `o◌̣◌̂` | uri | fails | `no URL` |
+| `o◌̣◌̂` | rename | fails | `nothing to rename` |
+| `o◌̣◌̂` | move | fails | `nothing to rename` |
+| `o◌̂◌̣` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `néй` | indexed | fails | `not indexed` |
+| `néй` | explorer | fails | `no item` |
+| `néй` | open | fails | `nothing to open` |
+| `néй` | switcher | fails | `offered first` |
+| `néй` | search | fails | `finds nothing` |
+| `néй` | link | fails | `[[néй]] does not resolve` |
+| `néй` | backlinks | fails | `no backlink` |
+| `néй` | graph | fails | `no node, no edge` |
+| `néй` | embed | fails | `does not show the note` |
+| `néй` | property | fails | `does not resolve` |
+| `néй` | uri | fails | `no URL` |
+| `néй` | rename | fails | `nothing to rename` |
+| `néй` | move | fails | `nothing to rename` |
+| `ne◌́и◌̆` | indexed | fails | `not indexed` |
+| `ne◌́и◌̆` | explorer | fails | `no item` |
+| `ne◌́и◌̆` | open | fails | `nothing to open` |
+| `ne◌́и◌̆` | switcher | fails | `not offered among 10` |
+| `ne◌́и◌̆` | search | fails | `finds nothing` |
+| `ne◌́и◌̆` | link | fails | `[[ne◌́и◌̆]] does not resolve` |
+| `ne◌́и◌̆` | backlinks | fails | `no backlink` |
+| `ne◌́и◌̆` | graph | fails | `no node, no edge` |
+| `ne◌́и◌̆` | embed | fails | `does not show the note` |
+| `ne◌́и◌̆` | property | fails | `does not resolve` |
+| `ne◌́и◌̆` | uri | fails | `no URL` |
+| `ne◌́и◌̆` | rename | fails | `nothing to rename` |
+| `ne◌́и◌̆` | move | fails | `nothing to rename` |
+| `ne◌́и◌̆` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `néи◌̆` | rename | fails | `<<no special-names/néй.md>> does not resolve; back, no link does not resolve` |
+| `néи◌̆` | move | fails | `[[special-names/moved/néй]] resolves; back, <<refused: Destination file already exists!>> does not resolve` |
+| `néи◌̆` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `pe◌́и◌̆` | indexed | fails | `not indexed` |
+| `pe◌́и◌̆` | explorer | fails | `no item` |
+| `pe◌́и◌̆` | open | fails | `nothing to open` |
+| `pe◌́и◌̆` | switcher | fails | `not offered among 10` |
+| `pe◌́и◌̆` | search | fails | `finds nothing` |
+| `pe◌́и◌̆` | link | fails | `[[pe◌́и◌̆]] does not resolve` |
+| `pe◌́и◌̆` | backlinks | fails | `no backlink` |
+| `pe◌́и◌̆` | graph | fails | `no node, no edge` |
+| `pe◌́и◌̆` | embed | fails | `does not show the note` |
+| `pe◌́и◌̆` | property | fails | `does not resolve` |
+| `pe◌́и◌̆` | uri | fails | `no URL` |
+| `pe◌́и◌̆` | rename | fails | `nothing to rename` |
+| `pe◌́и◌̆` | move | fails | `nothing to rename` |
+| `péи◌̆` | indexed | fails | `not indexed` |
+| `péи◌̆` | explorer | fails | `no item` |
+| `péи◌̆` | open | fails | `nothing to open` |
+| `péи◌̆` | switcher | fails | `not offered among 10` |
+| `péи◌̆` | search | fails | `finds nothing` |
+| `péи◌̆` | link | fails | `[[péи◌̆]] does not resolve` |
+| `péи◌̆` | backlinks | fails | `no backlink` |
+| `péи◌̆` | graph | fails | `no node, no edge` |
+| `péи◌̆` | embed | fails | `does not show the note` |
+| `péи◌̆` | property | fails | `does not resolve` |
+| `péи◌̆` | uri | fails | `no URL` |
+| `péи◌̆` | rename | fails | `nothing to rename` |
+| `péи◌̆` | move | fails | `nothing to rename` |
+| `péи◌̆` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `péй` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |

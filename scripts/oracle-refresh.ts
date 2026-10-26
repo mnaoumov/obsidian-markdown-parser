@@ -12,7 +12,8 @@
  *
  * - `scripts/oracle.ts` once per class-span seed, with the pinned file's `--per-set`.
  * - `scripts/spec-oracle.ts`, `scripts/quirk-probe-oracle.ts`, `scripts/forum-issue-oracle.ts`, `scripts/editing-modes-oracle.ts`,
- *   `scripts/live-surfaces-oracle.ts`, `scripts/link-parity-oracle.ts`, `scripts/special-names-oracle.ts` and `scripts/link-cases-oracle.ts`.
+ *   `scripts/live-surfaces-oracle.ts`, `scripts/link-parity-oracle.ts`, `scripts/special-names-oracle.ts` (plain and with `--normalization`) and
+ *   `scripts/link-cases-oracle.ts`.
  * - `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
  *
  * The output directory is `oracle/`, so a newer version's files land beside the pinned ones. A re-read of the pinned
@@ -193,6 +194,7 @@ try {
   }
   if (isWanted('special-names')) {
     run('special-names-oracle.ts', common);
+    run('special-names-oracle.ts', ['--normalization', ...common]);
   }
   if (isWanted('link-cases')) {
     run('link-cases-oracle.ts', common);

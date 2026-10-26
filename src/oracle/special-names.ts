@@ -58,12 +58,29 @@ export interface SpecialName {
    * The name of another file of the sweep the vault indexes under the same path, where there is one.
    */
   readonly shadows?: string;
+
+  /**
+   * Spellings of the name, beyond its own, its NFC and its NFD, that the normalization sweep types links in.
+   */
+  readonly typed?: readonly string[];
 }
 
 /**
  * Why a name is in the sweep.
  */
-export type SpecialNameGroup = 'control' | 'device' | 'dot' | 'link-syntax' | 'percent' | 'space' | 'unicode' | 'warned';
+export type SpecialNameGroup =
+  | 'bare-mark'
+  | 'compatibility'
+  | 'control'
+  | 'device'
+  | 'dot'
+  | 'link-syntax'
+  | 'mixed'
+  | 'order'
+  | 'percent'
+  | 'space'
+  | 'unicode'
+  | 'warned';
 
 /**
  * The note names of the sweep, each a file in {@link SPECIAL_NAMES_FOLDER}. Only names Windows can store: the names it
@@ -123,6 +140,198 @@ export const DEVICE_SPECIAL_NAMES: readonly SpecialName[] = [
  * The note names of the Android sweep: the desktop's, at the same indices, then {@link DEVICE_SPECIAL_NAMES}.
  */
 export const ANDROID_SPECIAL_NAMES: readonly SpecialName[] = [...SPECIAL_NAMES, ...DEVICE_SPECIAL_NAMES];
+
+/**
+ * The note names of the normalization sweep: names in neither NFC nor NFD, three spellings of one name at once, combining
+ * marks with no base, and compatibility characters NFKC would change but NFC keeps. A shadowed name is written before
+ * the name it shadows, so the last one written is the one the vault keeps.
+ */
+export const NORMALIZATION_NAMES: readonly SpecialName[] = [
+  { group: 'control', name: 'plain' },
+  // A composed é next to a decomposed й, and the other way round: neither is NFC nor NFD.
+  { group: 'mixed', name: 'm\u{E9}\u{438}\u{306}' },
+  { group: 'mixed', name: 'ke\u{301}\u{439}' },
+  // Two marks below and above, in the order NFD does not use: canonical reordering makes it ệ's NFD.
+  { group: 'order', name: 'e\u{302}\u{323}' },
+  // Both orders of the same two marks at once, the non-canonical one written last.
+  { group: 'order', name: 'o\u{323}\u{302}', shadows: 'o\u{302}\u{323}' },
+  { group: 'order', name: 'o\u{302}\u{323}' },
+  // Three spellings of one name at once, the mixed one written last.
+  { group: 'mixed', name: 'n\u{E9}\u{439}', shadows: 'n\u{E9}\u{438}\u{306}' },
+  { group: 'mixed', name: 'ne\u{301}\u{438}\u{306}', shadows: 'n\u{E9}\u{438}\u{306}' },
+  { group: 'mixed', name: 'n\u{E9}\u{438}\u{306}' },
+  // The same three, the NFC one written last.
+  { group: 'mixed', name: 'pe\u{301}\u{438}\u{306}', shadows: 'p\u{E9}\u{439}' },
+  { group: 'mixed', name: 'p\u{E9}\u{438}\u{306}', shadows: 'p\u{E9}\u{439}' },
+  { group: 'mixed', name: 'p\u{E9}\u{439}' },
+  // An NFC name that links are also typed to in a mixed spelling.
+  { group: 'mixed', name: 'q\u{E9}\u{439}', typed: ['q\u{E9}\u{438}\u{306}', 'qe\u{301}\u{439}'] },
+  { group: 'bare-mark', name: '\u{301}x' },
+  { group: 'bare-mark', name: 'x \u{301}y' },
+  // Each beside the name NFKC would make of it.
+  { group: 'compatibility', name: '\u{FB01}x' },
+  { group: 'compatibility', name: 'fix' },
+  { group: 'compatibility', name: '\u{FF21}x' },
+  { group: 'compatibility', name: 'Ax' },
+  { group: 'compatibility', name: 'x\u{B2}' },
+  { group: 'compatibility', name: 'x2' }
+];
+
+/**
+ * The folder the normalization sweep writes a second file of each name into, to rename it between its spellings.
+ */
+export const SPECIAL_NAMES_FORMS_FOLDER = `${SPECIAL_NAMES_FOLDER}/forms`;
+
+/**
+ * The folder holding the normalization sweep's linkers with hand-typed links, one link each.
+ */
+export const SPECIAL_NAMES_TYPED_FOLDER = `${SPECIAL_NAMES_FOLDER}/typed`;
+
+/**
+ * The ways the normalization sweep types a link to a note: a wikilink, a markdown link with its destination
+ * percent-encoded, and one with its destination in angle brackets, unencoded.
+ */
+export const TYPED_LINK_KINDS = ['wikilink', 'markdown-encoded', 'markdown-raw'] as const;
+
+/**
+ * What one `fileManager.renameFile` of the note's second file to another spelling of its name did.
+ */
+export interface FormRenameRead extends Spelling {
+  /**
+   * The vault path of the note afterwards, or `null` where the vault lost it.
+   */
+  readonly path: null | string;
+
+  /**
+   * The file on disk the note reads afterwards, or `null`.
+   */
+  readonly realpath: null | string;
+
+  /**
+   * The refusal, or `null`.
+   */
+  readonly refusal: null | string;
+}
+
+/**
+ * What `getAbstractFileByPath` found for one spelling of the note's path.
+ */
+export interface LookupRead extends Spelling {
+  /**
+   * The path of the file it found, or `null`.
+   */
+  readonly found: null | string;
+}
+
+/**
+ * Which normal forms a string is in.
+ */
+export type NormalForm = 'both' | 'neither' | 'nfc' | 'nfd';
+
+/**
+ * What the normalization sweep read of one name beyond the surfaces.
+ */
+export interface NormalizationRead {
+  /**
+   * The renames of the name's second file to each other spelling and back, in order, or `null` for a shadowed name.
+   */
+  readonly formRenames: null | readonly FormRenameRead[];
+
+  /**
+   * What `getAbstractFileByPath` found for each spelling of the name's path.
+   */
+  readonly lookups: readonly LookupRead[];
+
+  /**
+   * The file on disk the vault note reads, after the plainly named note was renamed onto this name.
+   */
+  readonly ontoRealpath: null | string;
+
+  /**
+   * The file on disk the vault note reads, as the sweep found it, or `null` with no note.
+   */
+  readonly realpath: null | string;
+
+  /**
+   * The file on disk the vault note reads after its rename and move round trips.
+   */
+  readonly realpathAfterRenames: null | string;
+
+  /**
+   * Where each hand-typed link to the note led.
+   */
+  readonly typedLinks: readonly TypedLinkRead[];
+}
+
+/**
+ * A spelling of a name, and which normal forms it is in.
+ */
+export interface Spelling {
+  /**
+   * Its forms.
+   */
+  readonly form: NormalForm;
+
+  /**
+   * The spelling.
+   */
+  readonly text: string;
+}
+
+/**
+ * One way of typing a link.
+ */
+export type TypedLinkKind = typeof TYPED_LINK_KINDS[number];
+
+/**
+ * Where one hand-typed link from a linker of its own led.
+ */
+export interface TypedLinkRead extends Spelling {
+  /**
+   * The link path the metadata cache holds for it, which a click follows, or `null`.
+   */
+  readonly cached: null | string;
+
+  /**
+   * The notes following it created, which the oracle deletes again.
+   */
+  readonly created: readonly string[];
+
+  /**
+   * The note the editor's "Follow link under cursor" opened from the linker's own text, or `null` where none opened.
+   */
+  readonly followed: null | string;
+
+  /**
+   * The `data-href` of its anchor in Reading view, which a click follows, or `null` with no anchor.
+   */
+  readonly href: null | string;
+
+  /**
+   * How it was typed.
+   */
+  readonly kind: TypedLinkKind;
+
+  /**
+   * The link as typed.
+   */
+  readonly link: string;
+
+  /**
+   * The note a click on its anchor in Reading view opened, or `null` where none opened.
+   */
+  readonly opened: null | string;
+
+  /**
+   * The note `resolvedLinks` maps the linker to, or `null`.
+   */
+  readonly resolved: null | string;
+
+  /**
+   * The link text `unresolvedLinks` holds for the linker, or `null`.
+   */
+  readonly unresolved: null | string;
+}
 
 /**
  * The note `m` with the heading `n`, which a link to the note `m#n` meets.
@@ -359,6 +568,11 @@ export interface SpecialNamesFile {
   readonly meta: SpecialNamesMeta;
 
   /**
+   * What the normalization sweep read of each name beyond the surfaces, by its name; only in its file.
+   */
+  readonly normalization?: Readonly<Record<string, NormalizationRead>>;
+
+  /**
    * Each name's read, by its name.
    */
   readonly reads: Readonly<Record<string, SpecialNameRead>>;
@@ -490,6 +704,21 @@ export function judgeSpecialNames(file: SpecialNamesFile, names = SPECIAL_NAMES)
 }
 
 /**
+ * Which normal forms a string is in.
+ *
+ * @param text - The string.
+ * @returns Its forms.
+ */
+export function normalFormOf(text: string): NormalForm {
+  const isNfc = text === text.normalize('NFC');
+  const isNfd = text === text.normalize('NFD');
+  if (isNfc) {
+    return isNfd ? 'both' : 'nfc';
+  }
+  return isNfd ? 'nfd' : 'neither';
+}
+
+/**
  * Every file the oracle writes before the linkers: the sweep's names and the note `m` with the heading `n`.
  *
  * @param names - The names of the sweep.
@@ -542,6 +771,56 @@ export function specialNamePath(name: string): string {
  */
 export function specialNameText(index: number): string {
   return `sntok${String(index)}q\n`;
+}
+
+/**
+ * The spellings of a name the normalization sweep looks its note up by and types links in: the name, its NFC, its NFD
+ * and its `typed` spellings, each once.
+ *
+ * @param specialName - The name.
+ * @returns The spellings.
+ */
+export function spellingsOf(specialName: SpecialName): Spelling[] {
+  const { name } = specialName;
+  const texts = new Set([name, name.normalize('NFC'), name.normalize('NFD'), ...specialName.typed ?? []]);
+  return Array.from(texts, (text) => ({ form: normalFormOf(text), text }));
+}
+
+/**
+ * A hand-typed link to the note of a spelling of a name, from a linker in {@link SPECIAL_NAMES_TYPED_FOLDER}.
+ *
+ * @param kind - How it is typed.
+ * @param spelling - The spelling.
+ * @returns The link.
+ */
+export function typedLink(kind: TypedLinkKind, spelling: string): string {
+  const path = `${SPECIAL_NAMES_FOLDER}/${spelling}`;
+  switch (kind) {
+    case 'markdown-encoded': {
+      return `[t](${encodeURI(`${path}.md`)})`;
+    }
+    case 'markdown-raw': {
+      return `[t](<${path}.md>)`;
+    }
+    case 'wikilink': {
+      return `[[${path}]]`;
+    }
+    default: {
+      throw new Error(`Unknown link kind ${String(kind satisfies never)}`);
+    }
+  }
+}
+
+/**
+ * The vault path of the linker holding one hand-typed link.
+ *
+ * @param index - The name's index in {@link NORMALIZATION_NAMES}.
+ * @param spellingIndex - The spelling's index in {@link spellingsOf}.
+ * @param kind - How the link is typed.
+ * @returns The path.
+ */
+export function typedLinkerPath(index: number, spellingIndex: number, kind: TypedLinkKind): string {
+  return `${SPECIAL_NAMES_TYPED_FOLDER}/T${String(index)}-${String(spellingIndex)}-${kind}.md`;
 }
 
 const NO_BREAK_SPACE_PATTERN = /\u{A0}/gu;

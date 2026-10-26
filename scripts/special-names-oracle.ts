@@ -20,7 +20,13 @@
  * The device must be booted with Obsidian started; `--serial` picks one of several. Writes them to
  * `oracle/special-names-android-obsidian-<version>.json`.
  *
- * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--android [--serial <serial>]] [--out-dir <directory>]`.
+ * With `--normalization` it sweeps `NORMALIZATION_NAMES` on the desktop instead: names in neither NFC nor NFD, several
+ * spellings of one name at once, bare combining marks and compatibility characters. Beyond the surfaces it reads the file
+ * on disk each note reads, what `getAbstractFileByPath` finds under each spelling, where links typed by hand in each
+ * spelling lead, and what renaming a second file of each name between its spellings does. Writes them to
+ * `oracle/special-names-normalization-obsidian-<version>.json`.
+ *
+ * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--android [--serial <serial>] | --normalization] [--out-dir <directory>]`.
  */
 
 /// <reference lib="dom.iterable" />
@@ -42,40 +48,53 @@ import {
 import { parseArgs } from 'node:util';
 
 import type {
+  FormRenameRead,
   GraphRead,
+  LookupRead,
+  NormalizationRead,
   OpenRead,
   RenameCheckRead,
   RenameOntoRead,
   RenameRead,
   ShadowWriteRead,
+  SpecialName,
   SpecialNameRead,
   SpecialNamesFile,
   SpecialNamesMeta,
+  TypedLinkRead,
   UriRead
 } from '../src/oracle/special-names.ts';
 import type { OracleVault } from './android-vault.ts';
 
 import {
   specialNamesAndroidOracleFileName,
+  specialNamesNormalizationOracleFileName,
   specialNamesOracleFileName
 } from '../src/oracle/oracle-location.ts';
 import { compareCodeUnits } from '../src/oracle/score.ts';
 import {
   ANDROID_RENAME_CHECK_NAMES,
   ANDROID_SPECIAL_NAMES,
+  NORMALIZATION_NAMES,
   RENAME_CHECK_NAMES,
   SHADOW_EDIT_TEXT,
   SPECIAL_NAMES,
   SPECIAL_NAMES_FOLDER,
+  SPECIAL_NAMES_FORMS_FOLDER,
   SPECIAL_NAMES_LINKER_FOLDER,
   SPECIAL_NAMES_MOVED_FOLDER,
   SPECIAL_NAMES_ONTO_FOLDER,
   SPECIAL_NAMES_RENAMED_FOLDER,
+  SPECIAL_NAMES_TYPED_FOLDER,
   specialNameFiles,
   specialNameLinkerPath,
   specialNameLinkerText,
   specialNamePath,
-  specialNameText
+  specialNameText,
+  spellingsOf,
+  TYPED_LINK_KINDS,
+  typedLink,
+  typedLinkerPath
 } from '../src/oracle/special-names.ts';
 import { openAndroidVault } from './android-vault.ts';
 
@@ -84,6 +103,7 @@ interface AdapterFile {
 }
 
 interface App {
+  commands: Commands;
   fileManager: FileManager;
   getObsidianUrl: (file: TFile) => string;
   internalPlugins: InternalPlugins;
@@ -137,6 +157,10 @@ interface Chooser {
   readonly values?: readonly (null | Suggestion)[];
 }
 
+interface Commands {
+  executeCommandById: (id: string) => boolean;
+}
+
 interface Component {
   load: () => void;
   unload: () => void;
@@ -146,9 +170,19 @@ interface ConnectToCdpOptions {
   readonly obsidianVersion?: string;
 }
 
+interface ContainerView {
+  // eslint-disable-next-line unicorn/name-replacements -- Obsidian's view names its element containerEl.
+  readonly containerEl: HTMLElement;
+}
+
 interface DataAdapter {
   readonly basePath: string;
   readonly files: Record<string, AdapterFile | undefined>;
+}
+
+interface EditorPosition {
+  readonly ch: number;
+  readonly line: number;
 }
 
 interface Electron {
@@ -215,7 +249,7 @@ interface IpcRenderer {
 
 interface Leaf {
   detach: () => void;
-  openFile: (file: TFile) => Promise<void>;
+  openFile: (file: TFile, openState?: OpenState) => Promise<void>;
   setViewState: (state: ViewState) => Promise<void>;
   readonly view: unknown;
 }
@@ -237,6 +271,7 @@ interface MarkdownView {
 
 interface MarkdownViewEditor {
   getValue: () => string;
+  setCursor: (position: EditorPosition) => void;
 }
 
 interface MetadataCache {
@@ -245,6 +280,7 @@ interface MetadataCache {
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's own name.
   getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
   readonly resolvedLinks: Record<string, Record<string, number> | undefined>;
+  readonly unresolvedLinks: Record<string, Record<string, number> | undefined>;
 }
 
 // Every surface of one name but search, the graph and the renames.
@@ -268,6 +304,10 @@ interface ObsidianModule {
 
 interface OitModule {
   connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+}
+
+interface OpenState {
+  readonly state: Readonly<Record<string, unknown>>;
 }
 
 interface ParsedLinktext {
@@ -323,8 +363,19 @@ interface SearchView {
   readonly dom: SearchResultDom;
 }
 
+interface SetActiveLeafOptions {
+  readonly focus: boolean;
+}
+
 interface Suggestion {
   readonly file?: TFile;
+}
+
+// One sweep: its names, the names it types into the rename, and its oracle file's name.
+interface Sweep {
+  readonly fileNameOf: (version: string) => string;
+  readonly names: readonly SpecialName[];
+  readonly renameCheckNames: readonly string[];
 }
 
 interface SwitcherPluginInstance {
@@ -338,6 +389,8 @@ interface TFile {
 interface Vault {
   readonly adapter: DataAdapter;
   create: (path: string, text: string) => Promise<TFile>;
+  delete: (file: TFile) => Promise<void>;
+  getAbstractFileByPath: (path: string) => null | TFile;
   getFileByPath: (path: string) => null | TFile;
   getFiles: () => TFile[];
   getName: () => string;
@@ -356,6 +409,7 @@ interface Workspace {
   getLeavesOfType: (type: string) => Leaf[];
   readonly leftSplit: WorkspaceSidedock;
   readonly protocolHandler: ProtocolHandler;
+  setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
 }
 
 interface WorkspaceSidedock {
@@ -377,6 +431,9 @@ const SWITCHER_MS = 300;
 const EMBED_MS = 400;
 const URI_MS = 300;
 const GRAPH_MS = 2000;
+const OPEN_LINK_MS = 500;
+const WIKILINK_CURSOR_CH = 3;
+const MARKDOWN_LINK_CURSOR_CH = 1;
 const SWITCHER_MAX_OFFERS = 50;
 const PLUGIN_ID = 'special-names-probe';
 const ANDROID_VAULT_NAME = 'special-names-oracle';
@@ -390,6 +447,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const { values } = parseArgs({
   options: {
     'android': { type: 'boolean' },
+    'normalization': { type: 'boolean' },
     'obsidian-version': { type: 'string' },
     'out-dir': { type: 'string' },
     'serial': { type: 'string' }
@@ -397,12 +455,66 @@ const { values } = parseArgs({
 });
 
 const isAndroid = values.android === true;
-const names = isAndroid ? ANDROID_SPECIAL_NAMES : SPECIAL_NAMES;
-const renameCheckNames = isAndroid ? ANDROID_RENAME_CHECK_NAMES : RENAME_CHECK_NAMES;
+const isNormalization = values.normalization === true;
+const { fileNameOf, names, renameCheckNames } = sweepOf(isAndroid, isNormalization);
 // The connection is disposed by hand: `await using` needs a tslib helper this repo does not install.
 const conn = isAndroid
   ? await openAndroidVault<ObsidianGlobals>(values.serial === undefined ? { vaultName: ANDROID_VAULT_NAME } : { serial: values.serial, vaultName: ANDROID_VAULT_NAME })
   : await openDesktopVault(values['obsidian-version']);
+
+// Opens the linker in Reading view and clicks its link: the link path the cache holds, the anchor's `data-href`, and the
+// note the click opened, or `null` where none did.
+async function clickInReadingView(linkerPath: string): Promise<Pick<TypedLinkRead, 'cached' | 'href' | 'opened'>> {
+  return await conn.evalInObsidian({
+    callback: async ({ app, linkerPath: path, openMs }) => {
+      const linker = app.vault.getFileByPath(path);
+      if (linker === null) {
+        throw new Error(`No ${path}`);
+      }
+      const leaf = app.workspace.getLeaf(true);
+      await leaf.openFile(linker, { state: { mode: 'preview' } });
+      await new Promise((resolve) => {
+        globalThis.setTimeout(resolve, openMs);
+      });
+      const anchor = (leaf.view as ContainerView).containerEl.querySelector<HTMLElement>(':scope .markdown-preview-view a.internal-link');
+      anchor?.click();
+      await new Promise((resolve) => {
+        globalThis.setTimeout(resolve, openMs);
+      });
+      const active = app.workspace.getActiveFile()?.path ?? null;
+      return {
+        cached: app.metadataCache.getFileCache(linker)?.links?.[0]?.link ?? null,
+        href: anchor?.dataset['href'] ?? null,
+        opened: anchor === null || active === path ? null : active
+      };
+    },
+    input: { linkerPath, openMs: OPEN_LINK_MS }
+  });
+}
+
+// Opens the linker in the editor and runs "Follow link under cursor" with the cursor at `cursorCh` of its link: the
+// editor follows the note's own text, not the cache. Returns the note it opened, or `null` where none opened.
+async function followInEditor(linkerPath: string, cursorCh: number): Promise<null | string> {
+  return await conn.evalInObsidian({
+    callback: async ({ app, cursorCh: ch, linkerPath: path, openMs }) => {
+      const linker = app.vault.getFileByPath(path);
+      if (linker === null) {
+        throw new Error(`No ${path}`);
+      }
+      const leaf = app.workspace.getLeaf(false);
+      await leaf.openFile(linker, { state: { mode: 'source', source: false } });
+      app.workspace.setActiveLeaf(leaf, { focus: true });
+      (leaf.view as MarkdownView).editor.setCursor({ ch, line: 0 });
+      app.commands.executeCommandById('editor:follow-link');
+      await new Promise((resolve) => {
+        globalThis.setTimeout(resolve, openMs);
+      });
+      const followed = app.workspace.getActiveFile()?.path ?? null;
+      return followed === path ? null : followed;
+    },
+    input: { cursorCh, linkerPath, openMs: OPEN_LINK_MS }
+  });
+}
 
 // Whether the linker's embed, rendered as Reading view renders it, shows the note's text.
 async function isEmbedShown(link: string, linkerPath: string, text: string): Promise<boolean> {
@@ -592,6 +704,34 @@ async function readExplorer(indexed: null | string): Promise<null | string> {
   });
 }
 
+// Renames the second file of the name at `index` to each other spelling of the name and back to its own, through
+// `fileManager.renameFile`, and reads the note after each.
+async function readFormRenames(index: number): Promise<FormRenameRead[]> {
+  const specialName = names[index];
+  if (specialName === undefined) {
+    throw new Error(`No name at ${String(index)}`);
+  }
+  const spellings = spellingsOf(specialName);
+  const own = spellings.find(({ text }) => text === specialName.name);
+  const targets = [...spellings.filter(({ text }) => text !== specialName.name), ...own === undefined ? [] : [own]];
+  const reads: FormRenameRead[] = [];
+  let current = normalizedPathIn(SPECIAL_NAMES_FORMS_FOLDER, specialName.name);
+  for (const target of targets) {
+    const refusal = await renameTo(current, `${SPECIAL_NAMES_FORMS_FOLDER}/${target.text}.md`);
+    await pause(SETTLE_POLL_MS);
+    const read = await conn.evalInObsidian({
+      callback: ({ app, path }) => {
+        const file = app.vault.getFileByPath(path);
+        return { path: file?.path ?? null, realpath: file === null ? null : app.vault.adapter.files[file.path]?.realpath ?? null };
+      },
+      input: { path: normalizedPathIn(SPECIAL_NAMES_FORMS_FOLDER, target.text) }
+    });
+    reads.push({ ...target, ...read, refusal });
+    current = read.path ?? current;
+  }
+  return reads;
+}
+
 // The graph view's nodes, and whether each linker's link is an edge to its note.
 async function readGraph(prepared: readonly Prepared[]): Promise<GraphRead[]> {
   await conn.evalInObsidian({
@@ -635,6 +775,20 @@ async function readLinker(linkerPath: string, path: string): Promise<LinkerRead>
   });
 }
 
+// What `getAbstractFileByPath` finds under each spelling of the name's path.
+async function readLookups(index: number): Promise<LookupRead[]> {
+  const specialName = names[index];
+  if (specialName === undefined) {
+    throw new Error(`No name at ${String(index)}`);
+  }
+  const spellings = spellingsOf(specialName);
+  const found = await conn.evalInObsidian({
+    callback: ({ app, paths }) => paths.map((path) => app.vault.getAbstractFileByPath(path)?.path ?? null),
+    input: { paths: spellings.map(({ text }) => specialNamePath(text)) }
+  });
+  return spellings.map((spelling, spellingIndex) => ({ ...spelling, found: found[spellingIndex] ?? null }));
+}
+
 // Every surface of one name but search, the graph and the renames.
 async function readName(index: number, prepared: Prepared): Promise<NameRead> {
   const name = names[index]?.name ?? '';
@@ -649,6 +803,17 @@ async function readName(index: number, prepared: Prepared): Promise<NameRead> {
     switcher: await readSwitcher(name.normalize('NFC')),
     uri: prepared.indexed === null ? null : await readUri(prepared.indexed)
   };
+}
+
+// The file on disk the note at `path` reads, or `null` with no note.
+async function readRealpath(path: null | string): Promise<null | string> {
+  if (path === null) {
+    return null;
+  }
+  return await conn.evalInObsidian({
+    callback: ({ app, path: notePath }) => app.vault.adapter.files[notePath]?.realpath ?? null,
+    input: { path }
+  });
 }
 
 // Renames the note to `newPath` and back, through `fileManager.renameFile`, and reads its linker after each.
@@ -720,14 +885,14 @@ async function readSearch(token: string): Promise<string[]> {
 
 async function readSearchResults(): Promise<string[]> {
   return await conn.evalInObsidian({
-    callback: ({ app, folder }) => {
+    callback: ({ app, folder, otherFolders }) => {
       const view = app.workspace.getLeavesOfType('search')[0]?.view as SearchView | undefined;
       return view === undefined
         ? []
         : Array.from(view.dom.resultDomLookup.keys(), (file) => file.path)
-          .filter((path) => path.startsWith(`${folder}/`) && !path.startsWith(`${folder}/linkers/`) && !path.startsWith(`${folder}/onto/`));
+          .filter((path) => path.startsWith(`${folder}/`) && otherFolders.every((other) => !path.startsWith(`${other}/`)));
     },
-    input: { folder: SPECIAL_NAMES_FOLDER }
+    input: { folder: SPECIAL_NAMES_FOLDER, otherFolders: [SPECIAL_NAMES_LINKER_FOLDER, SPECIAL_NAMES_ONTO_FOLDER, SPECIAL_NAMES_FORMS_FOLDER, SPECIAL_NAMES_TYPED_FOLDER] }
   });
 }
 
@@ -772,6 +937,43 @@ async function readSwitcher(typed: string): Promise<string[]> {
     },
     input: { maxOffers: SWITCHER_MAX_OFFERS, switcherMs: SWITCHER_MS, typed }
   });
+}
+
+// The hand-typed links to the name at `index`, one linker each: where `resolvedLinks` maps each, and what
+// `unresolvedLinks` holds where it maps none.
+async function readTypedLinks(index: number): Promise<TypedLinkRead[]> {
+  const specialName = names[index];
+  if (specialName === undefined) {
+    throw new Error(`No name at ${String(index)}`);
+  }
+  const typed = spellingsOf(specialName).flatMap((spelling, spellingIndex) => TYPED_LINK_KINDS.map((kind) => ({ ...spelling, kind, link: typedLink(kind, spelling.text), linkerPath: typedLinkerPath(index, spellingIndex, kind) })));
+  const reads: TypedLinkRead[] = [];
+  for (const { form, kind, link, linkerPath, text } of typed) {
+    const before = await conn.evalInObsidian({ callback: ({ app }) => app.vault.getFiles().map((file) => file.path) });
+    const clicked = await clickInReadingView(linkerPath);
+    // Inside the link's path for a wikilink, inside its text for a markdown link.
+    const followed = await followInEditor(linkerPath, kind === 'wikilink' ? WIKILINK_CURSOR_CH : MARKDOWN_LINK_CURSOR_CH);
+    const after = await conn.evalInObsidian({
+      callback: async ({ app, before: paths, linkerPath: path }) => {
+        for (const leaf of app.workspace.getLeavesOfType('markdown')) {
+          leaf.detach();
+        }
+        const existing = new Set(paths);
+        const created = app.vault.getFiles().filter((file) => !existing.has(file.path));
+        for (const file of created) {
+          await app.vault.delete(file);
+        }
+        return {
+          created: created.map((file) => file.path),
+          resolved: Object.keys(app.metadataCache.resolvedLinks[path] ?? {})[0] ?? null,
+          unresolved: Object.keys(app.metadataCache.unresolvedLinks[path] ?? {})[0] ?? null
+        };
+      },
+      input: { before, linkerPath }
+    });
+    reads.push({ ...clicked, ...after, followed, form, kind, link, text });
+  }
+  return reads;
 }
 
 // Dispatches the URL "Copy Obsidian URL" writes for the note, its query parsed the standard way, to `obsidian://open` in
@@ -852,6 +1054,19 @@ async function setUp(): Promise<SpecialNamesMeta> {
   });
 }
 
+// The names the sweep writes, the names it types into the rename, and its oracle file's name.
+function sweepOf(isAndroidSweep: boolean, isNormalizationSweep: boolean): Sweep {
+  if (isNormalizationSweep) {
+    if (isAndroidSweep) {
+      throw new Error('The normalization sweep is read on the desktop only so far');
+    }
+    return { fileNameOf: specialNamesNormalizationOracleFileName, names: NORMALIZATION_NAMES, renameCheckNames: [] };
+  }
+  return isAndroidSweep
+    ? { fileNameOf: specialNamesAndroidOracleFileName, names: ANDROID_SPECIAL_NAMES, renameCheckNames: ANDROID_RENAME_CHECK_NAMES }
+    : { fileNameOf: specialNamesOracleFileName, names: SPECIAL_NAMES, renameCheckNames: RENAME_CHECK_NAMES };
+}
+
 // Starts the explorer's rename of the rename check note, types `name`, reads the message it shows, and saves it.
 async function typeRename(name: string): Promise<RenameTyped> {
   return await conn.evalInObsidian({
@@ -913,7 +1128,16 @@ try {
   const meta = await setUp();
   // A name in a folder is renamed onto in a folder of the same name, which a rename does not create.
   const ontoFolders = names.flatMap(({ name }) => (name.includes('/') ? [`${SPECIAL_NAMES_ONTO_FOLDER}/${name.slice(0, name.lastIndexOf('/'))}`] : []));
-  await conn.mkdir([SPECIAL_NAMES_FOLDER, SPECIAL_NAMES_LINKER_FOLDER, SPECIAL_NAMES_ONTO_FOLDER, SPECIAL_NAMES_RENAMED_FOLDER, SPECIAL_NAMES_MOVED_FOLDER, ...ontoFolders]);
+  const normalizationFolders = isNormalization ? [SPECIAL_NAMES_FORMS_FOLDER, SPECIAL_NAMES_TYPED_FOLDER] : [];
+  await conn.mkdir([
+    SPECIAL_NAMES_FOLDER,
+    SPECIAL_NAMES_LINKER_FOLDER,
+    SPECIAL_NAMES_ONTO_FOLDER,
+    SPECIAL_NAMES_RENAMED_FOLDER,
+    SPECIAL_NAMES_MOVED_FOLDER,
+    ...ontoFolders,
+    ...normalizationFolders
+  ]);
   const pluginDirectory = `.obsidian/plugins/${PLUGIN_ID}`;
   const pluginFiles = new Map([
     [`${pluginDirectory}/main.js`, 'const obsidian = require(\'obsidian\');\nmodule.exports = class extends obsidian.Plugin { onload() { window.specialNamesObsidian = obsidian; } };\n'],
@@ -927,6 +1151,11 @@ try {
   // The vault keeps the last of two shadowing files it sees, so the shadowed names go first and their partners win.
   const files = specialNameFiles(names);
   const order = names.filter(({ shadows }) => shadows !== undefined).map(({ name }) => specialNamePath(name));
+  // The normalization sweep's second file of each name it renames between spellings, in a folder of its own.
+  const formNames = isNormalization ? names.filter((specialName) => specialName.shadows === undefined && spellingsOf(specialName).length > 1) : [];
+  for (const { name } of formNames) {
+    files.set(`${SPECIAL_NAMES_FORMS_FOLDER}/${name}.md`, `snform${String(names.findIndex((candidate) => candidate.name === name))}q\n`);
+  }
   for (const path of files.keys()) {
     if (!order.includes(path)) {
       order.push(path);
@@ -939,10 +1168,13 @@ try {
       expected.add(normalizedPath(name));
     }
   }
+  for (const { name } of formNames) {
+    expected.add(normalizedPathIn(SPECIAL_NAMES_FORMS_FOLDER, name));
+  }
   // A name the app does not index is a finding, read as one, not a failure of the oracle.
   const unindexed = await waitIndexed(files, [...expected], false, false);
   await prepareApp();
-  const renameChecks = await readRenameChecks();
+  const renameChecks = renameCheckNames.length === 0 ? [] : await readRenameChecks();
   console.log(`special-names-oracle: ${String(files.size)} notes written, ${unindexed.length === 0 ? 'all' : `all but ${unindexed.join(', ')}`} indexed, ${String(renameChecks.length)} renames typed`);
 
   const prepared = await prepareNames();
@@ -953,6 +1185,13 @@ try {
     linkers.set(`${SPECIAL_NAMES_ONTO_FOLDER}/P${String(index)}.md`, specialNameText(index));
     linkers.set(`${SPECIAL_NAMES_ONTO_FOLDER}/M${String(index)}.md`, `[[P${String(index)}]]\n`);
     sources.push(linkerPathOf(index), `${SPECIAL_NAMES_ONTO_FOLDER}/M${String(index)}.md`);
+    const spellings = isNormalization ? spellingsOf(names[index] ?? { group: 'control', name: '' }) : [];
+    for (const [spellingIndex, { text }] of spellings.entries()) {
+      for (const kind of TYPED_LINK_KINDS) {
+        linkers.set(typedLinkerPath(index, spellingIndex, kind), `${typedLink(kind, text)}\n`);
+        sources.push(typedLinkerPath(index, spellingIndex, kind));
+      }
+    }
   }
   await conn.writeFiles(linkers, linkers.keys());
   await waitIndexed(linkers, sources, true, true);
@@ -964,6 +1203,16 @@ try {
     reads.push({ ...await readName(index, preparedName), search: await readSearch(specialNameText(index).trim()) });
   }
   const graph = await readGraph(prepared);
+  // Before the renames: once a note a hidden file shadows is renamed away, it cannot always come back.
+  const shadowWrites = await readShadowWrites();
+  // What the normalization sweep reads before any rename moves a file. Following the links goes last of the reads: after
+  // it, rendering an embed can hang.
+  const beforeRenames = new Map<string, Pick<NormalizationRead, 'lookups' | 'realpath' | 'typedLinks'>>();
+  if (isNormalization) {
+    for (const [index, { name }] of names.entries()) {
+      beforeRenames.set(name, { lookups: await readLookups(index), realpath: await readRealpath(prepared[index]?.indexed ?? null), typedLinks: await readTypedLinks(index) });
+    }
+  }
   for (const [index, { name }] of names.entries()) {
     const { indexed } = prepared[index] ?? { indexed: null };
     const read = reads[index];
@@ -976,13 +1225,36 @@ try {
     const rename = await readRename(indexed, linkerPathOf(index), `${SPECIAL_NAMES_RENAMED_FOLDER}/R${String(index)}.md`);
     byName[name] = { ...read, graph: graphRead, move, rename, renameOnto: await readRenameOnto(index, name) };
   }
-  const shadowWrites = await readShadowWrites();
+  let normalization: Record<string, NormalizationRead> | undefined;
+  if (isNormalization) {
+    normalization = {};
+    for (const [index, specialName] of names.entries()) {
+      const before = beforeRenames.get(specialName.name);
+      if (before === undefined) {
+        throw new Error(`Missing normalization read for ${specialName.name}`);
+      }
+      normalization[specialName.name] = {
+        ...before,
+        formRenames: null,
+        ontoRealpath: await readRealpath(normalizedPathIn(SPECIAL_NAMES_ONTO_FOLDER, specialName.name)),
+        realpathAfterRenames: await readRealpath(prepared[index]?.indexed ?? null)
+      };
+    }
+  }
+  if (normalization !== undefined) {
+    for (const { name } of formNames) {
+      const read = normalization[name];
+      if (read !== undefined) {
+        normalization[name] = { ...read, formRenames: await readFormRenames(names.findIndex((candidate) => candidate.name === name)) };
+      }
+    }
+  }
   console.log('special-names-oracle: surfaces read');
 
   const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
-  const outFile = join(outDirectory, (isAndroid ? specialNamesAndroidOracleFileName : specialNamesOracleFileName)(meta.appVersion ?? 'unknown'));
-  const oracleFile: SpecialNamesFile = { meta, reads: byName, renameChecks, shadowWrites };
+  const outFile = join(outDirectory, fileNameOf(meta.appVersion ?? 'unknown'));
+  const oracleFile: SpecialNamesFile = { meta, ...normalization !== undefined && { normalization }, reads: byName, renameChecks, shadowWrites };
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
   console.log(`special-names-oracle: ${String(names.length)} names written to ${outFile}`);
 } finally {
