@@ -117,11 +117,11 @@ const ENGINE_FAMILIES: readonly SelfCheckFamily[] = [
     note: 'A link reference definition CommonMark rejects, or one whose title it reads otherwise: a blank label, an unescaped `[` in it, no destination, an unbalanced `)`, or a title opened and never closed. The `linkDefinition` quirk.'
   },
   {
-    forumUrl: null,
+    forumUrl: `${FORUM}119764`,
     id: 'open-reference-bracket-dropped',
     kind: 'bug',
     matches: (key, markdown) => key === `${OBSIDIAN_ENGINE_KEY}text-vs-text` && DROPPED_BRACKET_PATTERN.test(markdown),
-    note: 'A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`, `a [][` reads `a []`. Every reference shows it, and the source keeps it. A candidate, not yet read in the app.'
+    note: 'A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`, `a [][` reads `a []`, `[x][z` reads `[x]z`. Every reference shows it, and the source keeps it. Reading view on 1.14.5 and 1.15.0 drops it too: `remark-parse` 8\'s `reference` tokenizer eats the `[` with the shortcut reference when no `]` closes it. The `[foo][ref[]` sample of the topic is the same loss.'
   },
   {
     forumUrl: null,

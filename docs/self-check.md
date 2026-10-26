@@ -103,7 +103,7 @@ On 2026-10-25, 4,000 notes (seed 20261024) gave 59 keys, all in 10 families:
 | --- | --- | --- |
 | `task-body-blocks` | known | A task item's text after its mark is read again as blocks: `- [ ] # H` holds a heading, `- [ ] > q` a quote, `- [ ] [r]: u` a definition, where GFM reads a paragraph. |
 | `task-status-any-character` | expected | Any character between a task's brackets makes a task, checked unless it is a space. GFM reads only a space, `x` or `X`. |
-| `open-reference-bracket-dropped` | bug, not yet read in the app | A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`. |
+| `open-reference-bracket-dropped` | bug, [t/119764](https://forum.obsidian.md/t/119764) | A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`. Reading view does the same on 1.14.5 and 1.15.0: `remark-parse` 8's `reference` tokenizer eats the `[` with the shortcut reference, the loss behind the topic's `[foo][ref[]` sample. |
 | `task-without-text` | minor | A task mark with nothing after it makes a task. The spec has no example either way. |
 | `engine-container-continuation` | quirk | A list item or quote goes on where CommonMark ends it, or ends where a lazy line continues it. |
 | `engine-table` | quirk | A table where GFM reads none, or one that ends where GFM takes a line with no pipe as a row. |
