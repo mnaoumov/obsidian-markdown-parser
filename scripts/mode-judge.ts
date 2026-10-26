@@ -5,9 +5,9 @@
  * tree, and every spec example and metadata worker document, on the class tokenizer's prediction of it, which is the
  * editor's on every oracle document. Each difference, up to `--per-key` of each key, is reduced to a minimal note and
  * put into a family (`src/oracle/mode-families.ts`). Prints a table of the families and writes them, with their reduced
- * notes, to `dist/mode-judge/report.json`.
+ * notes, to `dist/mode-judge/report.json`: the `--examples` most common of each family, 10 by default.
  *
- * Usage: `jiti scripts/mode-judge.ts [--per-key <n>] [--out <file>]`.
+ * Usage: `jiti scripts/mode-judge.ts [--per-key <n>] [--examples <n>] [--out <file>]`.
  */
 
 import {
@@ -66,11 +66,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
   options: {
+    'examples': { type: 'string' },
     'out': { type: 'string' },
     'per-key': { type: 'string' }
   }
 });
 const perKey = Number(values['per-key'] ?? DEFAULT_PER_KEY);
+const examplesPerFamily = Number(values.examples ?? EXAMPLES_PER_FAMILY);
 
 interface JudgedDocument {
   readonly nodes?: OracleFile['docs'][number]['nodes'];
@@ -149,7 +151,7 @@ const report = {
   differing,
   documents: documents.length,
   documentsPerKey: Object.fromEntries([...documentsPerKey].toSorted(([, a], [, b]) => b - a)),
-  families: sorted.map((family) => ({ ...family, reduced: family.reduced.slice(0, EXAMPLES_PER_FAMILY) })),
+  families: sorted.map((family) => ({ ...family, reduced: family.reduced.slice(0, examplesPerFamily) })),
   perKey
 };
 writeFileSync(outFile, `${JSON.stringify(report, null, JSON_INDENT)}\n`);

@@ -81,8 +81,24 @@ export type ModeFamilyKind =
    */
   | 'quirk';
 
-// Lines that each open with a run of backticks that nothing on the line closes.
-const UNCLOSED_CODE_MARKS = /^(?:`+[^`\n]*(?:\n|$))+$/u;
+const BACKTICK = '`';
+
+// The quote, list and heading marks a line's content can follow. A reduction keeps the differing line's container, so a
+// family's construct can come after them.
+const CONTAINER_PREFIX = String.raw`(?:>+ ?|[-*+] +|\d+[.)] +|#{1,6} +)*`;
+
+// A line holding only such marks.
+const CONTAINER_LINE = String.raw`(?:>+ ?|[-*+] ?|\d+[.)] ?|#{1,6} ?)+`;
+
+// Lines that each open, after their container, with a run of backticks that nothing on the line closes, after any lines
+// that hold only a container.
+const UNCLOSED_CODE_MARKS = new RegExp(String.raw`^(?:${CONTAINER_LINE}\n)*(?:${CONTAINER_PREFIX}${BACKTICK}+[^${BACKTICK}\n]*(?:\n|$))+$`, 'u');
+
+// A note whose first line opens a fence, after its container.
+const OPENING_FENCE = new RegExp(`^${CONTAINER_PREFIX}${BACKTICK}{3}`, 'u');
+
+// A line opening an HTML block, after its container, with a line after it.
+const HTML_BLOCK_LINE = new RegExp(String.raw`^${CONTAINER_PREFIX}<\/?[A-Za-z][^\n]*\n`, 'mu');
 
 function isKey(key: ModeDifferenceKey, side: ModeSide, facts: RegExp): boolean {
   return key.side === side && facts.test(key.fact);
@@ -142,6 +158,13 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'Once a line has started with math, the editor reads a setext underline as a thematic break.'
   },
   {
+    // A reduction can drop the cell boundary between the two marks, leaving `|$$|`.
+    id: 'math-across-table-cells',
+    kind: 'minor',
+    matches: (key, reduced) => key.fact === 'math' && /^\|[^\n]*\$[^\n]*\$/mu.test(reduced) && /^\|?\s*:?-+\s*:?\|/mu.test(reduced),
+    note: 'In a table row, the editor pairs `$` marks from two cells into one math span.'
+  },
+  {
     id: 'four-dollars',
     kind: 'minor',
     matches: (_key, reduced) => reduced.includes('$$$$'),
@@ -172,7 +195,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     kind: 'expected',
     matches: (key, reduced) =>
       (isKey(key, 'editor', /^(?:em|highlight|strikethrough|strong)$/u) && !/[<$]|^---/u.test(reduced))
-      || (isKey(key, 'editor', /^code$/u) && UNCLOSED_CODE_MARKS.test(reduced) && !/^`{3}/u.test(reduced))
+      || (isKey(key, 'editor', /^code$/u) && UNCLOSED_CODE_MARKS.test(reduced) && !OPENING_FENCE.test(reduced))
       || (key.side === 'readingView' && /^`[^`\n]*$/u.test(reduced)),
     note: 'The editor styles an emphasis, highlight or strikethrough mark it has not seen closed, or one the reading view does not pair, up to the end of its paragraph, and a code mark up to the end of its line, as it is typed.'
   },
@@ -210,7 +233,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     forumUrl: 'https://forum.obsidian.md/t/104674',
     id: 'html-block-ends-at-line',
     kind: 'candidate',
-    matches: (key, reduced) => key.side === 'editor' && /^<\/?[A-Za-z][^\n]*\n/mu.test(reduced),
+    matches: (key, reduced) => key.side === 'editor' && HTML_BLOCK_LINE.test(reduced),
     note: 'The editor ends at its own line an HTML block that the reading view runs on to the next empty line, so the editor styles markdown the reading view shows as raw HTML.'
   },
   {
@@ -229,12 +252,17 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'The editor styles no internal link right after an inline HTML tag.'
   },
   {
-    // The reducer brings a quote in a nested list item, which the editor carries onto the next item, down to `>\n-` too.
     forumUrl: 'https://forum.obsidian.md/t/57053',
-    id: 'lazy-line-after-empty-quote-line',
+    id: 'quote-onto-indented-list-item',
     kind: 'known',
+    matches: (key, reduced) => isKey(key, 'editor', /^quote-\d$/u) && /^>+[^\n]*\n {1,3}(?:[-*+]|\d+[.)])(?:[ \t]|$)/mu.test(reduced),
+    note: 'The editor carries a quote onto the next line when it is a list item indented by a space or more, which the reading view reads as a list item of its own, so after a callout in a nested list item the next item is in the callout, and Live Preview draws the callout as code with the item inside it.'
+  },
+  {
+    id: 'lazy-line-after-empty-quote-line',
+    kind: 'minor',
     matches: (key, reduced) => isKey(key, 'editor', /^(?:quote-\d|thematicBreak)$/u) && /^>+\s*\n/mu.test(reduced),
-    note: 'After an empty quote line, or after a quote in a nested list item, the editor carries the quote onto the next line, even a list item, which the reading view reads as a block of its own; Live Preview then draws a callout in a nested list item as code and takes the next item into it.'
+    note: 'After an empty quote line the editor carries the quote onto the next line, which the reading view reads as a block of its own.'
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/29582',
@@ -261,14 +289,20 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     forumUrl: 'https://forum.obsidian.md/t/30367',
     id: 'ordered-item-interrupts-paragraph',
     kind: 'candidate',
-    matches: (key, reduced) => isKey(key, 'editor', /^(?:list|task)$/u) && /\S\n(?!1[.)])\d+[.)] /u.test(reduced),
+    matches: (key, reduced) => isKey(key, 'editor', /^(?:list|task)$/u) && /^(?!>)[^\n]*\S\n(?!1[.)])\d+[.)] /mu.test(reduced),
     note: 'In the editor an ordered list item not numbered 1 interrupts a paragraph, which CommonMark and the reading view keep going.'
   },
   {
     id: 'empty-list-item',
     kind: 'candidate',
-    matches: (key, reduced) => ((key.side === 'readingView' && key.fact === 'list') && /^(?:[-*+]|\d+[.)])$/mu.test(reduced)) || (isKey(key, 'editor', /^heading-\d$/u) && /^[-*+]\n/u.test(reduced)),
+    matches: (key, reduced) => ((key.side === 'readingView' && key.fact === 'list') && /^(?:>+ ?)*(?:[-*+]|\d+[.)])$/mu.test(reduced)) || (isKey(key, 'editor', /^heading-\d$/u) && /^[-*+]\n/u.test(reduced)),
     note: 'The editor reads a list marker alone on its line as text; the reading view reads an empty list item.'
+  },
+  {
+    id: 'lazy-line-after-empty-list-item',
+    kind: 'quirk',
+    matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'list') && /^(?:>+ ?)*(?:[-*+]|\d+[.)])[ \t]*\n(?![ \t])[^\n]/mu.test(reduced),
+    note: 'The reading view takes the unindented line after an empty list item into the item, where CommonMark and the editor end the list.'
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/112786',
@@ -299,8 +333,11 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   {
     id: 'lazy-quote',
     kind: 'quirk',
-    matches: (key, reduced) => isKey(key, 'readingView', /^quote-\d$/u) && /^>{2,}[^\n]*\n|^>+\s*\n/mu.test(reduced),
-    note: 'The reading view continues a quote lazily where CommonMark does not: a nested quote on a less deep quote line, and a quote on the line after an empty quote line.'
+    matches: (key, reduced) =>
+      (isKey(key, 'readingView', /^quote-\d$/u) && /^>{2,}[^\n]*\n|^>+\s*\n|^>+[^\n]*\S[^\n]*\n\d+[.)] /mu.test(reduced))
+      || (isKey(key, 'editor', /^quote-\d$/u) && /^>{2,}[^\n]*\n>/mu.test(reduced))
+      || (isKey(key, 'editor', /^list$/u) && /^>+[^\n]*\S[^\n]*\n\d+[.)] /mu.test(reduced)),
+    note: 'The reading view continues a quote lazily where CommonMark does not: a nested quote on a less deep quote line, a quote on the line after an empty quote line, and a quote onto an ordered list item.'
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/26871',
@@ -312,7 +349,7 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   {
     id: 'indented-code-in-container',
     kind: 'minor',
-    matches: (_key, reduced) => /^(?:>|[-*+]|\d+[.)]) {5,}\S/mu.test(reduced),
+    matches: (_key, reduced) => /^(?:>+|[-*+]|\d+[.)]) {5,}\S/mu.test(reduced),
     note: 'The editor reads no indented code in a quote or a list item, opened by five spaces after the marker.'
   },
   {
@@ -330,13 +367,13 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
   {
     id: 'line-after-empty-list-item',
     kind: 'minor',
-    matches: (key, reduced) => key.side === 'editor' && /^\s*(?:[-*+]|\d+[.)]) ?\n\n?(?: {4,}|\t)/mu.test(reduced),
-    note: 'A line indented four or more after an empty list item is a list item or code in the editor and neither in the reading view.'
+    matches: (_key, reduced) => /^\s*(?:[-*+]|\d+[.)])[ \t]*\n\n?(?: {4,}|\t)/mu.test(reduced),
+    note: 'A line indented four or more after an empty list item is a list item, a quote or code on one side and not on the other.'
   },
   {
     id: 'indented-code-after-block',
     kind: 'minor',
-    matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'code') && /^[^\n]+\n(?: {4}|\t)\S/mu.test(reduced),
+    matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'code') && /^[^\n]+\n(?: {4,}|\t)\S/mu.test(reduced),
     note: 'The editor reads no indented code right after a thematic break or another block that is no paragraph.'
   },
   {
@@ -363,12 +400,6 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     kind: 'minor',
     matches: (key, reduced) => key.fact === 'table' || ((key.side === 'editor' && key.fact === 'list') && reduced.includes('\n- |')),
     note: 'A table whose header row holds only empty cells or a single pipe, or whose delimiter row opens with `- `, is a table on one side and none on the other.'
-  },
-  {
-    id: 'math-across-table-cells',
-    kind: 'minor',
-    matches: (key, reduced) => key.fact === 'math' && /^\|?[^\n]*\$[^\n$]*\|[^\n$]*\$[^\n]*\n\|?\s*:?-/mu.test(reduced),
-    note: 'In a table row, the editor pairs `$` marks from two cells into one math span.'
   },
   {
     forumUrl: 'https://forum.obsidian.md/t/31041',

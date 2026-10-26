@@ -94,6 +94,6 @@ describe('the owner\'s report samples, as Obsidian 1.14.5 reads them', () => {
   it('files the callout of topic 80930 under a known family that cites the open topic 57053', () => {
     const { markdown } = ownerRead('owner-80930-1');
     const families = judgeModesPredicted(markdown).map((difference) => differenceKey(difference)).filter((key) => key.startsWith('editor:quote')).map((key) => familyOf(key, reduceDifference(markdown, key)));
-    expect(families.map((family) => [family?.id, family?.kind, family?.forumUrl])).toEqual([['lazy-line-after-empty-quote-line', 'known', 'https://forum.obsidian.md/t/57053']]);
+    expect(families.map((family) => [family?.id, family?.kind, family?.forumUrl])).toEqual([['quote-onto-indented-list-item', 'known', 'https://forum.obsidian.md/t/57053']]);
   });
 });
