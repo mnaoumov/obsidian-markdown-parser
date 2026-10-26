@@ -26,6 +26,11 @@ import { fileURLToPath } from 'node:url';
 export const PINNED_OBSIDIAN_VERSION = '1.14.5';
 
 /**
+ * The Obsidian version the Android oracles were read from: the newest with an APK, since 1.14.5 shipped for desktop only.
+ */
+export const PINNED_ANDROID_OBSIDIAN_VERSION = '1.14.4';
+
+/**
  * The seed of the class-span oracle the suites use where one is enough.
  */
 export const MAIN_CLASS_ORACLE_SEED = 12_345;
@@ -160,6 +165,16 @@ export function quirkProbeOracleFileName(version = oracleObsidianVersion()): str
  */
 export function readOracleFile(fileName: string, directory = oracleDirectory()): unknown {
   return JSON.parse(readFileSync(join(directory, fileName), 'utf-8'));
+}
+
+/**
+ * The name of a special note name oracle file read on Android.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function specialNamesAndroidOracleFileName(version = PINNED_ANDROID_OBSIDIAN_VERSION): string {
+  return `special-names-android-obsidian-${version}.json`;
 }
 
 /**

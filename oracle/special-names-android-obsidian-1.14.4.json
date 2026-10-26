@@ -1,0 +1,1865 @@
+{
+  "meta": {
+    "appVersion": "1.14.4",
+    "userAgent": "Mozilla/5.0 (Linux; Android 17; sdk_gphone16k_x86_64 Build/CP21.260330.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/155.0.8059.43 Mobile Safari/537.36 obsidian/1.14.4",
+    "vault": "special-names-oracle"
+  },
+  "reads": {
+    "plain": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/plain.md"
+      },
+      "text": "sntok0q\n",
+      "explorer": "plain",
+      "embed": true,
+      "indexed": "special-names/plain.md",
+      "link": "[[plain]]",
+      "switcher": [
+        "special-names/plain.md",
+        "special-names/linkers/L9.md",
+        "special-names/linkers/L8.md",
+        "special-names/linkers/L7.md",
+        "special-names/linkers/L6.md",
+        "special-names/linkers/L5.md",
+        "special-names/linkers/L4.md",
+        "special-names/linkers/L3.md",
+        "special-names/linkers/L2.md",
+        "special-names/linkers/L1.md",
+        "special-names/linkers/L0.md",
+        "special-names/linkers/L38.md",
+        "special-names/linkers/L37.md",
+        "special-names/linkers/L36.md",
+        "special-names/linkers/L35.md",
+        "special-names/linkers/L34.md",
+        "special-names/linkers/L33.md",
+        "special-names/linkers/L32.md",
+        "special-names/linkers/L31.md",
+        "special-names/linkers/L30.md"
+      ],
+      "uri": {
+        "opened": "special-names/plain.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fplain"
+      },
+      "search": [
+        "special-names/plain.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[plain]]",
+        "backResolved": true,
+        "link": "[[plain]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[plain]]",
+        "backResolved": true,
+        "link": "[[R0]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/plain]]",
+        "resolved": true
+      }
+    },
+    "x#y": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x#y.md"
+      },
+      "text": "sntok1q\n",
+      "explorer": "x#y",
+      "embed": false,
+      "indexed": "special-names/x#y.md",
+      "link": "[[special-names/x#y]]",
+      "switcher": [
+        "special-names/x#y.md",
+        "special-names/x#^y.md"
+      ],
+      "uri": {
+        "opened": null,
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%23y"
+      },
+      "search": [
+        "special-names/x#y.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/x#y]]",
+        "backResolved": false,
+        "link": "[[special-names/x#y]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[special-names/x#y]]",
+        "backResolved": false,
+        "link": "[[special-names/x#y]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x#y]]",
+        "resolved": false
+      }
+    },
+    "#x": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/#x.md"
+      },
+      "text": "sntok2q\n",
+      "explorer": "#x",
+      "embed": false,
+      "indexed": "special-names/#x.md",
+      "link": "[[special-names/#x]]",
+      "switcher": [
+        "special-names/#x.md"
+      ],
+      "uri": {
+        "opened": null,
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2F%23x"
+      },
+      "search": [
+        "special-names/#x.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/#x]]",
+        "backResolved": false,
+        "link": "[[special-names/#x]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[special-names/#x]]",
+        "backResolved": false,
+        "link": "[[special-names/#x]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/#x]]",
+        "resolved": false
+      }
+    },
+    "x^y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x^y.md"
+      },
+      "text": "sntok3q\n",
+      "explorer": "x^y",
+      "embed": true,
+      "indexed": "special-names/x^y.md",
+      "link": "[[x^y]]",
+      "switcher": [
+        "special-names/x^y.md",
+        "special-names/x#^y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x^y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5Ey"
+      },
+      "search": [
+        "special-names/x^y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x^y]]",
+        "backResolved": true,
+        "link": "[[x^y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x^y]]",
+        "backResolved": true,
+        "link": "[[R3]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x^y]]",
+        "resolved": true
+      }
+    },
+    "^x": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/^x.md"
+      },
+      "text": "sntok4q\n",
+      "explorer": "^x",
+      "embed": true,
+      "indexed": "special-names/^x.md",
+      "link": "[[^x]]",
+      "switcher": [
+        "special-names/^x.md"
+      ],
+      "uri": {
+        "opened": "special-names/^x.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2F%5Ex"
+      },
+      "search": [
+        "special-names/^x.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[^x]]",
+        "backResolved": true,
+        "link": "[[^x]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[^x]]",
+        "backResolved": true,
+        "link": "[[R4]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/^x]]",
+        "resolved": true
+      }
+    },
+    "x[y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x[y.md"
+      },
+      "text": "sntok5q\n",
+      "explorer": "x[y",
+      "embed": true,
+      "indexed": "special-names/x[y.md",
+      "link": "[[x[y]]",
+      "switcher": [
+        "special-names/x[y.md",
+        "special-names/x[y]z.md",
+        "special-names/x[[y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x[y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5By"
+      },
+      "search": [
+        "special-names/x[y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x[y]]",
+        "backResolved": true,
+        "link": "[[x[y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x[y]]",
+        "backResolved": true,
+        "link": "[[R5]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x[y]]",
+        "resolved": true
+      }
+    },
+    "x]y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x]y.md"
+      },
+      "text": "sntok6q\n",
+      "explorer": "x]y",
+      "embed": true,
+      "indexed": "special-names/x]y.md",
+      "link": "[[x]y]]",
+      "switcher": [
+        "special-names/x]y.md",
+        "special-names/x]]y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x]y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5Dy"
+      },
+      "search": [
+        "special-names/x]y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x]y]]",
+        "backResolved": true,
+        "link": "[[x]y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x]y]]",
+        "backResolved": true,
+        "link": "[[R6]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x]y]]",
+        "resolved": true
+      }
+    },
+    "x[y]z": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x[y]z.md"
+      },
+      "text": "sntok7q\n",
+      "explorer": "x[y]z",
+      "embed": true,
+      "indexed": "special-names/x[y]z.md",
+      "link": "[[x[y]z]]",
+      "switcher": [
+        "special-names/x[y]z.md"
+      ],
+      "uri": {
+        "opened": "special-names/x[y]z.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5By%5Dz"
+      },
+      "search": [
+        "special-names/x[y]z.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x[y]z]]",
+        "backResolved": true,
+        "link": "[[x[y]z]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x[y]z]]",
+        "backResolved": true,
+        "link": "[[R7]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x[y]z]]",
+        "resolved": true
+      }
+    },
+    "x[[y": {
+      "linkResolved": false,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x[[y.md"
+      },
+      "text": "sntok8q\n",
+      "explorer": "x[[y",
+      "embed": false,
+      "indexed": "special-names/x[[y.md",
+      "link": "[[x[[y]]",
+      "switcher": [
+        "special-names/x[[y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x[[y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5B%5By"
+      },
+      "search": [
+        "special-names/x[[y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x[[y]]",
+        "backResolved": true,
+        "link": "[[x[[y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x[[y]]",
+        "backResolved": true,
+        "link": "[[x[[y]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x[[y]]",
+        "resolved": false
+      }
+    },
+    "x]]y": {
+      "linkResolved": false,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x]]y.md"
+      },
+      "text": "sntok9q\n",
+      "explorer": "x]]y",
+      "embed": false,
+      "indexed": "special-names/x]]y.md",
+      "link": "[[x]]y]]",
+      "switcher": [
+        "special-names/x]]y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x]]y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%5D%5Dy"
+      },
+      "search": [
+        "special-names/x]]y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x]]y]]",
+        "backResolved": true,
+        "link": "[[x]]y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x]]y]]",
+        "backResolved": true,
+        "link": "[[x]]y]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x]]y]]",
+        "resolved": false
+      }
+    },
+    "x#^y": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x#^y.md"
+      },
+      "text": "sntok10q\n",
+      "explorer": "x#^y",
+      "embed": false,
+      "indexed": "special-names/x#^y.md",
+      "link": "[[special-names/x#^y]]",
+      "switcher": [
+        "special-names/x#^y.md"
+      ],
+      "uri": {
+        "opened": null,
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%23%5Ey"
+      },
+      "search": [
+        "special-names/x#^y.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/x#^y]]",
+        "backResolved": false,
+        "link": "[[special-names/x#^y]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[special-names/x#^y]]",
+        "backResolved": false,
+        "link": "[[special-names/x#^y]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x#^y]]",
+        "resolved": false
+      }
+    },
+    "m#n": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/m#n.md"
+      },
+      "text": "sntok11q\n",
+      "explorer": "m#n",
+      "embed": false,
+      "indexed": "special-names/m#n.md",
+      "link": "[[special-names/m#n]]",
+      "switcher": [
+        "special-names/m#n.md"
+      ],
+      "uri": {
+        "opened": "special-names/m.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fm%23n"
+      },
+      "search": [
+        "special-names/m#n.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/m#n]]",
+        "backResolved": false,
+        "link": "[[special-names/m#n]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[special-names/m#n]]",
+        "backResolved": false,
+        "link": "[[special-names/m#n]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/m#n]]",
+        "resolved": false
+      }
+    },
+    "x%%y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x%%y.md"
+      },
+      "text": "sntok12q\n",
+      "explorer": "x%%y",
+      "embed": true,
+      "indexed": "special-names/x%%y.md",
+      "link": "[[x%%y]]",
+      "switcher": [
+        "special-names/x%%y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x%%y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%25%25y"
+      },
+      "search": [
+        "special-names/x%%y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x%%y]]",
+        "backResolved": true,
+        "link": "[[x%%y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x%%y]]",
+        "backResolved": true,
+        "link": "[[R12]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x%%y]]",
+        "resolved": true
+      }
+    },
+    "x%y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x%y.md"
+      },
+      "text": "sntok13q\n",
+      "explorer": "x%y",
+      "embed": true,
+      "indexed": "special-names/x%y.md",
+      "link": "[[x%y]]",
+      "switcher": [
+        "special-names/x%y.md",
+        "special-names/x%%y.md",
+        "special-names/x%2Fy.md",
+        "special-names/x%23y.md",
+        "special-names/x%20y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x%y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%25y"
+      },
+      "search": [
+        "special-names/x%y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x%y]]",
+        "backResolved": true,
+        "link": "[[x%y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x%y]]",
+        "backResolved": true,
+        "link": "[[R13]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x%y]]",
+        "resolved": true
+      }
+    },
+    "x%20y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x%20y.md"
+      },
+      "text": "sntok14q\n",
+      "explorer": "x%20y",
+      "embed": true,
+      "indexed": "special-names/x%20y.md",
+      "link": "[[x%20y]]",
+      "switcher": [
+        "special-names/x%20y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x%20y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%2520y"
+      },
+      "search": [
+        "special-names/x%20y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x%20y]]",
+        "backResolved": true,
+        "link": "[[x%20y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x%20y]]",
+        "backResolved": true,
+        "link": "[[R14]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x%20y]]",
+        "resolved": true
+      }
+    },
+    "x%23y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x%23y.md"
+      },
+      "text": "sntok15q\n",
+      "explorer": "x%23y",
+      "embed": true,
+      "indexed": "special-names/x%23y.md",
+      "link": "[[x%23y]]",
+      "switcher": [
+        "special-names/x%23y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x%23y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%2523y"
+      },
+      "search": [
+        "special-names/x%23y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x%23y]]",
+        "backResolved": true,
+        "link": "[[x%23y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x%23y]]",
+        "backResolved": true,
+        "link": "[[R15]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x%23y]]",
+        "resolved": true
+      }
+    },
+    "x%2Fy": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x%2Fy.md"
+      },
+      "text": "sntok16q\n",
+      "explorer": "x%2Fy",
+      "embed": true,
+      "indexed": "special-names/x%2Fy.md",
+      "link": "[[x%2Fy]]",
+      "switcher": [
+        "special-names/x%2Fy.md"
+      ],
+      "uri": {
+        "opened": "special-names/x%2Fy.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%252Fy"
+      },
+      "search": [
+        "special-names/x%2Fy.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x%2Fy]]",
+        "backResolved": true,
+        "link": "[[x%2Fy]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x%2Fy]]",
+        "backResolved": true,
+        "link": "[[R16]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x%2Fy]]",
+        "resolved": true
+      }
+    },
+    ".x": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[.x]]",
+      "switcher": [],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "[[.x]]",
+        "resolved": true
+      }
+    },
+    "x.y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x.y.md"
+      },
+      "text": "sntok18q\n",
+      "explorer": "x.y",
+      "embed": true,
+      "indexed": "special-names/x.y.md",
+      "link": "[[x.y]]",
+      "switcher": [
+        "special-names/x.y.md",
+        "special-names/x./y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x.y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx.y"
+      },
+      "search": [
+        "special-names/x.y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x.y]]",
+        "backResolved": true,
+        "link": "[[x.y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x.y]]",
+        "backResolved": true,
+        "link": "[[R18]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x.y]]",
+        "resolved": true
+      }
+    },
+    " x": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/ x.md"
+      },
+      "text": "sntok19q\n",
+      "explorer": " x",
+      "embed": false,
+      "indexed": "special-names/ x.md",
+      "link": "[[ x]]",
+      "switcher": [
+        "special-names/x .md",
+        "special-names/x..md",
+        "special-names/x>y.md",
+        "special-names/x<y.md",
+        "special-names/x\"y.md",
+        "special-names/x?y.md",
+        "special-names/x*y.md",
+        "special-names/x:y.md",
+        "special-names/x|y.md",
+        "special-names/x.y.md",
+        "special-names/x%y.md",
+        "special-names/x]y.md",
+        "special-names/x[y.md",
+        "special-names/x^y.md",
+        "special-names/x#y.md",
+        "special-names/x y.md",
+        "special-names/x  y.md",
+        "special-names/x%%y.md"
+      ],
+      "uri": {
+        "opened": "special-names/ x.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2F%20x"
+      },
+      "search": [
+        "special-names/ x.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[ x]]",
+        "backResolved": false,
+        "link": "[[ x]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[ x]]",
+        "backResolved": false,
+        "link": "[[ x]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/ x]]",
+        "resolved": true
+      }
+    },
+    "x  y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x  y.md"
+      },
+      "text": "sntok20q\n",
+      "explorer": "x  y",
+      "embed": true,
+      "indexed": "special-names/x  y.md",
+      "link": "[[x  y]]",
+      "switcher": [
+        "special-names/x>y.md",
+        "special-names/x<y.md",
+        "special-names/x\"y.md",
+        "special-names/x?y.md",
+        "special-names/x*y.md",
+        "special-names/x:y.md",
+        "special-names/x|y.md",
+        "special-names/x.y.md",
+        "special-names/x%y.md",
+        "special-names/x]y.md",
+        "special-names/x[y.md",
+        "special-names/x^y.md",
+        "special-names/x#y.md",
+        "special-names/x y.md",
+        "special-names/x[y]z.md",
+        "special-names/x  y.md",
+        "special-names/x%%y.md",
+        "special-names/x#^y.md",
+        "special-names/x]]y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x  y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%20%20y"
+      },
+      "search": [
+        "special-names/x  y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x  y]]",
+        "backResolved": true,
+        "link": "[[x  y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x  y]]",
+        "backResolved": true,
+        "link": "[[R20]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x  y]]",
+        "resolved": true
+      }
+    },
+    "x y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x y.md"
+      },
+      "text": "sntok21q\n",
+      "explorer": "x y",
+      "embed": true,
+      "indexed": "special-names/x y.md",
+      "link": "[[x y]]",
+      "switcher": [
+        "special-names/x>y.md",
+        "special-names/x<y.md",
+        "special-names/x\"y.md",
+        "special-names/x?y.md",
+        "special-names/x*y.md",
+        "special-names/x:y.md",
+        "special-names/x|y.md",
+        "special-names/x.y.md",
+        "special-names/x%y.md",
+        "special-names/x]y.md",
+        "special-names/x[y.md",
+        "special-names/x^y.md",
+        "special-names/x#y.md",
+        "special-names/x y.md",
+        "special-names/x[y]z.md",
+        "special-names/x  y.md",
+        "special-names/x%%y.md",
+        "special-names/x#^y.md",
+        "special-names/x]]y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%20y"
+      },
+      "search": [
+        "special-names/x y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x y]]",
+        "backResolved": true,
+        "link": "[[x y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x y]]",
+        "backResolved": true,
+        "link": "[[R21]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x y]]",
+        "resolved": true
+      }
+    },
+    "x y": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[x y]]",
+      "switcher": [
+        "special-names/x>y.md",
+        "special-names/x<y.md",
+        "special-names/x\"y.md",
+        "special-names/x?y.md",
+        "special-names/x*y.md",
+        "special-names/x:y.md",
+        "special-names/x|y.md",
+        "special-names/x.y.md",
+        "special-names/x%y.md",
+        "special-names/x]y.md",
+        "special-names/x[y.md",
+        "special-names/x^y.md",
+        "special-names/x#y.md",
+        "special-names/x y.md",
+        "special-names/x[y]z.md",
+        "special-names/x  y.md",
+        "special-names/x%%y.md",
+        "special-names/x#^y.md",
+        "special-names/x]]y.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "p q": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/p q.md"
+      },
+      "text": "sntok23q\n",
+      "explorer": "p q",
+      "embed": true,
+      "indexed": "special-names/p q.md",
+      "link": "[[p q]]",
+      "switcher": [
+        "special-names/p q.md"
+      ],
+      "uri": {
+        "opened": "special-names/p q.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fp%20q"
+      },
+      "search": [
+        "special-names/p q.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[p q]]",
+        "backResolved": true,
+        "link": "[[p q]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[p q]]",
+        "backResolved": true,
+        "link": "[[R23]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/p q]]",
+        "resolved": true
+      }
+    },
+    "café": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[café]]",
+      "switcher": [
+        "special-names/café.md"
+      ],
+      "uri": null,
+      "search": [
+        "special-names/café.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "[[special-names/onto/café]]",
+        "resolved": true
+      }
+    },
+    "café": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/café.md"
+      },
+      "text": "sntok24q\n",
+      "explorer": "café",
+      "embed": true,
+      "indexed": "special-names/café.md",
+      "link": "[[café]]",
+      "switcher": [
+        "special-names/café.md"
+      ],
+      "uri": {
+        "opened": "special-names/café.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fcaf%C3%A9"
+      },
+      "search": [],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/café]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/café]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/café]]",
+        "backResolved": true,
+        "link": "[[R25]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "naïve": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/naïve.md"
+      },
+      "text": "sntok26q\n",
+      "explorer": "naïve",
+      "embed": true,
+      "indexed": "special-names/naïve.md",
+      "link": "[[naïve]]",
+      "switcher": [
+        "special-names/naïve.md"
+      ],
+      "uri": {
+        "opened": "special-names/naïve.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fna%C3%AFve"
+      },
+      "search": [
+        "special-names/naïve.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[naïve]]",
+        "backResolved": true,
+        "link": "[[naïve]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[naïve]]",
+        "backResolved": true,
+        "link": "[[R26]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/naïve]]",
+        "resolved": true
+      }
+    },
+    "x|y": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x|y.md"
+      },
+      "text": "sntok27q\n",
+      "explorer": "x|y",
+      "embed": false,
+      "indexed": "special-names/x|y.md",
+      "link": "[[x|y]]",
+      "switcher": [
+        "special-names/x|y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x|y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%7Cy"
+      },
+      "search": [
+        "special-names/x|y.md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x|y]]",
+        "backResolved": false,
+        "link": "[[x|y]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[x|y]]",
+        "backResolved": false,
+        "link": "[[x|y]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x|y]]",
+        "resolved": false
+      }
+    },
+    "x:y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x:y.md"
+      },
+      "text": "sntok28q\n",
+      "explorer": "x:y",
+      "embed": true,
+      "indexed": "special-names/x:y.md",
+      "link": "[[x:y]]",
+      "switcher": [
+        "special-names/x:y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x:y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%3Ay"
+      },
+      "search": [
+        "special-names/x:y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R28]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x*y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x*y.md"
+      },
+      "text": "sntok29q\n",
+      "explorer": "x*y",
+      "embed": true,
+      "indexed": "special-names/x*y.md",
+      "link": "[[x*y]]",
+      "switcher": [
+        "special-names/x*y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x*y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx*y"
+      },
+      "search": [
+        "special-names/x*y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R29]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x?y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x?y.md"
+      },
+      "text": "sntok30q\n",
+      "explorer": "x?y",
+      "embed": true,
+      "indexed": "special-names/x?y.md",
+      "link": "[[x?y]]",
+      "switcher": [
+        "special-names/x?y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x?y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%3Fy"
+      },
+      "search": [
+        "special-names/x?y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R30]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x\"y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x\"y.md"
+      },
+      "text": "sntok31q\n",
+      "explorer": "x\"y",
+      "embed": true,
+      "indexed": "special-names/x\"y.md",
+      "link": "[[x\"y]]",
+      "switcher": [
+        "special-names/x\"y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x\"y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%22y"
+      },
+      "search": [
+        "special-names/x\"y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R31]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x<y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x<y.md"
+      },
+      "text": "sntok32q\n",
+      "explorer": "x<y",
+      "embed": true,
+      "indexed": "special-names/x<y.md",
+      "link": "[[x<y]]",
+      "switcher": [
+        "special-names/x<y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x<y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%3Cy"
+      },
+      "search": [
+        "special-names/x<y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R32]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x>y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x>y.md"
+      },
+      "text": "sntok33q\n",
+      "explorer": "x>y",
+      "embed": true,
+      "indexed": "special-names/x>y.md",
+      "link": "[[x>y]]",
+      "switcher": [
+        "special-names/x>y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x>y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%3Ey"
+      },
+      "search": [
+        "special-names/x>y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "backResolved": false,
+        "link": "[[R33]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: File name cannot contain any of the following characters: \\ / : * ? < > \">>",
+        "resolved": false
+      }
+    },
+    "x\\y": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[x\\y]]",
+      "switcher": [],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "<<refused: The parent object of the destination does not exist>>",
+        "resolved": false
+      }
+    },
+    "x.": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x..md"
+      },
+      "text": "sntok35q\n",
+      "explorer": "x.",
+      "embed": true,
+      "indexed": "special-names/x..md",
+      "link": "[[x.]]",
+      "switcher": [
+        "special-names/x..md",
+        "special-names/x.y.md",
+        "special-names/x./y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x..md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx."
+      },
+      "search": [
+        "special-names/x..md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x.]]",
+        "backResolved": true,
+        "link": "[[x.]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x.]]",
+        "backResolved": true,
+        "link": "[[R35]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x.]]",
+        "resolved": true
+      }
+    },
+    "x ": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x .md"
+      },
+      "text": "sntok36q\n",
+      "explorer": "x ",
+      "embed": false,
+      "indexed": "special-names/x .md",
+      "link": "[[x ]]",
+      "switcher": [
+        "special-names/x .md",
+        "special-names/x..md",
+        "special-names/x>y.md",
+        "special-names/x<y.md",
+        "special-names/x\"y.md",
+        "special-names/x?y.md",
+        "special-names/x*y.md",
+        "special-names/x:y.md",
+        "special-names/x|y.md",
+        "special-names/x.y.md",
+        "special-names/x%y.md",
+        "special-names/x]y.md",
+        "special-names/x[y.md",
+        "special-names/x^y.md",
+        "special-names/x#y.md",
+        "special-names/x y.md",
+        "special-names/x  y.md",
+        "special-names/x%%y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x .md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%20"
+      },
+      "search": [
+        "special-names/x .md"
+      ],
+      "graph": {
+        "edge": false,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x ]]",
+        "backResolved": false,
+        "link": "[[x ]]",
+        "resolved": false
+      },
+      "rename": {
+        "backLink": "[[x ]]",
+        "backResolved": false,
+        "link": "[[x ]]",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x ]]",
+        "resolved": false
+      }
+    },
+    "x./y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x./y.md"
+      },
+      "text": "sntok37q\n",
+      "explorer": "y",
+      "embed": true,
+      "indexed": "special-names/x./y.md",
+      "link": "[[special-names/x./y]]",
+      "switcher": [
+        "special-names/x./y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x./y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx.%2Fy"
+      },
+      "search": [
+        "special-names/x./y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/x./y]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/x./y]]",
+        "backResolved": true,
+        "link": "[[R37]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x./y]]",
+        "resolved": true
+      }
+    },
+    "x /y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x /y.md"
+      },
+      "text": "sntok38q\n",
+      "explorer": "y",
+      "embed": true,
+      "indexed": "special-names/x /y.md",
+      "link": "[[special-names/x /y]]",
+      "switcher": [
+        "special-names/x /y.md",
+        "special-names/x./y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x /y.md",
+        "url": "obsidian://open?vault=special-names-oracle&file=special-names%2Fx%20%2Fy"
+      },
+      "search": [
+        "special-names/x /y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/x /y]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/x /y]]",
+        "backResolved": true,
+        "link": "[[R38]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x /y]]",
+        "resolved": true
+      }
+    }
+  },
+  "renameChecks": [
+    {
+      "message": null,
+      "name": "r#s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r^s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r[s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r]s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r|s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r%s",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "r:s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r*s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": ".rs",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r?s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r\"s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r<s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r>s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "r\\s",
+      "saved": false
+    },
+    {
+      "message": null,
+      "name": "rs.",
+      "saved": true
+    },
+    {
+      "message": null,
+      "name": "rs ",
+      "saved": true
+    }
+  ],
+  "shadowWrites": [
+    {
+      "name": "x y",
+      "nameText": "sntok22q\n",
+      "partner": "x y",
+      "partnerText": "edited through the vault\n"
+    },
+    {
+      "name": "café",
+      "nameText": "edited through the vault\n",
+      "partner": "café",
+      "partnerText": "edited through the vault\n"
+    }
+  ]
+}

@@ -15,7 +15,12 @@
  * so the oracle writes a one-line plugin into the vault that hands it over. Every wait is done from Node between short
  * calls into the app, since one call is capped at 30 s.
  *
- * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
+ * With `--android` it reads the same surfaces in Obsidian on an Android device or emulator instead (`scripts/android-vault.ts`),
+ * in a vault of the app's own storage, for `ANDROID_SPECIAL_NAMES`: the desktop's names and the ones Windows cannot store.
+ * The device must be booted with Obsidian started; `--serial` picks one of several. Writes them to
+ * `oracle/special-names-android-obsidian-<version>.json`.
+ *
+ * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--android [--serial <serial>]] [--out-dir <directory>]`.
  */
 
 /// <reference lib="dom.iterable" />
@@ -48,10 +53,16 @@ import type {
   SpecialNamesMeta,
   UriRead
 } from '../src/oracle/special-names.ts';
+import type { OracleVault } from './android-vault.ts';
 
-import { specialNamesOracleFileName } from '../src/oracle/oracle-location.ts';
+import {
+  specialNamesAndroidOracleFileName,
+  specialNamesOracleFileName
+} from '../src/oracle/oracle-location.ts';
 import { compareCodeUnits } from '../src/oracle/score.ts';
 import {
+  ANDROID_RENAME_CHECK_NAMES,
+  ANDROID_SPECIAL_NAMES,
   RENAME_CHECK_NAMES,
   SHADOW_EDIT_TEXT,
   SPECIAL_NAMES,
@@ -66,6 +77,7 @@ import {
   specialNamePath,
   specialNameText
 } from '../src/oracle/special-names.ts';
+import { openAndroidVault } from './android-vault.ts';
 
 interface AdapterFile {
   readonly realpath: string;
@@ -98,6 +110,22 @@ interface BasicRead {
 
 interface CachedLink {
   readonly link: string;
+}
+
+interface CapacitorAppInfo {
+  readonly version: string;
+}
+
+interface CapacitorAppPlugin {
+  getInfo: () => Promise<CapacitorAppInfo>;
+}
+
+interface CapacitorGlobal {
+  readonly Plugins: CapacitorPlugins;
+}
+
+interface CapacitorPlugins {
+  readonly App?: CapacitorAppPlugin;
 }
 
 interface CdpConnection {
@@ -260,6 +288,7 @@ interface Prepared {
 }
 
 interface ProbeGlobal {
+  readonly Capacitor?: CapacitorGlobal;
   readonly electron?: Electron;
   readonly specialNamesObsidian?: ObsidianModule;
 }
@@ -294,11 +323,6 @@ interface SearchView {
   readonly dom: SearchResultDom;
 }
 
-interface SetUpRead {
-  readonly basePath: string;
-  readonly meta: SpecialNamesMeta;
-}
-
 interface Suggestion {
   readonly file?: TFile;
 }
@@ -330,7 +354,12 @@ interface Workspace {
   getActiveFile: () => null | TFile;
   getLeaf: (isNewLeaf: boolean) => Leaf;
   getLeavesOfType: (type: string) => Leaf[];
+  readonly leftSplit: WorkspaceSidedock;
   readonly protocolHandler: ProtocolHandler;
+}
+
+interface WorkspaceSidedock {
+  expand: () => void;
 }
 
 const JSON_INDENT = 2;
@@ -341,6 +370,8 @@ const REWRITE_EVERY = 4;
 // A rename's link update, a search, a rename typed into the explorer: polled every 200 ms for up to 4 s.
 const SETTLE_POLL_MS = 200;
 const SETTLE_POLLS = 20;
+const REVEAL_POLL_MS = 100;
+const REVEAL_POLLS = 20;
 // What a view needs to render before it is read: the switcher's suggestions, an embed, a URL's leaf, the graph.
 const SWITCHER_MS = 300;
 const EMBED_MS = 400;
@@ -348,6 +379,7 @@ const URI_MS = 300;
 const GRAPH_MS = 2000;
 const SWITCHER_MAX_OFFERS = 50;
 const PLUGIN_ID = 'special-names-probe';
+const ANDROID_VAULT_NAME = 'special-names-oracle';
 const RENAME_CHECK_NOTE = `${SPECIAL_NAMES_FOLDER}/rename-check.md`;
 // The first rename typed after the explorer opens is neither validated nor saved, whatever its name, so this one goes
 // first and is not read.
@@ -357,17 +389,20 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
   options: {
+    'android': { type: 'boolean' },
     'obsidian-version': { type: 'string' },
-    'out-dir': { type: 'string' }
+    'out-dir': { type: 'string' },
+    'serial': { type: 'string' }
   }
 });
 
-const obsidianVersion = values['obsidian-version'];
-const oitPath = join(execSync('npm root -g').toString().trim(), 'obsidian-integration-testing/dist/lib/esm/index.mjs');
-// eslint-disable-next-line no-restricted-syntax -- obsidian-integration-testing is installed globally, so its path is only known at run time.
-const oit = await import(pathToFileURL(oitPath).href) as OitModule;
+const isAndroid = values.android === true;
+const names = isAndroid ? ANDROID_SPECIAL_NAMES : SPECIAL_NAMES;
+const renameCheckNames = isAndroid ? ANDROID_RENAME_CHECK_NAMES : RENAME_CHECK_NAMES;
 // The connection is disposed by hand: `await using` needs a tslib helper this repo does not install.
-const conn = await oit.connectToCdp(obsidianVersion === undefined ? {} : { obsidianVersion });
+const conn = isAndroid
+  ? await openAndroidVault<ObsidianGlobals>(values.serial === undefined ? { vaultName: ANDROID_VAULT_NAME } : { serial: values.serial, vaultName: ANDROID_VAULT_NAME })
+  : await openDesktopVault(values['obsidian-version']);
 
 // Whether the linker's embed, rendered as Reading view renders it, shows the note's text.
 async function isEmbedShown(link: string, linkerPath: string, text: string): Promise<boolean> {
@@ -423,6 +458,38 @@ function normalizedPathIn(folder: string, name: string): string {
   return `${folder}/${name.normalize('NFC').replaceAll(NO_BREAK_SPACE_PATTERN, ' ')}.md`;
 }
 
+// The vault of an owned desktop Obsidian, its files written and read with Node's file system.
+async function openDesktopVault(obsidianVersion: string | undefined): Promise<OracleVault<ObsidianGlobals>> {
+  const oitPath = join(execSync('npm root -g').toString().trim(), 'obsidian-integration-testing/dist/lib/esm/index.mjs');
+  // eslint-disable-next-line no-restricted-syntax -- obsidian-integration-testing is installed globally, so its path is only known at run time.
+  const oit = await import(pathToFileURL(oitPath).href) as OitModule;
+  const cdp = await oit.connectToCdp(obsidianVersion === undefined ? {} : { obsidianVersion });
+  const basePath = await cdp.evalInObsidian({ callback: ({ app }) => app.vault.adapter.basePath });
+  return {
+    evalInObsidian: async (params) => await cdp.evalInObsidian(params),
+    mkdir: async (paths): Promise<void> => {
+      for (const path of paths) {
+        mkdirSync(join(basePath, path), { recursive: true });
+      }
+      await Promise.resolve();
+    },
+    readText: async (path): Promise<string> => {
+      await Promise.resolve();
+      return readFileSync(join(basePath, path), 'utf-8');
+    },
+    [Symbol.asyncDispose]: async (): Promise<void> => {
+      await cdp[Symbol.asyncDispose]();
+    },
+    writeFiles: async (files, paths): Promise<void> => {
+      for (const path of paths) {
+        mkdirSync(dirname(join(basePath, path)), { recursive: true });
+        writeFileSync(join(basePath, path), files.get(path) ?? '');
+        await pause(WRITE_PAUSE_MS);
+      }
+    }
+  };
+}
+
 async function pause(milliseconds: number): Promise<void> {
   await new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
@@ -447,8 +514,8 @@ async function prepareApp(): Promise<void> {
 // For every name: the note whose file is the name's own, and the link Obsidian writes for it from its linker.
 async function prepareNames(): Promise<Prepared[]> {
   return await conn.evalInObsidian({
-    callback: ({ app, linkerPaths, names, paths }) =>
-      names.map((name, index) => {
+    callback: ({ app, linkerPaths, noteNames, paths }) =>
+      noteNames.map((name, index) => {
         const ownPath = paths[index] ?? '';
         const file = app.vault.getFiles().find((candidate) => app.vault.adapter.files[candidate.path]?.realpath === ownPath) ?? null;
         return {
@@ -457,16 +524,17 @@ async function prepareNames(): Promise<Prepared[]> {
         };
       }),
     input: {
-      linkerPaths: SPECIAL_NAMES.map((_name, index) => linkerPathOf(index)),
-      names: SPECIAL_NAMES.map(({ name }) => name),
-      paths: SPECIAL_NAMES.map(({ name }) => specialNamePath(name))
+      linkerPaths: names.map((_name, index) => linkerPathOf(index)),
+      noteNames: names.map(({ name }) => name),
+      paths: names.map(({ name }) => specialNamePath(name))
     }
   });
 }
 
 // The note's text, its explorer title, opening it, its backlinks and where the linker's body and properties links lead.
 async function readBasic(indexed: null | string, linkerPath: string): Promise<BasicRead> {
-  return await conn.evalInObsidian({
+  const explorer = await readExplorer(indexed);
+  const read = await conn.evalInObsidian({
     callback: async ({ app, indexed: notePath, linkerPath: sourcePath }) => {
       const obsidian = (globalThis as ProbeGlobal & typeof globalThis).specialNamesObsidian;
       if (obsidian === undefined) {
@@ -481,11 +549,9 @@ async function readBasic(indexed: null | string, linkerPath: string): Promise<Ba
       const links = { linkResolved: isNoteLink(linkerCache?.links?.[0]?.link), property: isNoteLink(linkerCache?.frontmatterLinks?.[0]?.link) };
       const file = notePath === null ? null : vault.getFileByPath(notePath);
       if (file === null) {
-        return { ...links, explorer: null, hasBacklink: false, open: null, text: null };
+        return { ...links, hasBacklink: false, open: null, text: null };
       }
       const text = await vault.read(file);
-      const explorer = workspace.getLeavesOfType('file-explorer')[0]?.view as ExplorerView | undefined;
-      explorer?.revealInFolder(file);
       const leaf = workspace.getLeaf(true);
       await leaf.openFile(file);
       const view = leaf.view as MarkdownView;
@@ -493,13 +559,36 @@ async function readBasic(indexed: null | string, linkerPath: string): Promise<Ba
       leaf.detach();
       return {
         ...links,
-        explorer: explorer?.fileItems[file.path]?.innerEl.textContent ?? null,
         hasBacklink: metadataCache.getBacklinksForFile(file).data.has(sourcePath),
         open,
         text
       };
     },
     input: { indexed, linkerPath }
+  });
+  return { ...read, explorer };
+}
+
+// The title the file explorer shows for the note.
+async function readExplorer(indexed: null | string): Promise<null | string> {
+  return await conn.evalInObsidian({
+    callback: async ({ app, indexed: notePath, revealPollMs, revealPolls }) => {
+      const file = notePath === null ? null : app.vault.getFileByPath(notePath);
+      const explorer = app.workspace.getLeavesOfType('file-explorer')[0]?.view as ExplorerView | undefined;
+      if (file === null || explorer === undefined) {
+        return null;
+      }
+      // The mobile explorer draws an item's title only while its drawer is open, and a moment after the reveal.
+      app.workspace.leftSplit.expand();
+      explorer.revealInFolder(file);
+      for (let poll = 0; poll < revealPolls && explorer.fileItems[file.path]?.innerEl.textContent === ''; poll++) {
+        await new Promise((resolve) => {
+          globalThis.setTimeout(resolve, revealPollMs);
+        });
+      }
+      return explorer.fileItems[file.path]?.innerEl.textContent ?? null;
+    },
+    input: { indexed, revealPollMs: REVEAL_POLL_MS, revealPolls: REVEAL_POLLS }
   });
 }
 
@@ -526,7 +615,7 @@ async function readGraph(prepared: readonly Prepared[]): Promise<GraphRead[]> {
         node: indexed !== null && nodes.has(indexed)
       }));
     },
-    input: { linkerPaths: SPECIAL_NAMES.map((_name, index) => linkerPathOf(index)), prepared }
+    input: { linkerPaths: names.map((_name, index) => linkerPathOf(index)), prepared }
   });
 }
 
@@ -548,7 +637,7 @@ async function readLinker(linkerPath: string, path: string): Promise<LinkerRead>
 
 // Every surface of one name but search, the graph and the renames.
 async function readName(index: number, prepared: Prepared): Promise<NameRead> {
-  const name = SPECIAL_NAMES[index]?.name ?? '';
+  const name = names[index]?.name ?? '';
   const linkerPath = linkerPathOf(index);
   const basic = await readBasic(prepared.indexed, linkerPath);
   return {
@@ -572,7 +661,11 @@ async function readRename(indexed: null | string, linkerPath: string, newPath: s
     return { backLink: null, backResolved: false, link: refusal, resolved: false };
   }
   const away = await settleLinker(linkerPath, newPath);
-  await renameTo(newPath, indexed);
+  // Android refuses some names a file can arrive with, so the rename back can be refused too.
+  const backRefusal = await renameTo(newPath, indexed);
+  if (backRefusal !== null) {
+    return { backLink: backRefusal, backResolved: false, link: away.link, resolved: away.resolved };
+  }
   const back = await settleLinker(linkerPath, indexed);
   return { backLink: back.link, backResolved: back.resolved, link: away.link, resolved: away.resolved };
 }
@@ -580,7 +673,7 @@ async function readRename(indexed: null | string, linkerPath: string, newPath: s
 // Types each name into the file explorer's rename of one note, and reads whether it saved and what it showed.
 async function readRenameChecks(): Promise<RenameCheckRead[]> {
   const reads: RenameCheckRead[] = [];
-  for (const name of [RENAME_WARM_UP_NAME, ...RENAME_CHECK_NAMES]) {
+  for (const name of [RENAME_WARM_UP_NAME, ...renameCheckNames]) {
     const typed = await typeRename(name);
     let isSaved = false;
     for (let poll = 0; !isSaved && typed.isSaved && poll < SETTLE_POLLS; poll++) {
@@ -639,9 +732,9 @@ async function readSearchResults(): Promise<string[]> {
 }
 
 // Edits the one note each shadowed name shares with its partner, through the vault, and reads both files on disk.
-async function readShadowWrites(basePath: string): Promise<ShadowWriteRead[]> {
+async function readShadowWrites(): Promise<ShadowWriteRead[]> {
   const reads: ShadowWriteRead[] = [];
-  for (const { name, shadows } of SPECIAL_NAMES) {
+  for (const { name, shadows } of names) {
     if (shadows === undefined) {
       continue;
     }
@@ -656,9 +749,7 @@ async function readShadowWrites(basePath: string): Promise<ShadowWriteRead[]> {
       input: { path: normalizedPath(shadows), text: SHADOW_EDIT_TEXT }
     });
     await pause(POLL_MS);
-    const namePath = join(basePath, specialNamePath(name));
-    const partnerPath = join(basePath, specialNamePath(shadows));
-    reads.push({ name, nameText: readFileSync(namePath, 'utf-8'), partner: shadows, partnerText: readFileSync(partnerPath, 'utf-8') });
+    reads.push({ name, nameText: await conn.readText(specialNamePath(name)), partner: shadows, partnerText: await conn.readText(specialNamePath(shadows)) });
   }
   return reads;
 }
@@ -749,14 +840,14 @@ async function settleLinker(linkerPath: string, path: string): Promise<LinkerRea
   return read;
 }
 
-async function setUp(): Promise<SetUpRead> {
+// Where the oracle is read: the app's version comes from Electron on desktop and from Capacitor on mobile.
+async function setUp(): Promise<SpecialNamesMeta> {
   return await conn.evalInObsidian({
-    callback: ({ app }) => {
-      const { electron } = globalThis as ProbeGlobal & typeof globalThis;
-      return {
-        basePath: app.vault.adapter.basePath,
-        meta: { appVersion: electron?.ipcRenderer?.sendSync?.('version') ?? null, userAgent: navigator.userAgent, vault: app.vault.getName() }
-      };
+    callback: async ({ app }) => {
+      const { Capacitor: capacitor, electron } = globalThis as ProbeGlobal & typeof globalThis;
+      const info = await capacitor?.Plugins.App?.getInfo();
+      const appVersion = electron?.ipcRenderer?.sendSync?.('version') ?? info?.version ?? null;
+      return { appVersion, userAgent: navigator.userAgent, vault: app.vault.getName() };
     }
   });
 }
@@ -770,8 +861,8 @@ async function typeRename(name: string): Promise<RenameTyped> {
       if (explorer === undefined) {
         throw new Error('No file explorer');
       }
-      for (const tooltip of document.querySelectorAll('.tooltip')) {
-        tooltip.remove();
+      for (const shown of document.querySelectorAll('.tooltip, .notice')) {
+        shown.remove();
       }
       await explorer.startRenameFile(file);
       const titleElement = explorer.fileItems[file.path]?.innerEl;
@@ -780,19 +871,23 @@ async function typeRename(name: string): Promise<RenameTyped> {
       await new Promise((resolve) => {
         globalThis.setTimeout(resolve, settleMs);
       });
-      const message = document.querySelector('.tooltip')?.textContent ?? null;
+      const tooltip = document.querySelector('.tooltip')?.textContent ?? null;
       const isSaved = await explorer.saveRename();
       explorer.exitRename();
+      // Mobile shows the message as a notice when the rename is saved or refused.
+      const message = tooltip ?? document.querySelector('.notice')?.textContent ?? null;
       return { isSaved, message };
     },
     input: { name, notePath: RENAME_CHECK_NOTE, settleMs: SETTLE_POLL_MS }
   });
 }
 
-// Waits until the app has indexed every path, and resolved its links where `isSource` asks for it.
-async function waitIndexed(basePath: string, files: ReadonlyMap<string, string>, paths: readonly string[], isSource: boolean): Promise<void> {
+// Waits until the app has indexed every path, and resolved its links where `isSource` asks for it; returns the paths it
+// still has not after the bound, or throws where `isEveryRequired`.
+async function waitIndexed(files: ReadonlyMap<string, string>, paths: readonly string[], isSource: boolean, isEveryRequired: boolean): Promise<string[]> {
+  let missing: string[] = [];
   for (let poll = 0; poll < MAX_POLLS; poll++) {
-    const missing = await conn.evalInObsidian({
+    missing = await conn.evalInObsidian({
       callback: ({ app, isSource: isSourceNote, paths: notePaths }) =>
         notePaths.filter((path) => {
           const file = app.vault.getFileByPath(path);
@@ -801,56 +896,54 @@ async function waitIndexed(basePath: string, files: ReadonlyMap<string, string>,
       input: { isSource, paths }
     });
     if (missing.length === 0) {
-      return;
+      return missing;
     }
     if (poll % REWRITE_EVERY === REWRITE_EVERY - 1) {
-      await writeOnDisk(basePath, files, missing);
+      await conn.writeFiles(files, missing);
     }
     await pause(POLL_MS);
   }
-  throw new Error('The app did not index every file');
-}
-
-// The vault watcher drops files written in a burst, so every write is paced, and a file still missing is written again.
-async function writeOnDisk(basePath: string, files: ReadonlyMap<string, string>, paths: Iterable<string>): Promise<void> {
-  for (const path of paths) {
-    writeFileSync(join(basePath, path), files.get(path) ?? '');
-    await pause(WRITE_PAUSE_MS);
+  if (isEveryRequired) {
+    throw new Error(`The app did not index ${missing.join(', ')}`);
   }
+  return missing;
 }
 
 try {
-  const { basePath, meta } = await setUp();
-  for (const folder of [SPECIAL_NAMES_FOLDER, SPECIAL_NAMES_LINKER_FOLDER, SPECIAL_NAMES_ONTO_FOLDER, SPECIAL_NAMES_RENAMED_FOLDER, SPECIAL_NAMES_MOVED_FOLDER]) {
-    mkdirSync(join(basePath, folder), { recursive: true });
-  }
-  const pluginDirectory = join(basePath, '.obsidian', 'plugins', PLUGIN_ID);
-  mkdirSync(pluginDirectory, { recursive: true });
-  writeFileSync(
-    join(pluginDirectory, 'manifest.json'),
-    JSON.stringify({ author: 'special names oracle', description: 'Hands the obsidian module to the oracle.', id: PLUGIN_ID, minAppVersion: '1.0.0', name: 'Special names probe', version: '1.0.0' })
-  );
-  writeFileSync(join(pluginDirectory, 'main.js'), 'const obsidian = require(\'obsidian\');\nmodule.exports = class extends obsidian.Plugin { onload() { window.specialNamesObsidian = obsidian; } };\n');
+  const meta = await setUp();
+  // A name in a folder is renamed onto in a folder of the same name, which a rename does not create.
+  const ontoFolders = names.flatMap(({ name }) => (name.includes('/') ? [`${SPECIAL_NAMES_ONTO_FOLDER}/${name.slice(0, name.lastIndexOf('/'))}`] : []));
+  await conn.mkdir([SPECIAL_NAMES_FOLDER, SPECIAL_NAMES_LINKER_FOLDER, SPECIAL_NAMES_ONTO_FOLDER, SPECIAL_NAMES_RENAMED_FOLDER, SPECIAL_NAMES_MOVED_FOLDER, ...ontoFolders]);
+  const pluginDirectory = `.obsidian/plugins/${PLUGIN_ID}`;
+  const pluginFiles = new Map([
+    [`${pluginDirectory}/main.js`, 'const obsidian = require(\'obsidian\');\nmodule.exports = class extends obsidian.Plugin { onload() { window.specialNamesObsidian = obsidian; } };\n'],
+    [
+      `${pluginDirectory}/manifest.json`,
+      JSON.stringify({ author: 'special names oracle', description: 'Hands the obsidian module to the oracle.', id: PLUGIN_ID, minAppVersion: '1.0.0', name: 'Special names probe', version: '1.0.0' })
+    ]
+  ]);
+  await conn.writeFiles(pluginFiles, pluginFiles.keys());
 
   // The vault keeps the last of two shadowing files it sees, so the shadowed names go first and their partners win.
-  const files = specialNameFiles();
-  const order = SPECIAL_NAMES.filter(({ shadows }) => shadows !== undefined).map(({ name }) => specialNamePath(name));
+  const files = specialNameFiles(names);
+  const order = names.filter(({ shadows }) => shadows !== undefined).map(({ name }) => specialNamePath(name));
   for (const path of files.keys()) {
     if (!order.includes(path)) {
       order.push(path);
     }
   }
-  await writeOnDisk(basePath, files, order);
+  await conn.writeFiles(files, order);
   const expected = new Set<string>();
-  for (const { name } of SPECIAL_NAMES) {
+  for (const { name } of names) {
     if (!name.startsWith('.')) {
       expected.add(normalizedPath(name));
     }
   }
-  await waitIndexed(basePath, files, [...expected], false);
+  // A name the app does not index is a finding, read as one, not a failure of the oracle.
+  const unindexed = await waitIndexed(files, [...expected], false, false);
   await prepareApp();
   const renameChecks = await readRenameChecks();
-  console.log(`special-names-oracle: ${String(files.size)} notes written and indexed, ${String(renameChecks.length)} renames typed`);
+  console.log(`special-names-oracle: ${String(files.size)} notes written, ${unindexed.length === 0 ? 'all' : `all but ${unindexed.join(', ')}`} indexed, ${String(renameChecks.length)} renames typed`);
 
   const prepared = await prepareNames();
   const linkers = new Map<string, string>();
@@ -861,8 +954,8 @@ try {
     linkers.set(`${SPECIAL_NAMES_ONTO_FOLDER}/M${String(index)}.md`, `[[P${String(index)}]]\n`);
     sources.push(linkerPathOf(index), `${SPECIAL_NAMES_ONTO_FOLDER}/M${String(index)}.md`);
   }
-  await writeOnDisk(basePath, linkers, linkers.keys());
-  await waitIndexed(basePath, linkers, sources, true);
+  await conn.writeFiles(linkers, linkers.keys());
+  await waitIndexed(linkers, sources, true, true);
   console.log('special-names-oracle: linkers written and resolved');
 
   const byName: Record<string, SpecialNameRead> = {};
@@ -871,26 +964,27 @@ try {
     reads.push({ ...await readName(index, preparedName), search: await readSearch(specialNameText(index).trim()) });
   }
   const graph = await readGraph(prepared);
-  for (const [index, { name }] of SPECIAL_NAMES.entries()) {
+  for (const [index, { name }] of names.entries()) {
     const { indexed } = prepared[index] ?? { indexed: null };
     const read = reads[index];
     const graphRead = graph[index];
     if (read === undefined || graphRead === undefined) {
       throw new Error(`Missing read for ${name}`);
     }
-    const rename = await readRename(indexed, linkerPathOf(index), `${SPECIAL_NAMES_RENAMED_FOLDER}/R${String(index)}.md`);
+    // The move goes first: where the rename back is refused, the note stays renamed.
     const move = indexed === null ? null : await readRename(indexed, linkerPathOf(index), `${SPECIAL_NAMES_MOVED_FOLDER}/${indexed.slice(indexed.lastIndexOf('/') + 1)}`);
+    const rename = await readRename(indexed, linkerPathOf(index), `${SPECIAL_NAMES_RENAMED_FOLDER}/R${String(index)}.md`);
     byName[name] = { ...read, graph: graphRead, move, rename, renameOnto: await readRenameOnto(index, name) };
   }
-  const shadowWrites = await readShadowWrites(basePath);
+  const shadowWrites = await readShadowWrites();
   console.log('special-names-oracle: surfaces read');
 
   const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });
-  const outFile = join(outDirectory, specialNamesOracleFileName(meta.appVersion ?? 'unknown'));
+  const outFile = join(outDirectory, (isAndroid ? specialNamesAndroidOracleFileName : specialNamesOracleFileName)(meta.appVersion ?? 'unknown'));
   const oracleFile: SpecialNamesFile = { meta, reads: byName, renameChecks, shadowWrites };
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
-  console.log(`special-names-oracle: ${String(SPECIAL_NAMES.length)} names written to ${outFile}`);
+  console.log(`special-names-oracle: ${String(names.length)} names written to ${outFile}`);
 } finally {
   await conn[Symbol.asyncDispose]();
 }
