@@ -153,6 +153,16 @@ export function readOracleFile(fileName: string, directory = oracleDirectory()):
 }
 
 /**
+ * The name of a special note name oracle file.
+ *
+ * @param version - The Obsidian version.
+ * @returns The file name.
+ */
+export function specialNamesOracleFileName(version = oracleObsidianVersion()): string {
+  return `special-names-obsidian-${version}.json`;
+}
+
+/**
  * The name of a spec oracle file.
  *
  * @param version - The Obsidian version.
