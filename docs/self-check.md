@@ -97,22 +97,25 @@ Each engine's HTML goes through `parse5` into one token sequence: element names,
 
 When the references agree and the judged engine does not, the key is `engines:obsidian:<its token>-vs-<theirs>`, named by the first token that differs. When the references disagree, the note is a spec question and the judged engine is not judged on it. The key then names the reference alone against the other two (`engines:references:micromark-alone:...`), or the pair. The findings are reduced and sorted like the others, into the families at the head of `self-check-families.ts`. The judge is no part of `judgeNote`, which reads Obsidian syntax the references do not know. It takes about 2 ms a note.
 
-On 2026-10-25, 4,000 notes (seed 20261024) gave 59 keys, all in 10 families:
+Its inline atoms are the grammar's atoms that every engine reads as CommonMark or GFM. One atom is added to them: `*em **nested strong***`, strong emphasis closed inside emphasis by one run of three, which is the shape of CommonMark example 414 and of the open bug report [t/26871](https://forum.obsidian.md/t/26871).
+
+On 2026-10-25, 4,000 notes (seed 20261024) gave 59 keys, all in 8 families. The two marked *earlier run* were found by the same seed before the nested emphasis atom was added, and are missing from this run only because that atom changed what the seed draws:
 
 | Family | Verdict | What it is |
 | --- | --- | --- |
 | `task-body-blocks` | known | A task item's text after its mark is read again as blocks: `- [ ] # H` holds a heading, `- [ ] > q` a quote, `- [ ] [r]: u` a definition, where GFM reads a paragraph. |
 | `task-status-any-character` | expected | Any character between a task's brackets makes a task, checked unless it is a space. GFM reads only a space, `x` or `X`. |
-| `open-reference-bracket-dropped` | bug, [t/119764](https://forum.obsidian.md/t/119764) | A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`. Reading view does the same on 1.14.5 and 1.15.0: `remark-parse` 8's `reference` tokenizer eats the `[` with the shortcut reference, the loss behind the topic's `[foo][ref[]` sample. |
+| `engine-emphasis-pairing` | known, [t/26871](https://forum.obsidian.md/t/26871) | A `*` run paired otherwise than CommonMark pairs it: `*em **nested strong***` is a `*` followed by strong emphasis that ends on a `*`, where CommonMark reads emphasis around strong emphasis (example 414). Reading view does the same. The topic is open and tagged `upstream-bug`, and t/82094 was closed as its duplicate. |
+| `open-reference-bracket-dropped` (earlier run) | bug, [t/119764](https://forum.obsidian.md/t/119764) | A `[` straight after a bracketed text, never closed, is not shown: `[x][` reads `[x]`. Reading view does the same on 1.14.5 and 1.15.0: `remark-parse` 8's `reference` tokenizer eats the `[` with the shortcut reference, the loss behind the topic's `[foo][ref[]` sample. |
 | `task-without-text` | minor | A task mark with nothing after it makes a task. The spec has no example either way. |
-| `engine-container-continuation` | quirk | A list item or quote goes on where CommonMark ends it, or ends where a lazy line continues it. |
+| `engine-container-continuation` | quirk | A list item or quote goes on where CommonMark ends it, or ends where a lazy line continues it: `- >u` then `>p` keeps `p` in the list item's quote, and an indented line after a quoted list item is read as code. |
 | `engine-table` | quirk | A table where GFM reads none, or one that ends where GFM takes a line with no pipe as a row. |
 | `engine-setext-heading` | quirk | A setext heading underlines only a one-line paragraph, and takes a lazy `=` or `-` line. |
 | `engine-link-definition` | quirk | A definition CommonMark rejects: a blank label, an unescaped `[`, no destination, an unbalanced `)`, a title never closed. |
-| `engine-autolink-literal` | quirk | A bare URL right after a character that is not a space: GFM links `]http://m` and leaves `shttp://x.c`, and `remark-parse` 8 does the opposite. |
+| `engine-autolink-literal` (earlier run) | quirk | A bare URL right after a character that is not a space: GFM links `]http://m` and leaves `shttp://x.c`, and `remark-parse` 8 does the opposite. |
 | `references-disagree` | judge | `micromark` alone on an ordered list not numbered 1 that opens a quote straight after a paragraph, and `markdown-it` alone on a definition in a quote followed by a lazy line. |
 
-The acceptance test runs the differential on 4,000 notes. It must find `task-body-blocks` and `task-status-any-character` and leave nothing unclassified.
+The acceptance test runs the differential on 4,000 notes. It must find `task-body-blocks`, `task-status-any-character` and `engine-emphasis-pairing` and leave nothing unclassified.
 
 ## The live surfaces
 

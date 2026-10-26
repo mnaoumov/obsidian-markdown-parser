@@ -164,8 +164,9 @@ const LIST_MARKERS: readonly string[] = ['- ', '* ', '1. ', '2) ', '- [ ] ', '- 
 // The task markers of the GFM notes: the spec's three statuses, and characters Obsidian also reads as one.
 const GFM_LIST_MARKERS: readonly string[] = ['- ', '* ', '1. ', '2) ', '- [ ] ', '- [x] ', '- [X] ', '1. [ ] ', '- [?] ', '- [-] ', '* [/] '];
 
-// The inline atoms of the GFM notes: those every engine of the differential reads as CommonMark or GFM.
-const GFM_INLINE_ATOMS: readonly string[] = INLINE_ATOMS.filter((atom) => !/\[\[|\]\]|#|\[\^|\^\[|==|%%|\$/u.test(atom));
+// The inline atoms of the GFM notes: those every engine of the differential reads as CommonMark or GFM, and strong
+// emphasis closed inside emphasis by one run, CommonMark example 414's shape.
+const GFM_INLINE_ATOMS: readonly string[] = [...INLINE_ATOMS.filter((atom) => !/\[\[|\]\]|#|\[\^|\^\[|==|%%|\$/u.test(atom)), '*em **nested strong***'];
 
 type ContainerKind = 'callout' | 'list' | 'quote';
 
