@@ -12,15 +12,15 @@
  *
  * - `scripts/oracle.ts` once per class-span seed, with the pinned file's `--per-set`.
  * - `scripts/spec-oracle.ts`, `scripts/quirk-probe-oracle.ts`, `scripts/forum-issue-oracle.ts`, `scripts/editing-modes-oracle.ts`,
- *   `scripts/live-surfaces-oracle.ts` and `scripts/link-parity-oracle.ts`.
+ *   `scripts/live-surfaces-oracle.ts`, `scripts/link-parity-oracle.ts` and `scripts/special-names-oracle.ts`.
  * - `scripts/worker-oracle.ts` on the worker it took, with the pinned file's `--per-set` and `--seed`.
  *
  * The output directory is `oracle/`, so a newer version's files land beside the pinned ones. A re-read of the pinned
  * version itself goes to a temporary directory instead, so it never overwrites the files the suites check against.
  *
  * Usage: `jiti scripts/oracle-refresh.ts [--obsidian-version <version>] [--out-dir <directory>] [--only <oracle>,...]
- * [--skip-drift] [--skip-differential]`, where an oracle is `classes`, `spec`, `quirk-probes`, `forum-issues`, `editing-modes`, `live-surfaces`, `link-parity` or
- * `worker`.
+ * [--skip-drift] [--skip-differential]`, where an oracle is `classes`, `spec`, `quirk-probes`, `forum-issues`, `editing-modes`, `live-surfaces`, `link-parity`,
+ * `special-names` or `worker`.
  */
 
 import {
@@ -92,7 +92,7 @@ interface OitModule {
   connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
-const ORACLES = ['classes', 'spec', 'quirk-probes', 'forum-issues', 'editing-modes', 'live-surfaces', 'link-parity', 'worker'] as const;
+const ORACLES = ['classes', 'spec', 'quirk-probes', 'forum-issues', 'editing-modes', 'live-surfaces', 'link-parity', 'special-names', 'worker'] as const;
 type OracleName = typeof ORACLES[number];
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -190,6 +190,9 @@ try {
   }
   if (isWanted('link-parity')) {
     run('link-parity-oracle.ts', common);
+  }
+  if (isWanted('special-names')) {
+    run('special-names-oracle.ts', common);
   }
   if (isWanted('worker')) {
     const pinned = readOracleFile(workerMetadataOracleFileName(PINNED_OBSIDIAN_VERSION), PINNED_ORACLE_DIRECTORY) as WorkerMetadataOracleFile;

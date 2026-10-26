@@ -75,6 +75,7 @@
     "oracle:reference": "jiti scripts/reference-oracle.ts",
     "oracle:refresh": "jiti scripts/oracle-refresh.ts",
     "self-check": "jiti scripts/self-check.ts",
+    "special-names": "jiti scripts/special-names.ts",
     "prepare": "jiti scripts/prepare.ts",
     "spellcheck": "jiti scripts/spellcheck.ts",
     "test": "jiti scripts/test.ts",
