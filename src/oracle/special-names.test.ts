@@ -9,14 +9,18 @@ import type { SpecialNamesFile } from './special-names.ts';
 import {
   readOracleFile,
   specialNamesAndroidOracleFileName,
+  specialNamesNormalizationOracleFileName,
   specialNamesOracleFileName
 } from './oracle-location.ts';
 import {
   ANDROID_SPECIAL_NAMES,
   judgeSpecialNames,
+  NORMALIZATION_NAMES,
   SHADOW_EDIT_TEXT,
   SPECIAL_NAME_SURFACES,
   SPECIAL_NAMES,
+  SPECIAL_NAMES_FORMS_FOLDER,
+  specialNamePath,
   specialNameText
 } from './special-names.ts';
 
@@ -134,5 +138,131 @@ describe('special note names on Android', () => {
 
   it(String.raw`refuses \ : * ? " < > in a rename, and saves | and a trailing dot or space`, () => {
     expect(androidFile.renameChecks.filter(({ saved }) => !saved).map(({ name }) => name)).toEqual(['r:s', 'r*s', '.rs', 'r?s', 'r"s', 'r<s', 'r>s', String.raw`r\s`]);
+  });
+});
+
+// The normalization sweep: every file a shadowed spelling hides fails everywhere, but the first rename onto its NFC path;
+// every later rename onto that path, the kept name's included, is refused, since the first took it; and the note kept
+// for three spellings, which a hidden NFC file strands once it is moved.
+const NORMALIZATION_FAILURES: readonly string[] = [
+  ...SPECIAL_NAME_SURFACES.filter((surface) => surface !== 'rename-onto').map((surface) => `o\u{323}\u{302}: ${surface}`),
+  'o\u{302}\u{323}: rename-onto',
+  ...SPECIAL_NAME_SURFACES.filter((surface) => surface !== 'rename-onto').map((surface) => `n\u{E9}\u{439}: ${surface}`),
+  ...SPECIAL_NAME_SURFACES.map((surface) => `ne\u{301}\u{438}\u{306}: ${surface}`),
+  'n\u{E9}\u{438}\u{306}: rename',
+  'n\u{E9}\u{438}\u{306}: move',
+  'n\u{E9}\u{438}\u{306}: rename-onto',
+  ...SPECIAL_NAME_SURFACES.filter((surface) => surface !== 'rename-onto').map((surface) => `pe\u{301}\u{438}\u{306}: ${surface}`),
+  ...SPECIAL_NAME_SURFACES.map((surface) => `p\u{E9}\u{438}\u{306}: ${surface}`),
+  'p\u{E9}\u{439}: rename-onto'
+];
+const DESTINATION_EXISTS = '<<refused: Destination file already exists!>>';
+
+const normalizationFile = readOracleFile(specialNamesNormalizationOracleFileName()) as SpecialNamesFile;
+const normalizationVerdicts = judgeSpecialNames(normalizationFile, NORMALIZATION_NAMES);
+const normalization = normalizationFile.normalization ?? {};
+const keptNames = NORMALIZATION_NAMES.filter(({ shadows }) => shadows === undefined).map(({ name }) => name);
+
+describe('note names in neither normal form', () => {
+  it('fails on exactly the known surfaces', () => {
+    const failures: string[] = [];
+    for (const { name } of NORMALIZATION_NAMES) {
+      for (const surface of SPECIAL_NAME_SURFACES) {
+        if (normalizationVerdicts.get(name)?.get(surface)?.status === 'fails') {
+          failures.push(`${name}: ${surface}`);
+        }
+      }
+    }
+    expect(failures).toEqual(NORMALIZATION_FAILURES);
+  });
+
+  it('indexes every kept name under its NFC path, reading the file under the name it was written with', () => {
+    for (const name of keptNames) {
+      expect(normalizationFile.reads[name]?.indexed).toBe(specialNamePath(name.normalize('NFC')));
+      expect(normalization[name]?.realpath).toBe(specialNamePath(name));
+    }
+  });
+
+  it('keeps the spelling written last, whichever normal form it is in', () => {
+    expect(normalizationFile.shadowWrites.map(({ name, partner }) => [name, partner])).toEqual([
+      ['o\u{323}\u{302}', 'o\u{302}\u{323}'],
+      ['n\u{E9}\u{439}', 'n\u{E9}\u{438}\u{306}'],
+      ['ne\u{301}\u{438}\u{306}', 'n\u{E9}\u{438}\u{306}'],
+      ['pe\u{301}\u{438}\u{306}', 'p\u{E9}\u{439}'],
+      ['p\u{E9}\u{438}\u{306}', 'p\u{E9}\u{439}']
+    ]);
+    for (const write of normalizationFile.shadowWrites) {
+      expect(write.partnerText).toBe(SHADOW_EDIT_TEXT);
+      expect(write.nameText).toBe(specialNameText(NORMALIZATION_NAMES.findIndex(({ name }) => name === write.name)));
+    }
+  });
+
+  it('finds a note by getAbstractFileByPath under its NFC spelling only', () => {
+    for (const read of Object.values(normalization)) {
+      for (const lookup of read.lookups) {
+        expect(lookup.found !== null).toBe(lookup.form === 'nfc' || lookup.form === 'both');
+      }
+    }
+  });
+
+  it('resolves a link typed in any spelling, and opens it from Reading view, as the NFC note', () => {
+    for (const { name } of NORMALIZATION_NAMES) {
+      const typedLinks = normalization[name]?.typedLinks ?? [];
+      for (const typed of typedLinks) {
+        expect(typed.resolved).toBe(specialNamePath(name.normalize('NFC')));
+        expect(typed.cached).toBe(typed.kind === 'wikilink' ? `special-names/${name.normalize('NFC')}` : specialNamePath(name.normalize('NFC')));
+        expect(typed.href).toBe(typed.cached);
+        expect(typed.opened).toBe(specialNamePath(name.normalize('NFC')));
+      }
+    }
+  });
+
+  it('creates a second note when the editor follows a link typed in any spelling but NFC', () => {
+    for (const { name } of NORMALIZATION_NAMES) {
+      const notePath = specialNamePath(name.normalize('NFC'));
+      const typedLinks = normalization[name]?.typedLinks ?? [];
+      for (const typed of typedLinks) {
+        const isNfc = typed.form === 'nfc' || typed.form === 'both';
+        const duplicate = `special-names/${name.normalize('NFC')} 1.md`;
+        expect(typed.followed).toBe(isNfc ? notePath : duplicate);
+        expect(typed.created).toEqual(isNfc ? [] : [duplicate]);
+      }
+    }
+  });
+
+  it('applies no compatibility normalization: a name and its NFKC are two notes', () => {
+    for (const name of ['\u{FB01}x', 'fix', '\u{FF21}x', 'Ax', 'x\u{B2}', 'x2']) {
+      expect(normalizationFile.reads[name]?.indexed).toBe(specialNamePath(name));
+      expect(normalizationFile.reads[name]?.text).toBe(specialNameText(NORMALIZATION_NAMES.findIndex((candidate) => candidate.name === name)));
+    }
+  });
+
+  it('accepts a rename to another spelling of the same name and changes nothing on disk', () => {
+    for (const [name, read] of Object.entries(normalization)) {
+      const formRenames = read.formRenames ?? [];
+      for (const rename of formRenames) {
+        expect(rename.refusal).toBeNull();
+        expect(rename.path).toBe(`${SPECIAL_NAMES_FORMS_FOLDER}/${name.normalize('NFC')}.md`);
+        expect(rename.realpath).toBe(`${SPECIAL_NAMES_FORMS_FOLDER}/${name}.md`);
+      }
+    }
+  });
+
+  it('stores a file renamed or moved and back, or renamed onto a name, under the NFC spelling', () => {
+    // The kept mixed `néй` is stranded in the moved folder: see the last case.
+    const roundTripped = keptNames.filter((kept) => kept !== 'n\u{E9}\u{438}\u{306}');
+    for (const name of roundTripped) {
+      expect(normalization[name]?.realpathAfterRenames).toBe(specialNamePath(name.normalize('NFC')));
+    }
+    for (const name of ['m\u{E9}\u{438}\u{306}', 'ke\u{301}\u{439}', 'e\u{302}\u{323}']) {
+      expect(normalization[name]?.ontoRealpath).toBe(`special-names/onto/${name.normalize('NFC')}.md`);
+    }
+  });
+
+  it('cannot move a note back once a hidden file holds the NFC spelling of its path', () => {
+    const read = normalizationFile.reads['n\u{E9}\u{438}\u{306}'];
+    expect(read?.move?.resolved).toBe(true);
+    expect(read?.move?.backLink).toBe(DESTINATION_EXISTS);
+    expect(normalization['n\u{E9}\u{438}\u{306}']?.realpathAfterRenames).toBeNull();
   });
 });
