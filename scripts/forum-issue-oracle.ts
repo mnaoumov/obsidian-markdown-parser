@@ -4,8 +4,9 @@
  * The forum issue oracle: runs every document of `forumIssueDocuments()` (`src/oracle/forum-issues.ts`) through an owned
  * Obsidian instance driven over CDP (`scripts/obsidian-reads.ts`), and writes its editor's tree, its reading view's DOM
  * with `strictLineBreaks: true` and its metadata worker's `CachedMetadata` to `oracle/forum-issues-obsidian-<version>.json`.
- * For the samples where the editing modes and the reading view disagree it also reads Source mode's and Live Preview's
- * `.cm-content` as the user sees it.
+ * For the samples where the editing modes and the reading view disagree, and for the owner's report samples, it also
+ * reads Source mode's and Live Preview's `.cm-content` as the user sees it, and for the owner's report samples the
+ * reading view's code blocks as Prism highlighted them.
  *
  * Usage: `jiti scripts/forum-issue-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
  */
@@ -29,7 +30,8 @@ import type {
 
 import {
   EDITOR_VS_READING_VIEW_SAMPLES,
-  forumIssueDocuments
+  forumIssueDocuments,
+  OWNER_REPORT_SAMPLES
 } from '../src/oracle/forum-issues.ts';
 import { connectObsidianReader } from './obsidian-reads.ts';
 
@@ -46,7 +48,8 @@ const { values } = parseArgs({
 const reader = await connectObsidianReader(values['obsidian-version'], 'forum-issue.md');
 
 try {
-  const editingModeSamples = new Set(EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown));
+  const ownerReportSamples = new Set(OWNER_REPORT_SAMPLES.map((sample) => sample.markdown));
+  const editingModeSamples = new Set([...EDITOR_VS_READING_VIEW_SAMPLES.map((sample) => sample.markdown), ...ownerReportSamples]);
   const reads: ForumIssueRead[] = [];
   for (const markdown of forumIssueDocuments()) {
     const tree = await reader.readUntilStable(markdown);
@@ -55,7 +58,8 @@ try {
     }
     const rendered = await reader.readRendered(markdown);
     const editingModes = editingModeSamples.has(markdown) ? await reader.readEditingModes(markdown) : {};
-    reads.push({ html: rendered.html, markdown, metadata: rendered.metadata, nodes: tree.nodes, ...editingModes });
+    const highlighted = ownerReportSamples.has(markdown) ? { highlightedCode: await reader.readHighlightedCode(markdown) } : {};
+    reads.push({ html: rendered.html, markdown, metadata: rendered.metadata, nodes: tree.nodes, ...editingModes, ...highlighted });
   }
   const outDirectory = values['out-dir'] ?? join(here, '..', 'oracle');
   mkdirSync(outDirectory, { recursive: true });

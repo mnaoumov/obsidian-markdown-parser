@@ -53,6 +53,12 @@ export interface ObsidianReader {
   readonly readEditingModes: (text: string) => Promise<EditingModeRead>;
 
   /**
+   * The inner HTML of each `pre > code` of the reading view, as Prism highlighted it, which {@link readRendered}
+   * normalizes away.
+   */
+  readonly readHighlightedCode: (text: string) => Promise<string[]>;
+
+  /**
    * The reading view's DOM and the worker's metadata of a note.
    */
   readonly readRendered: (text: string) => Promise<RenderRead>;
@@ -327,6 +333,32 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     });
   }
 
+  // Each code block's highlighted HTML, read once it has not changed for a few polls: Prism loads on first use.
+  async function readHighlightedCode(text: string): Promise<string[]> {
+    let last: null | string = null;
+    let stablePolls = 0;
+    for (let polls = 0; polls < MODE_MAX_POLLS && stablePolls < MODE_STABLE_POLLS; polls++) {
+      const next = await conn.evalInObsidian({
+        callback: async ({ app, notePath: note, obsidianModule, text: markdown }) => {
+          const element = document.createElement('div');
+          const component = new obsidianModule.Component();
+          component.load();
+          await obsidianModule.MarkdownRenderer.render(app, markdown, element, note, component);
+          const blocks = [...element.querySelectorAll(':scope pre > code')].map((code) => code.getHTML());
+          component.unload();
+          return JSON.stringify(blocks);
+        },
+        input: { notePath, text }
+      });
+      stablePolls = next === last ? stablePolls + 1 : 0;
+      last = next;
+      await new Promise((resolve) => {
+        setTimeout(resolve, MODE_POLL_MS);
+      });
+    }
+    return JSON.parse(last ?? '[]') as string[];
+  }
+
   async function readRendered(text: string): Promise<RenderRead> {
     return await conn.evalInObsidian({
       callback: async ({ app, notePath: note, obsidianModule, text: markdown }) => {
@@ -482,7 +514,7 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     await readUntilStable('$x$ and $$y$$\n$$\n\\frac{a}{b}\n$$\n');
     // Math is typeset by MathJax, which loads on first use.
     await readEditingModes('$x$\n');
-    return { dispose: async () => conn[Symbol.asyncDispose](), meta, readEditingModes, readRendered, readUntilStable };
+    return { dispose: async () => conn[Symbol.asyncDispose](), meta, readEditingModes, readHighlightedCode, readRendered, readUntilStable };
   } catch (error) {
     await conn[Symbol.asyncDispose]();
     throw error;
