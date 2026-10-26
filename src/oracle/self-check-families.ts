@@ -62,11 +62,14 @@ const LINK_DEFINITION_PATTERN = /\[[^\]]*\]:/u;
 // A key where the references close a container, a code block or a paragraph that the engine goes on with.
 const CONTINUATION_KEY_PATTERN = /-vs-\/(?:blockquote|code|li|p|pre)$|^engines:obsidian:text-vs-\/\w+$/u;
 const OBSIDIAN_ENGINE_KEY = 'engines:obsidian:';
+// A key where the engine and the references part on text, emphasis or strong emphasis alone.
+const EMPHASIS_KEY_PATTERN = /^engines:obsidian:(?:em|strong|text)-vs-(?:em|strong|text)$/u;
 // A `[` after a closing bracket, with no `]` after it.
 const DROPPED_BRACKET_PATTERN = /\]\[[^\]]*$/u;
 const AUTOLINK_AFTER_TEXT_PATTERN = /[^\s*_~(]https?:\/\//u;
-// A quote line, and a line after it with no `>`.
-const LAZY_AFTER_QUOTE_PATTERN = /^>.*\n(?!>)/mu;
+// A quote line, and a line after it with no `>`; or a quote opened on a list item's line, and a `>` line after it with
+// no list indentation.
+const LAZY_AFTER_QUOTE_PATTERN = /^>.*\n(?!>)|^(?:[-*+]|\d{1,9}[.)])[ \t]+>.*\n>/mu;
 
 function judgeOf(key: string): string {
   return key.split(':', 1)[0] ?? '';
@@ -134,8 +137,15 @@ const ENGINE_FAMILIES: readonly SelfCheckFamily[] = [
     forumUrl: null,
     id: 'engine-container-continuation',
     kind: 'quirk',
-    matches: (key, markdown) => CONTINUATION_KEY_PATTERN.test(key) || /^engines:obsidian:(?:(?:blockquote|h\d|ol|ul)-vs-\/|\/(?:blockquote|li|p)-vs-text$)/u.test(key) || (key === `${OBSIDIAN_ENGINE_KEY}text-vs-text` && LAZY_AFTER_QUOTE_PATTERN.test(markdown)),
-    note: 'A list item or quote goes on where CommonMark ends it: a line with no indentation after an empty list item or a closed fence, a lazy line after a quote whose last block is no paragraph, and an unclosed fence that takes the lazy lines after it. The `listItem` and `emptyListItem` quirks, and `remark-parse` 8\'s lazy lines.'
+    matches: (key, markdown) => CONTINUATION_KEY_PATTERN.test(key) || /^engines:obsidian:(?:(?:blockquote|h\d|ol|ul)-vs-\/|\/(?:blockquote|li|p)-vs-(?:a|text)$)/u.test(key) || (key === `${OBSIDIAN_ENGINE_KEY}text-vs-text` && LAZY_AFTER_QUOTE_PATTERN.test(markdown)),
+    note: 'A list item or quote goes on where CommonMark ends it: a line with no indentation after an empty list item or a closed fence, a lazy line after a quote whose last block is no paragraph, a `>` line that goes on with a quote opened in a list item, an indented line after a quoted list item read as code, and an unclosed fence that takes the lazy lines after it. The `listItem` and `emptyListItem` quirks, and `remark-parse` 8\'s lazy lines.'
+  },
+  {
+    forumUrl: `${FORUM}26871`,
+    id: 'engine-emphasis-pairing',
+    kind: 'known',
+    matches: (key, markdown) => EMPHASIS_KEY_PATTERN.test(key) && /[*_]/u.test(markdown),
+    note: 'A `*` or `_` run paired otherwise than CommonMark pairs it: `*italic **bold***` is no emphasis around strong emphasis but a `*` and strong emphasis ending on a `*`, CommonMark example 414. Reading view does the same, `remark-parse` 8\'s inline rules; the open topic has it, tagged upstream-bug, and t/82094, this very note, was closed as its duplicate.'
   },
   {
     forumUrl: null,

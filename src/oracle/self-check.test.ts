@@ -48,8 +48,9 @@ const REDISCOVERED_FAMILIES: readonly string[] = [
   'utf16-columns'
 ];
 
-// The families the engine differential must find: the two reported task item shapes, wrong only by the GFM spec.
-const SPEC_ONLY_FAMILIES: readonly string[] = ['task-body-blocks', 'task-status-any-character'];
+// The families the engine differential must find: the two reported task item shapes, wrong only by the GFM spec, and
+// the reported emphasis pairing, which no relation of the engine with itself sees either.
+const SPEC_ONLY_FAMILIES: readonly string[] = ['engine-emphasis-pairing', 'task-body-blocks', 'task-status-any-character'];
 
 // Notes every relation holds on, but the escaped closer of their highlights, links and embeds, and the shape of the API.
 const CLEAN_NOTES: readonly string[] = [
@@ -126,6 +127,11 @@ describe('the self-check judges', () => {
     expect(keysOf(judgeEngines('- [?] task\n'))).toEqual(['engines:obsidian:li [x]-vs-li']);
     expect(judgeEngines('- [x] done ~~struck~~\n- [ ] open https://example.com\n\n| a | b |\n| - | - |\n| c | d |\n')).toEqual([]);
     expect(reduceFinding('Intro.\n\n- [ ] # Heading\n', 'engines:obsidian:h1-vs-text')).toBe('- [ ] #');
+  });
+
+  it('see strong emphasis closed inside emphasis by one run paired otherwise, where the references agree', () => {
+    expect(keysOf(judgeEngines('*italic **bold&italic***\n'))).toEqual(['engines:obsidian:text-vs-em']);
+    expect(selfCheckFamilyOf('engines:obsidian:text-vs-em', reduceFinding('*italic **bold&italic***\n', 'engines:obsidian:text-vs-em'))?.id).toBe('engine-emphasis-pairing');
   });
 
   it('name the reference alone when the references disagree, and leave the engine unjudged', () => {

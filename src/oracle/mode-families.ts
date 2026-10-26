@@ -301,8 +301,9 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'The reading view continues a quote lazily where CommonMark does not: a nested quote on a less deep quote line, and a quote on the line after an empty quote line.'
   },
   {
+    forumUrl: 'https://forum.obsidian.md/t/26871',
     id: 'emphasis-pairing',
-    kind: 'quirk',
+    kind: 'known',
     matches: (key, reduced) => isKey(key, 'readingView', /^(?:em|strong)$/u) && !/[<$]/u.test(reduced),
     note: 'The reading view pairs `*` and `_` runs by remark-parse 8\'s rules, not CommonMark\'s.'
   },

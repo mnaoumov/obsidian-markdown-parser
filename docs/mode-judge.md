@@ -53,7 +53,7 @@ The run covered 50,437 documents: the 46,508 class-span documents, all 674 spec 
 | known (issue 11) | quoted-task | 153 | `">- [x] "` |
 | known (issue 9) | math-in-link-text | 40 | `[$m$` |
 | known (issue 10) | setext-after-math-line | 26 | `$\n-` |
-| quirk | emphasis-pairing | 391 | `** x**` |
+| known ([topic 26871](https://forum.obsidian.md/t/26871)) | emphasis-pairing | 391 | `** x**` |
 | quirk | setext-heading | 348 | `]\nx\n--` |
 | quirk | lazy-quote | 188 | `>>\n>$` |
 | quirk | code-span-pairing | 106 | `">``\nc`"` |
@@ -89,6 +89,10 @@ The run covered 50,437 documents: the 46,508 class-span documents, all 674 spec 
 | minor | fence-info-with-backtick | 4 | `` ~~~`\n%% `` |
 | minor | math-across-table-cells | 3 | `\|$\|$\n\|-\|` |
 | none | unclassified | 21 | `*\n=\n---` |
+
+`emphasis-pairing` was a quirk family until 2026-10-25. It is known now, because an open topic in Bug reports, tagged `upstream-bug`, reports it: [topic 26871](https://forum.obsidian.md/t/26871), *Reading mode: Bug when italics and bold are applied to a text that has a space*. [Topic 82094](https://forum.obsidian.md/t/82094) was closed as its duplicate. Its note `*italic **bold&italic***` is CommonMark example 414, and Reading view on 1.14.5 renders that example as `<p>*foo <strong>bar*</strong></p>`, where CommonMark gives emphasis around strong emphasis.
+
+That note itself does not land in this family. The editor reads it as CommonMark does, so the reading view's `<strong>` matches the editor's, and the one fact that differs is the emphasis the reading view drops. The reducer keeps that fact in the smallest note that still has it, `*i`, a mark left open, so the note falls into `unclosed-inline-mark`. That reduction is correct: the judge compares the two modes, and the editor is right on this note. What is wrong only by the spec belongs to the engine differential, whose `engine-emphasis-pairing` family finds the note's shape in generated notes ([self-check.md](self-check.md#the-engine-differential)).
 
 `dist/mode-judge/report.json` holds every family with its ten most common minimal notes, and the number of documents behind each key.
 
