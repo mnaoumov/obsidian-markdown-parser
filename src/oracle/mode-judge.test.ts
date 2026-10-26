@@ -87,4 +87,9 @@ describe('the mode judge', () => {
   it('reduces a note to a minimal one that keeps the difference', () => {
     expect(reduceDifference('Some text.\n\n> # Heading\n\nMore text.\n', 'readingView:heading-1')).toBe('>#');
   });
+
+  it('keeps the differing line\'s facts on both sides, so a reduction keeps its cause', () => {
+    // Keeping only the key, the quote carried onto the next item reduced to `>\n-`, a bare line after an empty quote line.
+    expect(reduceDifference('- a\n  - b\n    > c\n  - d\n', 'editor:quote-1')).toBe('>\n - ');
+  });
 });

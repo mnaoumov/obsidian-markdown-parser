@@ -393,17 +393,21 @@ export function readingViewFacts(text: string): ModeFacts {
 
 /**
  * Reduces a note to a minimal one that keeps a difference: delta debugging over its lines, then over its characters,
- * judged with {@link judgeModesPredicted}.
+ * judged with {@link judgeModesPredicted}. A candidate keeps it when it has a difference of the same key whose line holds
+ * the same facts on both sides as the first one's in the note, so the reduction keeps the construct the line is in.
  *
  * @param text - The note.
  * @param key - The difference to keep, as {@link differenceKey} gives it.
  * @returns The reduced note, `text` itself when it lacks the difference.
  */
 export function reduceDifference(text: string, key: string): string {
-  function hasKey(candidate: string): boolean {
-    return judgeModesPredicted(candidate).some((difference) => differenceKey(difference) === key);
+  const causes = causesOf(text, key);
+  const [cause] = causes;
+  if (cause === undefined) {
+    return text;
   }
-  return hasKey(text) ? minimizeNote(text, hasKey) : text;
+  // The differing line's facts on both sides stay, so a reduction cannot drift to another mechanism with the same key.
+  return minimizeNote(text, (candidate) => causesOf(candidate, key).includes(cause));
 }
 
 /**
@@ -461,6 +465,18 @@ function addLineFacts(node: RemarkNode, lines: readonly Set<LineFact>[], quoteDe
   return depth;
 }
 
+// The cause of each difference with the key, in document order: both sides' facts of the line it starts on.
+function causesOf(text: string, key: string): string[] {
+  const lines = highlight(text, { obsidianVersion: oracleObsidianVersion() });
+  const editor = editorFacts(text, toNodes(lines));
+  const readingView = readingViewFacts(text);
+  const starts = lineStartsOf(text);
+  return factDifferences(text, editor, readingView).filter((difference) => differenceKey(difference) === key).map((difference) => {
+    const line = difference.isLine ? difference.from : starts.findLastIndex((start) => start <= difference.from);
+    return `${lineFactsOf(editor, line)}|${lineFactsOf(readingView, line)}`;
+  });
+}
+
 // Merges the indexes where one side has a fact the other lacks into runs; an index that is not compared joins no run and breaks none.
 function collectRuns(params: CollectRunsParams): void {
   const { count, differences, factsOf, isLine, spansLines } = params;
@@ -516,4 +532,8 @@ function commentOffsets(sets: ClassSets): Set<number> {
     }
   }
   return offsets;
+}
+
+function lineFactsOf(facts: ModeFacts, line: number): string {
+  return [...facts.lines[line] ?? []].toSorted(compareCodeUnits).join(',');
 }
