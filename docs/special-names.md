@@ -49,7 +49,7 @@ npm run special-names [-- --details]
 
 It also types the names above into the file explorer's rename, and, for each pair of files the vault indexes under one path, edits the one note through the vault and reads both files from disk. The oracle is pinned to 1.14.5 (`oracle/special-names-obsidian-1.14.5.json`); the 1.15.0 insider build, read on 2026-10-25, gives the same verdict on every name and surface. `src/oracle/special-names.test.ts` pins the verdicts, the shadowing writes and the rename checks.
 
-Only names Windows can store were tried. `| : * ? " < > \` and a trailing dot or space need a device that stores them.
+Only names Windows can store were tried here. `| : * ? " < > \` and a trailing dot or space were swept on Android, in [On Android](#on-android).
 
 ## What was found
 
@@ -70,6 +70,45 @@ Only names Windows can store were tried. `| : * ? " < > \` and a trailing dot or
 | 5. NFC/NFD and no-break space shadowing | defect, rule 1 | The NFC/NFD half is already reported on the forum, in [NFD-NFC Normalization Issues with Wiki Links in Obsidian](https://forum.obsidian.md/t/nfd-nfc-normalization-issues-with-wiki-links-in-obsidian/95629), which "Incorrect handling not NFC-normalized file names" was merged into. The no-break space half goes there as a reply. |
 
 No finding is a corpus case for the parser: the parser reads a note's text, and every failure here is in how the app indexes, resolves or writes paths.
+
+## On Android
+
+```sh
+emulator -avd obsidian_test -read-only -no-window -no-snapshot-load -no-snapshot-save
+adb install -r Obsidian-1.14.4.apk
+adb shell monkey -p md.obsidian 1
+npx jiti scripts/special-names-oracle.ts --android [--serial <serial>]
+npm run special-names -- --android [--details]
+```
+
+`--android` reads the same surfaces in Obsidian for Android, for 39 names: the desktop's 27, at the same indices, and 12 that Windows cannot store (`DEVICE_SPECIAL_NAMES`): `x|y`, `x:y`, `x*y`, `x?y`, `x"y`, `x<y`, `x>y`, `x\y`, the notes `x.` and `x␣` (the files `x..md` and `x .md`), and a note `y` in each of the folders `x.` and `x␣`. `scripts/android-vault.ts` opens a fresh vault in the app's own storage, `/sdcard/Android/data/md.obsidian/files/special-names-oracle`, the folder the app lists its app storage vaults from. It writes and reads the vault's files over `adb shell`, never through the app, and calls into the app over its WebView's DevTools protocol. The explorer's rename gets the desktop's typed names and `r?s`, `r"s`, `r<s`, `r>s`, `r\s`, `rs.` and `rs␣`. The oracle was read on 2026-10-26 from Obsidian 1.14.4, the newest with an APK (1.14.5 shipped for desktop only), on an Android 17 emulator booted read-only, so that nothing it did stayed on the device. It is in `oracle/special-names-android-obsidian-1.14.4.json`, and the Android half of `src/oracle/special-names.test.ts` pins it.
+
+Where the vault lives matters. Checked with `adb shell` before the sweep:
+
+- **Shared storage refuses the names.** In `/sdcard/Documents`, creating a file whose name holds `| : * ? " < > \` fails with `Operation not permitted`, so in a vault there such a file cannot arrive by any means. A trailing dot or space is stored.
+- **App storage takes every name, but folds them.** `Ab.md` and `ab.md` are one file there, and so are `café.md` composed and decomposed. The vault adapter still reports the vault as case sensitive (`adapter.insensitive` is `false`). That loses nothing in the one case tried: `vault.create('case.md')` beside `Case.md` is refused as "File already exists.".
+
+What was found on Android, beyond the desktop's findings above, which all hold there too except where a finding below says otherwise:
+
+1. **Android refuses `\ : * ? " < >` in a rename and saves `| # ^ [ ]`, a trailing dot and a trailing space.** This is the set read from the bundle, and a leading dot is refused as on the desktop. The oracle found no tooltip and no notice for any typed name, the warned ones included, where the desktop shows its warning as a tooltip.
+2. **A note named with `: * ? " < >` that arrived anyway works on every surface, and a rename of it is one way.** The file surfaces, every link Obsidian writes, the properties link and the URI all reach it. The link to `x:y` resolves even though the help's *Invalid characters* note names `:`. A rename to a plain name works. Renaming it back, moving it into another folder under its own name, and renaming another note onto its name are each refused with "File name cannot contain any of the following characters: \ / : * ? < > \"". The refusal is the app's own message, so it is by design, and these surfaces are marked *documented*.
+3. **`x|y` works on the file surfaces and the URI, and fails on its links.** Android has no `|` in its refused set, so it is stored and renamed freely. Its link failures are documented, since `|` is in the help's note.
+4. **A note named with `\` is not in the vault at all.** The file is on disk, but the vault never lists it, even in `adapter.files`, so no surface shows it. Renaming another note onto `x\y` is refused with "The parent object of the destination does not exist". A **defect by rule 1**: a file that a sync or a file manager brings in with a backslash disappears.
+5. **A name ending in a space fails like one starting with a space (the desktop's finding 4), and worse.** `generateMarkdownLink` writes `[[x ]]`, which misses it, so it has no backlink, no graph edge, no embed and no resolving properties link, and a rename or a move leaves its linker unresolved. Unlike a leading space, a rename onto the name writes `[[special-names/onto/x ]]`, which does not resolve either. Windows stores `x .md` too, so the desktop may well do the same, but this was not measured there. A **defect by rule 2**.
+6. **The quick switcher does not offer a name starting with a space on Android.** The desktop offers it. Minor.
+7. **A note ending in a dot works on every surface, and so does a note in a folder ending in a dot or a space.**
+8. **The composed and decomposed `café` are one file in app storage, so their rows measure the file system, not the app.** The file is stored under the name written first, the decomposed one, and holds the text written last. `café` therefore reads as not indexed, `cafe◌́` as reading another name's text, and an edit through the vault reaches both names. The no-break space pair is two files, and it shadows as on the desktop (the desktop's finding 5).
+
+| Finding | Verdict | Goes to |
+| --- | --- | --- |
+| 1. The rename's refused set | by design | Nothing to report. |
+| 2. `: * ? " < >` renames one way | by design | Nothing to report. |
+| 3. `x\|y` | documented | Nothing to report. |
+| 4. `\` invisible | defect, rule 1 | A forum report, drafted with 5 and 6. |
+| 5. A trailing space | defect, rule 2 | With the desktop's finding 4's forum report. |
+| 6. Switcher and a leading space | defect, rule 1, minor | With the desktop's finding 4's forum report. |
+| 7. Trailing dots and spaces in folders | - | Nothing to report. |
+| 8. Folding in app storage | file system | Nothing to report on its own. It matters to a vault synced from a case-sensitive system, which is where the Sync question goes. |
 
 ## The full table
 
@@ -200,3 +239,223 @@ Every surface that is not `ok`, with what it did:
 | `cafe◌́` | rename | fails | `nothing to rename` |
 | `cafe◌́` | move | fails | `nothing to rename` |
 | `cafe◌́` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+
+## The full table on Android
+
+`npm run special-names -- --android`, on Obsidian 1.14.4 for Android, with the same marks as above. The last table is what the explorer's rename did with each typed name.
+
+| Name | indexed | explorer | open | switcher | search | link | backlinks | graph | embed | property | uri | rename | move | rename-onto |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `plain` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x#y` | ok | ok | ok | ok | ok | doc | doc | doc | doc | doc | doc | doc | doc | doc |
+| `#x` | ok | ok | ok | ok | ok | doc | doc | doc | doc | doc | doc | doc | doc | doc |
+| `x^y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `^x` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x[y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x]y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x[y]z` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x[[y` | ok | ok | ok | ok | ok | doc | ok | ok | doc | ok | ok | ok | ok | doc |
+| `x]]y` | ok | ok | ok | ok | ok | doc | ok | ok | doc | ok | ok | ok | ok | doc |
+| `x#^y` | ok | ok | ok | ok | ok | doc | doc | doc | doc | doc | doc | doc | doc | doc |
+| `m#n` | ok | ok | ok | ok | ok | doc | doc | doc | doc | doc | doc | doc | doc | doc |
+| `x%%y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x%y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x%20y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x%23y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x%2Fy` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `.x` | doc | doc | doc | doc | doc | doc | doc | doc | doc | doc | doc | doc | doc | ok |
+| `x.y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `␣x` | ok | ok | ok | **fails** | ok | **fails** | **fails** | **fails** | **fails** | **fails** | ok | **fails** | **fails** | ok |
+| `x  y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x⍽y` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** |
+| `p⍽q` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `café` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | ok |
+| `cafe◌́` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** |
+| `nai◌̈ve` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x¦y` | ok | ok | ok | ok | ok | doc | doc | doc | doc | doc | ok | doc | doc | doc |
+| `x:y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x*y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x?y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x"y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x<y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x>y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | doc | doc | doc |
+| `x\y` | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** | **fails** |
+| `x.` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x␣` | ok | ok | ok | ok | ok | **fails** | **fails** | **fails** | **fails** | **fails** | ok | **fails** | **fails** | **fails** |
+| `x./y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+| `x /y` | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok |
+
+| Name | Surface | Status | What it did |
+| --- | --- | --- | --- |
+| `x#y` | link | documented | `[[special-names/x#y]] does not resolve` |
+| `x#y` | backlinks | documented | `no backlink` |
+| `x#y` | graph | documented | `node, no edge` |
+| `x#y` | embed | documented | `does not show the note` |
+| `x#y` | property | documented | `does not resolve` |
+| `x#y` | uri | documented | `opens nothing` |
+| `x#y` | rename | documented | `[[special-names/x#y]] does not resolve; back, [[special-names/x#y]] does not resolve` |
+| `x#y` | move | documented | `[[special-names/x#y]] does not resolve; back, [[special-names/x#y]] does not resolve` |
+| `x#y` | rename-onto | documented | `[[special-names/onto/x#y]] does not resolve` |
+| `#x` | link | documented | `[[special-names/#x]] does not resolve` |
+| `#x` | backlinks | documented | `no backlink` |
+| `#x` | graph | documented | `node, no edge` |
+| `#x` | embed | documented | `does not show the note` |
+| `#x` | property | documented | `does not resolve` |
+| `#x` | uri | documented | `opens nothing` |
+| `#x` | rename | documented | `[[special-names/#x]] does not resolve; back, [[special-names/#x]] does not resolve` |
+| `#x` | move | documented | `[[special-names/#x]] does not resolve; back, [[special-names/#x]] does not resolve` |
+| `#x` | rename-onto | documented | `[[special-names/onto/#x]] does not resolve` |
+| `x[[y` | link | documented | `[[x[[y]] does not resolve` |
+| `x[[y` | embed | documented | `does not show the note` |
+| `x[[y` | rename-onto | documented | `[[special-names/onto/x[[y]] does not resolve` |
+| `x]]y` | link | documented | `[[x]]y]] does not resolve` |
+| `x]]y` | embed | documented | `does not show the note` |
+| `x]]y` | rename-onto | documented | `[[special-names/onto/x]]y]] does not resolve` |
+| `x#^y` | link | documented | `[[special-names/x#^y]] does not resolve` |
+| `x#^y` | backlinks | documented | `no backlink` |
+| `x#^y` | graph | documented | `node, no edge` |
+| `x#^y` | embed | documented | `does not show the note` |
+| `x#^y` | property | documented | `does not resolve` |
+| `x#^y` | uri | documented | `opens nothing` |
+| `x#^y` | rename | documented | `[[special-names/x#^y]] does not resolve; back, [[special-names/x#^y]] does not resolve` |
+| `x#^y` | move | documented | `[[special-names/x#^y]] does not resolve; back, [[special-names/x#^y]] does not resolve` |
+| `x#^y` | rename-onto | documented | `[[special-names/onto/x#^y]] does not resolve` |
+| `m#n` | link | documented | `[[special-names/m#n]] does not resolve` |
+| `m#n` | backlinks | documented | `no backlink` |
+| `m#n` | graph | documented | `node, no edge` |
+| `m#n` | embed | documented | `does not show the note` |
+| `m#n` | property | documented | `does not resolve` |
+| `m#n` | uri | documented | `opens special-names/m.md` |
+| `m#n` | rename | documented | `[[special-names/m#n]] does not resolve; back, [[special-names/m#n]] does not resolve` |
+| `m#n` | move | documented | `[[special-names/m#n]] does not resolve; back, [[special-names/m#n]] does not resolve` |
+| `m#n` | rename-onto | documented | `[[special-names/onto/m#n]] does not resolve` |
+| `.x` | indexed | documented | `not indexed` |
+| `.x` | explorer | documented | `no item` |
+| `.x` | open | documented | `nothing to open` |
+| `.x` | switcher | documented | `not offered among 0` |
+| `.x` | search | documented | `finds nothing` |
+| `.x` | link | documented | `[[.x]] does not resolve` |
+| `.x` | backlinks | documented | `no backlink` |
+| `.x` | graph | documented | `no node, no edge` |
+| `.x` | embed | documented | `does not show the note` |
+| `.x` | property | documented | `does not resolve` |
+| `.x` | uri | documented | `no URL` |
+| `.x` | rename | documented | `nothing to rename` |
+| `.x` | move | documented | `nothing to rename` |
+| `␣x` | switcher | fails | `not offered among 18` |
+| `␣x` | link | fails | `[[ x]] does not resolve` |
+| `␣x` | backlinks | fails | `no backlink` |
+| `␣x` | graph | fails | `node, no edge` |
+| `␣x` | embed | fails | `does not show the note` |
+| `␣x` | property | fails | `does not resolve` |
+| `␣x` | rename | fails | `[[ x]] does not resolve; back, [[ x]] does not resolve` |
+| `␣x` | move | fails | `[[ x]] does not resolve; back, [[ x]] does not resolve` |
+| `x⍽y` | indexed | fails | `not indexed` |
+| `x⍽y` | explorer | fails | `no item` |
+| `x⍽y` | open | fails | `nothing to open` |
+| `x⍽y` | switcher | fails | `not offered among 19` |
+| `x⍽y` | search | fails | `finds nothing` |
+| `x⍽y` | link | fails | `[[x⍽y]] does not resolve` |
+| `x⍽y` | backlinks | fails | `no backlink` |
+| `x⍽y` | graph | fails | `no node, no edge` |
+| `x⍽y` | embed | fails | `does not show the note` |
+| `x⍽y` | property | fails | `does not resolve` |
+| `x⍽y` | uri | fails | `no URL` |
+| `x⍽y` | rename | fails | `nothing to rename` |
+| `x⍽y` | move | fails | `nothing to rename` |
+| `x⍽y` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `café` | indexed | fails | `not indexed` |
+| `café` | explorer | fails | `no item` |
+| `café` | open | fails | `nothing to open` |
+| `café` | switcher | fails | `offered first` |
+| `café` | search | fails | `finds special-names/café.md` |
+| `café` | link | fails | `[[café]] does not resolve` |
+| `café` | backlinks | fails | `no backlink` |
+| `café` | graph | fails | `no node, no edge` |
+| `café` | embed | fails | `does not show the note` |
+| `café` | property | fails | `does not resolve` |
+| `café` | uri | fails | `no URL` |
+| `café` | rename | fails | `nothing to rename` |
+| `café` | move | fails | `nothing to rename` |
+| `cafe◌́` | indexed | fails | `as special-names/café.md, reading another file` |
+| `cafe◌́` | explorer | fails | `shows café` |
+| `cafe◌́` | open | fails | `opens special-names/café.md` |
+| `cafe◌́` | switcher | fails | `offered first` |
+| `cafe◌́` | search | fails | `finds nothing` |
+| `cafe◌́` | link | fails | `[[café]] resolves` |
+| `cafe◌́` | backlinks | fails | `lists the linker` |
+| `cafe◌́` | graph | fails | `node, edge` |
+| `cafe◌́` | embed | fails | `shows the note` |
+| `cafe◌́` | property | fails | `resolves` |
+| `cafe◌́` | uri | fails | `opens special-names/café.md` |
+| `cafe◌́` | rename | fails | `[[R25]] resolves; back, [[special-names/café]] resolves` |
+| `cafe◌́` | move | fails | `[[special-names/moved/café]] resolves; back, [[special-names/café]] resolves` |
+| `cafe◌́` | rename-onto | fails | `<<refused: Destination file already exists!>> does not resolve` |
+| `x¦y` | link | documented | `[[x¦y]] does not resolve` |
+| `x¦y` | backlinks | documented | `no backlink` |
+| `x¦y` | graph | documented | `node, no edge` |
+| `x¦y` | embed | documented | `does not show the note` |
+| `x¦y` | property | documented | `does not resolve` |
+| `x¦y` | rename | documented | `[[x¦y]] does not resolve; back, [[x¦y]] does not resolve` |
+| `x¦y` | move | documented | `[[x¦y]] does not resolve; back, [[x¦y]] does not resolve` |
+| `x¦y` | rename-onto | documented | `[[special-names/onto/x¦y]] does not resolve` |
+| `x:y` | rename | documented | `[[R28]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x:y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x:y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x*y` | rename | documented | `[[R29]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x*y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x*y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x?y` | rename | documented | `[[R30]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x?y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x?y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x"y` | rename | documented | `[[R31]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x"y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x"y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x<y` | rename | documented | `[[R32]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x<y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x<y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x>y` | rename | documented | `[[R33]] resolves; back, <<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x>y` | move | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve; back, no link does not resolve` |
+| `x>y` | rename-onto | documented | `<<refused: File name cannot contain any of the following characters: \⍽/⍽:⍽*⍽?⍽<⍽>⍽">> does not resolve` |
+| `x\y` | indexed | fails | `not indexed` |
+| `x\y` | explorer | fails | `no item` |
+| `x\y` | open | fails | `nothing to open` |
+| `x\y` | switcher | fails | `not offered among 0` |
+| `x\y` | search | fails | `finds nothing` |
+| `x\y` | link | fails | `[[x\y]] does not resolve` |
+| `x\y` | backlinks | fails | `no backlink` |
+| `x\y` | graph | fails | `no node, no edge` |
+| `x\y` | embed | fails | `does not show the note` |
+| `x\y` | property | fails | `does not resolve` |
+| `x\y` | uri | fails | `no URL` |
+| `x\y` | rename | fails | `nothing to rename` |
+| `x\y` | move | fails | `nothing to rename` |
+| `x\y` | rename-onto | fails | `<<refused: The parent object of the destination does not exist>> does not resolve` |
+| `x␣` | link | fails | `[[x ]] does not resolve` |
+| `x␣` | backlinks | fails | `no backlink` |
+| `x␣` | graph | fails | `node, no edge` |
+| `x␣` | embed | fails | `does not show the note` |
+| `x␣` | property | fails | `does not resolve` |
+| `x␣` | rename | fails | `[[x ]] does not resolve; back, [[x ]] does not resolve` |
+| `x␣` | move | fails | `[[x ]] does not resolve; back, [[x ]] does not resolve` |
+| `x␣` | rename-onto | fails | `[[special-names/onto/x ]] does not resolve` |
+
+| Typed name | Saved | Message |
+| --- | --- | --- |
+| `r#s` | yes | - |
+| `r^s` | yes | - |
+| `r[s` | yes | - |
+| `r]s` | yes | - |
+| `r¦s` | yes | - |
+| `r%s` | yes | - |
+| `r:s` | no | - |
+| `r*s` | no | - |
+| `.rs` | no | - |
+| `r?s` | no | - |
+| `r"s` | no | - |
+| `r<s` | no | - |
+| `r>s` | no | - |
+| `r\s` | no | - |
+| `rs.` | yes | - |
+| `rs␣` | yes | - |

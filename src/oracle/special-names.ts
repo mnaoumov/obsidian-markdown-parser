@@ -63,11 +63,11 @@ export interface SpecialName {
 /**
  * Why a name is in the sweep.
  */
-export type SpecialNameGroup = 'control' | 'dot' | 'link-syntax' | 'percent' | 'space' | 'unicode' | 'warned';
+export type SpecialNameGroup = 'control' | 'device' | 'dot' | 'link-syntax' | 'percent' | 'space' | 'unicode' | 'warned';
 
 /**
- * The note names of the sweep, each a file in {@link SPECIAL_NAMES_FOLDER}. Only names Windows can store: `| : * ? " < > \ /`
- * and a trailing space or dot need a device that stores them.
+ * The note names of the sweep, each a file in {@link SPECIAL_NAMES_FOLDER}. Only names Windows can store: the names it
+ * cannot are {@link DEVICE_SPECIAL_NAMES}.
  */
 export const SPECIAL_NAMES: readonly SpecialName[] = [
   { group: 'control', name: 'plain' },
@@ -99,6 +99,30 @@ export const SPECIAL_NAMES: readonly SpecialName[] = [
   { group: 'unicode', name: 'cafe\u{301}', shadows: 'caf\u{E9}' },
   { group: 'unicode', name: 'nai\u{308}ve' }
 ];
+
+/**
+ * The note names Windows cannot store, swept on Android: the characters its file names refuse, and a name or a folder
+ * ending in a dot or a space. A name holding `/` is a note in a folder of that name.
+ */
+export const DEVICE_SPECIAL_NAMES: readonly SpecialName[] = [
+  { group: 'device', name: 'x|y' },
+  { group: 'device', name: 'x:y' },
+  { group: 'device', name: 'x*y' },
+  { group: 'device', name: 'x?y' },
+  { group: 'device', name: 'x"y' },
+  { group: 'device', name: 'x<y' },
+  { group: 'device', name: 'x>y' },
+  { group: 'device', name: String.raw`x\y` },
+  { group: 'device', name: 'x.' },
+  { group: 'device', name: 'x ' },
+  { group: 'device', name: 'x./y' },
+  { group: 'device', name: 'x /y' }
+];
+
+/**
+ * The note names of the Android sweep: the desktop's, at the same indices, then {@link DEVICE_SPECIAL_NAMES}.
+ */
+export const ANDROID_SPECIAL_NAMES: readonly SpecialName[] = [...SPECIAL_NAMES, ...DEVICE_SPECIAL_NAMES];
 
 /**
  * The note `m` with the heading `n`, which a link to the note `m#n` meets.
@@ -405,10 +429,17 @@ export interface UriRead {
  */
 export const RENAME_CHECK_NAMES: readonly string[] = ['r#s', 'r^s', 'r[s', 'r]s', 'r|s', 'r%s', 'r:s', 'r*s', '.rs'];
 
+/**
+ * The names the Android oracle types into the rename: the desktop's, and the rest of what Windows cannot store.
+ */
+export const ANDROID_RENAME_CHECK_NAMES: readonly string[] = [...RENAME_CHECK_NAMES, 'r?s', 'r"s', 'r<s', 'r>s', String.raw`r\s`, 'rs.', 'rs '];
+
 // The help's *Invalid characters* note: "A string which contains the following characters may not work as a link:
 // `# | ^ : %% [[ ]]`". It covers every surface that goes through a link, `obsidian://open` among them, whose `file` is a
 // link where `%23` opens a heading (*Obsidian URI*, *Open a heading or block*).
 const HELP_INVALID_IN_LINKS = ['#', '|', '^', ':', '%%', '[[', ']]'];
+// What the app says when it refuses a rename to a name its platform does not allow.
+const REFUSED_NAME_MESSAGE = '<<refused: File name cannot contain';
 const LINK_SURFACES = new Set<SpecialNameSurface>(['backlinks', 'embed', 'graph', 'link', 'move', 'property', 'rename', 'rename-onto', 'uri']);
 
 /**
@@ -443,11 +474,12 @@ export function isDocumentedInvalid(name: string): boolean {
  * Judges every surface for every name.
  *
  * @param file - The oracle file.
+ * @param names - The names it swept.
  * @returns The verdicts, by name and surface.
  */
-export function judgeSpecialNames(file: SpecialNamesFile): Map<string, Map<SpecialNameSurface, SpecialNameVerdict>> {
+export function judgeSpecialNames(file: SpecialNamesFile, names = SPECIAL_NAMES): Map<string, Map<SpecialNameSurface, SpecialNameVerdict>> {
   const verdicts = new Map<string, Map<SpecialNameSurface, SpecialNameVerdict>>();
-  for (const [index, specialName] of SPECIAL_NAMES.entries()) {
+  for (const [index, specialName] of names.entries()) {
     const read = file.reads[specialName.name];
     if (read === undefined) {
       throw new Error(`No read for ${specialName.name}`);
@@ -460,11 +492,12 @@ export function judgeSpecialNames(file: SpecialNamesFile): Map<string, Map<Speci
 /**
  * Every file the oracle writes before the linkers: the sweep's names and the note `m` with the heading `n`.
  *
+ * @param names - The names of the sweep.
  * @returns The files, by vault path.
  */
-export function specialNameFiles(): Map<string, string> {
+export function specialNameFiles(names = SPECIAL_NAMES): Map<string, string> {
   const files = new Map<string, string>();
-  for (const [index, { name }] of SPECIAL_NAMES.entries()) {
+  for (const [index, { name }] of names.entries()) {
     files.set(specialNamePath(name), specialNameText(index));
   }
   files.set(SPECIAL_NAMES_HEADING_NOTE, 'first line\n\n# n\n\ntext\n');
@@ -516,9 +549,10 @@ const NO_BREAK_SPACE_PATTERN = /\u{A0}/gu;
 const JUDGES: Readonly<Record<SpecialNameSurface, SurfaceJudge>> = {
   'backlinks': (read, { isIndexed }) => [isIndexed && read.hasBacklink, read.hasBacklink ? 'lists the linker' : 'no backlink'],
   'embed': (read, { isIndexed }) => [isIndexed && read.embed, read.embed ? 'shows the note' : 'does not show the note'],
-  // The explorer shows the name as the vault indexed it: composed, a no-break space made a space.
+  // The explorer shows the name as the vault indexed it: composed, a no-break space made a space. A note in a folder
+  // shows its own name only.
   'explorer': (read, { isIndexed, name }) => [
-    isIndexed && (read.explorer === name || read.explorer === name.normalize('NFC').replaceAll(NO_BREAK_SPACE_PATTERN, ' ')),
+    isIndexed && [name, name.normalize('NFC').replaceAll(NO_BREAK_SPACE_PATTERN, ' ')].some((shown) => read.explorer === shown.slice(shown.lastIndexOf('/') + 1)),
     read.explorer === null ? 'no item' : `shows ${read.explorer}`
   ],
   'graph': (read, { isIndexed }) => [isIndexed && read.graph.node && read.graph.edge, `${read.graph.node ? 'node' : 'no node'}, ${read.graph.edge ? 'edge' : 'no edge'}`],
@@ -582,7 +616,9 @@ function judgeName(specialName: SpecialName, index: number, read: SpecialNameRea
     const [isOk, shown] = JUDGES[surface](read, context);
     let status: SpecialNameStatus = 'ok';
     if (!isOk) {
-      status = isDot || (isDocumented && LINK_SURFACES.has(surface)) ? 'documented' : 'fails';
+      // A rename the app refuses with its own message about the name is documented by that message.
+      const isRefused = shown.includes(REFUSED_NAME_MESSAGE);
+      status = isDot || isRefused || (isDocumented && LINK_SURFACES.has(surface)) ? 'documented' : 'fails';
     }
     result.set(surface, { shown, status });
   }
