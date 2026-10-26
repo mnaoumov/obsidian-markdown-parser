@@ -286,6 +286,13 @@ export const MODE_FAMILIES: readonly ModeFamily[] = [
     note: 'The editor reads no tag right after an emphasis, highlight or code mark, or after an unclosed `[`.'
   },
   {
+    // The editor's rule is `tag-after-mark`'s: a tag opens only at the start of a line or after whitespace.
+    id: 'tag-after-quote-marker',
+    kind: 'candidate',
+    matches: (key, reduced) => (key.side === 'readingView' && key.fact === 'tag') && /^(?:>+ ?)*>#/mu.test(reduced),
+    note: 'The editor reads no tag right after a quote marker with no space, which the reading view and the worker read as a tag at the start of the quote\'s paragraph.'
+  },
+  {
     forumUrl: 'https://forum.obsidian.md/t/30367',
     id: 'ordered-item-interrupts-paragraph',
     kind: 'candidate',
