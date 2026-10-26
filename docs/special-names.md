@@ -67,7 +67,7 @@ Only names Windows can store were tried. `| : * ? " < > \` and a trailing dot or
 | 2. Names that work | - | Nothing to report. |
 | 3. `#` in a name, and the `m#n` URL | documented | Nothing to report; the help covers both halves. |
 | 4. A name starting with a space | defect, rule 2 | The forum report on it from [`link-parity.md`](link-parity.md), with the surfaces measured here. |
-| 5. NFC/NFD and no-break space shadowing | defect, rule 1 | The NFC/NFD half is already reported on the forum ("Incorrect handling not NFC-normalized file names"). The no-break space half goes there as a reply, or into a new report if that topic is gone. |
+| 5. NFC/NFD and no-break space shadowing | defect, rule 1 | The NFC/NFD half is already reported on the forum, in [NFD-NFC Normalization Issues with Wiki Links in Obsidian](https://forum.obsidian.md/t/nfd-nfc-normalization-issues-with-wiki-links-in-obsidian/95629), which "Incorrect handling not NFC-normalized file names" was merged into. The no-break space half goes there as a reply. |
 
 No finding is a corpus case for the parser: the parser reads a note's text, and every failure here is in how the app indexes, resolves or writes paths.
 
