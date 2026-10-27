@@ -15,13 +15,13 @@ import type {
   ObsidianSyntaxOptions
 } from '../syntax/options.ts';
 
-import { parseWithLinkReferences } from '../syntax/lezer-commonmark.ts';
-import { renderLezerHtml } from '../syntax/lezer-html.ts';
-import { createObsidianParser } from '../syntax/lezer.ts';
-import { createObsidianMarkdownIt } from '../syntax/markdown-it.ts';
-import { micromarkQuirksHtml } from '../syntax/micromark-quirks.ts';
-import { createMicromarkObsidianMarkdown } from '../syntax/micromark.ts';
+import { parseWithLinkReferences } from '../syntax/lezer/lezer-commonmark.ts';
+import { renderLezerHtml } from '../syntax/lezer/lezer-html.ts';
+import { createObsidianParser } from '../syntax/lezer/lezer.ts';
+import { createObsidianMarkdownIt } from '../syntax/markdown-it/markdown-it.ts';
 import { resolveObsidianQuirks } from '../syntax/options.ts';
+import { micromarkQuirksHtml } from '../syntax/unified/micromark-quirks.ts';
+import { createMicromarkObsidianMarkdown } from '../syntax/unified/micromark.ts';
 
 /**
  * A parser adapter.

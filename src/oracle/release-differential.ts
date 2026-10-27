@@ -6,11 +6,11 @@
  * and writes the result as markdown.
  */
 
-import type { LiveSurfaceFile } from './live-surfaces.ts';
+import type { LiveSurfaceFile } from './checks/live-surfaces.ts';
 
-import { judgeLiveSurfaceFile } from './live-surfaces.ts';
-import { compareCodeUnits } from './score.ts';
-import { selfCheckFamilyOf } from './self-check-families.ts';
+import { judgeLiveSurfaceFile } from './checks/live-surfaces.ts';
+import { selfCheckFamilyOf } from './checks/self-check-families.ts';
+import { compareCodeUnits } from './classes/score.ts';
 
 /**
  * A number on each of the two versions.

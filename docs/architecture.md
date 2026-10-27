@@ -5,7 +5,7 @@ The goal in [AGENTS.md](../AGENTS.md) L2 is one incremental Lezer parser that co
 | Engine | Code | Gives | Matches |
 | --- | --- | --- | --- |
 | The class tokenizer | `src/editor/` | the classes the editor puts on every character and line (`highlight`, `editorClassLanguage`) | the live editor's class spans |
-| The `@lezer/markdown` tree | `src/syntax/lezer.ts` | the Obsidian syntax as a Lezer tree (`parse`), and the same syntax as micromark and markdown-it extensions | the conformance corpus, the CommonMark and GFM suites, and the editor's classes construct by construct |
+| The `@lezer/markdown` tree | `src/syntax/lezer/lezer.ts` | the Obsidian syntax as a Lezer tree (`parse`), and the same syntax as micromark and markdown-it extensions | the conformance corpus, the CommonMark and GFM suites, and the editor's classes construct by construct |
 | The `remark-parse` 8 engine | `src/remark/`, `src/metadata/` | the reading view's parse and HTML (`parseRemark`, `renderRemarkHtml`) and the worker's `CachedMetadata` (`parseMetadata`) | the metadata worker and the reading view |
 
 The micromark and markdown-it adapters are no engines of their own here: they read the syntax `src/syntax/spec.ts` defines, as the Lezer tree does, for the ecosystems that use those parsers.
@@ -30,7 +30,7 @@ What a tree cannot hold is the tokenizer's own behaviour:
 - **List indentation is numbered by history.** `hmd-list-indent-N` counts earlier siblings, not depth.
 - **Unclosed `%%` and `$$` run past their block** in the editor, over blank lines, list items and the end of a quote ([syntax.md](syntax.md#measured-against-the-live-editor)).
 
-A Lezer tree that reuses a block after an edit does not run its parser over it again, so state that crosses a block boundary breaks incremental parsing. A tree can only end such a span at the block boundary, which is what `src/syntax/lezer.ts` does.
+A Lezer tree that reuses a block after an edit does not run its parser over it again, so state that crosses a block boundary breaks incremental parsing. A tree can only end such a span at the block boundary, which is what `src/syntax/lezer/lezer.ts` does.
 
 The class layer is still a Lezer parser. `src/editor/language.ts` hosts the tokenizer as a Lezer `Parser` of its own, which CodeMirror 6 runs as a `Language`, with the editor's tree shape, resume points at every line and reuse after an edit ([cm6-host.md](cm6-host.md)). Inside Obsidian it gives 0 class differences from the stock language on a real vault ([demo-plugin.md](demo-plugin.md)). What it is not is a `@lezer/markdown` grammar, and nothing measured so far says one could produce the classes.
 
@@ -50,8 +50,8 @@ The worker also reads the Obsidian syntax by rules of its own. On the 47 cases o
 | Engine | Oracle | Result |
 | --- | --- | --- |
 | The class tokenizer | the live editor's class spans, `oracle/obsidian-1.14.5-seed-*.json` | exact on all 46,508 documents, and its CodeMirror 6 host's tree node for node; 0 class differences inside Obsidian on 116 notes |
-| The `@lezer/markdown` tree | the conformance corpus; the CommonMark 0.31.2 suite with the `commonmark` preset; the editor's classes per construct (`scripts/syntax-diff.ts`) | every conformance case; 651 of 652 spec examples; the per-construct agreement in [syntax.md](syntax.md#measured-against-the-live-editor), where every difference is block structure, not a rule of the syntax |
-| The micromark and markdown-it adapters | the same corpus and suites, and the Lezer tree (`scripts/adapter-diff.ts`) | every conformance case; 652 of 652 spec examples; the same Obsidian nodes as the Lezer tree on 28,551 and 28,681 of 29,596 documents |
+| The `@lezer/markdown` tree | the conformance corpus; the CommonMark 0.31.2 suite with the `commonmark` preset; the editor's classes per construct (`scripts/oracles/syntax-diff.ts`) | every conformance case; 651 of 652 spec examples; the per-construct agreement in [syntax.md](syntax.md#measured-against-the-live-editor), where every difference is block structure, not a rule of the syntax |
+| The micromark and markdown-it adapters | the same corpus and suites, and the Lezer tree (`scripts/oracles/adapter-diff.ts`) | every conformance case; 652 of 652 spec examples; the same Obsidian nodes as the Lezer tree on 28,551 and 28,681 of 29,596 documents |
 | The `remark-parse` 8 engine | npm `remark-parse` 8.0.3 with Obsidian's three tokenizers; the reading view's HTML of the spec examples and 169 probes | the same tree, positions included, on 240,843 documents; the reading view's HTML on every `quirk` and `syntax` row of the spec but five examples the browser or the sanitizer changes after the parse |
 | `parseMetadata` | the worker's own `worker.js`, run offline on 3,284 documents; the live app's metadata of all 674 spec examples | equal as JSON, key order included, on all of them; 0 differences inside Obsidian on 115 notes |
 

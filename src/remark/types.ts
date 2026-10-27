@@ -3,7 +3,7 @@
  *
  * The tree the `remark-parse` 8 engine gives: mdast as `remark-parse` 8.0.3 builds it, with the fields Obsidian's
  * edits to its `blockquote`, `list` and `table` tokenizers add, and the nodes of the Obsidian syntax. Those take the
- * names `src/syntax/mdast.ts` gives them where the shapes agree.
+ * names `src/syntax/unified/mdast.ts` gives them where the shapes agree.
  */
 
 /**

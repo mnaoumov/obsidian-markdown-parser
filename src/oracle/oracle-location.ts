@@ -4,7 +4,7 @@
  * Where the oracle files live and which Obsidian version they were read from.
  *
  * The suites read the version pinned here. `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY` point the suites that check
- * the parser against Obsidian at another version's oracles instead, which is how `scripts/oracle-drift.ts` asks whether
+ * the parser against Obsidian at another version's oracles instead, which is how `scripts/oracles/oracle-drift.ts` asks whether
  * the parser still matches a newer Obsidian.
  */
 

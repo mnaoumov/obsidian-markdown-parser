@@ -9,15 +9,15 @@ import {
 
 import type { ObsidianSyntaxOptions } from './options.ts';
 
-import { parseWithLinkReferences } from './lezer-commonmark.ts';
-import { renderLezerHtml } from './lezer-html.ts';
-import { createObsidianParser } from './lezer.ts';
+import { parseWithLinkReferences } from './lezer/lezer-commonmark.ts';
+import { renderLezerHtml } from './lezer/lezer-html.ts';
+import { createObsidianParser } from './lezer/lezer.ts';
 import { hasBlankLineInside } from './loose-list.ts';
-import { createObsidianMarkdownIt } from './markdown-it.ts';
-import { parseMdast } from './mdast.ts';
-import { micromarkQuirksHtml } from './micromark-quirks.ts';
-import { createMicromarkObsidianMarkdown } from './micromark.ts';
+import { createObsidianMarkdownIt } from './markdown-it/markdown-it.ts';
 import { OBSIDIAN_QUIRKS } from './options.ts';
+import { parseMdast } from './unified/mdast.ts';
+import { micromarkQuirksHtml } from './unified/micromark-quirks.ts';
+import { createMicromarkObsidianMarkdown } from './unified/micromark.ts';
 
 type Adapter = 'lezer' | 'markdown-it' | 'micromark';
 

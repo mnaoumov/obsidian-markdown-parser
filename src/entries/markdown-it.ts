@@ -11,7 +11,7 @@
 export type {
   CreateObsidianMarkdownItOptions,
   MarkdownItObsidianSyntaxOptions
-} from '../syntax/markdown-it.ts';
+} from '../syntax/markdown-it/markdown-it.ts';
 
 export {
   createObsidianMarkdownIt,
@@ -19,4 +19,4 @@ export {
   markdownItObsidianSyntax,
   obsidianNodeNameOf,
   parseMarkdownIt
-} from '../syntax/markdown-it.ts';
+} from '../syntax/markdown-it/markdown-it.ts';

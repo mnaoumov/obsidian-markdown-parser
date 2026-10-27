@@ -5,7 +5,7 @@
  *
  * Its own `src/index.d.ts` (5.1.3) does `import type MarkdownIt from "markdown-it"` and uses it as a type, which
  * markdown-it 15's bundled types reject with TS2749: their default export is a value, and the instance type is the
- * named `MarkdownIt` export. `build:compile` reaches that file through `scripts/markdownlint-cli2-config.ts` with
+ * named `MarkdownIt` export. `build:compile` reaches that file through `scripts/quality/markdownlint-cli2-config.ts` with
  * `skipLibCheck` off. Delete this file and its `paths` entry once a release of the rule ships types that check
  * against markdown-it 15.
  */

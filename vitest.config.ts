@@ -1,1 +1,1 @@
-export { config as default } from './scripts/vitest-config.ts';
+export { config as default } from './scripts/testing/vitest-config.ts';

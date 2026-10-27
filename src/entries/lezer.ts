@@ -11,7 +11,7 @@
 
 import type { Tree } from '@lezer/common';
 
-import { obsidianParser } from '../syntax/lezer.ts';
+import { obsidianParser } from '../syntax/lezer/lezer.ts';
 
 export {
   collectLinkReferenceLabels,
@@ -19,16 +19,16 @@ export {
   commonMarkFixesWithoutHtmlBlock,
   linkReferenceCheck,
   parseWithLinkReferences
-} from '../syntax/lezer-commonmark.ts';
+} from '../syntax/lezer/lezer-commonmark.ts';
 
-export type { RenderLezerHtmlOptions } from '../syntax/lezer-html.ts';
+export type { RenderLezerHtmlOptions } from '../syntax/lezer/lezer-html.ts';
 
-export { renderLezerHtml } from '../syntax/lezer-html.ts';
+export { renderLezerHtml } from '../syntax/lezer/lezer-html.ts';
 
 export type {
   CreateObsidianMarkdownOptions,
   CreateObsidianParserOptions
-} from '../syntax/lezer.ts';
+} from '../syntax/lezer/lezer.ts';
 
 export {
   createObsidianMarkdown,
@@ -36,7 +36,7 @@ export {
   obsidianMarkdown,
   obsidianParser,
   obsidianSyntax
-} from '../syntax/lezer.ts';
+} from '../syntax/lezer/lezer.ts';
 
 /**
  * Parses a markdown document into a Lezer syntax tree with the Obsidian syntax.

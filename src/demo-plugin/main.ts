@@ -2,7 +2,7 @@
  * @file
  *
  * A private demo plugin that runs this parser inside Obsidian, next to the stock editor and metadata worker. It is
- * never published: build it with `jiti scripts/build-demo-plugin.ts` and copy `dist/demo-plugin/` into a vault.
+ * never published: build it with `jiti scripts/demo/build-demo-plugin.ts` and copy `dist/demo-plugin/` into a vault.
  *
  * - The toggle puts the editor-class language in front of Obsidian's markdown language. The `language` facet takes its
  *   first value, so the editor parses with this parser while Obsidian's own renderer, live preview and folding read the

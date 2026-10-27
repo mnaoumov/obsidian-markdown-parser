@@ -55,7 +55,7 @@ So the realistic single-engine target is two Lezer parsers: the class tokenizer,
 
 ### 2. Live parsing: yes for the editor, not yet for the metadata
 
-The CodeMirror 6 host ([cm6-host.md](cm6-host.md)) parses in chunks that record the tokenizer state, resumes after an edit from the last chunk the edit cannot have changed, and reuses the old chunks after the edit once a line ends in a state equal to the old parse's at the same text. Measured with `scripts/cm6-bench.ts`:
+The CodeMirror 6 host ([cm6-host.md](cm6-host.md)) parses in chunks that record the tokenizer state, resumes after an edit from the last chunk the edit cannot have changed, and reuses the old chunks after the edit once a line ends in a state equal to the old parse's at the same text. Measured with `scripts/demo/cm6-bench.ts`:
 
 | Lines | Full parse | Edit at the start, re-parse to the end |
 | ---: | ---: | ---: |
@@ -177,11 +177,11 @@ npm test                    # every suite, the oracle checks included
 npm run build               # both packages, into dist/lib/ and packages/metadata/dist/
 ```
 
-- **The demo plugin**: `npx jiti scripts/build-demo-plugin.ts`, then copy `dist/demo-plugin/` into a test vault as `.obsidian/plugins/markdown-parser-demo/` and enable **Markdown parser demo**. Its commands swap the parser in and out of every editor, compare the classes and the metadata with the app's own, and time a full parse and 50 keystrokes ([demo-plugin.md](demo-plugin.md)).
-- **The same, unattended on a vault**: `npx jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines <n>]`.
+- **The demo plugin**: `npx jiti scripts/demo/build-demo-plugin.ts`, then copy `dist/demo-plugin/` into a test vault as `.obsidian/plugins/markdown-parser-demo/` and enable **Markdown parser demo**. Its commands swap the parser in and out of every editor, compare the classes and the metadata with the app's own, and time a full parse and 50 keystrokes ([demo-plugin.md](demo-plugin.md)).
+- **The same, unattended on a vault**: `npx jiti scripts/demo/demo-plugin-measure.ts [--vault <dir>] [--lines <n>]`.
 - **The oracles against another Obsidian**: `npm run oracle:refresh -- --obsidian-version <version>` ([oracles.md](oracles.md)).
 - **The oracles as test cases for your own suites**: `npm run export:test-cases` writes the spec examples, the quirk probes and the metadata worker documents as plain JSON into `dist/test-cases/`, each spec case with both the spec's HTML and Obsidian's, the CommonMark and GFM examples in files of their own, each an `-all` file beside a `-failing` file of only the examples Obsidian departs on, the quirk probes Obsidian departs on with the HTML of commonmark.js or cmark-gfm, reference implementations that pass their whole spec, plus a sample of notes with all three modes' HTML as the user sees them, and the notes where the editor (by `editor` we mean `Source mode` or `Live Preview`) and Reading view disagree, the forum issues and the 30 new kinds the mode judge found across the oracle corpora ([mode-judge.md](mode-judge.md)) and where the metadata cache drops or misplaces data (with the metadata expected), and no code of this parser ([oracles.md](oracles.md#the-oracles-as-test-cases-for-another-project)).
-- **The editor's cost**: `npx jiti scripts/cm6-bench.ts [--lines <n>]`.
+- **The editor's cost**: `npx jiti scripts/demo/cm6-bench.ts [--lines <n>]`.
 - **The packages and their entry points**: [api.md](api.md). `obsidian-markdown-parser-metadata` is the metadata alone, with four small dependencies and no editor.
 
 The scripts that read a live Obsidian need `obsidian-integration-testing`, which launches the app in a throw-away profile and vault.

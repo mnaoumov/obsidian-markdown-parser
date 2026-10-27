@@ -8,7 +8,7 @@ npm run mode-judge -- [--per-key <n>] [--out <file>]
 
 ## What it compares
 
-`src/oracle/mode-judge.ts` reads each side into the same facts:
+`src/oracle/modes/mode-judge.ts` reads each side into the same facts:
 
 - **Per character:** code (inline or block), math, comment, highlight, strong, emphasis, strikethrough, internal link or embed (its target, without the brackets), tag, and front matter.
 - **Per line:** the heading level, the quote depth, whether the line is in a list item, a task's first line, a table row, or a thematic break.
@@ -23,15 +23,15 @@ Some things are not compared:
 
 ## Reducing and sorting
 
-For each key, `reduceDifference` delta-debugs the note over its lines and then over its graphemes, down to a minimal note that keeps the difference. It keeps the difference's cause as well as its key: a candidate keeps the difference only when a difference of the same key falls on a line that holds the same facts on both sides as the first one's line in the note. So a quote carried onto a list item keeps the list item, and a code mark left open in a heading keeps the heading. Without that, a reduction could drift to another mechanism with the same key. A family's pattern therefore takes its construct after a quote, list or heading mark too. `src/oracle/mode-families.ts` then sorts each minimal note into a family. The first family whose rule matches takes it, so the more specific families come first. There are five kinds of family:
+For each key, `reduceDifference` delta-debugs the note over its lines and then over its graphemes, down to a minimal note that keeps the difference. It keeps the difference's cause as well as its key: a candidate keeps the difference only when a difference of the same key falls on a line that holds the same facts on both sides as the first one's line in the note. So a quote carried onto a list item keeps the list item, and a code mark left open in a heading keeps the heading. Without that, a reduction could drift to another mechanism with the same key. A family's pattern therefore takes its construct after a quote, list or heading mark too. `src/oracle/modes/mode-families.ts` then sorts each minimal note into a family. The first family whose rule matches takes it, so the more specific families come first. There are five kinds of family:
 
-- **known:** a forum issue already reports it: one of the 14 samples of `src/oracle/forum-issues.ts`, or an open topic someone else filed, named by the family's `forumUrl`.
+- **known:** a forum issue already reports it: one of the 14 samples of `src/oracle/modes/forum-issues.ts`, or an open topic someone else filed, named by the family's `forumUrl`.
 - **expected:** the editor shows it by design, or as a limit of Live Preview that obsidian-help documents (the family's `helpUrl`). The first such family is the line tokenizer styling an emphasis, highlight or strikethrough mark that it has not seen closed, or that the reading view does not pair, up to the end of its paragraph, and a code mark up to the end of its line, as the mark is typed.
 - **quirk:** the reading view departs from CommonMark where the editor follows it. The spec and quirk probe oracles already measure these.
 - **minor:** confirmed in the app and judged not worth reporting, since only a note nobody writes on purpose shows it.
 - **candidate:** a new disagreement that no forum issue reports yet. A `forumUrl` on one names a topic the team closed without settling it.
 
-`src/oracle/mode-judge.test.ts` checks four things:
+`src/oracle/modes/mode-judge.test.ts` checks four things:
 
 - The judge flags all 14 forum samples on the editor's own tree.
 - Every sample but one falls into a family of its own issue. The exception is `issue-5-1`, whose `===` run reduces to a highlight mark left open.
@@ -108,7 +108,7 @@ A reduction that changed family mostly found the mechanism its document really h
 
 Two families are new, one changed kind and one moved:
 
-1. **`quote-onto-indented-list-item` (known, [topic 57053](https://forum.obsidian.md/t/57053)).** The editor carries a quote onto the next line when that line is a list item indented by a space or more, `">\n - "`, but not onto `>\n- b`. That is the owner's callout in a nested list item, followed by the next item (topic 80930, closed as a duplicate of the open topic 57053, *Live Preview: Support callouts in list items*, tagged `repro` and `editor-parser`). Live Preview, read live on 1.14.5, draws one embed that holds the callout as an indented code block and the item as a list of its own. The key-only reducer brought that note down to `>\n-`, a bare `-` after an empty quote line, which has the same key by another path. Keeping the list item's facts separates the two. The live read is pinned in `src/oracle/forum-issues.test.ts`.
+1. **`quote-onto-indented-list-item` (known, [topic 57053](https://forum.obsidian.md/t/57053)).** The editor carries a quote onto the next line when that line is a list item indented by a space or more, `">\n - "`, but not onto `>\n- b`. That is the owner's callout in a nested list item, followed by the next item (topic 80930, closed as a duplicate of the open topic 57053, *Live Preview: Support callouts in list items*, tagged `repro` and `editor-parser`). Live Preview, read live on 1.14.5, draws one embed that holds the callout as an indented code block and the item as a list of its own. The key-only reducer brought that note down to `>\n-`, a bare `-` after an empty quote line, which has the same key by another path. Keeping the list item's facts separates the two. The live read is pinned in `src/oracle/modes/forum-issues.test.ts`.
 2. **`lazy-line-after-empty-list-item` (quirk).** The reading view takes the unindented line after an empty list item into the item, as in `- \n>` or `- \n=`, where the editor and commonmark.js end the list. This repository's `remark-parse` 8 port reads it, and the port matches Obsidian's tree on every oracle document. No spec example or quirk probe pins it yet.
 3. **`lazy-line-after-empty-quote-line` is minor again.** It was minor on 2026-10-24 and moved to known on 2026-10-25 only because the owner's callout note reduced into it. That note now has its own family, so what is left is a line after an empty quote line, such as an indented line, `</div>` or `---`, as it was first judged.
 4. `math-across-table-cells` now comes before the `$$` families, since a reduction can drop the cell boundary between the two marks and leave `|$$|`.
@@ -123,7 +123,7 @@ That note itself does not land in this family. The editor reads it as CommonMark
 
 ## The new families, confirmed live and judged
 
-`src/oracle/mode-judge-samples.ts` writes out one readable note for each family the run found new, except `comment-block-edge`, whose five notes show no single behaviour. `scripts/editing-modes-oracle.ts` read each of those notes from Obsidian 1.14.5, in Source mode, Live Preview and Reading view, together with the editor's tree and the worker's metadata. `src/oracle/editing-modes.test.ts` checks that each one still shows a difference of its family on the live editor's tree. They are the `judged` cases of the `-failing` export. Each note says what the two sides do.
+`src/oracle/modes/mode-judge-samples.ts` writes out one readable note for each family the run found new, except `comment-block-edge`, whose five notes show no single behaviour. `scripts/modes/editing-modes-oracle.ts` read each of those notes from Obsidian 1.14.5, in Source mode, Live Preview and Reading view, together with the editor's tree and the worker's metadata. `src/oracle/modes/editing-modes.test.ts` checks that each one still shows a difference of its family on the live editor's tree. They are the `judged` cases of the `-failing` export. Each note says what the two sides do.
 
 Each of the 29 notes of the first run was judged on 2026-10-24 from its live read in all three modes, with realistic variants run through the judge, and the forum's Bug reports and Bug graveyard were searched for each. The eight first judged expected were then judged again: each one's note was read on 1.15.0 (Catalyst) too, which gave the same Reading view, Live Preview and metadata as 1.14.5, obsidian-help was searched for a sentence documenting it, and the team's reply on each closed topic was read. The kind in the table above is the verdict:
 

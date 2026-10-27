@@ -9,7 +9,7 @@ Every parser adapter is checked against the CommonMark spec suite, and against t
 - `spec/commonmark-0.31.2.json` is the [CommonMark spec 0.31.2](https://spec.commonmark.org/0.31.2/) suite, 652 examples. It is the published `spec.json` of that release, with a final line break.
 - `spec/gfm-0.29.0.gfm.13.json` is the [GFM spec](https://github.github.com/gfm/) of `cmark-gfm` 0.29.0.gfm.13 (`test/spec.txt`), 670 examples. Each example of an extension lists it in `extensions`: 8 `table`, 2 `strikethrough`, 11 `autolink` and 1 `tagfilter`. The two task list examples are marked `disabled` in the spec, and `cmark-gfm` does not run them either, so they are left out.
 
-`scripts/spec-json.ts` turns a spec's `spec.txt` into that JSON the way the spec's own `spec_tests.py` reads it: `jiti scripts/spec-json.ts <spec.txt> <out.json>`. On the CommonMark spec it gives the published `spec.json` byte for byte.
+`scripts/capture/spec-json.ts` turns a spec's `spec.txt` into that JSON the way the spec's own `spec_tests.py` reads it: `jiti scripts/capture/spec-json.ts <spec.txt> <out.json>`. On the CommonMark spec it gives the published `spec.json` byte for byte.
 
 Both specs are under CC-BY-SA 4.0, attributed in [`THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md).
 
@@ -52,9 +52,9 @@ The test pins the examples each adapter fails, so an example that starts or stop
 
 ### How the Lezer tree is checked
 
-A `@lezer/markdown` tree is not HTML, so `src/syntax/lezer-html.ts` renders it as the CommonMark reference implementation renders a document. It reads each node's text back from the source: it takes the container prefixes off code and HTML block lines, tabs split as the spec splits them, and strips each paragraph line's leading whitespace. It decides whether a list is tight from the blank lines between its items and between their blocks. It renders the Obsidian nodes as their content.
+A `@lezer/markdown` tree is not HTML, so `src/syntax/lezer/lezer-html.ts` renders it as the CommonMark reference implementation renders a document. It reads each node's text back from the source: it takes the container prefixes off code and HTML block lines, tabs split as the spec splits them, and strips each paragraph line's leading whitespace. It decides whether a list is tight from the blank lines between its items and between their blocks. It renders the Obsidian nodes as their content.
 
-`@lezer/markdown` 1.8 itself differs from CommonMark 0.31.2 in a few rules. `src/syntax/lezer-commonmark.ts` fixes three of them in `commonMarkFixes`, which every parser of this package includes:
+`@lezer/markdown` 1.8 itself differs from CommonMark 0.31.2 in a few rules. `src/syntax/lezer/lezer-commonmark.ts` fixes three of them in `commonMarkFixes`, which every parser of this package includes:
 
 - An ATX heading's `#` sequence may be followed by a tab (example 10).
 - `<textarea>` opens an HTML block of the first kind, as `<pre>`, `<script>` and `<style>` do (example 171).
@@ -80,15 +80,15 @@ The test toggles every flag by itself from each preset. For each flag it compare
 
 ### How they were measured
 
-`scripts/spec-oracle.ts` runs every CommonMark example and every GFM extension example through the pinned Obsidian, driven over CDP as `scripts/oracle.ts` drives it, and reads all three of its parsers:
+`scripts/capture/spec-oracle.ts` runs every CommonMark example and every GFM extension example through the pinned Obsidian, driven over CDP as `scripts/capture/oracle.ts` drives it, and reads all three of its parsers:
 
-- the editor's tree, as `scripts/oracle.ts` reads it;
+- the editor's tree, as `scripts/capture/oracle.ts` reads it;
 - the metadata worker's `CachedMetadata`, from `app.metadataCache.computeMetadataAsync`;
 - the reading view's DOM, from `MarkdownRenderer.render`, with `strictLineBreaks: true` and with the app's default `strictLineBreaks: false`.
 
 The reading view's DOM is compared with the spec's HTML put through the same DOM, after taking off what the reading view adds to the parser's HTML: the copy button and the syntax highlighting of code blocks, the attributes it puts on headings, links and blocks, and the classes of links. Link targets are compared decoded, and attributes in name order. The result is `oracle/spec-obsidian-1.14.5.json`.
 
-`src/oracle/spec-quirks.ts` explains each difference, and `src/oracle/spec-quirks.test.ts` pins it: every example the reading view renders differently is listed under a behaviour, and every listed example still differs.
+`src/oracle/spec/spec-quirks.ts` explains each difference, and `src/oracle/spec/spec-quirks.test.ts` pins it: every example the reading view renders differently is listed under a behaviour, and every listed example still differs.
 
 - The reading view differs from the spec on **211 of the 674 examples** with `strictLineBreaks: true`. `strictLineBreaks: false` changes 66 more renderings.
 - The **metadata worker runs the same parser** as the reading view: its sections, without definitions, agree with the reading view's top-level blocks on every example but 14, which hold raw HTML (the reading view reads it into elements, and its sanitizer prunes them) or front matter.
@@ -122,7 +122,7 @@ The reading view's DOM is compared with the spec's HTML put through the same DOM
 | The reading view's HTML sanitizer, and its embeds of vault files. | rendering | 27 examples and GFM 652 | none |
 | The spec's HTML holds an unclosed tag, which the browser closes and repeats. | comparison | 10 examples | none |
 
-`src/oracle/spec-quirks.ts` lists every example of each row, and the part of the behaviour each one shows.
+`src/oracle/spec/spec-quirks.ts` lists every example of each row, and the part of the behaviour each one shows.
 
 ### The flags
 
@@ -162,13 +162,13 @@ The rules every adapter shares are in `src/syntax/quirk-rules.ts`.
 
 With every quirk at its CommonMark behaviour, each adapter passes the CommonMark suite as before, and with all of them on, every adapter renders both suites, and `parseMdast` builds their trees.
 
-`src/oracle/spec-quirks.test.ts` checks the flags against Obsidian itself: with one quirk on, each adapter renders the quirk's examples as the reading view does, except where another of Obsidian's quirks shows in the same example. `setextHeading` misses 82 and 84, and `listItem` 278 and 280, whose paragraphs keep their leading whitespace. `htmlBlock` misses 148 and 171, whose raw HTML the reading view's DOM rewrites: it adds `<tbody>`, drops the line ending after `<pre>`, and holds the HTML after `<textarea>` as its text. `listItem` misses all six in `@lezer/markdown`. `softLineBreak` misses 16 of its CommonMark examples and GFM 199, each for another quirk in the table above, and its examples differ from Obsidian's own list where Obsidian parses the example differently: 84, 196, 210, 241 and 625 have a soft line break only in Obsidian's parse, and 93, 148, 216, 238, 285, 312 and 367 only in CommonMark's.
+`src/oracle/spec/spec-quirks.test.ts` checks the flags against Obsidian itself: with one quirk on, each adapter renders the quirk's examples as the reading view does, except where another of Obsidian's quirks shows in the same example. `setextHeading` misses 82 and 84, and `listItem` 278 and 280, whose paragraphs keep their leading whitespace. `htmlBlock` misses 148 and 171, whose raw HTML the reading view's DOM rewrites: it adds `<tbody>`, drops the line ending after `<pre>`, and holds the HTML after `<textarea>` as its text. `listItem` misses all six in `@lezer/markdown`. `softLineBreak` misses 16 of its CommonMark examples and GFM 199, each for another quirk in the table above, and its examples differ from Obsidian's own list where Obsidian parses the example differently: 84, 196, 210, 241 and 625 have a soft line break only in Obsidian's parse, and 93, 148, 216, 238, 285, 312 and 367 only in CommonMark's.
 
 ### Where the rules come from
 
 Obsidian's reading view and its metadata worker parse with `remark-parse` 8 (`commonmark: true`), whose own rules give most of these quirks. So the rules of `characterReference`, `autolink`, `htmlComment`, `htmlBlock` and `linkDefinition` are re-expressed from `remark-parse` 8 and `parse-entities` 2, under their MIT licenses (`THIRD-PARTY-NOTICES.md`), and the definition parser was fuzzed against `remark-parse` 8 itself: on 300,000 random one-block documents, about 22,000 of them definitions, the two found the same definitions, ending in the same place.
 
-Obsidian's table and list rules were measured on the live app, on documents beyond the spec examples. `scripts/quirk-probe-oracle.ts` reads the documents of `src/oracle/quirk-probes.ts` from the reading view and the metadata worker into `oracle/quirk-probes-obsidian-1.14.5.json`, as `scripts/spec-oracle.ts` reads the spec examples, and `src/oracle/quirk-probes.test.ts` checks every flag against them. The 101 probes of the flags show:
+Obsidian's table and list rules were measured on the live app, on documents beyond the spec examples. `scripts/capture/quirk-probe-oracle.ts` reads the documents of `src/oracle/spec/quirk-probes.ts` from the reading view and the metadata worker into `oracle/quirk-probes-obsidian-1.14.5.json`, as `scripts/capture/spec-oracle.ts` reads the spec examples, and `src/oracle/spec/quirk-probes.test.ts` checks every flag against them. The 101 probes of the flags show:
 
 - **Tables**: a row starts with a pipe, or does not, as the header does, and one that disagrees ends the table; whitespace before the first pipe is a start without one, and makes an empty first cell. The delimiter row gives the columns: a `:` alone aligns left, and no cell but the first may be empty. A line with no pipe after its first character ends the table, and nothing else does, so `> q|x` and `# h|x` are rows. A table interrupts no paragraph.
 - **Lists**: the rules of `listItem`, as the flag describes them, over markers of 10 and 14 digits, siblings indented up to five columns, and items whose first line is empty.
@@ -190,7 +190,7 @@ Every probe reproduces the reading view with its flag in every adapter, except f
 
 #### Measured beyond the spec examples
 
-The 68 other probes of `src/oracle/quirk-probes.ts` show these quirks on documents the spec examples do not hold, each tagged with an `UnflaggedQuirk`: 20 of emphasis, 16 of links, 5 of code spans, 3 of image descriptions, 8 of tabs, 10 of lazy quote lines and 6 of paragraph whitespace. With every quirk flag on, each adapter gives the reading view on 34 of them, the same 34 in all three, and `quirk-probes.test.ts` pins the other 34. They show:
+The 68 other probes of `src/oracle/spec/quirk-probes.ts` show these quirks on documents the spec examples do not hold, each tagged with an `UnflaggedQuirk`: 20 of emphasis, 16 of links, 5 of code spans, 3 of image descriptions, 8 of tabs, 10 of lazy quote lines and 6 of paragraph whitespace. With every quirk flag on, each adapter gives the reading view on 34 of them, the same 34 in all three, and `quirk-probes.test.ts` pins the other 34. They show:
 
 - **Emphasis**: a `_` run inside a word opens and closes (`foo_bar_baz __a__b` has `<strong>a</strong>b`), whitespace on either side of a run does not stop it (`a ** b ** c`), and a run pairs with the first run that can close it, before code spans, raw HTML, autolinks and link brackets are read (``` `` *a `*` b* `` ``` is ``` `` <em>a `</em>` b* `` ```). `***a***` is `<strong><em>a</em></strong>`.
 - **Links**: a link may hold one (`[a [b](c)](d)` is one link, whose text is `a [b](c)`). A code span, raw HTML or an autolink does not stop a `]`, which makes them text, not a link (``` `` [a `]` b](c) `` ``` stays text). Reference labels are not trimmed or collapsed: `[ a ]` matches no `[a]:` definition, and `[a]` matches no `[ a ]:` one.

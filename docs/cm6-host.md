@@ -47,7 +47,7 @@ The suite checks that 400 random edits to a 300-line document, parsed incrementa
 
 ## Cost
 
-`scripts/cm6-bench.ts` repeats the texts of the two wider oracle corpora to 10,000 and 100,000 lines. It times a full parse. Then it inserts one character at the start of the line at the document's start, middle and end, and times the re-parse from the old tree's fragments to a viewport 3,000 characters past the edit (about 60 lines of this corpus), and on to the end. `Re-parsed` is how many characters the re-parse to the end tokenized again rather than reused. Medians of 5 runs, Node 26.10.0 on an AMD Ryzen 5 7500F, measured on 2026-10-22. Two runs of the script differed by up to 30%, and up to 50% on the smallest times.
+`scripts/demo/cm6-bench.ts` repeats the texts of the two wider oracle corpora to 10,000 and 100,000 lines. It times a full parse. Then it inserts one character at the start of the line at the document's start, middle and end, and times the re-parse from the old tree's fragments to a viewport 3,000 characters past the edit (about 60 lines of this corpus), and on to the end. `Re-parsed` is how many characters the re-parse to the end tokenized again rather than reused. Medians of 5 runs, Node 26.10.0 on an AMD Ryzen 5 7500F, measured on 2026-10-22. Two runs of the script differed by up to 30%, and up to 50% on the smallest times.
 
 The two corpora were read again from the current corpus on 2026-10-22, which gave them the `mdlang`, `codespan` and `mark` piece sets. With the same code, a full parse of their texts costs about twice what it cost on the texts read before (26.01 ms and 103.14 ms in the same sitting). At 10,000 lines the edit in the middle now falls inside a `<script>` element, so the parse goes on to the element's end and re-tokenizes more.
 
@@ -64,4 +64,4 @@ Before the parse reused the chunks after an edit, the re-parse to the end after 
 
 Typing 50 characters one after another in the middle costs a median of 1.46 ms per keystroke at 10,000 lines, inside that `<script>` element, and 0.94 ms at 100,000. Each re-parse resumes from the tree before it. On the texts read before, those were 0.16 ms and 0.80 ms, and 0.56 ms and 0.33 ms before the reuse. The bench runs no editor, so a re-parse there takes the old tree's chunks on to the document's end, balances the tree over all of them, and the next keystroke lists them again, which makes a keystroke on a longer document cost more outside such an element. In an editor the parse and the reuse stop at the end of the viewport, and the rest is parsed when it comes into view.
 
-Run it with `npx jiti scripts/cm6-bench.ts [--lines <n>]... [--runs <n>]`.
+Run it with `npx jiti scripts/demo/cm6-bench.ts [--lines <n>]... [--runs <n>]`.
