@@ -51,10 +51,12 @@ interface FamilyReport {
   readonly kind: 'unclassified' | SelfCheckFamilyKind;
   readonly note: string;
   readonly reduced: ReducedNote[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The report accumulates the number of matching documents.
   total: number;
 }
 
 interface KeyReport {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The report increments the count as it finds matching differences.
   count: number;
   readonly key: string;
   readonly samples: Sample[];
@@ -76,6 +78,7 @@ interface ReducedNote {
 
 interface ReducedSample {
   readonly detail: string;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Reduction increments the sample count when multiple notes reduce to the same text.
   samples: number;
   readonly source: string;
 }

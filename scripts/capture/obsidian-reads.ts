@@ -99,27 +99,27 @@ export interface TreeRead {
   readonly text: string;
 }
 interface App {
-  metadataCache: MetadataCache;
-  plugins: Plugins;
-  vault: Vault;
-  workspace: Workspace;
+  readonly metadataCache: MetadataCache;
+  readonly plugins: Plugins;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface CdpConnection extends AsyncDisposable {
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
 }
 
 interface CmLanguage {
-  ensureSyntaxTree: (state: EditorState, upto: number, timeout: number) => SyntaxTree;
+  readonly ensureSyntaxTree: (state: EditorState, upto: number, timeout: number) => SyntaxTree;
 }
 
 interface CodeMirrorEditor {
-  state: unknown;
+  readonly state: unknown;
 }
 
 interface Component {
-  load: () => void;
-  unload: () => void;
+  readonly load: () => void;
+  readonly unload: () => void;
 }
 
 interface ConnectToCdpOptions {
@@ -127,40 +127,40 @@ interface ConnectToCdpOptions {
 }
 
 interface DataAdapter {
-  exists: (path: string) => Promise<boolean>;
-  mkdir: (path: string) => Promise<void>;
-  write: (path: string, data: string) => Promise<void>;
+  readonly exists: (path: string) => Promise<boolean>;
+  readonly mkdir: (path: string) => Promise<void>;
+  readonly write: (path: string, data: string) => Promise<void>;
 }
 
 interface Editor {
-  cm: CodeMirrorEditor;
-  focus: () => void;
-  lastLine: () => number;
-  setCursor: (position: EditorPosition) => void;
-  setValue: (text: string) => void;
+  readonly cm: CodeMirrorEditor;
+  readonly focus: () => void;
+  readonly lastLine: () => number;
+  readonly setCursor: (position: EditorPosition) => void;
+  readonly setValue: (text: string) => void;
 }
 
 interface EditorPosition {
-  ch: number;
-  line: number;
+  readonly ch: number;
+  readonly line: number;
 }
 
 interface EditorState {
   // eslint-disable-next-line unicorn/name-replacements -- CodeMirror's `EditorState` names its text `doc`.
-  doc: EditorText;
+  readonly doc: EditorText;
 }
 
 interface EditorText {
-  length: number;
-  toString: () => string;
+  readonly length: number;
+  readonly toString: () => string;
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -169,26 +169,26 @@ interface EvalInObsidianParams<Input extends object, Result> {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  setViewState: (state: unknown) => Promise<void>;
-  view: MarkdownView;
+  readonly setViewState: (state: unknown) => Promise<void>;
+  readonly view: MarkdownView;
 }
 
 interface MarkdownRenderer {
-  render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
+  readonly render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
 }
 
 interface MarkdownView {
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's View names its element containerEl.
-  containerEl: HTMLElement;
-  editor: Editor;
+  readonly containerEl: HTMLElement;
+  readonly editor: Editor;
 }
 
 interface MetadataCache {
-  computeMetadataAsync: (data: ArrayBuffer) => Promise<unknown>;
+  readonly computeMetadataAsync: (data: ArrayBuffer) => Promise<unknown>;
 }
 
 interface ModePoll {
@@ -197,55 +197,55 @@ interface ModePoll {
 }
 
 interface NodeType {
-  name: string;
+  readonly name: string;
 }
 
 interface ObsidianGlobals {
-  app: App;
-  obsidianModule: ObsidianModule;
+  readonly app: App;
+  readonly obsidianModule: ObsidianModule;
 }
 
 interface ObsidianModule {
-  Component: new () => Component;
-  MarkdownRenderer: MarkdownRenderer;
+  readonly Component: new () => Component;
+  readonly MarkdownRenderer: MarkdownRenderer;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface OracleGlobal {
-  __oracleCmLanguage: CmLanguage;
+  readonly __oracleCmLanguage: CmLanguage;
 }
 
 interface Plugins {
-  enablePlugin: (id: string) => Promise<void>;
-  loadManifests: () => Promise<void>;
-  setEnable: (isEnabled: boolean) => Promise<void>;
+  readonly enablePlugin: (id: string) => Promise<void>;
+  readonly loadManifests: () => Promise<void>;
+  readonly setEnable: (isEnabled: boolean) => Promise<void>;
 }
 
 interface SyntaxTree {
-  cursor: () => TreeCursor;
+  readonly cursor: () => TreeCursor;
 }
 
 interface TreeCursor {
-  firstChild: () => boolean;
-  from: number;
-  nextSibling: () => boolean;
-  parent: () => boolean;
-  to: number;
-  type: NodeType;
+  readonly firstChild: () => boolean;
+  readonly from: number;
+  readonly nextSibling: () => boolean;
+  readonly parent: () => boolean;
+  readonly to: number;
+  readonly type: NodeType;
 }
 
 interface Vault {
-  adapter: DataAdapter;
-  create: (path: string, data: string) => Promise<unknown>;
-  setConfig: (name: string, value: unknown) => void;
+  readonly adapter: DataAdapter;
+  readonly create: (path: string, data: string) => Promise<unknown>;
+  readonly setConfig: (name: string, value: unknown) => void;
 }
 
 interface Workspace {
-  getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
-  getMostRecentLeaf: () => Leaf | null;
+  readonly getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
+  readonly getMostRecentLeaf: () => Leaf | null;
 }
 
 const MAX_READS = 20;

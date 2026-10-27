@@ -38,25 +38,25 @@ import type {
 import { buildCorpus } from '../../src/oracle/classes/corpus.ts';
 
 interface AbstractFile {
-  path: string;
+  readonly path: string;
 }
 
 interface App {
-  plugins: Plugins;
-  vault: Vault;
-  workspace: Workspace;
+  readonly plugins: Plugins;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface CdpConnection extends AsyncDisposable {
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
 }
 
 interface CmLanguage {
-  ensureSyntaxTree: (state: EditorState, upto: number, timeout: number) => SyntaxTree;
+  readonly ensureSyntaxTree: (state: EditorState, upto: number, timeout: number) => SyntaxTree;
 }
 
 interface CodeMirrorEditor {
-  state: unknown;
+  readonly state: unknown;
 }
 
 interface ConnectToCdpOptions {
@@ -64,32 +64,32 @@ interface ConnectToCdpOptions {
 }
 
 interface DataAdapter {
-  exists: (path: string) => Promise<boolean>;
-  mkdir: (path: string) => Promise<void>;
-  write: (path: string, data: string) => Promise<void>;
+  readonly exists: (path: string) => Promise<boolean>;
+  readonly mkdir: (path: string) => Promise<void>;
+  readonly write: (path: string, data: string) => Promise<void>;
 }
 
 interface Editor {
-  cm: CodeMirrorEditor;
-  setValue: (text: string) => void;
+  readonly cm: CodeMirrorEditor;
+  readonly setValue: (text: string) => void;
 }
 
 interface EditorState {
   // eslint-disable-next-line unicorn/name-replacements -- CodeMirror's `EditorState` names its text `doc`.
-  doc: EditorText;
+  readonly doc: EditorText;
 }
 
 interface EditorText {
-  length: number;
-  toString: () => string;
+  readonly length: number;
+  readonly toString: () => string;
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -98,38 +98,38 @@ interface EvalInObsidianParams<Input extends object, Result> {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  setViewState: (state: unknown) => Promise<void>;
-  view: MarkdownView;
+  readonly setViewState: (state: unknown) => Promise<void>;
+  readonly view: MarkdownView;
 }
 
 interface MarkdownView {
-  editor: Editor;
+  readonly editor: Editor;
 }
 
 interface NodeType {
-  name: string;
+  readonly name: string;
 }
 
 interface ObsidianGlobals {
-  app: App;
+  readonly app: App;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface OracleGlobal {
-  __oracleCmLanguage: CmLanguage;
+  readonly __oracleCmLanguage: CmLanguage;
 }
 
 interface Plugins {
-  enablePlugin: (id: string) => Promise<void>;
-  loadManifests: () => Promise<void>;
-  setEnable: (isEnabled: boolean) => Promise<void>;
+  readonly enablePlugin: (id: string) => Promise<void>;
+  readonly loadManifests: () => Promise<void>;
+  readonly setEnable: (isEnabled: boolean) => Promise<void>;
 }
 
 type RawNode = [from: number, to: number, depth: number, name: string];
@@ -139,16 +139,16 @@ interface ReadResult extends TreeRead {
 }
 
 interface SyntaxTree {
-  cursor: () => TreeCursor;
+  readonly cursor: () => TreeCursor;
 }
 
 interface TreeCursor {
-  firstChild: () => boolean;
-  from: number;
-  nextSibling: () => boolean;
-  parent: () => boolean;
-  to: number;
-  type: NodeType;
+  readonly firstChild: () => boolean;
+  readonly from: number;
+  readonly nextSibling: () => boolean;
+  readonly parent: () => boolean;
+  readonly to: number;
+  readonly type: NodeType;
 }
 
 interface TreeRead {
@@ -157,14 +157,14 @@ interface TreeRead {
 }
 
 interface Vault {
-  adapter: DataAdapter;
-  create: (path: string, data: string) => Promise<unknown>;
-  getAbstractFileByPath: (path: string) => unknown;
+  readonly adapter: DataAdapter;
+  readonly create: (path: string, data: string) => Promise<unknown>;
+  readonly getAbstractFileByPath: (path: string) => unknown;
 }
 
 interface Workspace {
-  getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
-  getMostRecentLeaf: () => Leaf | null;
+  readonly getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
+  readonly getMostRecentLeaf: () => Leaf | null;
 }
 
 const MAX_READS = 20;

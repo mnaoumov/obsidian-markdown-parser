@@ -42,10 +42,10 @@ import {
 import { linkCasesOracleFileName } from '../../src/oracle/oracle-location.ts';
 
 interface App {
-  fileManager: FileManager;
-  internalPlugins: InternalPlugins;
-  metadataCache: MetadataCache;
-  vault: Vault;
+  readonly fileManager: FileManager;
+  readonly internalPlugins: InternalPlugins;
+  readonly metadataCache: MetadataCache;
+  readonly vault: Vault;
 }
 
 interface CachedLink {
@@ -55,8 +55,8 @@ interface CachedLink {
 }
 
 interface CdpConnection {
-  [Symbol.asyncDispose]: () => Promise<void>;
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 interface ConnectToCdpOptions {
@@ -64,7 +64,7 @@ interface ConnectToCdpOptions {
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -78,28 +78,28 @@ interface FileCache {
 }
 
 interface FileManager {
-  generateMarkdownLink: (file: TFile, sourcePath: string) => string;
-  renameFile: (file: TFile, newPath: string) => Promise<void>;
+  readonly generateMarkdownLink: (file: TFile, sourcePath: string) => string;
+  readonly renameFile: (file: TFile, newPath: string) => Promise<void>;
 }
 
 interface InternalPlugins {
-  getPluginById: (id: string) => NoteComposerPlugin;
+  readonly getPluginById: (id: string) => NoteComposerPlugin;
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface MetadataCache {
-  getFileCache: (file: TFile) => FileCache | null;
+  readonly getFileCache: (file: TFile) => FileCache | null;
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's own name.
-  getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
+  readonly getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
   readonly resolvedLinks: Record<string, Record<string, number> | undefined>;
 }
 
 // Note composer's merge: appends the text of `from` to `into` and trashes `from`.
 interface NoteComposer {
-  mergeFile: (into: TFile, from: TFile) => Promise<void>;
+  readonly mergeFile: (into: TFile, from: TFile) => Promise<void>;
 }
 
 interface NoteComposerPlugin {
@@ -117,7 +117,7 @@ interface ObsidianGlobals {
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface Position {
@@ -137,14 +137,14 @@ interface TFile {
 }
 
 interface Vault {
-  create: (path: string, text: string) => Promise<TFile>;
-  createBinary: (path: string, data: ArrayBuffer) => Promise<TFile>;
-  createFolder: (path: string) => Promise<unknown>;
-  getAbstractFileByPath: (path: string) => unknown;
-  getFileByPath: (path: string) => null | TFile;
-  getName: () => string;
-  read: (file: TFile) => Promise<string>;
-  setConfig: (key: string, value: unknown) => void;
+  readonly create: (path: string, text: string) => Promise<TFile>;
+  readonly createBinary: (path: string, data: ArrayBuffer) => Promise<TFile>;
+  readonly createFolder: (path: string) => Promise<unknown>;
+  readonly getAbstractFileByPath: (path: string) => unknown;
+  readonly getFileByPath: (path: string) => null | TFile;
+  readonly getName: () => string;
+  readonly read: (file: TFile) => Promise<string>;
+  readonly setConfig: (key: string, value: unknown) => void;
 }
 
 const JSON_INDENT = 2;

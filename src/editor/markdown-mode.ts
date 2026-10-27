@@ -51,17 +51,17 @@ export interface MarkdownHtmlConfig {
  * The markdown mode, with its internal token functions exposed for the layer that wraps it.
  */
 export interface MarkdownMode {
-  blankLine: (state: MarkdownState) => null;
-  blockNormal: TokenFunction;
-  copyState: (state: MarkdownState) => MarkdownState;
-  footnoteUrl: TokenFunction;
-  footnoteUrlTitle: TokenFunction;
-  getType: (state: MarkdownState) => null | string;
-  htmlBlock: TokenFunction;
-  inlineNormal: TokenFunction;
-  internalLink: TokenFunction;
-  startState: () => MarkdownState;
-  token: (stream: Stream, state: MarkdownState) => null | string;
+  readonly blankLine: (state: MarkdownState) => null;
+  readonly blockNormal: TokenFunction;
+  readonly copyState: (state: MarkdownState) => MarkdownState;
+  readonly footnoteUrl: TokenFunction;
+  readonly footnoteUrlTitle: TokenFunction;
+  readonly getType: (state: MarkdownState) => null | string;
+  readonly htmlBlock: TokenFunction;
+  readonly inlineNormal: TokenFunction;
+  readonly internalLink: TokenFunction;
+  readonly startState: () => MarkdownState;
+  readonly token: (stream: Stream, state: MarkdownState) => null | string;
 }
 
 /**
@@ -103,55 +103,101 @@ export interface MarkdownModeConfig {
  * The markdown mode's state. Fields beyond the CodeMirror 5 ones belong to the Obsidian layer.
  */
 export interface MarkdownState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   block: TokenFunction;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   code: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   comment: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   em: false | string;
-  emoji: boolean;
+  readonly emoji: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   extensionsAllowed: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   f: TokenFunction;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   fencedEndRE: null | RegExp;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   fenceIndent: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   fenceInList: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   formatting: Formatting;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   hashtag: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   header: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   highlight: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   highlightColor: string;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   hr: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   htmlState: null | object;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   image?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   imageAltText?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   imageMarker?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   indentation: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   indentationDiff: null | number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   indentedCode: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   inline: TokenFunction;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   internalLink: InternalLinkState | null;
   // Obsidian 1.15: a mark closing emphasis, strikethrough or a code span wears `formatting-<kind>-end`.
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   isFormattingEndMarked: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   lineStartQuote: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   linkHref: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   linkText: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   linkTitle: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   list: boolean | null;
-  listStack: number[];
+  readonly listStack: number[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   localMode: AnyMode | null;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   localState: null | object;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   mdInside: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   prevLine: LineInfo;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   quote: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   quoteFence: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   quoteOpen: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   setext: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   strikethrough: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   strong: false | string;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   taskClosed?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   taskList: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   taskOpen?: boolean;
-  text: (stream: Stream, state: MarkdownState) => null | string | undefined;
+  readonly text: (stream: Stream, state: MarkdownState) => null | string | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   thisLine: LineInfo;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   trailingSpace: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   trailingSpaceNewLine: boolean;
 }
 
@@ -162,7 +208,7 @@ export interface Stream extends CodeMirrorStringStream {
   /**
    * Reads the line `n` lines after the current one.
    */
-  lookAhead: (n: number) => string | undefined;
+  readonly lookAhead: (n: number) => string | undefined;
 }
 
 /**
@@ -175,14 +221,18 @@ type Formatting = false | string | string[];
 interface InternalLinkState {
   readonly embed: boolean;
   readonly hasAlias: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The tokenizer switches from the link target to its alias at the separator.
   part: 'alias' | 'target';
 }
 
 interface LineInfo {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The tokenizer records line classification after creating the line state.
   fencedCodeEnd?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The tokenizer records line classification after creating the line state.
   header?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The tokenizer records line classification after creating the line state.
   hr?: boolean;
-  stream: null | Stream;
+  readonly stream: null | Stream;
 }
 
 // The fork's own token types, which HyperMD overrides for the editor.

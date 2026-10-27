@@ -58,8 +58,8 @@ import {
 } from '../../src/oracle/oracle-location.ts';
 
 interface CdpConnection {
-  dispose: () => Promise<void>;
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly dispose: () => Promise<void>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
 }
 
 interface ConnectToCdpOptions {
@@ -68,11 +68,11 @@ interface ConnectToCdpOptions {
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -86,11 +86,11 @@ interface InstanceRead {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 const ORACLES = ['classes', 'spec', 'quirk-probes', 'forum-issues', 'editing-modes', 'live-surfaces', 'link-parity', 'special-names', 'link-cases', 'worker'] as const;

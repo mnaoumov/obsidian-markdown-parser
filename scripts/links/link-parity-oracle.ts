@@ -55,11 +55,11 @@ import {
 import { linkParityOracleFileName } from '../../src/oracle/oracle-location.ts';
 
 interface App {
-  fileManager: FileManager;
-  metadataCache: MetadataCache;
-  plugins: Plugins;
-  vault: Vault;
-  workspace: Workspace;
+  readonly fileManager: FileManager;
+  readonly metadataCache: MetadataCache;
+  readonly plugins: Plugins;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface BlockCache {
@@ -72,13 +72,13 @@ interface CachedLink {
 }
 
 interface CdpConnection {
-  [Symbol.asyncDispose]: () => Promise<void>;
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 interface Component {
-  load: () => void;
-  unload: () => void;
+  readonly load: () => void;
+  readonly unload: () => void;
 }
 
 interface ConnectToCdpOptions {
@@ -90,9 +90,9 @@ interface DataAdapter {
 }
 
 interface Editor {
-  getValue: () => string;
-  setCursor: (position: EditorPosition) => void;
-  setValue: (text: string) => void;
+  readonly getValue: () => string;
+  readonly setCursor: (position: EditorPosition) => void;
+  readonly setValue: (text: string) => void;
 }
 
 interface EditorPosition {
@@ -101,10 +101,11 @@ interface EditorPosition {
 }
 
 interface EditorSuggest {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The oracle installs and clears the active autocomplete context between probes.
   context: unknown;
-  getSuggestions: (context: unknown) => Promise<Suggestion[]> | Suggestion[];
-  onTrigger: (cursor: EditorPosition, editor: Editor, file: TFile) => null | object;
-  selectSuggestion: (item: Suggestion, event: KeyboardEvent) => void;
+  readonly getSuggestions: (context: unknown) => Promise<Suggestion[]> | Suggestion[];
+  readonly onTrigger: (cursor: EditorPosition, editor: Editor, file: TFile) => null | object;
+  readonly selectSuggestion: (item: Suggestion, event: KeyboardEvent) => void;
 }
 
 interface EditorSuggests {
@@ -112,7 +113,7 @@ interface EditorSuggests {
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -127,7 +128,7 @@ interface FileCache {
 }
 
 interface FileManager {
-  generateMarkdownLink: (file: TFile, sourcePath: string, subpath?: string, alias?: string) => string;
+  readonly generateMarkdownLink: (file: TFile, sourcePath: string, subpath?: string, alias?: string) => string;
 }
 
 interface HeadingCache {
@@ -135,13 +136,13 @@ interface HeadingCache {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  getViewState: () => ViewState;
-  openFile: (file: TFile) => Promise<void>;
-  setViewState: (state: ViewState) => Promise<void>;
+  readonly getViewState: () => ViewState;
+  readonly openFile: (file: TFile) => Promise<void>;
+  readonly setViewState: (state: ViewState) => Promise<void>;
   readonly view: MarkdownView;
 }
 
@@ -151,7 +152,7 @@ interface Linktext {
 }
 
 interface MarkdownRenderer {
-  render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
+  readonly render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
 }
 
 interface MarkdownView {
@@ -160,9 +161,9 @@ interface MarkdownView {
 }
 
 interface MetadataCache {
-  getFileCache: (file: TFile) => FileCache | null;
+  readonly getFileCache: (file: TFile) => FileCache | null;
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's own name.
-  getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
+  readonly getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
   readonly resolvedLinks: Record<string, Record<string, number> | undefined>;
 }
 
@@ -173,18 +174,18 @@ interface ObsidianGlobals {
 interface ObsidianModule {
   readonly Component: new () => Component;
   readonly MarkdownRenderer: MarkdownRenderer;
-  parseLinktext: (linktext: string) => Linktext;
-  resolveSubpath: (cache: FileCache | null, subpath: string) => null | SubpathResult;
+  readonly parseLinktext: (linktext: string) => Linktext;
+  readonly resolveSubpath: (cache: FileCache | null, subpath: string) => null | SubpathResult;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface Plugins {
-  enablePlugin: (id: string) => Promise<boolean>;
-  loadManifests: () => Promise<void>;
-  setEnable: (isEnabled: boolean) => void;
+  readonly enablePlugin: (id: string) => Promise<boolean>;
+  readonly loadManifests: () => Promise<void>;
+  readonly setEnable: (isEnabled: boolean) => void;
 }
 
 interface ProbeGlobal {
@@ -225,10 +226,10 @@ interface TriggeredSuggest {
 
 interface Vault {
   readonly adapter: DataAdapter;
-  getFileByPath: (path: string) => null | TFile;
-  getFiles: () => TFile[];
-  read: (file: TFile) => Promise<string>;
-  setConfig: (key: string, value: unknown) => void;
+  readonly getFileByPath: (path: string) => null | TFile;
+  readonly getFiles: () => TFile[];
+  readonly read: (file: TFile) => Promise<string>;
+  readonly setConfig: (key: string, value: unknown) => void;
 }
 
 interface ViewState {
@@ -238,8 +239,8 @@ interface ViewState {
 
 interface Workspace {
   readonly editorSuggest: EditorSuggests;
-  getLeaf: (isNewLeaf: boolean) => Leaf;
-  getLeavesOfType: (type: string) => Leaf[];
+  readonly getLeaf: (isNewLeaf: boolean) => Leaf;
+  readonly getLeavesOfType: (type: string) => Leaf[];
 }
 
 const JSON_INDENT = 2;

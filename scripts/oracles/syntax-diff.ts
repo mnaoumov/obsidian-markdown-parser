@@ -20,8 +20,10 @@ import {
 } from '../../src/oracle/classes/syntax-score.ts';
 
 interface ConstructScore {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Syntax scoring increments this counter as it compares documents.
   agreeing: number;
   readonly failing: string[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Syntax scoring increments this counter as it compares documents.
   using: number;
 }
 

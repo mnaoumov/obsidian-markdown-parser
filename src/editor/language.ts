@@ -113,6 +113,7 @@ interface ParseStart {
 
 // A fragment of an earlier tree that a parse may reuse chunks from, with the range it may read in.
 interface ReusableFragment {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Incremental parsing lazily caches the fragment chunks when reuse is first attempted.
   chunks: null | readonly FragmentChunk[];
   readonly fragment: TreeFragment;
   readonly from: number;

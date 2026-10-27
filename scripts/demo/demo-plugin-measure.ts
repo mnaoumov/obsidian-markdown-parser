@@ -41,14 +41,14 @@ import { compareCodeUnits } from '../../src/oracle/classes/score.ts';
 import { PINNED_OBSIDIAN_VERSION } from '../../src/oracle/oracle-location.ts';
 
 interface App {
-  metadataCache: MetadataCache;
-  plugins: Plugins;
-  vault: Vault;
-  workspace: Workspace;
+  readonly metadataCache: MetadataCache;
+  readonly plugins: Plugins;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface CdpConnection extends AsyncDisposable {
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
 }
 
 type CommandResult<Name extends keyof DemoPlugin> = Awaited<ReturnType<DemoPlugin[Name]>>;
@@ -59,22 +59,22 @@ interface ConnectToCdpOptions {
 }
 
 interface DataAdapter {
-  mkdir: (path: string) => Promise<void>;
-  write: (path: string, data: string) => Promise<void>;
+  readonly mkdir: (path: string) => Promise<void>;
+  readonly write: (path: string, data: string) => Promise<void>;
 }
 
 interface DemoPlugin {
-  compareClasses: () => Promise<ClassComparisonReport>;
-  compareMetadata: () => Promise<MetadataComparisonReport>;
-  measure: () => Promise<MeasurementReport | null>;
+  readonly compareClasses: () => Promise<ClassComparisonReport>;
+  readonly compareMetadata: () => Promise<MetadataComparisonReport>;
+  readonly measure: () => Promise<MeasurementReport | null>;
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -83,15 +83,15 @@ interface EvalInObsidianParams<Input extends object, Result> {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  setViewState: (state: unknown) => Promise<void>;
+  readonly setViewState: (state: unknown) => Promise<void>;
 }
 
 interface MetadataCache {
-  getFileCache: (file: unknown) => unknown;
+  readonly getFileCache: (file: unknown) => unknown;
 }
 
 interface Note {
@@ -100,28 +100,28 @@ interface Note {
 }
 
 interface ObsidianGlobals {
-  app: App;
+  readonly app: App;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface Plugins {
-  enablePlugin: (id: string) => Promise<void>;
-  loadManifests: () => Promise<void>;
-  plugins: Record<string, DemoPlugin | undefined>;
-  setEnable: (isEnabled: boolean) => Promise<void>;
+  readonly enablePlugin: (id: string) => Promise<void>;
+  readonly loadManifests: () => Promise<void>;
+  readonly plugins: Record<string, DemoPlugin | undefined>;
+  readonly setEnable: (isEnabled: boolean) => Promise<void>;
 }
 
 interface Vault {
-  adapter: DataAdapter;
-  getAbstractFileByPath: (path: string) => unknown;
-  getMarkdownFiles: () => unknown[];
+  readonly adapter: DataAdapter;
+  readonly getAbstractFileByPath: (path: string) => unknown;
+  readonly getMarkdownFiles: () => unknown[];
 }
 
 interface Workspace {
-  getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
+  readonly getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
 }
 
 const PLUGIN_ID = 'markdown-parser-demo';

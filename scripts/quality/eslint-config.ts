@@ -83,7 +83,7 @@ function getCustomPluginConfigs(): Linter.Config[] {
         'typescript-dev-toolkit/no-unused-params-members': 'error',
         'typescript-dev-toolkit/no-used-underscore-variables': 'error',
         'typescript-dev-toolkit/params-options-name-match': 'error',
-        'typescript-dev-toolkit/readonly-params-options-result-members': 'error',
+        'typescript-dev-toolkit/readonly-interface-members': 'error',
         'typescript-dev-toolkit/require-method-template': 'error'
       }
     }

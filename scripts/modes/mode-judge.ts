@@ -47,6 +47,7 @@ interface FamilyReport {
   readonly kind: 'unclassified' | ModeFamilyKind;
   readonly note: string;
   readonly reduced: ReducedNote[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The report accumulates the number of matching documents.
   total: number;
 }
 

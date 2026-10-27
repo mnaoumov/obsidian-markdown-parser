@@ -105,14 +105,14 @@ interface AdapterFile {
 }
 
 interface App {
-  commands: Commands;
-  fileManager: FileManager;
-  getObsidianUrl: (file: TFile) => string;
-  internalPlugins: InternalPlugins;
-  metadataCache: MetadataCache;
-  plugins: Plugins;
-  vault: Vault;
-  workspace: Workspace;
+  readonly commands: Commands;
+  readonly fileManager: FileManager;
+  readonly getObsidianUrl: (file: TFile) => string;
+  readonly internalPlugins: InternalPlugins;
+  readonly metadataCache: MetadataCache;
+  readonly plugins: Plugins;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface BacklinksResult {
@@ -139,7 +139,7 @@ interface CapacitorAppInfo {
 }
 
 interface CapacitorAppPlugin {
-  getInfo: () => Promise<CapacitorAppInfo>;
+  readonly getInfo: () => Promise<CapacitorAppInfo>;
 }
 
 interface CapacitorGlobal {
@@ -151,8 +151,8 @@ interface CapacitorPlugins {
 }
 
 interface CdpConnection {
-  [Symbol.asyncDispose]: () => Promise<void>;
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 interface Chooser {
@@ -160,12 +160,12 @@ interface Chooser {
 }
 
 interface Commands {
-  executeCommandById: (id: string) => boolean;
+  readonly executeCommandById: (id: string) => boolean;
 }
 
 interface Component {
-  load: () => void;
-  unload: () => void;
+  readonly load: () => void;
+  readonly unload: () => void;
 }
 
 interface ConnectToCdpOptions {
@@ -188,7 +188,7 @@ interface EditorPosition {
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -202,11 +202,11 @@ interface ExplorerItem {
 }
 
 interface ExplorerView {
-  exitRename: () => void;
+  readonly exitRename: () => void;
   readonly fileItems: Record<string, ExplorerItem | undefined>;
-  revealInFolder: (file: TFile) => void;
-  saveRename: () => Promise<boolean>;
-  startRenameFile: (file: TFile) => Promise<void>;
+  readonly revealInFolder: (file: TFile) => void;
+  readonly saveRename: () => Promise<boolean>;
+  readonly startRenameFile: (file: TFile) => Promise<void>;
 }
 
 interface FileCache {
@@ -215,8 +215,8 @@ interface FileCache {
 }
 
 interface FileManager {
-  generateMarkdownLink: (file: TFile, sourcePath: string) => string;
-  renameFile: (file: TFile, newPath: string) => Promise<void>;
+  readonly generateMarkdownLink: (file: TFile, sourcePath: string) => string;
+  readonly renameFile: (file: TFile, newPath: string) => Promise<void>;
 }
 
 interface GraphLink {
@@ -242,17 +242,17 @@ interface InternalPlugin {
 }
 
 interface InternalPlugins {
-  getPluginById: (id: string) => InternalPlugin;
+  readonly getPluginById: (id: string) => InternalPlugin;
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  detach: () => void;
-  openFile: (file: TFile, openState?: OpenState) => Promise<void>;
-  setViewState: (state: ViewState) => Promise<void>;
+  readonly detach: () => void;
+  readonly openFile: (file: TFile, openState?: OpenState) => Promise<void>;
+  readonly setViewState: (state: ViewState) => Promise<void>;
   readonly view: unknown;
 }
 
@@ -263,7 +263,7 @@ interface LinkerRead {
 }
 
 interface MarkdownRenderer {
-  render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
+  readonly render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
 }
 
 interface MarkdownView {
@@ -272,15 +272,15 @@ interface MarkdownView {
 }
 
 interface MarkdownViewEditor {
-  getValue: () => string;
-  setCursor: (position: EditorPosition) => void;
+  readonly getValue: () => string;
+  readonly setCursor: (position: EditorPosition) => void;
 }
 
 interface MetadataCache {
-  getBacklinksForFile: (file: TFile) => BacklinksResult;
-  getFileCache: (file: TFile) => FileCache | null;
+  readonly getBacklinksForFile: (file: TFile) => BacklinksResult;
+  readonly getFileCache: (file: TFile) => FileCache | null;
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's own name.
-  getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
+  readonly getFirstLinkpathDest: (path: string, sourcePath: string) => null | TFile;
   readonly resolvedLinks: Record<string, Record<string, number> | undefined>;
   readonly unresolvedLinks: Record<string, Record<string, number> | undefined>;
 }
@@ -301,11 +301,11 @@ interface ObsidianGlobals {
 interface ObsidianModule {
   readonly Component: new () => Component;
   readonly MarkdownRenderer: MarkdownRenderer;
-  parseLinktext: (linktext: string) => ParsedLinktext;
+  readonly parseLinktext: (linktext: string) => ParsedLinktext;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface OpenState {
@@ -318,9 +318,9 @@ interface ParsedLinktext {
 }
 
 interface Plugins {
-  enablePlugin: (id: string) => Promise<boolean>;
-  loadManifests: () => Promise<void>;
-  setEnable: (isEnabled: boolean) => void;
+  readonly enablePlugin: (id: string) => Promise<boolean>;
+  readonly loadManifests: () => Promise<void>;
+  readonly setEnable: (isEnabled: boolean) => void;
 }
 
 // What the oracle learns about a name before writing its linker.
@@ -336,15 +336,15 @@ interface ProbeGlobal {
 }
 
 interface ProtocolHandler {
-  dispatch: (params: Record<string, string>) => void;
+  readonly dispatch: (params: Record<string, string>) => void;
 }
 
 interface QuickSwitcherModal {
   readonly chooser: Chooser;
-  close: () => void;
+  readonly close: () => void;
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's SuggestModal names its input element inputEl.
   readonly inputEl: HTMLInputElement;
-  open: () => void;
+  readonly open: () => void;
 }
 
 // What one rename typed into the explorer did before the rename lands.
@@ -354,7 +354,7 @@ interface RenameTyped {
 }
 
 interface SearchPluginInstance {
-  openGlobalSearch: (query: string) => void;
+  readonly openGlobalSearch: (query: string) => void;
 }
 
 interface SearchResultDom {
@@ -390,15 +390,15 @@ interface TFile {
 
 interface Vault {
   readonly adapter: DataAdapter;
-  create: (path: string, text: string) => Promise<TFile>;
-  delete: (file: TFile) => Promise<void>;
-  getAbstractFileByPath: (path: string) => null | TFile;
-  getFileByPath: (path: string) => null | TFile;
-  getFiles: () => TFile[];
-  getName: () => string;
-  modify: (file: TFile, text: string) => Promise<void>;
-  read: (file: TFile) => Promise<string>;
-  setConfig: (key: string, value: unknown) => void;
+  readonly create: (path: string, text: string) => Promise<TFile>;
+  readonly delete: (file: TFile) => Promise<void>;
+  readonly getAbstractFileByPath: (path: string) => null | TFile;
+  readonly getFileByPath: (path: string) => null | TFile;
+  readonly getFiles: () => TFile[];
+  readonly getName: () => string;
+  readonly modify: (file: TFile, text: string) => Promise<void>;
+  readonly read: (file: TFile) => Promise<string>;
+  readonly setConfig: (key: string, value: unknown) => void;
 }
 
 interface ViewState {
@@ -406,16 +406,16 @@ interface ViewState {
 }
 
 interface Workspace {
-  getActiveFile: () => null | TFile;
-  getLeaf: (isNewLeaf: boolean) => Leaf;
-  getLeavesOfType: (type: string) => Leaf[];
+  readonly getActiveFile: () => null | TFile;
+  readonly getLeaf: (isNewLeaf: boolean) => Leaf;
+  readonly getLeavesOfType: (type: string) => Leaf[];
   readonly leftSplit: WorkspaceSidedock;
   readonly protocolHandler: ProtocolHandler;
-  setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
+  readonly setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
 }
 
 interface WorkspaceSidedock {
-  expand: () => void;
+  readonly expand: () => void;
 }
 
 const JSON_INDENT = 2;

@@ -60,6 +60,7 @@ export interface InternalLinkParts {
 interface FootnoteLine {
   readonly contentEnd: number;
   readonly contentStart: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Footnote scanning extends the definition through continuation lines.
   end: number;
   readonly start: number;
 }

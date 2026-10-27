@@ -119,9 +119,12 @@ export interface TextSpan {
 
 // A delimiter row being read: the cell so far, `false` before its first `-` or `:`, and the cells before it.
 interface AlignmentScan {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Table scanning updates alignment state as each delimiter is consumed.
   alignment: false | ObsidianTableAlignment;
   readonly alignments: ObsidianTableAlignment[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Table scanning updates alignment state as each delimiter is consumed.
   hasDash: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Table scanning updates alignment state as each delimiter is consumed.
   isFirstPipe: boolean;
 }
 

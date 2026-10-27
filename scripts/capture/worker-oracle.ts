@@ -58,8 +58,8 @@ interface WorkerMessageData {
 }
 
 interface WorkerScope {
-  onmessage?: (event: WorkerMessage) => void;
-  postMessage: (message: unknown) => void;
+  readonly onmessage?: (event: WorkerMessage) => void;
+  readonly postMessage: (message: unknown) => void;
 }
 
 const DEFAULT_PER_SET = 400;

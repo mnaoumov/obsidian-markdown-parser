@@ -69,6 +69,7 @@ interface ListMarker {
 
 // The link reference definitions markdown-it collects in its environment.
 interface ReferenceEnvironment {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The block rule initializes the reference table when it is first needed.
   references?: Record<string, ReferenceTarget>;
 }
 

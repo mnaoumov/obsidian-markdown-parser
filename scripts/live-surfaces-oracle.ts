@@ -48,25 +48,25 @@ import {
 } from '../src/oracle/checks/live-surfaces.ts';
 
 interface App {
-  fileManager: FileManager;
-  internalPlugins: InternalPlugins;
-  metadataCache: MetadataCache;
-  vault: Vault;
-  workspace: Workspace;
+  readonly fileManager: FileManager;
+  readonly internalPlugins: InternalPlugins;
+  readonly metadataCache: MetadataCache;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface BacklinkDom {
-  resultDomLookup: Map<TFile, BacklinkResultDom>;
+  readonly resultDomLookup: Map<TFile, BacklinkResultDom>;
 }
 
 interface BacklinkPane {
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's Backlinks view names its count element backlinkCountEl.
-  backlinkCountEl: HTMLElement;
-  backlinkDom: BacklinkDom;
+  readonly backlinkCountEl: HTMLElement;
+  readonly backlinkDom: BacklinkDom;
 }
 
 interface BacklinkResultDom {
-  result: LiveSurfacePaneResult;
+  readonly result: LiveSurfacePaneResult;
 }
 
 interface BacklinksResult {
@@ -74,12 +74,12 @@ interface BacklinksResult {
 }
 
 interface BacklinkView {
-  backlink: BacklinkPane;
+  readonly backlink: BacklinkPane;
 }
 
 interface CdpConnection {
-  [Symbol.asyncDispose]: () => Promise<void>;
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly [Symbol.asyncDispose]: () => Promise<void>;
 }
 
 interface ConnectToCdpOptions {
@@ -87,15 +87,15 @@ interface ConnectToCdpOptions {
 }
 
 interface DataAdapter {
-  mkdir: (path: string) => Promise<void>;
+  readonly mkdir: (path: string) => Promise<void>;
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -104,34 +104,34 @@ interface EvalInObsidianParams<Input extends object, Result> {
 }
 
 interface FileManager {
-  processFrontMatter: (file: TFile, update: (frontMatter: Record<string, unknown>) => void) => Promise<void>;
-  renameFile: (file: TFile, newPath: string) => Promise<void>;
+  readonly processFrontMatter: (file: TFile, update: (frontMatter: Record<string, unknown>) => void) => Promise<void>;
+  readonly renameFile: (file: TFile, newPath: string) => Promise<void>;
 }
 
 interface InternalPlugin {
-  enable: () => Promise<void>;
-  enabled: boolean;
+  readonly enable: () => Promise<void>;
+  readonly enabled: boolean;
 }
 
 interface InternalPlugins {
-  getPluginById: (id: string) => InternalPlugin | null;
+  readonly getPluginById: (id: string) => InternalPlugin | null;
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  openFile: (file: TFile) => Promise<void>;
-  setViewState: (state: unknown) => Promise<void>;
-  view: unknown;
+  readonly openFile: (file: TFile) => Promise<void>;
+  readonly setViewState: (state: unknown) => Promise<void>;
+  readonly view: unknown;
 }
 
 interface MetadataCache {
-  getBacklinksForFile: (file: TFile) => BacklinksResult;
-  getFileCache: (file: TFile) => unknown;
-  resolvedLinks: Record<string, Record<string, number> | undefined>;
-  unresolvedLinks: Record<string, Record<string, number> | undefined>;
+  readonly getBacklinksForFile: (file: TFile) => BacklinksResult;
+  readonly getFileCache: (file: TFile) => unknown;
+  readonly resolvedLinks: Record<string, Record<string, number> | undefined>;
+  readonly unresolvedLinks: Record<string, Record<string, number> | undefined>;
 }
 
 interface NoteFile {
@@ -149,17 +149,17 @@ interface NoteRead {
 }
 
 interface ObsidianGlobals {
-  app: App;
+  readonly app: App;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface OutlineView {
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's View names its element containerEl.
-  containerEl: HTMLElement;
-  file: null | TFile;
+  readonly containerEl: HTMLElement;
+  readonly file: null | TFile;
 }
 
 interface PaneRead {
@@ -177,25 +177,25 @@ interface SetActiveLeafOptions {
 }
 
 interface TFile {
-  path: string;
+  readonly path: string;
 }
 
 interface Vault {
-  adapter: DataAdapter;
-  create: (path: string, data: string) => Promise<TFile>;
-  createBinary: (path: string, data: ArrayBuffer) => Promise<TFile>;
-  getFileByPath: (path: string) => null | TFile;
-  modify: (file: TFile, data: string) => Promise<void>;
-  read: (file: TFile) => Promise<string>;
-  setConfig: (name: string, value: unknown) => void;
+  readonly adapter: DataAdapter;
+  readonly create: (path: string, data: string) => Promise<TFile>;
+  readonly createBinary: (path: string, data: ArrayBuffer) => Promise<TFile>;
+  readonly getFileByPath: (path: string) => null | TFile;
+  readonly modify: (file: TFile, data: string) => Promise<void>;
+  readonly read: (file: TFile) => Promise<string>;
+  readonly setConfig: (name: string, value: unknown) => void;
 }
 
 interface Workspace {
-  getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
-  getLeavesOfType: (type: string) => Leaf[];
-  getRightLeaf: (shouldSplit: boolean) => Leaf | null;
-  revealLeaf: (leaf: Leaf) => Promise<void>;
-  setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
+  readonly getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
+  readonly getLeavesOfType: (type: string) => Leaf[];
+  readonly getRightLeaf: (shouldSplit: boolean) => Leaf | null;
+  readonly revealLeaf: (leaf: Leaf) => Promise<void>;
+  readonly setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
 }
 
 const JSON_INDENT = 2;

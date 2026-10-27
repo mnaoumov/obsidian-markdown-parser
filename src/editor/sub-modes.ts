@@ -17,16 +17,16 @@ import type { AnyMode } from './mode.ts';
 import { createMarkdownMode } from './markdown-mode.ts';
 
 interface CodeMirror5 {
-  defineMIME: (mime: string, spec: string) => void;
-  defineMode: (name: string, factory: (options: object, spec: MarkdownSpec) => object) => void;
-  findModeByName: (name: string) => ModeInfo | undefined;
-  getMode: (options: object, spec: object | string) => AnyMode;
-  innerMode: (mode: AnyMode, state: object) => InnerMode;
+  readonly defineMIME: (mime: string, spec: string) => void;
+  readonly defineMode: (name: string, factory: (options: object, spec: MarkdownSpec) => object) => void;
+  readonly findModeByName: (name: string) => ModeInfo | undefined;
+  readonly getMode: (options: object, spec: object | string) => AnyMode;
+  readonly innerMode: (mode: AnyMode, state: object) => InnerMode;
 }
 
 interface InnerMode {
-  mode: AnyMode;
-  state: object;
+  readonly mode: AnyMode;
+  readonly state: object;
 }
 
 // The options a spec for the markdown mode may carry.
@@ -37,19 +37,19 @@ interface MarkdownSpec {
 }
 
 interface ModeInfo {
-  mime?: string;
-  mimes?: string[];
-  mode: string;
+  readonly mime?: string;
+  readonly mimes?: string[];
+  readonly mode: string;
 }
 
 interface XmlState {
-  context?: unknown;
-  tagStart: null | number;
-  tokenize: XmlTokenizer;
+  readonly context?: unknown;
+  readonly tagStart: null | number;
+  readonly tokenize: XmlTokenizer;
 }
 
 interface XmlTokenizer {
-  isInText?: boolean;
+  readonly isInText?: boolean;
 }
 
 const INDENT_UNIT = 2;
