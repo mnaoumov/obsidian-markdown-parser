@@ -8,6 +8,10 @@ import type { OracleFile } from '../oracle/oracle-file.ts';
 import type { LineState } from './highlight.ts';
 
 import {
+  compareCodeUnits,
+  compareDocument
+} from '../oracle/classes/score.ts';
+import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
   CORPUS_TEST_TIMEOUT_MS,
@@ -15,10 +19,6 @@ import {
   oracleObsidianVersion,
   readOracleFile
 } from '../oracle/oracle-location.ts';
-import {
-  compareCodeUnits,
-  compareDocument
-} from '../oracle/score.ts';
 import {
   highlight,
   highlightLines,

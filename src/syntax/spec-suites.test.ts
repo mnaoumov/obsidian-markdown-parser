@@ -33,13 +33,10 @@ import type {
 } from './options.ts';
 
 import { CORPUS_TEST_TIMEOUT_MS } from '../oracle/oracle-location.ts';
-import { parseWithLinkReferences } from './lezer-commonmark.ts';
-import { renderLezerHtml } from './lezer-html.ts';
-import { createObsidianParser } from './lezer.ts';
-import { createObsidianMarkdownIt } from './markdown-it.ts';
-import { parseMdast } from './mdast.ts';
-import { micromarkQuirksHtml } from './micromark-quirks.ts';
-import { createMicromarkObsidianMarkdown } from './micromark.ts';
+import { parseWithLinkReferences } from './lezer/lezer-commonmark.ts';
+import { renderLezerHtml } from './lezer/lezer-html.ts';
+import { createObsidianParser } from './lezer/lezer.ts';
+import { createObsidianMarkdownIt } from './markdown-it/markdown-it.ts';
 import {
   COMMONMARK_QUIRKS,
   OBSIDIAN_QUIRK_FLAGS,
@@ -48,6 +45,9 @@ import {
   OBSIDIAN_SYNTAX_PRESETS,
   resolveObsidianQuirks
 } from './options.ts';
+import { parseMdast } from './unified/mdast.ts';
+import { micromarkQuirksHtml } from './unified/micromark-quirks.ts';
+import { createMicromarkObsidianMarkdown } from './unified/micromark.ts';
 
 type Adapter = 'lezer' | 'markdown-it' | 'micromark';
 
@@ -112,7 +112,7 @@ const FLAG_CHANGES: Readonly<Record<keyof ObsidianSyntaxFlags, readonly number[]
 
 /*
  * The CommonMark examples whose rendering changes when a quirk is turned on, whatever the preset. Each example shows the
- * quirk's behaviour, and Obsidian's reading view differs from the spec on it (`src/oracle/spec-quirks.ts`), except where
+ * quirk's behaviour, and Obsidian's reading view differs from the spec on it (`src/oracle/spec/spec-quirks.ts`), except where
  * Obsidian's other quirks hide it: `softLineBreak` shows on every soft line break, including in examples Obsidian
  * parses differently. `linkDefinition` reads the definitions of 546 and 552, whose labels hold a bracket or only
  * whitespace; Obsidian differs from the spec there in its links too. `@lezer/markdown` keeps the paragraph of example

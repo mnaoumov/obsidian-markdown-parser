@@ -43,7 +43,7 @@ import type {
   LineState
 } from './highlight.ts';
 
-import { compareCodeUnits } from '../oracle/score.ts';
+import { compareCodeUnits } from '../oracle/classes/score.ts';
 import {
   areLineStatesEqual,
   copyLineState,

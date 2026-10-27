@@ -17,7 +17,7 @@ import {
   it
 } from 'vitest';
 
-import { compareCodeUnits } from '../oracle/score.ts';
+import { compareCodeUnits } from '../oracle/classes/score.ts';
 
 const IMPORT_RE = /^\s*(?:import|export)\b[^'";]*?\bfrom\s+'(?<specifier>[^']+)'|^\s*import\s+'(?<sideEffect>[^']+)'|\bimport\(\s*'(?<dynamic>[^']+)'\s*\)/gmu;
 

@@ -1,12 +1,12 @@
 /**
  * @file
  *
- * Runs the self-check judges (`src/oracle/self-check.ts`) over generated notes (`src/oracle/note-grammar.ts`) and,
+ * Runs the self-check judges (`src/oracle/checks/self-check.ts`) over generated notes (`src/oracle/checks/note-grammar.ts`) and,
  * with `--oracles`, over every worker oracle document too. Up to `--per-key` notes of each key are reduced to minimal ones and
- * each put into a family (`src/oracle/self-check-families.ts`). Prints a table of the families and writes them, with their
+ * each put into a family (`src/oracle/checks/self-check-families.ts`). Prints a table of the families and writes them, with their
  * reduced notes, to `dist/self-check/report.json`. With `--engines` it also runs the engine differential
- * (`src/oracle/engine-differential.ts`) over as many generated notes of CommonMark and GFM alone. With `--live-surfaces`
- * it also judges the live surface oracle (`src/oracle/live-surfaces.ts`) and adds its families as a table of their
+ * (`src/oracle/checks/engine-differential.ts`) over as many generated notes of CommonMark and GFM alone. With `--live-surfaces`
+ * it also judges the live surface oracle (`src/oracle/checks/live-surfaces.ts`) and adds its families as a table of their
  * own, under `liveSurfaces`.
  *
  * The oracles are the pinned version's, or those `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY` name.
@@ -25,25 +25,25 @@ import {
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import type { LiveSurfaceFile } from '../src/oracle/live-surfaces.ts';
+import type { LiveSurfaceFile } from '../src/oracle/checks/live-surfaces.ts';
+import type { SelfCheckFamilyKind } from '../src/oracle/checks/self-check-families.ts';
+import type { SelfCheckFinding } from '../src/oracle/checks/self-check.ts';
 import type { FamilyCount } from '../src/oracle/release-differential.ts';
-import type { SelfCheckFamilyKind } from '../src/oracle/self-check-families.ts';
-import type { SelfCheckFinding } from '../src/oracle/self-check.ts';
-import type { WorkerMetadataOracleFile } from '../src/oracle/worker-metadata.ts';
+import type { WorkerMetadataOracleFile } from '../src/oracle/spec/worker-metadata.ts';
 
-import { judgeEngines } from '../src/oracle/engine-differential.ts';
-import { generateNotes } from '../src/oracle/note-grammar.ts';
+import { judgeEngines } from '../src/oracle/checks/engine-differential.ts';
+import { generateNotes } from '../src/oracle/checks/note-grammar.ts';
+import { selfCheckFamilyOf } from '../src/oracle/checks/self-check-families.ts';
+import {
+  judgeNote,
+  reduceFinding
+} from '../src/oracle/checks/self-check.ts';
 import {
   liveSurfacesOracleFileName,
   readOracleFile,
   workerMetadataOracleFileName
 } from '../src/oracle/oracle-location.ts';
 import { liveSurfaceFamilyCounts } from '../src/oracle/release-differential.ts';
-import { selfCheckFamilyOf } from '../src/oracle/self-check-families.ts';
-import {
-  judgeNote,
-  reduceFinding
-} from '../src/oracle/self-check.ts';
 
 interface FamilyReport {
   readonly forumUrl: null | string;

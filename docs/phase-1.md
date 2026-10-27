@@ -49,10 +49,10 @@ The classes are the output of a CodeMirror 5 line tokenizer, not of a tree. So t
 
 The oracle harness from Phase 0 is now TypeScript:
 
-- `scripts/oracle.ts` reads the live editor's tree for every corpus document. It opens a warm-up document first, because the editor loads the sTeX and fenced-code modes lazily: in Phase 0, documents read before the load finished came back without their math and code classes. It then re-reads each tree until two reads agree. It reads Source mode only, since Phase 0 found the tree identical in Live Preview.
-- `src/oracle/corpus.ts` builds the corpus: Phase 0's hand-written documents and piece sets, and four more piece sets.
-- `src/oracle/score.ts` scores per character and per line, through the same `_`-joined encoding the editor's node names use.
-- `scripts/oracle-diff.ts` prints the score, the classes that disagree most, and a line-by-line diff of chosen documents.
+- `scripts/capture/oracle.ts` reads the live editor's tree for every corpus document. It opens a warm-up document first, because the editor loads the sTeX and fenced-code modes lazily: in Phase 0, documents read before the load finished came back without their math and code classes. It then re-reads each tree until two reads agree. It reads Source mode only, since Phase 0 found the tree identical in Live Preview.
+- `src/oracle/classes/corpus.ts` builds the corpus: Phase 0's hand-written documents and piece sets, and four more piece sets.
+- `src/oracle/classes/score.ts` scores per character and per line, through the same `_`-joined encoding the editor's node names use.
+- `scripts/oracles/oracle-diff.ts` prints the score, the classes that disagree most, and a line-by-line diff of chosen documents.
 - `oracle/obsidian-<version>-seed-<seed>.json` holds the eleven corpora. Each file keeps its documents' text, so the test does not rebuild them. A seed rebuilds a file's documents only with the piece sets of the commit that read it. They are the test oracle: `src/editor/highlight.test.ts` fails when a document's agreement changes in either direction.
 
 ## What the editor does that CodeMirror 5 and HyperMD do not

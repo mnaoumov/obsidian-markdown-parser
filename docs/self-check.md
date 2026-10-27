@@ -12,7 +12,7 @@ npm run self-check -- [--count <n>] [--seed <n>] [--per-key <n>] [--oracles] [--
 
 ## The relations
 
-`src/oracle/self-check.ts` judges a note with ten relations:
+`src/oracle/checks/self-check.ts` judges a note with ten relations:
 
 | Judge | The relation |
 | --- | --- |
@@ -31,7 +31,7 @@ The cache is `parseMetadata`, which gives the metadata worker's output exactly o
 
 ## The notes: a grammar, not a corpus
 
-The oracle corpus joins line fragments. `src/oracle/note-grammar.ts` composes whole constructs instead. It takes every block of CommonMark, GFM and Obsidian (headings, setext headings, `%%` comments closed, unclosed or opened on a line with text, footnote and link reference definitions, tables, fences, math, thematic breaks and paragraphs opening on a quote or parenthesis). Each block holds inline constructs: internal links and embeds with headings, block ids and sizes, tags, defined and undefined footnote references, inline footnotes, highlights plain and colored, comments, math, code, markdown links and images, references, emphasis, escapes, entities and astral characters. Blocks nest in quotes, callouts and list or task items to depth 3. A container's continuation line is lazy one time in four. One inline run in twelve gets a filler word stretched so that its line ends near 1,000-1,030 or 4,080-4,100 characters.
+The oracle corpus joins line fragments. `src/oracle/checks/note-grammar.ts` composes whole constructs instead. It takes every block of CommonMark, GFM and Obsidian (headings, setext headings, `%%` comments closed, unclosed or opened on a line with text, footnote and link reference definitions, tables, fences, math, thematic breaks and paragraphs opening on a quote or parenthesis). Each block holds inline constructs: internal links and embeds with headings, block ids and sizes, tags, defined and undefined footnote references, inline footnotes, highlights plain and colored, comments, math, code, markdown links and images, references, emphasis, escapes, entities and astral characters. Blocks nest in quotes, callouts and list or task items to depth 3. A container's continuation line is lazy one time in four. One inline run in twelve gets a filler word stretched so that its line ends near 1,000-1,030 or 4,080-4,100 characters.
 
 The grammar draws with mulberry32. The corpus's linear congruential generator made some runs of draws impossible: in 4,000 notes it never once put a definition before a paragraph that opens on a quote.
 
@@ -39,7 +39,7 @@ The grammar draws with mulberry32. The corpus's linear congruential generator ma
 
 The runner keeps up to `--per-key` notes for each key (30 by default) and reduces each one to a minimal note that still has that key. It runs delta debugging over lines and then over graphemes (`src/oracle/ddmin.ts`, shared with the mode judge). Keeping several notes per key matters: a single reduction collapses different causes onto one smallest shape.
 
-Each reduced note goes into a family of `src/oracle/self-check-families.ts`, and the first family that matches wins. The verdicts are:
+Each reduced note goes into a family of `src/oracle/checks/self-check-families.ts`, and the first family that matches wins. The verdicts are:
 
 - `bug`: reported or to report.
 - `known`: an open topic or the team already has it.
@@ -80,11 +80,11 @@ On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,28
 | `bracket-run-link` | minor | A link right after a stray `[` takes the bracket into its target. |
 | `tree-position` | judge | A Reading view text node is placed off its source. This shows only through the cache's positions. |
 
-`src/oracle/self-check.test.ts` is the acceptance test. From generated notes alone, with no pinned shape, the judges must find every bug family above that was first reported from a hand-written note, plus the known and by-design families. They must also leave no finding unclassified. A family that stops being found, or a new key with no family, fails the suite.
+`src/oracle/checks/self-check.test.ts` is the acceptance test. From generated notes alone, with no pinned shape, the judges must find every bug family above that was first reported from a hand-written note, plus the known and by-design families. They must also leave no finding unclassified. A family that stops being found, or a new key with no family, fails the suite.
 
 ## The engine differential
 
-The relations above cannot see a bug that is wrong only by the spec: a GFM task item whose text is read again as blocks, or any character taken as a task status, is consistent with itself everywhere. `src/oracle/engine-differential.ts` finds those by asking other parsers. The grammar has a second mode for it, `generateNotes({ syntax: 'gfm' })`, which draws only CommonMark and GFM constructs (no Obsidian syntax, block ids, callouts or front matter) and adds task marks of `[X]`, `[?]`, `[-]` and `[/]`. Each note is rendered by four engines:
+The relations above cannot see a bug that is wrong only by the spec: a GFM task item whose text is read again as blocks, or any character taken as a task status, is consistent with itself everywhere. `src/oracle/checks/engine-differential.ts` finds those by asking other parsers. The grammar has a second mode for it, `generateNotes({ syntax: 'gfm' })`, which draws only CommonMark and GFM constructs (no Obsidian syntax, block ids, callouts or front matter) and adds task marks of `[X]`, `[?]`, `[-]` and `[/]`. Each note is rendered by four engines:
 
 | Engine | Role |
 | --- | --- |
@@ -119,7 +119,7 @@ The acceptance test runs the differential on 4,000 notes. It must find `task-bod
 
 ## The live surfaces
 
-Some surfaces exist only in the app: the Outline and Backlinks views, `resolvedLinks`, a real `fileManager.renameFile` and `processFrontMatter`. `scripts/live-surfaces-oracle.ts` reads them for the first 400 grammar notes, written into one vault with the four files they link to (`target.md`, `page.md`, `image.png`, `pic.png`), into `oracle/live-surfaces-obsidian-<version>.json` ([oracles.md](oracles.md)). The read takes about 2.5 minutes. `src/oracle/live-surfaces.ts` then judges each note offline against its cache, as the app held it before the note was opened, and against the `remark-parse` 8 engine:
+Some surfaces exist only in the app: the Outline and Backlinks views, `resolvedLinks`, a real `fileManager.renameFile` and `processFrontMatter`. `scripts/live-surfaces-oracle.ts` reads them for the first 400 grammar notes, written into one vault with the four files they link to (`target.md`, `page.md`, `image.png`, `pic.png`), into `oracle/live-surfaces-obsidian-<version>.json` ([oracles.md](oracles.md)). The read takes about 2.5 minutes. `src/oracle/checks/live-surfaces.ts` then judges each note offline against its cache, as the app held it before the note was opened, and against the `remark-parse` 8 engine:
 
 | Judge | The relation |
 | --- | --- |
@@ -130,7 +130,7 @@ Some surfaces exist only in the app: the Outline and Backlinks views, `resolvedL
 | `renameFile` | Renaming every target changes the note only inside the cached links to it, each getting the new name: the rename the `rename` judge simulates from the cache's positions. Renaming them back gives the note back. |
 | `processFrontMatter` | Setting one key leaves the body byte for byte, keeps every other value, and changes the front matter only by the added line. |
 
-The notes cannot be reduced offline, since only the app reads them, so each finding carries the lines it lies on and is sorted into a family by those lines. `src/oracle/live-surfaces.test.ts` pins the cache to `parseMetadata`, and requires the pinned reading to fall into exactly the families below. On 1.14.5, `resolvedLinks`, `getBacklinksForFile`, the Outline's count and nesting, the body after `processFrontMatter`, and every rename round trip whose forward rename was right all held on all 400 notes. What broke:
+The notes cannot be reduced offline, since only the app reads them, so each finding carries the lines it lies on and is sorted into a family by those lines. `src/oracle/checks/live-surfaces.test.ts` pins the cache to `parseMetadata`, and requires the pinned reading to fall into exactly the families below. On 1.14.5, `resolvedLinks`, `getBacklinksForFile`, the Outline's count and nesting, the body after `processFrontMatter`, and every rename round trip whose forward rename was right all held on all 400 notes. What broke:
 
 | Family | Verdict | Findings | What it is |
 | --- | --- | --- | --- |

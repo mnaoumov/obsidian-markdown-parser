@@ -5,7 +5,7 @@
  *
  * Its own entry point `lib/exports.d.mts` (0.42.0) re-exports `resolveModule` from `lib/resolve-module.d.cts`, which
  * mixes `export =` with named type exports and is rejected with TS2309. `build:compile` reaches that file through
- * `scripts/markdownlint-cli2-config.ts`, whose `@mnaoumov/typescript-dev-toolkit` config schema imports `Rule` from
+ * `scripts/quality/markdownlint-cli2-config.ts`, whose `@mnaoumov/typescript-dev-toolkit` config schema imports `Rule` from
  * the package, with `skipLibCheck` off. `Rule` is all this repo's type graph takes from the package, so this file
  * re-exports it from `lib/markdownlint.d.mts`, which checks. Delete this file and its `paths` entry once a release of
  * the package ships a `resolve-module.d.cts` that checks.

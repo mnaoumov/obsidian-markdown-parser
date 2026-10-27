@@ -24,11 +24,11 @@ So `# ^ [ ] |` are a **warning**, not a refusal: the rename shows it while you t
 ## How it is measured
 
 ```sh
-npx jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]
+npx jiti scripts/links/special-names-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]
 npm run special-names [-- --details]
 ```
 
-`scripts/special-names-oracle.ts` writes 27 note names (`src/oracle/special-names.ts`) straight onto the disk of an owned Obsidian's vault, never through the app, each holding a word unique to it. For each name it asks `generateMarkdownLink` for the wikilink from a linker note in another folder, and writes the linker on disk with that link as body link, as an embed and as a properties link. It then reads, per name:
+`scripts/links/special-names-oracle.ts` writes 27 note names (`src/oracle/links/special-names.ts`) straight onto the disk of an owned Obsidian's vault, never through the app, each holding a word unique to it. For each name it asks `generateMarkdownLink` for the wikilink from a linker note in another folder, and writes the linker on disk with that link as body link, as an embed and as a properties link. It then reads, per name:
 
 | Surface | What is read |
 | --- | --- |
@@ -47,7 +47,7 @@ npm run special-names [-- --details]
 | move | the same for a move into another folder, keeping the name |
 | rename-onto | whether a plainly named note's linker leads to it after it is renamed onto the special name |
 
-It also types the names above into the file explorer's rename, and, for each pair of files the vault indexes under one path, edits the one note through the vault and reads both files from disk. The oracle is pinned to 1.14.5 (`oracle/special-names-obsidian-1.14.5.json`); the 1.15.0 insider build, read on 2026-10-25, gives the same verdict on every name and surface. `src/oracle/special-names.test.ts` pins the verdicts, the shadowing writes and the rename checks.
+It also types the names above into the file explorer's rename, and, for each pair of files the vault indexes under one path, edits the one note through the vault and reads both files from disk. The oracle is pinned to 1.14.5 (`oracle/special-names-obsidian-1.14.5.json`); the 1.15.0 insider build, read on 2026-10-25, gives the same verdict on every name and surface. `src/oracle/links/special-names.test.ts` pins the verdicts, the shadowing writes and the rename checks.
 
 Only names Windows can store were tried here. `| : * ? " < > \` and a trailing dot or space were swept on Android, in [On Android](#on-android).
 
@@ -77,11 +77,11 @@ No finding is a corpus case for the parser: the parser reads a note's text, and 
 emulator -avd obsidian_test -read-only -no-window -no-snapshot-load -no-snapshot-save
 adb install -r Obsidian-1.14.4.apk
 adb shell monkey -p md.obsidian 1
-npx jiti scripts/special-names-oracle.ts --android [--serial <serial>]
+npx jiti scripts/links/special-names-oracle.ts --android [--serial <serial>]
 npm run special-names -- --android [--details]
 ```
 
-`--android` reads the same surfaces in Obsidian for Android, for 39 names: the desktop's 27, at the same indices, and 12 that Windows cannot store (`DEVICE_SPECIAL_NAMES`): `x|y`, `x:y`, `x*y`, `x?y`, `x"y`, `x<y`, `x>y`, `x\y`, the notes `x.` and `x␣` (the files `x..md` and `x .md`), and a note `y` in each of the folders `x.` and `x␣`. `scripts/android-vault.ts` opens a fresh vault in the app's own storage, `/sdcard/Android/data/md.obsidian/files/special-names-oracle`, the folder the app lists its app storage vaults from. It writes and reads the vault's files over `adb shell`, never through the app, and calls into the app over its WebView's DevTools protocol. The explorer's rename gets the desktop's typed names and `r?s`, `r"s`, `r<s`, `r>s`, `r\s`, `rs.` and `rs␣`. The oracle was read on 2026-10-26 from Obsidian 1.14.4, the newest with an APK (1.14.5 shipped for desktop only), on an Android 17 emulator booted read-only, so that nothing it did stayed on the device. It is in `oracle/special-names-android-obsidian-1.14.4.json`, and the Android half of `src/oracle/special-names.test.ts` pins it.
+`--android` reads the same surfaces in Obsidian for Android, for 39 names: the desktop's 27, at the same indices, and 12 that Windows cannot store (`DEVICE_SPECIAL_NAMES`): `x|y`, `x:y`, `x*y`, `x?y`, `x"y`, `x<y`, `x>y`, `x\y`, the notes `x.` and `x␣` (the files `x..md` and `x .md`), and a note `y` in each of the folders `x.` and `x␣`. `scripts/capture/android-vault.ts` opens a fresh vault in the app's own storage, `/sdcard/Android/data/md.obsidian/files/special-names-oracle`, the folder the app lists its app storage vaults from. It writes and reads the vault's files over `adb shell`, never through the app, and calls into the app over its WebView's DevTools protocol. The explorer's rename gets the desktop's typed names and `r?s`, `r"s`, `r<s`, `r>s`, `r\s`, `rs.` and `rs␣`. The oracle was read on 2026-10-26 from Obsidian 1.14.4, the newest with an APK (1.14.5 shipped for desktop only), on an Android 17 emulator booted read-only, so that nothing it did stayed on the device. It is in `oracle/special-names-android-obsidian-1.14.4.json`, and the Android half of `src/oracle/links/special-names.test.ts` pins it.
 
 Where the vault lives matters. Checked with `adb shell` before the sweep:
 
@@ -113,7 +113,7 @@ What was found on Android, beyond the desktop's findings above, which all hold t
 ## Names in neither normal form
 
 ```sh
-npx jiti scripts/special-names-oracle.ts --normalization [--obsidian-version <version>] [--out-dir <directory>]
+npx jiti scripts/links/special-names-oracle.ts --normalization [--obsidian-version <version>] [--out-dir <directory>]
 npm run special-names -- --normalization [--details]
 ```
 
@@ -137,7 +137,7 @@ Beyond the surfaces, the sweep reads, for each name:
 | typed links | for each spelling, a linker on disk with one link typed by hand as a wikilink, a markdown link with its destination percent-encoded, and one with it in angle brackets: the note `resolvedLinks` maps it to, the link path the metadata cache holds, the `data-href` of its anchor in Reading view and the note a click on it opens, and the note the editor's "Follow link under cursor" opens from the linker's own text, with any note that created |
 | spelling renames | `fileManager.renameFile` of a second file of the name to each other spelling of it and back, with the vault path and the file on disk after each |
 
-The oracle is pinned to 1.14.5 (`oracle/special-names-normalization-obsidian-1.14.5.json`). The 1.15.0 insider build, read on 2026-10-26, gives the same reads on every name, apart from the order of the quick switcher's other offers. `src/oracle/special-names.test.ts` pins them. NTFS stores a name exactly as written and compares names code unit by code unit (apart from letter case), so on Windows every difference below comes from Obsidian, not from the file system.
+The oracle is pinned to 1.14.5 (`oracle/special-names-normalization-obsidian-1.14.5.json`). The 1.15.0 insider build, read on 2026-10-26, gives the same reads on every name, apart from the order of the quick switcher's other offers. `src/oracle/links/special-names.test.ts` pins them. NTFS stores a name exactly as written and compares names code unit by code unit (apart from letter case), so on Windows every difference below comes from Obsidian, not from the file system.
 
 What was found:
 
@@ -164,11 +164,11 @@ What was found:
 ### The normalization sweep on Android
 
 ```sh
-npx jiti scripts/special-names-oracle.ts --android --normalization [--serial <serial>] [--out-dir <directory>]
+npx jiti scripts/links/special-names-oracle.ts --android --normalization [--serial <serial>] [--out-dir <directory>]
 npm run special-names -- --android --normalization [--details]
 ```
 
-The same 21 names were read on Obsidian 1.14.4 for Android in the app-storage vault described above, on the Android 17 emulator. The oracle is `oracle/special-names-normalization-android-obsidian-1.14.4.json`, pinned by `src/oracle/special-names.test.ts` alongside the desktop sweep.
+The same 21 names were read on Obsidian 1.14.4 for Android in the app-storage vault described above, on the Android 17 emulator. The oracle is `oracle/special-names-normalization-android-obsidian-1.14.4.json`, pinned by `src/oracle/links/special-names.test.ts` alongside the desktop sweep.
 
 1. **App storage folds canonically equivalent spellings before Obsidian sees them.** Each of the `o`, `n` and `p` groups is one file, retaining the spelling written first and the contents written last. Reading either spelling over `adb shell` after an edit through the vault gives the same edited text. Unlike NTFS, this storage cannot hold the separate files that the desktop vault shadows; the missing spellings in the surface table therefore do not represent hidden files. The kept note fails the text checks because the last write replaced its expected text with its partner's.
 2. **The ligature `ﬁx` and `fix` also share one file.** It retains `ﬁx.md`, so Obsidian indexes `ﬁx` only. A typed link to `fix` neither resolves nor creates a note: the file system already holds that name as `ﬁx`. This is a storage folding difference, not Obsidian applying NFKC: `Ａx` and `Ax`, and `x²` and `x2`, remain separate notes. The observation is limited to this emulator's app storage.

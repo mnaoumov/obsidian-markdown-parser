@@ -18,13 +18,18 @@ import {
   it
 } from 'vitest';
 
+import type { ClassSets } from '../oracle/classes/score.ts';
 import type {
   OracleFile,
   OracleNode
 } from '../oracle/oracle-file.ts';
-import type { ClassSets } from '../oracle/score.ts';
 import type { EditorClassOptions } from './highlight.ts';
 
+import {
+  classSetsOf,
+  compareCodeUnits,
+  toNodes
+} from '../oracle/classes/score.ts';
 import {
   CLASS_ORACLE_SEEDS,
   classOracleFileName,
@@ -33,11 +38,6 @@ import {
   oracleObsidianVersion,
   readOracleFile
 } from '../oracle/oracle-location.ts';
-import {
-  classSetsOf,
-  compareCodeUnits,
-  toNodes
-} from '../oracle/score.ts';
 import { highlight } from './highlight.ts';
 import {
   createEditorClassLanguage,
@@ -166,7 +166,7 @@ function tokenizerClassSets(text: string, options: EditorClassOptions = {}): Cla
   return classSetsOf(text, toNodes(highlight(text, options)));
 }
 
-// The tree in the oracle's encoding: pre-order, without the root, as `scripts/oracle.ts` reads the live editor's.
+// The tree in the oracle's encoding: pre-order, without the root, as `scripts/capture/oracle.ts` reads the live editor's.
 function treeNodes(tree: Tree): OracleNode[] {
   const nodes: OracleNode[] = [];
   const cursor = tree.cursor();

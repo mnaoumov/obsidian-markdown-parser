@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The shape of an oracle file written by `scripts/oracle.ts`.
+ * The shape of an oracle file written by `scripts/capture/oracle.ts`.
  */
 
 /**

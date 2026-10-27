@@ -14,7 +14,7 @@ import {
   classSetsOf,
   compareCodeUnits,
   lineStartsOf
-} from '../oracle/score.ts';
+} from '../oracle/classes/score.ts';
 
 /**
  * Where two trees first give a character or a line different classes.

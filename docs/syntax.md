@@ -4,9 +4,9 @@ The semantic tree Phase 2 reads is the `@lezer/markdown` tree with the Obsidian 
 
 - `src/syntax/spec.ts`: the node names (`ObsidianNode`) and the lexical rules, as plain functions over strings. The micromark adapter and the markdown-it plugin call the same functions.
 - `src/syntax/conformance.ts`: the conformance corpus. Each case is a document and the outline of the Obsidian nodes in it, in document order with the text each covers. Plain markdown nodes are not in the outline, so a case means the same to every parser. An adapter passes when it gives every case's outline.
-- `src/syntax/lezer.ts`: the `@lezer/markdown` extensions. `obsidianSyntax` is the Obsidian syntax, and `obsidianMarkdown` adds the GFM pieces Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task markers replace GFM's. `parse()` in `src/index.ts` uses them.
-- `src/syntax/micromark.ts` and `src/syntax/mdast.ts`: the micromark syntax extension and its `mdast-util-from-markdown` extension, described [below](#the-micromark-and-mdast-adapter). `parseMdast()` in `src/index.ts` uses them.
-- `src/syntax/markdown-it.ts`: the markdown-it plugin, described [below](#the-markdown-it-plugin). `parseMarkdownIt()` in `src/index.ts` uses it.
+- `src/syntax/lezer/lezer.ts`: the `@lezer/markdown` extensions. `obsidianSyntax` is the Obsidian syntax, and `obsidianMarkdown` adds the GFM pieces Obsidian supports: tables, strikethrough and bare URLs. Obsidian's task markers replace GFM's. `parse()` in `src/index.ts` uses them.
+- `src/syntax/unified/micromark.ts` and `src/syntax/unified/mdast.ts`: the micromark syntax extension and its `mdast-util-from-markdown` extension, described [below](#the-micromark-and-mdast-adapter). `parseMdast()` in `src/index.ts` uses them.
+- `src/syntax/markdown-it/markdown-it.ts`: the markdown-it plugin, described [below](#the-markdown-it-plugin). `parseMarkdownIt()` in `src/index.ts` uses it.
 - `src/syntax/options.ts`: the options every adapter takes, a preset with any of its flags overridden, one flag per construct. How each adapter does on the CommonMark and GFM spec suites with them is in [spec-suites.md](spec-suites.md).
 
 ## The rules
@@ -42,11 +42,11 @@ Here the tree departs from the editor on purpose. The editor reads some inline s
 
 A link's content is a file name and a subpath, and the worker resolves it as one, so the reading the tree gives is the one that tells what the link points to. The class tokenizer still gives the editor's classes here ([phase-1.md](phase-1.md#inline-syntax)), as every other class does. The editor's reading is an Obsidian bug. The conformance cases `internal link content holds no highlight`, `... no comment`, `... no inline footnote` and `... no footnote reference`, and `a %% inside internal link content does not pair with one after the link`, pin the reading in all three adapters and the `remark-parse` 8 engine, and the worker oracle holds each document's metadata.
 
-`src/syntax/lezer.test.ts` runs the corpus. It also edits 400 oracle documents and checks that an incremental parse after each edit gives the same tree as a full parse.
+`src/syntax/lezer/lezer.test.ts` runs the corpus. It also edits 400 oracle documents and checks that an incremental parse after each edit gives the same tree as a full parse.
 
 ## Measured against the live editor
 
-`scripts/syntax-diff.ts` scores the tree against the classes the live editor gave five of the oracle corpora of Phase 1 (seeds 12345, 777, 4242, 2026 and 9001, 21,140 documents of every piece set), construct by construct. For each one it compares the characters the editor marks with the characters the tree's nodes cover. Whitespace is not compared, nor is the inside of a comment, where the editor still styles markdown and the tree has none. A callout is compared per line, on the editor's `HyperMD-callout` line class. A footnote definition is compared on its `[^label]:` alone, since the editor gives a link reference definition's label the same classes.
+`scripts/oracles/syntax-diff.ts` scores the tree against the classes the live editor gave five of the oracle corpora of Phase 1 (seeds 12345, 777, 4242, 2026 and 9001, 21,140 documents of every piece set), construct by construct. For each one it compares the characters the editor marks with the characters the tree's nodes cover. Whitespace is not compared, nor is the inside of a comment, where the editor still styles markdown and the tree has none. A callout is compared per line, on the editor's `HyperMD-callout` line class. A footnote definition is compared on its `[^label]:` alone, since the editor gives a link reference definition's label the same classes.
 
 | Construct | Documents using it | Agreeing | Disagreeing, by piece set |
 | --- | ---: | ---: | --- |
@@ -63,7 +63,7 @@ A link's content is a file name and a subpath, and the worker resolves it as one
 | footnote definition | 455 | 436 | mdlang 16, obsidian 3 |
 | task marker | 1,054 | 937 | quote 52, obsidian 21, mdlang 14, nest 14, rich 12, ord 4 |
 
-`src/oracle/syntax-score.test.ts` pins these numbers, so a change that moves one fails until the table and the test are updated together.
+`src/oracle/classes/syntax-score.test.ts` pins these numbers, so a change that moves one fails until the table and the test are updated together.
 
 The documents that disagree fall into a few groups. Each is a place where a line tokenizer and a block parser read a document differently, not a rule of the Obsidian syntax the tree gets wrong:
 
@@ -78,9 +78,9 @@ The documents that disagree fall into a few groups. Each is a place where a line
 
 ## The micromark and mdast adapter
 
-`micromarkObsidianSyntax` in `src/syntax/micromark.ts` is the Obsidian syntax as a micromark syntax extension, and `micromarkObsidianMarkdown` adds GFM tables, strikethrough (`~~` only) and bare URLs, as `obsidianMarkdown` does for Lezer. GFM task list items are left out, because Obsidian's task markers replace them. `mdastObsidianSyntax` in `src/syntax/mdast.ts` turns the tokens into mdast nodes, and `parseMdast()` runs both.
+`micromarkObsidianSyntax` in `src/syntax/unified/micromark.ts` is the Obsidian syntax as a micromark syntax extension, and `micromarkObsidianMarkdown` adds GFM tables, strikethrough (`~~` only) and bare URLs, as `obsidianMarkdown` does for Lezer. GFM task list items are left out, because Obsidian's task markers replace them. `mdastObsidianSyntax` in `src/syntax/unified/mdast.ts` turns the tokens into mdast nodes, and `parseMdast()` runs both.
 
-The tokens carry the `ObsidianNode` names, so the micromark events give the same outline as the Lezer tree. Every case in the corpus passes on the events, and on the mdast tree once the marks are left out (`src/syntax/micromark.test.ts`, `src/syntax/mdast.test.ts`).
+The tokens carry the `ObsidianNode` names, so the micromark events give the same outline as the Lezer tree. Every case in the corpus passes on the events, and on the mdast tree once the marks are left out (`src/syntax/unified/micromark.test.ts`, `src/syntax/unified/mdast.test.ts`).
 
 How the constructs are built:
 
@@ -114,7 +114,7 @@ A block's value leaves out the line ending after its opening delimiter and the o
 
 ### Measured against the Lezer extensions
 
-`scripts/adapter-diff.ts` compares the Obsidian nodes of the two adapters on the 29,596 documents of seven oracle corpora (seeds 12345, 777, 4242, 2026, 9001, 2718 and 31337), construct by construct, with each node's parts. 28,551 documents give the same nodes. `src/syntax/micromark.test.ts` pins the count for the first corpus (4,068 of 4,228).
+`scripts/oracles/adapter-diff.ts` compares the Obsidian nodes of the two adapters on the 29,596 documents of seven oracle corpora (seeds 12345, 777, 4242, 2026, 9001, 2718 and 31337), construct by construct, with each node's parts. 28,551 documents give the same nodes. `src/syntax/unified/micromark.test.ts` pins the count for the first corpus (4,068 of 4,228).
 
 | Construct | Documents using it | Agreeing | Disagreeing, by group |
 | --- | ---: | ---: | --- |
@@ -144,13 +144,13 @@ None of the differences is a rule of the Obsidian syntax. Each is a place where 
 
 ## The markdown-it plugin
 
-`markdownItObsidianSyntax` in `src/syntax/markdown-it.ts` is the Obsidian syntax as a markdown-it plugin. `createObsidianMarkdownIt()` adds it to a markdown-it with HTML and bare URLs enabled, whose default preset already has GFM tables and strikethrough (`~~` only), and `parseMarkdownIt()` parses with it. markdown-it has no task lists of its own, so Obsidian's task markers need no stand-in.
+`markdownItObsidianSyntax` in `src/syntax/markdown-it/markdown-it.ts` is the Obsidian syntax as a markdown-it plugin. `createObsidianMarkdownIt()` adds it to a markdown-it with HTML and bare URLs enabled, whose default preset already has GFM tables and strikethrough (`~~` only), and `parseMarkdownIt()` parses with it. markdown-it has no task lists of its own, so Obsidian's task markers need no stand-in.
 
 ### The tokens
 
 The tokens are named after `ObsidianNode`. A node with nodes inside it is a pair, `<name>_open` and `<name>_close`, as markdown-it's own `blockquote_open` and `blockquote_close` are, and a node with none is a single `<name>` token. So `[[Note|shown]]` gives `InternalLink_open`, `InternalLinkMark`, `InternalLinkPath`, `InternalLinkAliasMark`, `InternalLinkAlias`, `InternalLinkMark` and `InternalLink_close`. `obsidianNodeNameOf()` gives the node a token stands for.
 
-Every opening or single Obsidian token carries the source range it covers as `{ from, to }` in its `meta`, read with `getObsidianTokenRange()`. The offsets are into the source as markdown-it normalizes it, with every line ending as `\n`. With them, the tokens give the same outline as the Lezer tree, and every case in the corpus passes (`src/syntax/markdown-it.test.ts`).
+Every opening or single Obsidian token carries the source range it covers as `{ from, to }` in its `meta`, read with `getObsidianTokenRange()`. The offsets are into the source as markdown-it normalizes it, with every line ending as `\n`. With them, the tokens give the same outline as the Lezer tree, and every case in the corpus passes (`src/syntax/markdown-it/markdown-it.test.ts`).
 
 The tokens hold what the mdast nodes hold as fields: a leaf's text in `content` (a tag name, a link's path, a footnote label, a callout type), a mark's text in `markup`, and the text of a comment, math or front matter in its opening token's `content`. A task becomes `Task_open`, `TaskMarker` and `Task_close` around the inline content of its list item's first paragraph, and the list item gets a `task-list-item` class and the marker as `data-task`.
 
@@ -166,7 +166,7 @@ The plugin renders the syntax as plain HTML, not measured against Obsidian's rea
 
 ### Measured against the Lezer extensions
 
-`scripts/adapter-diff.ts --adapter markdown-it` compares the plugin with the Lezer extensions on the same 29,596 documents. 28,681 documents give the same nodes, more than the micromark adapter's 28,551. `src/syntax/markdown-it.test.ts` pins the count for the first corpus (4,085 of 4,228).
+`scripts/oracles/adapter-diff.ts --adapter markdown-it` compares the plugin with the Lezer extensions on the same 29,596 documents. 28,681 documents give the same nodes, more than the micromark adapter's 28,551. `src/syntax/markdown-it/markdown-it.test.ts` pins the count for the first corpus (4,085 of 4,228).
 
 | Construct | Documents using it | Agreeing | Disagreeing, by group |
 | --- | ---: | ---: | --- |

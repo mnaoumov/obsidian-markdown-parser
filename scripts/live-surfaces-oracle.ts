@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The live surface oracle: writes every note of `liveSurfaceDocuments()` (`src/oracle/live-surfaces.ts`) and the files
+ * The live surface oracle: writes every note of `liveSurfaceDocuments()` (`src/oracle/checks/live-surfaces.ts`) and the files
  * they link to into the vault of an owned Obsidian driven over CDP (`obsidian-integration-testing`, installed globally),
  * and reads what exists only in the app: each note's cache, `resolvedLinks` and `unresolvedLinks`, its Outline view, its
  * Backlinks in the Backlinks view and `getBacklinksForFile` of each file it links to, its text after a real
@@ -35,8 +35,8 @@ import type {
   LiveSurfacePaneResult,
   LiveSurfaceRead,
   LiveSurfaceTarget
-} from '../src/oracle/live-surfaces.ts';
-import type { SpecOracleMeta } from '../src/oracle/spec-oracle-file.ts';
+} from '../src/oracle/checks/live-surfaces.ts';
+import type { SpecOracleMeta } from '../src/oracle/spec/spec-oracle-file.ts';
 
 import {
   LIVE_SURFACE_FOLDER,
@@ -45,7 +45,7 @@ import {
   liveSurfaceDocuments,
   liveSurfaceNotePath,
   PROCESSED_KEY
-} from '../src/oracle/live-surfaces.ts';
+} from '../src/oracle/checks/live-surfaces.ts';
 
 interface App {
   fileManager: FileManager;

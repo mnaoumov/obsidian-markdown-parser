@@ -4,7 +4,7 @@
 
 ## Running it
 
-1. `npx jiti scripts/build-demo-plugin.ts` writes `dist/demo-plugin/main.js` and `manifest.json` (`--watch` rebuilds on change).
+1. `npx jiti scripts/demo/build-demo-plugin.ts` writes `dist/demo-plugin/main.js` and `manifest.json` (`--watch` rebuilds on change).
 2. Copy `dist/demo-plugin/` into a test vault as `.obsidian/plugins/markdown-parser-demo/` and enable **Markdown parser demo**.
 3. Run its commands from the command palette:
    - **Toggle the editor language** swaps the parser in and out of every open editor. The status bar says `Markdown parser: on` or `off`.
@@ -14,7 +14,7 @@
 
 Each command shows its report in a modal and keeps it on the plugin as `lastReport`.
 
-`npx jiti scripts/demo-plugin-measure.ts [--vault <dir>] [--lines <n>] [--obsidian-version <version>]` does all of that unattended. It starts an owned Obsidian instance through a global `obsidian-integration-testing` install. The instance runs the Obsidian version the oracles are pinned to (`PINNED_OBSIDIAN_VERSION` in `src/oracle/oracle-location.ts`) whichever version is installed, or the one `--obsidian-version` names, and the report's `appVersion` says which version ran. It copies a real vault's notes into its temporary vault, adds a note of `<n>` lines built from those notes (100,000 by default), installs the build, runs every command and prints the reports as JSON. The default vault is the `obsidian-community-vault` checkout beside this repository. Folders whose names start with `.` and `node_modules` folders are skipped.
+`npx jiti scripts/demo/demo-plugin-measure.ts [--vault <dir>] [--lines <n>] [--obsidian-version <version>]` does all of that unattended. It starts an owned Obsidian instance through a global `obsidian-integration-testing` install. The instance runs the Obsidian version the oracles are pinned to (`PINNED_OBSIDIAN_VERSION` in `src/oracle/oracle-location.ts`) whichever version is installed, or the one `--obsidian-version` names, and the report's `appVersion` says which version ran. It copies a real vault's notes into its temporary vault, adds a note of `<n>` lines built from those notes (100,000 by default), installs the build, runs every command and prints the reports as JSON. The default vault is the `obsidian-community-vault` checkout beside this repository. Folders whose names start with `.` and `node_modules` folders are skipped.
 
 ## How the swap works
 
@@ -36,7 +36,7 @@ The build keeps `obsidian`, `electron`, the `@codemirror/*` packages the app pro
 
 ## Results
 
-One run of `npx jiti scripts/demo-plugin-measure.ts --lines 100000` on 2026-10-22, Obsidian 1.14.4, on an AMD Ryzen 5 7500F. The vault is the 115 notes of `obsidian-community-vault` plus `long.md`, a note of 100,001 lines and 3,648,939 characters built by repeating them.
+One run of `npx jiti scripts/demo/demo-plugin-measure.ts --lines 100000` on 2026-10-22, Obsidian 1.14.4, on an AMD Ryzen 5 7500F. The vault is the 115 notes of `obsidian-community-vault` plus `long.md`, a note of 100,001 lines and 3,648,939 characters built by repeating them.
 
 **The swap works.** With the parser on, the editor renders the same classes, and live preview draws the same widgets: the fold indicator on a heading, the task checkbox, the callout, and the code block's flair and language highlighting.
 

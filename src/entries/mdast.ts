@@ -23,23 +23,23 @@ export type {
   ObsidianComment,
   ObsidianCommentBlock,
   Tag
-} from '../syntax/mdast.ts';
+} from '../syntax/unified/mdast.ts';
 
-export type { ParseMdastOptions } from '../syntax/mdast.ts';
+export type { ParseMdastOptions } from '../syntax/unified/mdast.ts';
 
 export {
   MDAST_NODE_TYPES,
   mdastObsidianMarkdown,
   mdastObsidianSyntax,
   parseMdast
-} from '../syntax/mdast.ts';
+} from '../syntax/unified/mdast.ts';
 
 export {
   micromarkObsidianTable,
   micromarkQuirksHtml
-} from '../syntax/micromark-quirks.ts';
+} from '../syntax/unified/micromark-quirks.ts';
 
-export type { CreateMicromarkObsidianMarkdownOptions } from '../syntax/micromark.ts';
+export type { CreateMicromarkObsidianMarkdownOptions } from '../syntax/unified/micromark.ts';
 
 export {
   createMicromarkObsidianMarkdown,
@@ -47,4 +47,4 @@ export {
   micromarkObsidianMarkdown,
   micromarkObsidianSyntax,
   ObsidianToken
-} from '../syntax/micromark.ts';
+} from '../syntax/unified/micromark.ts';
