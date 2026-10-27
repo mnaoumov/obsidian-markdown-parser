@@ -105,7 +105,7 @@ interface EditorSuggest {
   context: unknown;
   readonly getSuggestions: (context: unknown) => Promise<Suggestion[]> | Suggestion[];
   readonly onTrigger: (cursor: EditorPosition, editor: Editor, file: TFile) => null | object;
-  readonly selectSuggestion: (item: Suggestion, event: KeyboardEvent) => void;
+  readonly selectSuggestion: (item: Suggestion, $event: KeyboardEvent) => void;
 }
 
 interface EditorSuggests {

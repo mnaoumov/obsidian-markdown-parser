@@ -154,8 +154,8 @@ export async function openAndroidVault<Globals extends object>(params: OpenAndro
         const timer = setTimeout(() => {
           reject(new Error(`No answer from the app in ${String(EVAL_TIMEOUT_MS)} ms`));
         }, EVAL_TIMEOUT_MS);
-        socket.addEventListener('message', (event: MessageEvent<string>) => {
-          const parsed = JSON.parse(event.data) as CdpMessage;
+        socket.addEventListener('message', ($event: MessageEvent<string>) => {
+          const parsed = JSON.parse($event.data) as CdpMessage;
           if (parsed.id !== 1) {
             return;
           }

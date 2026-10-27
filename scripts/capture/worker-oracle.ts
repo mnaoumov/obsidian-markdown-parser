@@ -58,7 +58,7 @@ interface WorkerMessageData {
 }
 
 interface WorkerScope {
-  readonly onmessage?: (event: WorkerMessage) => void;
+  readonly onmessage?: ($event: WorkerMessage) => void;
   readonly postMessage: (message: unknown) => void;
 }
 

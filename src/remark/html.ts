@@ -222,22 +222,22 @@ function footnoteReference(context: RenderContext, node: RemarkNode, identifier:
   if (!footnote) {
     return null;
   }
-  const number = String(footnote.number);
-  const id = footnote.repeat > 0 ? `${number}-${String(footnote.repeat)}` : number;
-  const link = element('a', { 'class': 'footnote-link', 'data-footref': identifier, 'href': `#fn-${number}` }, [{ type: 'text', value: `[${id}]` }]);
+  const $number = String(footnote.number);
+  const id = footnote.repeat > 0 ? `${$number}-${String(footnote.repeat)}` : $number;
+  const link = element('a', { 'class': 'footnote-link', 'data-footref': identifier, 'href': `#fn-${$number}` }, [{ type: 'text', value: `[${id}]` }]);
   return element('sup', { 'class': 'footnote-ref', 'data-footnote-id': `fnref-${id}` }, [link]);
 }
 
 // The footnotes, numbered, after the document: each with a link back to each reference to it.
 function footnoteSection(context: RenderContext): HastElement {
   const items = context.footnotes.notes.map((note, index) => {
-    const number = String(index + 1);
+    const $number = String(index + 1);
     const content = all(context, { children: [...note.content], type: 'paragraph' });
     for (let repeat = 0; repeat < note.count; repeat++) {
-      const id = repeat > 0 ? `${number}-${String(repeat)}` : number;
+      const id = repeat > 0 ? `${$number}-${String(repeat)}` : $number;
       content.push(element('a', { class: 'footnote-backref footnote-link', href: `#fnref-${id}` }, [{ type: 'text', value: '↩︎' }]));
     }
-    return element('li', { 'data-footnote-id': `fn-${number}` }, [element('p', {}, content)]);
+    return element('li', { 'data-footnote-id': `fn-${$number}` }, [element('p', {}, content)]);
   });
   const list = element('ol', {}, wrap(items, true));
   return element('section', { class: 'footnotes' }, wrap([element('hr'), list], true));
