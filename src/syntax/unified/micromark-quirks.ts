@@ -494,8 +494,8 @@ function definitionWhitespace(text: string): TokenOp[] {
 }
 
 // A part of a definition between two one-character markers, holding a string.
-function delimited(type: TokenType, markerType: TokenType, stringType: TokenType, string: TokenOp[]): TokenOp[] {
-  return nodeOps(type, [...leafOps(markerType, 1), ...nodeOps(stringType, string), ...leafOps(markerType, 1)]);
+function delimited(type: TokenType, markerType: TokenType, stringType: TokenType, $string: TokenOp[]): TokenOp[] {
+  return nodeOps(type, [...leafOps(markerType, 1), ...nodeOps(stringType, $string), ...leafOps(markerType, 1)]);
 }
 // Whether the line so far, in a container tokenizer's events, starts with whitespace.
 function isIndented(context: TokenizeContext): boolean {
@@ -550,11 +550,11 @@ function nodeOps(type: TokenType, children: TokenOp[]): TokenOp[] {
 function openContent(context: TokenizeContext): null | OpenContent {
   const chunks: string[] = [];
   for (let index = context.events.length - 1; index >= 0; index--) {
-    const event = context.events[index];
-    if (!event) {
+    const $event = context.events[index];
+    if (!$event) {
       break;
     }
-    const [kind, token, tokenizer] = event;
+    const [kind, token, tokenizer] = $event;
     if (token.type === 'content') {
       return kind === 'enter' ? { from: token.start.offset, text: chunks.toReversed().join('') } : null;
     }
@@ -573,11 +573,11 @@ function openContent(context: TokenizeContext): null | OpenContent {
 function paragraphLinesBefore(flow: TokenizeContext, line: number): number {
   const chunks: string[] = [];
   for (let index = flow.events.length - 1; index >= 0; index--) {
-    const event = flow.events[index];
-    if (!event) {
+    const $event = flow.events[index];
+    if (!$event) {
       break;
     }
-    const [kind, token, tokenizer] = event;
+    const [kind, token, tokenizer] = $event;
     if (token.type === 'paragraph') {
       return line - token.start.line;
     }
@@ -621,8 +621,8 @@ function resolveLooseLists(events: Event[], context: TokenizeContext): Event[] {
  */
 function resolveSoftLineBreaks(events: Event[], context: TokenizeContext): Event[] {
   for (let index = events.length - 1; index > 0; index--) {
-    const event = events[index];
-    if (event?.[0] !== 'enter' || !softLineEndings.has(event[1])) {
+    const $event = events[index];
+    if ($event?.[0] !== 'enter' || !softLineEndings.has($event[1])) {
       continue;
     }
     const before = events[index - 1]?.[1];
@@ -633,7 +633,7 @@ function resolveSoftLineBreaks(events: Event[], context: TokenizeContext): Event
       before.type = 'hardBreakTrailing';
       continue;
     }
-    const point = { ...event[1].start };
+    const point = { ...$event[1].start };
     const hardBreak: Token = { end: point, start: point, type: 'hardBreakTrailing' };
     events.splice(index, 0, ['enter', hardBreak, context], ['exit', hardBreak, context]);
   }
@@ -1341,7 +1341,7 @@ function tokenizeSingleLineSetextUnderline(context: TokenizeContext, effects: Ef
 // A line ending of inline content, read as micromark reads it, and recorded so the resolver finds it.
 function tokenizeSoftLineBreak(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   return lineEnding.tokenize.call(context, effects, (code) => {
-    const token = context.events.findLast((event) => event[1].type === 'lineEnding')?.[1];
+    const token = context.events.findLast(($event) => $event[1].type === 'lineEnding')?.[1];
     if (token) {
       softLineEndings.add(token);
     }

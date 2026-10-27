@@ -80,6 +80,7 @@ function getCustomPluginConfigs(): Linter.Config[] {
         [IN_HOUSE_ESLINT_PLUGIN_NAME]: inHouseEslintPlugin
       },
       rules: {
+        'typescript-dev-toolkit/no-keyword-identifiers': 'error',
         'typescript-dev-toolkit/no-unused-params-members': 'error',
         'typescript-dev-toolkit/no-used-underscore-variables': 'error',
         'typescript-dev-toolkit/params-options-name-match': 'error',

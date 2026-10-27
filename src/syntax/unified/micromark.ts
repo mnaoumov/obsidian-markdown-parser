@@ -492,8 +492,8 @@ function exitFootnoteDefinition(effects: Effects): undefined {
 // The nearest highlight delimiter before `close` that can open, or `-1`.
 function findHighlightOpener(events: readonly Event[], close: number): number {
   for (let index = close - 1; index >= 0; index--) {
-    const event = events[index];
-    if (event?.[0] === 'exit' && event[1].type === ObsidianToken.HighlightSequence && event[1]._open === true) {
+    const $event = events[index];
+    if ($event?.[0] === 'exit' && $event[1].type === ObsidianToken.HighlightSequence && $event[1]._open === true) {
       return index;
     }
   }
@@ -593,11 +593,11 @@ function node(type: TokenType, ...children: readonly Op[][]): Op[] {
 function paragraphSoFar(context: TokenizeContext): string {
   const chunks: string[] = [];
   for (let index = context.events.length - 1; index >= 0; index--) {
-    const event = context.events[index];
-    if (!event) {
+    const $event = context.events[index];
+    if (!$event) {
       break;
     }
-    const [kind, token, tokenizer] = event;
+    const [kind, token, tokenizer] = $event;
     if (token.type === 'content') {
       return kind === 'enter' ? chunks.toReversed().join('') : '';
     }
@@ -646,9 +646,9 @@ function resolveAllHighlight(events: Event[], context: TokenizeContext): Event[]
     splice(events, open - 1, index - open + DELIMITER_SIZE + 1, nextEvents);
     index = open + nextEvents.length - DELIMITER_SIZE;
   }
-  for (const event of events) {
-    if (event[1].type === ObsidianToken.HighlightSequence) {
-      event[1].type = 'data';
+  for (const $event of events) {
+    if ($event[1].type === ObsidianToken.HighlightSequence) {
+      $event[1].type = 'data';
     }
   }
   return events;
