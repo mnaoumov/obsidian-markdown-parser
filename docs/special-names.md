@@ -161,7 +161,21 @@ What was found:
 | 7. Bare marks | - | Nothing to report. |
 | 8. No NFKC | - | Nothing to report. |
 
-Not measured here: Android, whose app storage folds an NFC name and its NFD into one file (finding 8 of [On Android](#on-android)), so that some of these pairs never reach the app there; macOS, where APFS keeps a name's form but compares names regardless of it, and HFS+ stored them decomposed; and Obsidian Sync, which the owned test instance has no account for.
+### The normalization sweep on Android
+
+```sh
+npx jiti scripts/special-names-oracle.ts --android --normalization [--serial <serial>] [--out-dir <directory>]
+npm run special-names -- --android --normalization [--details]
+```
+
+The same 21 names were read on Obsidian 1.14.4 for Android in the app-storage vault described above, on the Android 17 emulator. The oracle is `oracle/special-names-normalization-android-obsidian-1.14.4.json`, pinned by `src/oracle/special-names.test.ts` alongside the desktop sweep.
+
+1. **App storage folds canonically equivalent spellings before Obsidian sees them.** Each of the `o`, `n` and `p` groups is one file, retaining the spelling written first and the contents written last. Reading either spelling over `adb shell` after an edit through the vault gives the same edited text. Unlike NTFS, this storage cannot hold the separate files that the desktop vault shadows; the missing spellings in the surface table therefore do not represent hidden files. The kept note fails the text checks because the last write replaced its expected text with its partner's.
+2. **The ligature `ﬁx` and `fix` also share one file.** It retains `ﬁx.md`, so Obsidian indexes `ﬁx` only. A typed link to `fix` neither resolves nor creates a note: the file system already holds that name as `ﬁx`. This is a storage folding difference, not Obsidian applying NFKC: `Ａx` and `Ax`, and `x²` and `x2`, remain separate notes. The observation is limited to this emulator's app storage.
+3. **The non-NFC link defect remains.** Every reachable name has an NFC vault path, and only that spelling works with `getAbstractFileByPath`. Links typed in another spelling resolve in the cache and Reading view, but following them in the editor creates and opens a second note with a space and `1` appended, just as on the desktop. Bare combining marks work too.
+4. **No moved note is stranded.** A rename to another spelling is accepted without changing the file; a real rename or move away and back stores the NFC spelling. Since the storage holds only one file per equivalent name, there is no hidden NFC file to refuse the return, unlike desktop finding 6.
+
+Not measured here: macOS, where APFS keeps a name's form but compares names regardless of it, and HFS+ stored them decomposed; and Obsidian Sync, which the owned test instance has no account for.
 
 ## The full table
 

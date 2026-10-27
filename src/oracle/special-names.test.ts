@@ -7,8 +7,10 @@ import {
 import type { SpecialNamesFile } from './special-names.ts';
 
 import {
+  PINNED_ANDROID_OBSIDIAN_VERSION,
   readOracleFile,
   specialNamesAndroidOracleFileName,
+  specialNamesNormalizationAndroidOracleFileName,
   specialNamesNormalizationOracleFileName,
   specialNamesOracleFileName
 } from './oracle-location.ts';
@@ -264,5 +266,141 @@ describe('note names in neither normal form', () => {
     expect(read?.move?.resolved).toBe(true);
     expect(read?.move?.backLink).toBe(DESTINATION_EXISTS);
     expect(normalization['n\u{E9}\u{438}\u{306}']?.realpathAfterRenames).toBeNull();
+  });
+});
+
+// The normalization sweep on Android: app storage keeps one file for every spelling of a name that canonical equivalence
+// or full case folding makes equal, named as the spelling written first and holding the text written last. Every other
+// spelling of such a name fails everywhere, and so does the kept one, whose text is another name's, but the first rename
+// onto its NFC path.
+const ANDROID_FOLDS: readonly (readonly string[])[] = [
+  ['o\u{323}\u{302}', 'o\u{302}\u{323}'],
+  ['n\u{E9}\u{439}', 'ne\u{301}\u{438}\u{306}', 'n\u{E9}\u{438}\u{306}'],
+  ['pe\u{301}\u{438}\u{306}', 'p\u{E9}\u{438}\u{306}', 'p\u{E9}\u{439}'],
+  ['\u{FB01}x', 'fix']
+];
+const ANDROID_NORMALIZATION_FAILURES: readonly string[] = ANDROID_FOLDS.flatMap(([kept = '', ...others]) => [
+  ...SPECIAL_NAME_SURFACES.filter((surface) => surface !== 'rename-onto').map((surface) => `${kept}: ${surface}`),
+  ...others.flatMap((other) => SPECIAL_NAME_SURFACES.map((surface) => `${other}: ${surface}`))
+]);
+
+const androidNormalizationFile = readOracleFile(specialNamesNormalizationAndroidOracleFileName()) as SpecialNamesFile;
+const androidNormalizationVerdicts = judgeSpecialNames(androidNormalizationFile, NORMALIZATION_NAMES);
+const androidNormalization = androidNormalizationFile.normalization ?? {};
+const androidFolded = new Set(ANDROID_FOLDS.flat());
+// `fix` is the one name whose file system spelling is not canonically equivalent to the kept one, so nothing in the vault
+// holds its NFC path.
+const androidReachable = NORMALIZATION_NAMES.map(({ name }) => name).filter((name) => name !== 'fix');
+
+describe('note names in neither normal form on Android', () => {
+  it('holds every name and every spelling probe', () => {
+    expect(androidNormalizationFile.meta.appVersion).toBe(PINNED_ANDROID_OBSIDIAN_VERSION);
+    expect(Object.keys(androidNormalization)).toHaveLength(NORMALIZATION_NAMES.length);
+    for (const { name } of NORMALIZATION_NAMES) {
+      expect(androidNormalization[name]?.lookups.length).toBeGreaterThan(0);
+      expect(androidNormalization[name]?.typedLinks.length).toBeGreaterThan(0);
+    }
+    expect(androidNormalizationFile.shadowWrites).toHaveLength(5);
+  });
+
+  it('fails on exactly the known surfaces', () => {
+    const failures: string[] = [];
+    for (const { name } of NORMALIZATION_NAMES) {
+      for (const surface of SPECIAL_NAME_SURFACES) {
+        if (androidNormalizationVerdicts.get(name)?.get(surface)?.status === 'fails') {
+          failures.push(`${name}: ${surface}`);
+        }
+      }
+    }
+    expect(failures.toSorted((a, b) => a.localeCompare(b))).toEqual(ANDROID_NORMALIZATION_FAILURES.toSorted((a, b) => a.localeCompare(b)));
+  });
+
+  it('folds equal spellings into one file, named as the first written and holding the last written text', () => {
+    for (const fold of ANDROID_FOLDS) {
+      const [kept = ''] = fold;
+      const last = fold.at(-1) ?? '';
+      expect(androidNormalizationFile.reads[kept]?.indexed).toBe(specialNamePath(kept.normalize('NFC')));
+      expect(androidNormalization[kept]?.realpath).toBe(specialNamePath(kept));
+      expect(androidNormalizationFile.reads[kept]?.text).toBe(specialNameText(NORMALIZATION_NAMES.findIndex(({ name }) => name === last)));
+      for (const other of fold.slice(1)) {
+        expect(androidNormalizationFile.reads[other]?.indexed).toBeNull();
+      }
+    }
+  });
+
+  it('edits one file for every spelling of a folded name', () => {
+    for (const write of androidNormalizationFile.shadowWrites) {
+      expect(write.nameText).toBe(SHADOW_EDIT_TEXT);
+      expect(write.partnerText).toBe(SHADOW_EDIT_TEXT);
+    }
+  });
+
+  it('indexes every other name under its NFC path, reading the file under the name it was written with, as on the desktop', () => {
+    for (const { name } of NORMALIZATION_NAMES) {
+      if (androidFolded.has(name)) {
+        continue;
+      }
+      expect(androidNormalizationFile.reads[name]?.indexed).toBe(specialNamePath(name.normalize('NFC')));
+      expect(androidNormalization[name]?.realpath).toBe(specialNamePath(name));
+    }
+  });
+
+  it('finds a note by getAbstractFileByPath under its NFC spelling only, as on the desktop', () => {
+    for (const name of androidReachable) {
+      const lookups = androidNormalization[name]?.lookups ?? [];
+      for (const lookup of lookups) {
+        expect(lookup.found !== null).toBe(lookup.form === 'nfc' || lookup.form === 'both');
+      }
+    }
+  });
+
+  it('resolves a typed link as the NFC note, and creates a second note when the editor follows one not in NFC, as on the desktop', () => {
+    for (const name of androidReachable) {
+      const notePath = specialNamePath(name.normalize('NFC'));
+      const typedLinks = androidNormalization[name]?.typedLinks ?? [];
+      for (const typed of typedLinks) {
+        const isNfc = typed.form === 'nfc' || typed.form === 'both';
+        expect(typed.resolved).toBe(notePath);
+        expect(typed.opened).toBe(notePath);
+        expect(typed.followed).toBe(isNfc ? notePath : `special-names/${name.normalize('NFC')} 1.md`);
+        expect(typed.created).toEqual(isNfc ? [] : [`special-names/${name.normalize('NFC')} 1.md`]);
+      }
+    }
+  });
+
+  it('cannot create the note a link to fix names, since the file system already holds ﬁx', () => {
+    const typedLinks = androidNormalization['fix']?.typedLinks ?? [];
+    for (const typed of typedLinks) {
+      expect(typed.resolved).toBeNull();
+      expect(typed.followed).toBeNull();
+      expect(typed.created).toEqual([]);
+    }
+  });
+
+  it('keeps a full-width letter and a superscript apart from their NFKC', () => {
+    for (const name of ['\u{FF21}x', 'Ax', 'x\u{B2}', 'x2']) {
+      expect(androidNormalizationFile.reads[name]?.indexed).toBe(specialNamePath(name));
+    }
+  });
+
+  it('accepts a rename to another spelling of the same name and changes nothing on disk, as on the desktop', () => {
+    for (const read of Object.values(androidNormalization)) {
+      const formRenames = read.formRenames ?? [];
+      const originalRealpath = formRenames[0]?.realpath;
+      for (const rename of formRenames) {
+        expect(rename.refusal).toBeNull();
+        expect(rename.path).toBe(rename.path?.normalize('NFC'));
+        expect(rename.realpath).toBe(originalRealpath);
+      }
+    }
+  });
+
+  it('stores every note renamed or moved and back under its NFC spelling, and strands none', () => {
+    for (const { name } of NORMALIZATION_NAMES) {
+      if (androidNormalizationFile.reads[name]?.indexed !== null) {
+        expect(androidNormalization[name]?.realpathAfterRenames).toBe(specialNamePath(name.normalize('NFC')));
+      }
+    }
+    expect(androidNormalizationFile.reads['n\u{E9}\u{439}']?.move?.backResolved).toBe(true);
   });
 });

@@ -20,13 +20,14 @@
  * The device must be booted with Obsidian started; `--serial` picks one of several. Writes them to
  * `oracle/special-names-android-obsidian-<version>.json`.
  *
- * With `--normalization` it sweeps `NORMALIZATION_NAMES` on the desktop instead: names in neither NFC nor NFD, several
+ * With `--normalization` it sweeps `NORMALIZATION_NAMES` instead: names in neither NFC nor NFD, several
  * spellings of one name at once, bare combining marks and compatibility characters. Beyond the surfaces it reads the file
  * on disk each note reads, what `getAbstractFileByPath` finds under each spelling, where links typed by hand in each
  * spelling lead, and what renaming a second file of each name between its spellings does. Writes them to
- * `oracle/special-names-normalization-obsidian-<version>.json`.
+ * `oracle/special-names-normalization-obsidian-<version>.json`, or with `--android` as well on Android, to
+ * `oracle/special-names-normalization-android-obsidian-<version>.json`.
  *
- * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--android [--serial <serial>] | --normalization] [--out-dir <directory>]`.
+ * Usage: `jiti scripts/special-names-oracle.ts [--obsidian-version <version>] [--android [--serial <serial>]] [--normalization] [--out-dir <directory>]`.
  */
 
 /// <reference lib="dom.iterable" />
@@ -68,6 +69,7 @@ import type { OracleVault } from './android-vault.ts';
 
 import {
   specialNamesAndroidOracleFileName,
+  specialNamesNormalizationAndroidOracleFileName,
   specialNamesNormalizationOracleFileName,
   specialNamesOracleFileName
 } from '../src/oracle/oracle-location.ts';
@@ -432,6 +434,7 @@ const EMBED_MS = 400;
 const URI_MS = 300;
 const GRAPH_MS = 2000;
 const OPEN_LINK_MS = 500;
+const FOLLOW_POLLS = 8;
 const WIKILINK_CURSOR_CH = 3;
 const MARKDOWN_LINK_CURSOR_CH = 1;
 const SWITCHER_MAX_OFFERS = 50;
@@ -496,7 +499,7 @@ async function clickInReadingView(linkerPath: string): Promise<Pick<TypedLinkRea
 // editor follows the note's own text, not the cache. Returns the note it opened, or `null` where none opened.
 async function followInEditor(linkerPath: string, cursorCh: number): Promise<null | string> {
   return await conn.evalInObsidian({
-    callback: async ({ app, cursorCh: ch, linkerPath: path, openMs }) => {
+    callback: async ({ app, cursorCh: ch, linkerPath: path, openMs, polls }) => {
       const linker = app.vault.getFileByPath(path);
       if (linker === null) {
         throw new Error(`No ${path}`);
@@ -506,13 +509,16 @@ async function followInEditor(linkerPath: string, cursorCh: number): Promise<nul
       app.workspace.setActiveLeaf(leaf, { focus: true });
       (leaf.view as MarkdownView).editor.setCursor({ ch, line: 0 });
       app.commands.executeCommandById('editor:follow-link');
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, openMs);
-      });
+      // A slow device can take longer than one wait to open the note, or to create it first.
+      for (let poll = 0; poll < polls && app.workspace.getActiveFile()?.path === path; poll++) {
+        await new Promise((resolve) => {
+          globalThis.setTimeout(resolve, openMs);
+        });
+      }
       const followed = app.workspace.getActiveFile()?.path ?? null;
       return followed === path ? null : followed;
     },
-    input: { cursorCh, linkerPath, openMs: OPEN_LINK_MS }
+    input: { cursorCh, linkerPath, openMs: OPEN_LINK_MS, polls: FOLLOW_POLLS }
   });
 }
 
@@ -1057,10 +1063,7 @@ async function setUp(): Promise<SpecialNamesMeta> {
 // The names the sweep writes, the names it types into the rename, and its oracle file's name.
 function sweepOf(isAndroidSweep: boolean, isNormalizationSweep: boolean): Sweep {
   if (isNormalizationSweep) {
-    if (isAndroidSweep) {
-      throw new Error('The normalization sweep is read on the desktop only so far');
-    }
-    return { fileNameOf: specialNamesNormalizationOracleFileName, names: NORMALIZATION_NAMES, renameCheckNames: [] };
+    return { fileNameOf: isAndroidSweep ? specialNamesNormalizationAndroidOracleFileName : specialNamesNormalizationOracleFileName, names: NORMALIZATION_NAMES, renameCheckNames: [] };
   }
   return isAndroidSweep
     ? { fileNameOf: specialNamesAndroidOracleFileName, names: ANDROID_SPECIAL_NAMES, renameCheckNames: ANDROID_RENAME_CHECK_NAMES }
