@@ -79,42 +79,61 @@ const enum TableType {
  * The editor mode.
  */
 export interface ObsidianMode {
-  blankLine: (state: ObsidianState) => null | string;
-  copyState: (state: ObsidianState) => ObsidianState;
-  startState: () => ObsidianState;
-  token: (stream: Stream, state: ObsidianState) => null | string;
+  readonly blankLine: (state: ObsidianState) => null | string;
+  readonly copyState: (state: ObsidianState) => ObsidianState;
+  readonly startState: () => ObsidianState;
+  readonly token: (stream: Stream, state: ObsidianState) => null | string;
 }
 
 /**
  * The editor mode's state: the markdown state plus the HyperMD and Obsidian fields.
  */
 export interface ObsidianState extends MarkdownState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdEnteredMath: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdFootnote: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdInnerExitChecker: ExitChecker | null;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdInnerMode: AnyMode | null;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdInnerState: null | object;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdInnerStyle: string | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdIsHeading: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdLineStartedWithMath: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdLinkType: LinkType;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdMathBlock: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdNextMaybe: NextMaybe;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdOverride: ((stream: Stream, state: ObsidianState) => null | string) | null;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdTable: TableType;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdTableCol: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdTableColumns: string[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdTableRow: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   hmdWasHeading: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The Obsidian tokenizer updates this state as it enters and leaves constructs.
   inlineFootnote: boolean;
 }
 
 type ExitChecker = (stream: Stream, state: ObsidianState) => ExitInfo | null;
 
 interface ExitInfo {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The inner-mode exit checker advances the closing delimiter position.
   endPos?: number;
-  skipInnerMode?: boolean;
-  style?: string;
+  readonly skipInnerMode?: boolean;
+  readonly style?: string;
 }
 
 const TAG_RE = /^[^\u{2000}-\u{206F}\u{2E00}-\u{2E7F}'!"#$%&()*+,.:;<=>?@^`{|}~[\]\\\s]+/u;

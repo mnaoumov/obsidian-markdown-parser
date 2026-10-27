@@ -92,7 +92,7 @@ interface Edit {
 interface EditorParseContext {
   readonly skipped: readonly ParseRange[];
   readonly tree: Tree;
-  work: (until: number) => boolean;
+  readonly work: (until: number) => boolean;
 }
 
 type EditorParseContextConstructor = new (

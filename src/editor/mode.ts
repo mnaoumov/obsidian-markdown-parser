@@ -35,7 +35,7 @@ export interface Mode<State> {
    * @param indentUnit - The indent unit.
    * @returns A style for the line, if any.
    */
-  blankLine?: (state: State, indentUnit: number) => null | string | undefined;
+  readonly blankLine?: (state: State, indentUnit: number) => null | string | undefined;
 
   /**
    * Copies a state.
@@ -43,12 +43,12 @@ export interface Mode<State> {
    * @param state - The state.
    * @returns The copy.
    */
-  copyState?: (state: State) => State;
+  readonly copyState?: (state: State) => State;
 
   /**
    * The mode's name.
    */
-  name?: string;
+  readonly name?: string;
 
   /**
    * Creates the state at the start of a document.
@@ -56,7 +56,7 @@ export interface Mode<State> {
    * @param baseColumn - The column the mode's text starts at. CodeMirror 5's markdown mode never passes one.
    * @returns The state.
    */
-  startState?: (baseColumn?: number) => State;
+  readonly startState?: (baseColumn?: number) => State;
 
   /**
    * Reads one token.
@@ -65,7 +65,7 @@ export interface Mode<State> {
    * @param state - The state.
    * @returns The token's space-separated classes, or `null` for none.
    */
-  token: (stream: CodeMirrorStringStream, state: State) => null | string;
+  readonly token: (stream: CodeMirrorStringStream, state: State) => null | string;
 }
 
 /**

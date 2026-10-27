@@ -67,27 +67,32 @@ interface FootnoteNumbering {
 }
 
 interface MutableListItemCache {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The metadata walk attaches this field after creating the list item cache.
   id?: string;
-  parent: number;
-  position: Pos;
+  readonly parent: number;
+  readonly position: Pos;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The metadata walk attaches this field after creating the list item cache.
   task?: string;
 }
 
 interface MutableMetadata {
-  blocks: Record<string, BlockCache>;
-  embeds: EmbedCache[];
+  readonly blocks: Record<string, BlockCache>;
+  readonly embeds: EmbedCache[];
   // eslint-disable-next-line unicorn/name-replacements -- The worker's own name, which the JSON comparison sees.
-  footnoteRefs: FootnoteReferenceCache[];
-  footnotes: FootnoteCache[];
+  readonly footnoteRefs: FootnoteReferenceCache[];
+  readonly footnotes: FootnoteCache[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The metadata walk fills front matter fields after parsing the YAML node.
   frontmatter?: FrontMatterCache;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The metadata walk fills front matter fields after parsing the YAML node.
   frontmatterLinks?: FrontmatterLinkCache[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The metadata walk fills front matter fields after parsing the YAML node.
   frontmatterPosition?: Pos;
-  headings: HeadingCache[];
-  links: LinkCache[];
-  listItems: ListItemCache[];
-  referenceLinks: ReferenceLinkCache[];
-  sections: SectionCache[];
-  tags: TagCache[];
+  readonly headings: HeadingCache[];
+  readonly links: LinkCache[];
+  readonly listItems: ListItemCache[];
+  readonly referenceLinks: ReferenceLinkCache[];
+  readonly sections: SectionCache[];
+  readonly tags: TagCache[];
 }
 
 interface Walk {

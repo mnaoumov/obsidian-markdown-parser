@@ -42,8 +42,10 @@ interface Indentation {
 }
 
 interface ListItemDraft {
-  indent: number;
+  readonly indent: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning extends the draft while consuming continuation lines.
   trail: string[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning extends the draft while consuming continuation lines.
   value: string[];
 }
 

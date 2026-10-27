@@ -36,9 +36,9 @@ import type { SpecOracleMeta } from '../../src/oracle/spec/spec-oracle-file.ts';
 import { QUIRK_PROBES } from '../../src/oracle/spec/quirk-probes.ts';
 
 interface App {
-  metadataCache: MetadataCache;
-  vault: Vault;
-  workspace: Workspace;
+  readonly metadataCache: MetadataCache;
+  readonly vault: Vault;
+  readonly workspace: Workspace;
 }
 
 interface CachedMetadataSection {
@@ -51,12 +51,12 @@ interface CachedMetadataSections {
 }
 
 interface CdpConnection extends AsyncDisposable {
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result>) => Promise<Result>;
 }
 
 interface Component {
-  load: () => void;
-  unload: () => void;
+  readonly load: () => void;
+  readonly unload: () => void;
 }
 
 interface ConnectToCdpOptions {
@@ -64,15 +64,15 @@ interface ConnectToCdpOptions {
 }
 
 interface DataAdapter {
-  exists: (path: string) => Promise<boolean>;
+  readonly exists: (path: string) => Promise<boolean>;
 }
 
 interface Electron {
-  ipcRenderer?: IpcRenderer;
+  readonly ipcRenderer?: IpcRenderer;
 }
 
 interface ElectronGlobal {
-  electron?: Electron;
+  readonly electron?: Electron;
 }
 
 interface EvalInObsidianParams<Input extends object, Result> {
@@ -81,33 +81,33 @@ interface EvalInObsidianParams<Input extends object, Result> {
 }
 
 interface IpcRenderer {
-  sendSync?: (channel: string) => string;
+  readonly sendSync?: (channel: string) => string;
 }
 
 interface Leaf {
-  setViewState: (state: unknown) => Promise<void>;
+  readonly setViewState: (state: unknown) => Promise<void>;
 }
 
 interface MarkdownRenderer {
-  render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
+  readonly render: (app: App, markdown: string, element: HTMLElement, sourcePath: string, component: Component) => Promise<void>;
 }
 
 interface MetadataCache {
-  computeMetadataAsync: (data: ArrayBuffer) => Promise<unknown>;
+  readonly computeMetadataAsync: (data: ArrayBuffer) => Promise<unknown>;
 }
 
 interface ObsidianGlobals {
-  app: App;
-  obsidianModule: ObsidianModule;
+  readonly app: App;
+  readonly obsidianModule: ObsidianModule;
 }
 
 interface ObsidianModule {
-  Component: new () => Component;
-  MarkdownRenderer: MarkdownRenderer;
+  readonly Component: new () => Component;
+  readonly MarkdownRenderer: MarkdownRenderer;
 }
 
 interface OitModule {
-  connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
+  readonly connectToCdp: (options: ConnectToCdpOptions) => Promise<CdpConnection>;
 }
 
 interface ProbeBatch {
@@ -130,14 +130,14 @@ interface SectionPosition {
 }
 
 interface Vault {
-  adapter: DataAdapter;
-  create: (path: string, data: string) => Promise<unknown>;
-  setConfig: (name: string, value: unknown) => void;
+  readonly adapter: DataAdapter;
+  readonly create: (path: string, data: string) => Promise<unknown>;
+  readonly setConfig: (name: string, value: unknown) => void;
 }
 
 interface Workspace {
-  getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
-  getMostRecentLeaf: () => Leaf | null;
+  readonly getLeaf: (shouldCreateNewLeaf: boolean) => Leaf;
+  readonly getMostRecentLeaf: () => Leaf | null;
 }
 
 const BATCH_SIZE = 40;

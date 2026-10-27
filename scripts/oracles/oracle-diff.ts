@@ -23,12 +23,16 @@ import {
 
 interface ClassScore {
   readonly docs: Set<string>;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Oracle scoring increments this counter for each differing class span.
   extra: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Oracle scoring increments this counter for each differing class span.
   missed: number;
 }
 
 interface SetScore {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Oracle scoring increments this counter for each measured document.
   exact: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Oracle scoring increments this counter for each measured document.
   total: number;
 }
 

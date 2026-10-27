@@ -191,6 +191,7 @@ export type TokenizerResult = boolean | RemarkNode | undefined;
 type Interruptors = readonly BlockTokenizerName[];
 
 interface PositionCarrier {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The parser attaches source positions after the node has been constructed.
   position?: RemarkPosition;
 }
 

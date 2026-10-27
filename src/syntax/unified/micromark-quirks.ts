@@ -86,34 +86,37 @@ declare module 'micromark-util-types' {
     /**
      * Whether the HTML compiler is inside a table the `gfmTable` quirk read.
      */
-    obsidianTable?: boolean | undefined;
+    readonly obsidianTable?: boolean | undefined;
 
     /**
      * The tag of the cells of the table row the HTML compiler is in: `th` in a header row.
      */
-    obsidianTableCellTag?: 'td' | 'th' | undefined;
+    readonly obsidianTableCellTag?: 'td' | 'th' | undefined;
   }
 
   interface Token {
     /**
      * On an `obsidianAutolinkTarget`: what the autolink shows and where it links to, decoded.
      */
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The quirk resolver annotates existing micromark tokens after tokenization.
     _obsidianAutolink?: ObsidianLinkTarget | undefined;
 
     /**
      * On a list: whether the `looseList` quirk made it loose.
      */
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The quirk resolver annotates existing micromark tokens after tokenization.
     _obsidianLoose?: boolean;
 
     /**
      * On a character reference's value: the text it stands for, when the `characterReference` quirk read it.
      */
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The quirk resolver annotates existing micromark tokens after tokenization.
     _obsidianValue?: string | undefined;
   }
 
   interface TokenTypeMap {
-    obsidianAutolinkTarget: 'obsidianAutolinkTarget';
-    obsidianTable: 'obsidianTable';
+    readonly obsidianAutolinkTarget: 'obsidianAutolinkTarget';
+    readonly obsidianTable: 'obsidianTable';
   }
 }
 
@@ -153,6 +156,7 @@ interface ExitOp {
 
 // A list being scanned for a blank line followed by more of it.
 interface LooseListScan {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning records blank lines as continuation lines are consumed.
   hasBlankLine: boolean;
   // How many quotes hold the list: a line with more quote prefixes has a quote of the list's own.
   readonly quoteDepth: number;
@@ -161,9 +165,12 @@ interface LooseListScan {
 
 // The document's lines read so far by the loose list resolver.
 interface LooseListsScan {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning updates container context for each successive line.
   hasItemMarker: boolean;
   readonly lists: LooseListScan[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning updates container context for each successive line.
   quoteDepth: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- List scanning updates container context for each successive line.
   quotePrefixes: number;
 }
 

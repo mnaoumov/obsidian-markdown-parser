@@ -39,7 +39,7 @@ import { normalizeIdentifier } from 'micromark-util-normalize-identifier';
 
 // The internal state of `InlineContext` the link reference check needs: the delimiters and elements read so far.
 interface InlineParts {
-  parts: (null | object)[];
+  readonly parts: (null | object)[];
 }
 
 const CODE_INDENT = 4;

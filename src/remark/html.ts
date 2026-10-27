@@ -30,6 +30,7 @@ interface EmbedSize {
 // A numbered footnote: its content, and how often it is referred to.
 interface FootnoteNote {
   readonly content: readonly RemarkNode[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering increments the reference count to generate distinct back links.
   count: number;
 }
 
@@ -51,7 +52,7 @@ type HastAttributes = Record<string, boolean | number | string | undefined>;
 
 interface HastElement {
   readonly attributes: HastAttributes;
-  children: HastNode[];
+  readonly children: HastNode[];
   readonly tagName: string;
   readonly type: 'element';
 }
@@ -65,6 +66,7 @@ interface HastRaw {
 
 interface HastText {
   readonly type: 'text';
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering coalesces adjacent text by appending to the existing text node.
   value: string;
 }
 

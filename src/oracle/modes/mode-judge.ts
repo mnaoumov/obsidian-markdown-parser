@@ -179,6 +179,7 @@ interface OpenRun {
   readonly fact: CharacterFact | LineFact;
   readonly from: number;
   readonly side: ModeSide;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The judge extends the end of the current run as adjacent characters match.
   to: number;
 }
 

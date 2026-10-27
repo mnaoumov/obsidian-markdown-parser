@@ -72,9 +72,12 @@ interface Definition {
 }
 
 interface LinePosition {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering advances the cursor through tabs and container indentation.
   col: number;
   // The columns left of a tab that a container prefix took only part of.
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering advances the cursor through tabs and container indentation.
   partial: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering advances the cursor through tabs and container indentation.
   pos: number;
 }
 
@@ -100,14 +103,18 @@ interface RenderContext {
   readonly lineStarts: readonly number[];
   readonly listItemLayouts: Map<number, ListItemLayout>;
   readonly looseList: ObsidianQuirkFlags['looseList'];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering updates the output buffer or nesting depth while visiting nodes.
   out: string;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Rendering updates the output buffer or nesting depth while visiting nodes.
   tableCellDepth: number;
   readonly text: string;
 }
 
 // The output of an inline run so far, and whether the next whitespace starts a line.
 interface TextState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Text rendering updates its accumulated output and line-start state.
   isAtLineStart: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Text rendering updates its accumulated output and line-start state.
   out: string;
 }
 

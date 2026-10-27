@@ -196,16 +196,19 @@ export interface Reports {
   /**
    * The last class comparison.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Each comparison command replaces its latest report for the results view.
   classes?: ClassComparisonReport;
 
   /**
    * The last measurement.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Each comparison command replaces its latest report for the results view.
   measurement?: MeasurementReport;
 
   /**
    * The last metadata comparison.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Each comparison command replaces its latest report for the results view.
   metadata?: MetadataComparisonReport;
 }
 

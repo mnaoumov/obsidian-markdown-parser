@@ -13,7 +13,7 @@ export interface RemarkBlockId extends RemarkNodeBase<'blockId'> {
   /**
    * The id, without its `^`.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -23,7 +23,7 @@ export interface RemarkBlockquote extends RemarkParentBase<'blockquote'> {
   /**
    * The callout its first line opens, or `null`.
    */
-  callout: null | RemarkCallout;
+  readonly callout: null | RemarkCallout;
 }
 
 /**
@@ -58,17 +58,17 @@ export interface RemarkCode extends RemarkNodeBase<'code'> {
   /**
    * The first word of the info string, or `null`.
    */
-  lang: null | string;
+  readonly lang: null | string;
 
   /**
    * The rest of the info string, or `null`.
    */
-  meta: null | string;
+  readonly meta: null | string;
 
   /**
    * The code.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -78,22 +78,22 @@ export interface RemarkDefinition extends RemarkNodeBase<'definition'> {
   /**
    * The label, normalized: whitespace collapsed and lowercased.
    */
-  identifier: string;
+  readonly identifier: string;
 
   /**
    * The label as written.
    */
-  label: string;
+  readonly label: string;
 
   /**
    * The title, or `null`.
    */
-  title: null | string;
+  readonly title: null | string;
 
   /**
    * The destination.
    */
-  url: string;
+  readonly url: string;
 }
 
 /**
@@ -118,12 +118,12 @@ export interface RemarkFootnoteDefinition extends RemarkParentBase<'footnoteDefi
   /**
    * The label, lowercased.
    */
-  identifier: string;
+  readonly identifier: string;
 
   /**
    * The label as written.
    */
-  label: string;
+  readonly label: string;
 }
 
 /**
@@ -133,12 +133,12 @@ export interface RemarkFootnoteReference extends RemarkNodeBase<'footnoteReferen
   /**
    * The label, lowercased.
    */
-  identifier: string;
+  readonly identifier: string;
 
   /**
    * The label as written.
    */
-  label: string;
+  readonly label: string;
 }
 
 /**
@@ -148,7 +148,7 @@ export interface RemarkHeading extends RemarkParentBase<'heading'> {
   /**
    * The level, 1 to 6.
    */
-  depth: number;
+  readonly depth: number;
 }
 
 /**
@@ -158,7 +158,7 @@ export interface RemarkHighlight extends RemarkParentBase<'highlight'> {
   /**
    * The color a colored square or circle emoji opening the text names, which is no part of the content, or `null`.
    */
-  color: null | string;
+  readonly color: null | string;
 }
 
 /**
@@ -168,7 +168,7 @@ export interface RemarkHtml extends RemarkNodeBase<'html'> {
   /**
    * The HTML.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -178,17 +178,17 @@ export interface RemarkImage extends RemarkNodeBase<'image'> {
   /**
    * The description as source text, or `null` when empty.
    */
-  alt: null | string;
+  readonly alt: null | string;
 
   /**
    * The title, or `null`.
    */
-  title: null | string;
+  readonly title: null | string;
 
   /**
    * The destination.
    */
-  url: string;
+  readonly url: string;
 }
 
 /**
@@ -198,22 +198,22 @@ export interface RemarkImageReference extends RemarkNodeBase<'imageReference'> {
   /**
    * The description as source text, or `null` when empty.
    */
-  alt: null | string;
+  readonly alt: null | string;
 
   /**
    * The label, normalized.
    */
-  identifier: string;
+  readonly identifier: string;
 
   /**
    * The label as written.
    */
-  label: string;
+  readonly label: string;
 
   /**
    * The kind of reference.
    */
-  referenceType: RemarkReferenceType;
+  readonly referenceType: RemarkReferenceType;
 }
 
 /**
@@ -223,7 +223,7 @@ export interface RemarkInlineCode extends RemarkNodeBase<'inlineCode'> {
   /**
    * The code.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -238,12 +238,12 @@ export interface RemarkInlineMath extends RemarkNodeBase<'inlineMath'> {
   /**
    * Whether it is written `$$tex$$`, which shows as a block.
    */
-  display: boolean;
+  readonly display: boolean;
 
   /**
    * The TeX.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -258,18 +258,18 @@ export interface RemarkInternalLinkBase<Type extends string> extends RemarkNodeB
   /**
    * The text after the first `|`, trimmed, or `null` without one.
    */
-  alias: null | string;
+  readonly alias: null | string;
 
   /**
    * The text it shows: the alias, or else the target with each run of `#` made ` > `.
    */
-  displayText: string;
+  readonly displayText: string;
 
   /**
    * The link text before the first `|`, trimmed, with a final backslash taken off, no-break spaces made spaces, and in
    * Unicode normal form C: the path with its subpath.
    */
-  target: string;
+  readonly target: string;
 }
 
 /**
@@ -279,12 +279,12 @@ export interface RemarkLink extends RemarkParentBase<'link'> {
   /**
    * The title, or `null`.
    */
-  title: null | string;
+  readonly title: null | string;
 
   /**
    * The destination.
    */
-  url: string;
+  readonly url: string;
 }
 
 /**
@@ -294,17 +294,17 @@ export interface RemarkLinkReference extends RemarkParentBase<'linkReference'> {
   /**
    * The label, normalized.
    */
-  identifier: string;
+  readonly identifier: string;
 
   /**
    * The label as written.
    */
-  label: string;
+  readonly label: string;
 
   /**
    * The kind of reference.
    */
-  referenceType: RemarkReferenceType;
+  readonly referenceType: RemarkReferenceType;
 }
 
 /**
@@ -314,17 +314,17 @@ export interface RemarkList extends RemarkParentBase<'list'> {
   /**
    * Whether it is ordered.
    */
-  ordered: boolean;
+  readonly ordered: boolean;
 
   /**
    * Whether a blank line separates two of its items.
    */
-  spread: boolean;
+  readonly spread: boolean;
 
   /**
    * The number of an ordered list's first item, or `null`.
    */
-  start: null | number;
+  readonly start: null | number;
 }
 
 /**
@@ -334,17 +334,17 @@ export interface RemarkListItem extends RemarkParentBase<'listItem'> {
   /**
    * For a task, whether its character is not a space; `null` for an item that is no task.
    */
-  checked: boolean | null;
+  readonly checked: boolean | null;
 
   /**
    * For a task, the character between its brackets; `null` for an item that is no task. Obsidian keeps any character.
    */
-  checklist: null | string;
+  readonly checklist: null | string;
 
   /**
    * Whether a blank line separates two of its blocks.
    */
-  spread: boolean;
+  readonly spread: boolean;
 }
 
 /**
@@ -354,7 +354,7 @@ export interface RemarkMath extends RemarkNodeBase<'math'> {
   /**
    * The TeX.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -405,17 +405,19 @@ export interface RemarkNodeBase<Type extends string> {
   /**
    * The block id attached to it: on a block of the document and a list item, the id of a {@link RemarkBlockId} in it.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Parser transforms attach or correct this node field after construction.
   id?: string;
 
   /**
    * Where it is in the document.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Parser transforms attach or correct this node field after construction.
   position?: RemarkPosition;
 
   /**
    * The node type.
    */
-  type: Type;
+  readonly type: Type;
 }
 
 /**
@@ -425,7 +427,7 @@ export interface RemarkObsidianComment extends RemarkParentBase<'obsidianComment
   /**
    * The text between the delimiters.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -436,7 +438,7 @@ export interface RemarkObsidianCommentBlock extends RemarkParentBase<'obsidianCo
   /**
    * The text between the delimiters.
    */
-  value: string;
+  readonly value: string;
 }
 
 /**
@@ -456,7 +458,7 @@ export interface RemarkParentBase<Type extends string> extends RemarkNodeBase<Ty
   /**
    * The children.
    */
-  children: RemarkNode[];
+  readonly children: RemarkNode[];
 }
 
 /**
@@ -466,16 +468,19 @@ export interface RemarkPoint {
   /**
    * The column, from 1.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Position tracking advances this coordinate as source text is consumed.
   column: number;
 
   /**
    * The line, from 1.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Position tracking advances this coordinate as source text is consumed.
   line: number;
 
   /**
    * The offset, from 0.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Position tracking advances this coordinate as source text is consumed.
   offset: number;
 }
 
@@ -486,17 +491,18 @@ export interface RemarkPosition {
   /**
    * The end.
    */
-  end: RemarkPoint;
+  readonly end: RemarkPoint;
 
   /**
    * The column each line after the first starts at. The root has none.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Position correction replaces indentation after container prefixes are removed.
   indent?: number[];
 
   /**
    * The start.
    */
-  start: RemarkPoint;
+  readonly start: RemarkPoint;
 }
 
 /**
@@ -521,7 +527,7 @@ export interface RemarkTable extends RemarkParentBase<'table'> {
   /**
    * The alignment of each column.
    */
-  align: RemarkTableAlignment[];
+  readonly align: RemarkTableAlignment[];
 }
 
 /**
@@ -536,7 +542,7 @@ export interface RemarkTableCell extends RemarkParentBase<'tableCell'> {
   /**
    * The spaces and tabs before and after its content.
    */
-  padding: RemarkTableCellPadding;
+  readonly padding: RemarkTableCellPadding;
 }
 
 /**
@@ -566,7 +572,7 @@ export interface RemarkTag extends RemarkNodeBase<'tag'> {
   /**
    * The name, without its `#`.
    */
-  name: string;
+  readonly name: string;
 }
 
 /**
@@ -576,6 +582,7 @@ export interface RemarkText extends RemarkNodeBase<'text'> {
   /**
    * The text, character references decoded.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Inline transforms merge text and strip delimiters on existing nodes.
   value: string;
 }
 
@@ -591,5 +598,5 @@ export interface RemarkYaml extends RemarkNodeBase<'yaml'> {
   /**
    * The lines between the delimiters.
    */
-  value: string;
+  readonly value: string;
 }

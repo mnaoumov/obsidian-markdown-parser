@@ -54,11 +54,12 @@ export interface BlockId extends Literal {
   /**
    * The node type.
    */
-  type: 'blockId';
+  readonly type: 'blockId';
 
   /**
    * The id, without its `^`.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills the block id after consuming its token.
   value: string;
 }
 
@@ -69,27 +70,30 @@ export interface Callout extends Parent {
   /**
    * The callout type, between `[!` and `]`, as written.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills callout fields as it consumes the header tokens.
   calloutType: string;
 
   /**
    * The content: the lines after the title line.
    */
-  children: (BlockContent | DefinitionContent)[];
+  readonly children: (BlockContent | DefinitionContent)[];
 
   /**
    * The fold sign, or `null` without one.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills callout fields as it consumes the header tokens.
   fold: '-' | '+' | null;
 
   /**
    * The title: the rest of the marker's line. Empty when the line holds none.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills callout fields as it consumes the header tokens.
   title: PhrasingContent[];
 
   /**
    * The node type.
    */
-  type: 'callout';
+  readonly type: 'callout';
 }
 
 /**
@@ -99,7 +103,7 @@ export interface Embed extends InternalLinkFields, Node {
   /**
    * The node type.
    */
-  type: 'embed';
+  readonly type: 'embed';
 }
 
 /**
@@ -109,12 +113,12 @@ export interface Highlight extends Parent {
   /**
    * The highlighted content.
    */
-  children: PhrasingContent[];
+  readonly children: PhrasingContent[];
 
   /**
    * The node type.
    */
-  type: 'highlight';
+  readonly type: 'highlight';
 }
 
 /**
@@ -124,12 +128,12 @@ export interface InlineFootnote extends Parent {
   /**
    * The footnote's content.
    */
-  children: PhrasingContent[];
+  readonly children: PhrasingContent[];
 
   /**
    * The node type.
    */
-  type: 'inlineFootnote';
+  readonly type: 'inlineFootnote';
 }
 
 /**
@@ -139,7 +143,7 @@ export interface InlineMath extends Literal {
   /**
    * The node type.
    */
-  type: 'inlineMath';
+  readonly type: 'inlineMath';
 }
 
 /**
@@ -149,7 +153,7 @@ export interface InternalLink extends InternalLinkFields, Node {
   /**
    * The node type.
    */
-  type: 'internalLink';
+  readonly type: 'internalLink';
 }
 
 /**
@@ -159,16 +163,19 @@ export interface InternalLinkFields {
   /**
    * The alias after the `|`, or `null` without one.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills this link field after consuming its token.
   alias: null | string;
 
   /**
    * The link path, before any `#`. Empty for a link into the same note.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills this link field after consuming its token.
   path: string;
 
   /**
    * The subpath from the `#` on, or `null` without one.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills this link field after consuming its token.
   subpath: null | string;
 }
 
@@ -179,7 +186,7 @@ export interface MathBlock extends Literal {
   /**
    * The node type.
    */
-  type: 'math';
+  readonly type: 'math';
 }
 
 /**
@@ -189,7 +196,7 @@ export interface ObsidianComment extends Literal {
   /**
    * The node type.
    */
-  type: 'obsidianComment';
+  readonly type: 'obsidianComment';
 }
 
 /**
@@ -199,7 +206,7 @@ export interface ObsidianCommentBlock extends Literal {
   /**
    * The node type.
    */
-  type: 'obsidianCommentBlock';
+  readonly type: 'obsidianCommentBlock';
 }
 
 /**
@@ -209,51 +216,53 @@ export interface Tag extends Node {
   /**
    * The tag name, without its `#`.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast handler fills the tag name after consuming its token.
   name: string;
 
   /**
    * The node type.
    */
-  type: 'tag';
+  readonly type: 'tag';
 }
 
 declare module 'mdast' {
   interface BlockContentMap {
-    callout: Callout;
-    math: MathBlock;
-    obsidianCommentBlock: ObsidianCommentBlock;
+    readonly callout: Callout;
+    readonly math: MathBlock;
+    readonly obsidianCommentBlock: ObsidianCommentBlock;
   }
 
   interface ListItem {
     /**
      * The task marker's character, between `[` and `]`, or `null` for an item that is no task.
      */
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The mdast transform attaches the task marker after parsing the list item.
     task?: null | string | undefined;
   }
 
   interface PhrasingContentMap {
-    blockId: BlockId;
-    embed: Embed;
-    highlight: Highlight;
-    inlineFootnote: InlineFootnote;
-    inlineMath: InlineMath;
-    internalLink: InternalLink;
-    obsidianComment: ObsidianComment;
-    tag: Tag;
+    readonly blockId: BlockId;
+    readonly embed: Embed;
+    readonly highlight: Highlight;
+    readonly inlineFootnote: InlineFootnote;
+    readonly inlineMath: InlineMath;
+    readonly internalLink: InternalLink;
+    readonly obsidianComment: ObsidianComment;
+    readonly tag: Tag;
   }
 
   interface RootContentMap {
-    blockId: BlockId;
-    callout: Callout;
-    embed: Embed;
-    highlight: Highlight;
-    inlineFootnote: InlineFootnote;
-    inlineMath: InlineMath;
-    internalLink: InternalLink;
-    math: MathBlock;
-    obsidianComment: ObsidianComment;
-    obsidianCommentBlock: ObsidianCommentBlock;
-    tag: Tag;
+    readonly blockId: BlockId;
+    readonly callout: Callout;
+    readonly embed: Embed;
+    readonly highlight: Highlight;
+    readonly inlineFootnote: InlineFootnote;
+    readonly inlineMath: InlineMath;
+    readonly internalLink: InternalLink;
+    readonly math: MathBlock;
+    readonly obsidianComment: ObsidianComment;
+    readonly obsidianCommentBlock: ObsidianCommentBlock;
+    readonly tag: Tag;
   }
 }
 
@@ -303,7 +312,7 @@ const calloutMarkStarts = new WeakMap<Callout, number>();
 
 // The node `this.buffer()` pushes to collect a callout's title.
 interface Fragment extends Parent {
-  type: 'fragment';
+  readonly type: 'fragment';
 }
 
 interface WithType<Type> {
@@ -460,6 +469,7 @@ declare module 'mdast-util-from-markdown' {
     /**
      * Whether the compiler is inside a table the `gfmTable` quirk read.
      */
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The compiler switches its active table context when entering and leaving tables.
     obsidianTable?: boolean | undefined;
   }
 }

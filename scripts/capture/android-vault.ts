@@ -54,27 +54,27 @@ export interface OpenAndroidVaultParams {
  * A vault an oracle writes on disk and reads the app's surfaces in, its callbacks given the app's `Globals`.
  */
 export interface OracleVault<Globals extends object> {
-  [Symbol.asyncDispose]: () => Promise<void>;
-
   /**
    * Runs a callback in the app.
    */
-  evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result, Globals>) => Promise<Result>;
+  readonly evalInObsidian: <Input extends object, Result>(params: EvalInObsidianParams<Input, Result, Globals>) => Promise<Result>;
 
   /**
    * Creates folders of the vault, with their parents.
    */
-  mkdir: (paths: readonly string[]) => Promise<void>;
+  readonly mkdir: (paths: readonly string[]) => Promise<void>;
+
+  readonly [Symbol.asyncDispose]: () => Promise<void>;
 
   /**
    * Reads a file of the vault from disk.
    */
-  readText: (path: string) => Promise<string>;
+  readonly readText: (path: string) => Promise<string>;
 
   /**
    * Writes files of the vault on disk, paced, creating their folders.
    */
-  writeFiles: (files: ReadonlyMap<string, string>, paths: Iterable<string>) => Promise<void>;
+  readonly writeFiles: (files: ReadonlyMap<string, string>, paths: Iterable<string>) => Promise<void>;
 }
 
 interface CdpEvaluateResult {

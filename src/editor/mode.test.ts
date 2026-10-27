@@ -8,8 +8,9 @@ import { areStatesEqual } from './mode.ts';
 import { StringStream } from './string-stream.ts';
 
 interface Cyclic {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The test links an existing node back to itself to create a cycle.
   next: Cyclic | null;
-  value: number;
+  readonly value: number;
 }
 
 class Context {

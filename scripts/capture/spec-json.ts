@@ -17,13 +17,13 @@ import {
 import { parseArgs } from 'node:util';
 
 interface SpecExample {
-  end_line: number;
-  example: number;
-  extensions?: string[];
-  html: string;
-  markdown: string;
-  section: string;
-  start_line: number;
+  readonly end_line: number;
+  readonly example: number;
+  readonly extensions?: string[];
+  readonly html: string;
+  readonly markdown: string;
+  readonly section: string;
+  readonly start_line: number;
 }
 
 const FENCE_LENGTH = 32;
