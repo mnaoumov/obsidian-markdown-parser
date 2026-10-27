@@ -5,12 +5,10 @@
     "so nothing else would ever say that a pin has gone stale. On every run the script executes each `check` and compares",
     "its trimmed stdout to `expect`: equal means the pin is still needed, different means re-examine it. `check: null` means",
     "there is no mechanical test, and the entry is reported for manual review on every run instead.",
-    "Known surviving advisory (2026-10-14): GHSA-vfj7-8cjw-p6xm, braces stack exhaustion on deeply nested patterns. It",
-    "affects every braces release (<= 3.0.3, no patched version), reached only through markdownlint-cli2 -> micromatch",
-    "(and globby -> fast-glob -> micromatch), so no override can clear it and npm's own remedy downgrades markdownlint-cli2",
-    "to 0.21.0. Exposure: braces only expands the glob patterns this repo's own lint:md script and config hand it, never",
-    "untrusted input, and it never ships. Re-check with `npm view braces version` against the advisory's patched version;",
-    "once one exists, add a caret override for it here."
+    "Historical exposure context: on 2026-10-14, GHSA-vfj7-8cjw-p6xm (braces stack exhaustion) had no patched release.",
+    "It was reached through markdownlint-cli2 -> micromatch and globby -> fast-glob -> micromatch, which expand only",
+    "this repo's own glob patterns, never untrusted input, and never ship. The 2026-10-27 npm audit reports zero",
+    "vulnerabilities; this is historical context, not a surviving audit finding or a reason for an override."
   ],
   "pins": {
     "codemirror": {
