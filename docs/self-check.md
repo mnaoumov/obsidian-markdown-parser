@@ -68,7 +68,7 @@ On 2026-10-25, 4,000 generated notes (seed 20261024) and the worker oracle (7,28
 | `heading-raw-source` | known | The cache's heading text keeps its markup. |
 | `unclosed-comment-swallows` | expected, [t/119752](https://forum.obsidian.md/t/119752) | An unclosed `%%` line hides the rest of the note. |
 | `unclosed-fence-swallows` | expected | An unclosed fence or `$$` runs to the end. |
-| `comment-indexed` | expected | Links, embeds and tags inside a comment are indexed. |
+| `comment-indexed` | expected, docs PR [obsidian-help#1157](https://github.com/obsidianmd/obsidian-help/pull/1157) | Links, embeds and tags inside a comment are indexed. |
 | `duplicate-block-id` | expected | A block id used twice names only the first block that carries it. |
 | `blocks-record` | expected | `blocks` is a record keyed by block id, where every other item field is a list, as `obsidian.d.ts` declares it. |
 | `utf16-columns` | expected | A column counts UTF-16 code units, not graphemes: an emoji or a combining mark before a link moves it one column more than a reader sees. |
