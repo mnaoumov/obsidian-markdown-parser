@@ -106,6 +106,8 @@ Every adapter takes a preset (`commonmark`, `gfm`, `obsidian`) with any flag ove
 
 The reading view departs from the spec on 211 of the 674 examples, each explained and pinned by a test. Eleven of the rules behind them are flags of `ObsidianQuirkFlags`, off in every preset: ten in every adapter, and list item continuation in micromark and markdown-it only, since `@lezer/markdown` keeps it internal. The rest are `remark-parse` 8's own inline algorithm and container handling, which no adapter's extension points reach, so they come from the fourth engine instead.
 
+The help names CommonMark and GFM but no version of either, so a departure is measured here against CommonMark 0.31.2, the current release, and not against a version Obsidian states it follows. Naming the versions in the help is proposed in [obsidian-help#1158](https://github.com/obsidianmd/obsidian-help/issues/1158).
+
 ### 6. The reading view's parse: yes
 
 The `remark-parse` 8 port gives the same tree, positions included, as npm `remark-parse` 8.0.3 with Obsidian's three tokenizers on 240,843 documents, and the reading view's HTML on every spec example in the quirk and syntax rows but five that the browser or the sanitizer changes after the parse, and on all 68 probes of the inline departures ([remark.md](remark.md)).
@@ -146,7 +148,8 @@ Each is measured, and each has a test or a script that reproduces it.
 
 1. **How much of today's reading of malformed input has to stay exact?** If the reading view and the metadata may change where `remark-parse` 8's reading is an artefact rather than markdown, such as emphasis across a code span or a link inside a link, the single `@lezer/markdown` tree is within reach, with the flags the adapters already have. If they must stay exact, the `remark-parse` 8 engine is the cheaper way to keep them so.
 2. **Which grammar of the syntax wins where the editor and the worker disagree?** Today a note can show a link in the editor that the metadata does not count. One parser for both would have to pick.
-3. **What would the team want it measured against next**: a newer Obsidian, a larger real vault, mobile, or a theme set?
+3. **Which spec versions does Obsidian target?** Reading view and the worker run `remark-parse` 8, which predates CommonMark 0.30, and the editor's CodeMirror 5 mode follows no versioned spec. A stated target is what makes a departure a checkable claim, and it is asked publicly in [obsidian-help#1158](https://github.com/obsidianmd/obsidian-help/issues/1158).
+4. **What would the team want it measured against next**: a newer Obsidian, a larger real vault, mobile, or a theme set?
 
 ## Where the code comes from
 
