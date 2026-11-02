@@ -323,7 +323,7 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
     note: 'A list item or footnote definition indented by up to 3 spaces starts at its line\'s start rather than at its marker, so its position depends on what comes before it.'
   },
   {
-    forumUrl: null,
+    forumUrl: 'https://forum.obsidian.md/t/120800',
     id: 'editor-reformats-table',
     kind: 'bug',
     matches: (key, markdown) => (key === 'openFile:cache' || key === 'renameFile:body' || judgeOf(key) === 'backlinks') && TABLE_ROW_PATTERN.test(markdown),
@@ -337,14 +337,14 @@ export const SELF_CHECK_FAMILIES: readonly SelfCheckFamily[] = [
     note: 'A `processFrontMatter`, and a rename that updates a link in the front matter, write the whole front matter back in the YAML library\'s style, so `tags: [a]` becomes a block list: the API hands the values over as an object, so their spelling is not kept. Undocumented in `obsidian.d.ts`.'
   },
   {
-    forumUrl: null,
+    forumUrl: 'https://forum.obsidian.md/t/81585/9',
     id: 'outline-inline-footnote',
     kind: 'bug',
     matches: (key, markdown) => key === 'outline:text' && markdown.includes('^['),
     note: 'An inline footnote in a heading shows in the Outline view as a numbered list of its text after the heading, with no reference mark where it stands.'
   },
   {
-    forumUrl: null,
+    forumUrl: 'https://forum.obsidian.md/t/120799',
     id: 'outline-escaped-bracket',
     kind: 'bug',
     matches: (key, markdown) => key === 'outline:text' && markdown.includes(String.raw`\[[`),

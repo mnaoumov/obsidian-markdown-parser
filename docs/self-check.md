@@ -134,13 +134,13 @@ The notes cannot be reduced offline, since only the app reads them, so each find
 
 | Family | Verdict | Findings | What it is |
 | --- | --- | --- | --- |
-| `editor-reformats-table` | bug, not reported | 5 | Live Preview writes every table back to the file padded to its column widths, with no edit: when the note is left for another one, or already on opening when a math span or a fenced code block with a language follows the table. A cell with more `\|` than the header gets a header column, so an unescaped `[[target\|alias]]` is split in two. The cache, the Backlinks view and the rename then read the padded text: a link offset moved by the padding, a Backlinks span marked on it, and a rename body that changed outside its links. A rename of a note never opened leaves its table alone. |
+| `editor-reformats-table` | [bug](https://forum.obsidian.md/t/120800) | 5 | Live Preview writes every table back to the file padded to its column widths, with no edit: when the note is left for another one, or already on opening when a math span or a fenced code block with a language follows the table. A cell with more `\|` than the header gets a header column, so an unescaped `[[target\|alias]]` is split in two. The cache, the Backlinks view and the rename then read the padded text: a link offset moved by the padding, a Backlinks span marked on it, and a rename body that changed outside its links. A rename of a note never opened leaves its table alone. |
 | `comment-line-offset` | bug, [t/119821](https://forum.obsidian.md/t/119821) | 17 | The real rename corrupts a link on a line that opens a `%%` block comment, as the simulated one predicts. |
 | `front-matter-restyled` | expected | 114 | `processFrontMatter`, and a rename that updates a front matter link, write the whole front matter back in the YAML library's style (`tags: [a]` becomes a block list). |
 | `outline-embed-source` | minor | 14 | An embed or image in a heading shows in the Outline as its link path. |
-| `outline-inline-footnote` | bug, not reported | 12 | An inline footnote in a heading shows in the Outline as a numbered list after the heading. |
+| `outline-inline-footnote` | [bug](https://forum.obsidian.md/t/81585/9) | 12 | An inline footnote in a heading shows in the Outline as a numbered list after the heading. |
 | `outline-undefined-reference` | minor | 6 | An undefined reference link in a heading shows in the Outline as its text alone. |
-| `outline-escaped-bracket` | bug, not reported | 5 | `\[[escaped]]` in a heading shows in the Outline as `[escaped]`. |
+| `outline-escaped-bracket` | [bug](https://forum.obsidian.md/t/120799) | 5 | `\[[escaped]]` in a heading shows in the Outline as `[escaped]`. |
 
 ## A new Obsidian build
 
