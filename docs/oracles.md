@@ -36,6 +36,15 @@ It needs a global `obsidian-integration-testing` install, which launches each Ob
 
 A class-span re-read follows the corpus as it is now. Every pinned file holds the current corpus, 4,228 documents per seed: seeds 3141 and 6174 were first read from it, and the other nine were read again from it on 2026-10-22 and replaced. When a piece set is added or grows, that also moves what a seed draws for the sets after it, so most documents of a later re-read have another text under the same id, and the report counts them as new rather than compared until the files are read again.
 
+The editing-mode capture can also run by itself in bounded batches:
+
+```sh
+npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.0 --checkpoint <file> --max-documents 100
+npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.0 --resume <file> --max-documents 100
+```
+
+The limit counts new documents in that invocation. Each completed read replaces the checkpoint atomically. Resuming requires the same app version, browser user agent and exact corpus prefix; the saved readings are kept unchanged. The reader replays the prefix's syntax-tree reads to restore sub-mode initialization order, without repeating its DOM measurements. An incomplete batch writes only its checkpoint; the final oracle is written only after every document has been read. Omit the limit to finish the remainder in one invocation. When an editing-mode capture was completed separately, omit `editing-modes` from a subsequent refresh's `--only` list.
+
 ## The drift report
 
 ```sh
@@ -51,7 +60,7 @@ It compares each oracle of one version (by default the pinned one, in `oracle/`)
 
 Then it runs the suites that check the parser against Obsidian (`highlight`, `language`, `editing-modes`, `forum-issues`, `spec-quirks`, `quirk-probes` and `worker-metadata`) on the newer version's files, by setting `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY`. That covers what the report does not score itself: the reading view's HTML of the spec examples and the probes, and every quirk the suites explain. A suite whose files the newer version lacks is skipped, and the report names the missing file, so a partial re-read (`--only`) runs only the suites it read for; none is run against another version's files, because a pass would then say nothing about the newer one. It exits 1 when the parser newly differs anywhere or a suite it ran fails.
 
-The parser's score is shown on both versions because it is not 100% everywhere on the pinned one: 25 spec examples differ in the editor's classes on 1.14.5 too. A new version is judged by what it changes, not by that baseline.
+The parser's score is shown on both versions because it is not 100% everywhere on the pinned one: 13 spec examples differ in the editor's classes on 1.14.5 too. A new version is judged by what it changes, not by that baseline.
 
 ## The release differential
 
@@ -98,6 +107,16 @@ An `-all` file holds every case of its source and a `-failing` file only the cas
 `src/oracle/spec/test-case-export.test.ts` pins that each full file holds every document of its oracle once, that the departures are the ones the spec suites explain, that the two spec failing files hold exactly the full files' cases the reading view departs on, 211 between them, that the no-spec files hold exactly the probes that differ from the reference, that the failing metadata file holds every worker document the worker throws on, each explained by a known trigger, and the forum files' counts, each editing mode case's three HTMLs against the oracle with one Source mode line per markdown line, that every failing editing mode case is in the `-all` file unchanged, and the expected metadata. `src/oracle/modes/editing-modes.test.ts` pins the parser to the editing mode oracle, the editor's classes and the worker's metadata on every document, and confirms each judged sample on the live editor's tree. `src/oracle/modes/forum-issues.test.ts` pins the parser to the forum issue oracle: the editor's classes and the worker's metadata on every document, and what 1.14.5 does with each of the owner's earlier reports (`OWNER_REPORT_SAMPLES`): front matter strings broken in Source mode only (topic 38294), no rule or image drawn in a `markdown` fence (topic 49620), Prism leaving `![](image.png)` plain there (topic 53597), bold styled there by design (topic 76476), and a callout in a nested list item carried onto the next item, which Live Preview draws inside the callout's embed (topic 80930, open as topic 57053). It found one gap, fixed with it: the editor closes front matter at `---` followed by spaces or tabs, and styles the whole line.
 
 ## The last run
+
+### Public 1.15.0 captures in bounded batches
+
+2026-11-03, against public Obsidian 1.15.0. The eleven class-span files (46,508 documents), 674 spec examples, 169 quirk probes and 36 forum documents were re-read into `oracle/`. The desktop pin remains 1.14.5 while the remaining captures and the full drift report are pending; none of its files has been removed.
+
+The partial drift report found 6,284 changed class-span documents and 142 changed spec examples, all in the editor's classes. There were no changed spec metadata, reading-view or quirk-probe readings, or changed forum readings. The parser was exact on all 46,508 class documents, 661 of 674 spec class readings, all 674 spec metadata readings and all 36 forum documents, on both versions. No document newly differed, and all 116 tests of the five available conformance suites passed. The worker and editing-mode suites were explicitly skipped because their complete 1.15.0 files were absent.
+
+The editing-mode capture was saved to a checkpoint before the long run was stopped. Its first 405 completed reads were preserved, then a fresh instance restored the parser's initialization history and captured one additional note using `--resume` and `--max-documents 1`. The original serialized reads stayed unchanged, all 406 saved documents matched the parser's classes and metadata, and the incomplete batch wrote no final oracle. The checkpoint is `oracle/checkpoints/editing-modes-obsidian-1.15.0.partial.json`, a prefix of the 618-document corpus that the resume command validates before reuse. It holds measured output, just as a completed oracle does.
+
+### The previous pin move: public 1.14.5
 
 2026-10-22, against Obsidian 1.14.5, the public release that followed 1.14.4. The re-read wrote its files to `oracle/` and took about 2 hours.
 

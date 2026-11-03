@@ -126,7 +126,7 @@ Each is measured, and each has a test or a script that reproduces it.
 
 ### In the editor engine
 
-- **25 of the 674 spec examples** differ in the editor's classes.
+- **13 of the 674 spec examples** differ in the editor's classes, confirmed on the pinned 1.14.5 and the public 1.15.0 re-read.
 
 ### In the metadata engine
 
