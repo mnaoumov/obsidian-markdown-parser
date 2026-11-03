@@ -19,12 +19,17 @@ import { DocInput } from '@codemirror/language';
 import { Text } from '@codemirror/state';
 import { TreeFragment } from '@lezer/common';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { OracleFile } from '../../src/oracle/oracle-file.ts';
 
 import { editorClassLanguage } from '../../src/editor/language.ts';
 import { reusedLength } from '../../src/editor/tree-reuse.ts';
+import {
+  classOracleFileName,
+  oracleDirectory
+} from '../../src/oracle/oracle-location.ts';
 
 interface EditCost {
   readonly parsedAgain: number;
@@ -38,7 +43,9 @@ interface Timed<T> {
   readonly value: T;
 }
 
-const ORACLES = ['oracle/obsidian-1.14.5-seed-2026.json', 'oracle/obsidian-1.14.5-seed-9001.json'];
+// eslint-disable-next-line no-magic-numbers -- These seed identifiers select the historically benchmarked corpora.
+const ORACLE_SEEDS = [2026, 9001];
+const ORACLES = ORACLE_SEEDS.map((seed) => join(oracleDirectory(), classOracleFileName(seed)));
 // About 60 lines of this corpus: a tall editor viewport.
 const VIEWPORT_CHARS = 3000;
 const TYPING_KEYSTROKES = 50;

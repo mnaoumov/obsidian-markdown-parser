@@ -19,11 +19,16 @@ import {
   preprocess
 } from 'micromark';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { OracleFile } from '../../src/oracle/oracle-file.ts';
 import type { ObsidianNodeName } from '../../src/syntax/spec.ts';
 
+import {
+  classOracleFileName,
+  oracleDirectory
+} from '../../src/oracle/oracle-location.ts';
 import { obsidianParser } from '../../src/syntax/lezer/lezer.ts';
 import {
   getObsidianTokenRange,
@@ -38,15 +43,9 @@ import { micromarkObsidianMarkdown } from '../../src/syntax/unified/micromark.ts
 
 type Spans = Map<ObsidianNodeName, string[]>;
 
-const DEFAULT_ORACLES = [
-  'oracle/obsidian-1.14.5-seed-12345.json',
-  'oracle/obsidian-1.14.5-seed-777.json',
-  'oracle/obsidian-1.14.5-seed-4242.json',
-  'oracle/obsidian-1.14.5-seed-2026.json',
-  'oracle/obsidian-1.14.5-seed-9001.json',
-  'oracle/obsidian-1.14.5-seed-2718.json',
-  'oracle/obsidian-1.14.5-seed-31337.json'
-];
+// eslint-disable-next-line no-magic-numbers -- These seed identifiers select the historically measured corpora.
+const DEFAULT_ORACLE_SEEDS = [12_345, 777, 4242, 2026, 9001, 2718, 31_337];
+const DEFAULT_ORACLES = DEFAULT_ORACLE_SEEDS.map((seed) => join(oracleDirectory(), classOracleFileName(seed)));
 const NAME_COLUMN_WIDTH = 22;
 const COUNT_COLUMN_WIDTH = 7;
 const SHOWN_SPANS = 10;

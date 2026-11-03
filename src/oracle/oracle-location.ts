@@ -21,12 +21,12 @@ import { fileURLToPath } from 'node:url';
 /* eslint-enable import-x/no-nodejs-modules -- Only the imports above need Node. */
 
 /**
- * The Obsidian version every oracle file in `oracle/` was read from.
+ * The Obsidian version the desktop oracle files in `oracle/` were read from.
  */
-export const PINNED_OBSIDIAN_VERSION = '1.14.5';
+export const PINNED_OBSIDIAN_VERSION = '1.15.0';
 
 /**
- * The Obsidian version the Android oracles were read from: the newest with an APK, since 1.14.5 shipped for desktop only.
+ * The independently measured Android version. A desktop pin move does not refresh the device oracles.
  */
 export const PINNED_ANDROID_OBSIDIAN_VERSION = '1.14.4';
 

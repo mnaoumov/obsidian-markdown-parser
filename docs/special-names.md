@@ -47,7 +47,7 @@ npm run special-names [-- --details]
 | move | the same for a move into another folder, keeping the name |
 | rename-onto | whether a plainly named note's linker leads to it after it is renamed onto the special name |
 
-It also types the names above into the file explorer's rename, and, for each pair of files the vault indexes under one path, edits the one note through the vault and reads both files from disk. The oracle is pinned to 1.14.5 (`oracle/special-names-obsidian-1.14.5.json`); the 1.15.0 insider build, read on 2026-10-25, gives the same verdict on every name and surface. `src/oracle/links/special-names.test.ts` pins the verdicts, the shadowing writes and the rename checks.
+It also types the names above into the file explorer's rename, and, for each pair of files the vault indexes under one path, edits the one note through the vault and reads both files from disk. The oracle is pinned to 1.15.0 (`oracle/special-names-obsidian-1.15.0.json`); the earlier 1.15.0 insider read on 2026-10-25 matched the former 1.14.5 pin. The public refresh has the capture variation documented below. `src/oracle/links/special-names.test.ts` pins the verdicts, the shadowing writes and the rename checks.
 
 Only names Windows can store were tried here. `| : * ? " < > \` and a trailing dot or space were swept on Android, in [On Android](#on-android).
 
@@ -137,7 +137,7 @@ Beyond the surfaces, the sweep reads, for each name:
 | typed links | for each spelling, a linker on disk with one link typed by hand as a wikilink, a markdown link with its destination percent-encoded, and one with it in angle brackets: the note `resolvedLinks` maps it to, the link path the metadata cache holds, the `data-href` of its anchor in Reading view and the note a click on it opens, and the note the editor's "Follow link under cursor" opens from the linker's own text, with any note that created |
 | spelling renames | `fileManager.renameFile` of a second file of the name to each other spelling of it and back, with the vault path and the file on disk after each |
 
-The oracle is pinned to 1.14.5 (`oracle/special-names-normalization-obsidian-1.14.5.json`). The 1.15.0 insider build, read on 2026-10-26, gives the same reads on every name, apart from the order of the quick switcher's other offers. `src/oracle/links/special-names.test.ts` pins them. NTFS stores a name exactly as written and compares names code unit by code unit (apart from letter case), so on Windows every difference below comes from Obsidian, not from the file system.
+The oracle is pinned to 1.15.0 (`oracle/special-names-normalization-obsidian-1.15.0.json`). The earlier 1.15.0 insider read on 2026-10-26 matched the former 1.14.5 pin apart from quick-switcher offer order. The public refresh also varied in offer inclusion, with no change in the cache, Reading-view or editor-follow outcomes ([capture notes](oracles.md#public-1150-complete-captures)). `src/oracle/links/special-names.test.ts` pins them. NTFS stores a name exactly as written and compares names code unit by code unit (apart from letter case), so on Windows every difference below comes from Obsidian, not from the file system.
 
 What was found:
 
@@ -179,7 +179,7 @@ Not measured here: macOS, where APFS keeps a name's form but compares names rega
 
 ## The full table
 
-`npm run special-names`, on the pinned 1.14.5. `ok` works, `doc` fails where the help documents it, **fails** fails where it does not. In the table, `␣` stands for a space at the start or end of a code span, `⍽` for a no-break space, and `◌` for the base of a combining mark.
+`npm run special-names`, recorded on 1.14.5. The current 1.15.0 capture differs only in `.x` after rename-onto: it records a resolving link, but a separate 1.15.0 probe still leaves `.x` unindexed, so this is not evidence of a version fix ([capture notes](oracles.md#public-1150-complete-captures)). `ok` works, `doc` fails where the help documents it, **fails** fails where it does not. In the table, `␣` stands for a space at the start or end of a code span, `⍽` for a no-break space, and `◌` for the base of a combining mark.
 
 | Name | indexed | explorer | open | switcher | search | link | backlinks | graph | embed | property | uri | rename | move | rename-onto |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -529,7 +529,7 @@ Every surface that is not `ok`, with what it did:
 
 ## The full table of names in neither normal form
 
-`npm run special-names -- --normalization`, on the pinned 1.14.5, with the same marks as above.
+`npm run special-names -- --normalization`, recorded on 1.14.5, with the same marks as above.
 
 | Name | indexed | explorer | open | switcher | search | link | backlinks | graph | embed | property | uri | rename | move | rename-onto |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

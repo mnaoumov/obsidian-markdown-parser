@@ -65,3 +65,18 @@ Before the parse reused the chunks after an edit, the re-parse to the end after 
 Typing 50 characters one after another in the middle costs a median of 1.46 ms per keystroke at 10,000 lines, inside that `<script>` element, and 0.94 ms at 100,000. Each re-parse resumes from the tree before it. On the texts read before, those were 0.16 ms and 0.80 ms, and 0.56 ms and 0.33 ms before the reuse. The bench runs no editor, so a re-parse there takes the old tree's chunks on to the document's end, balances the tree over all of them, and the next keystroke lists them again, which makes a keystroke on a longer document cost more outside such an element. In an editor the parse and the reuse stop at the end of the viewport, and the rest is parsed when it comes into view.
 
 Run it with `npx jiti scripts/demo/cm6-bench.ts [--lines <n>]... [--runs <n>]`.
+
+## Public 1.15.0 pin remeasurement
+
+On 2026-11-03, the same benchmark read the pinned public 1.15.0 corpus with five runs per timing, sequentially, under Node v26.10.0 on Windows. This was a bulk worker with a one-processor share inside a shared two-logical-processor kernel boundary, with other bulk items running. These are loaded-machine observations, not an isolated performance comparison with the earlier timings above. The benchmark runs the default editor language; selecting a newer oracle changes its input texts, not the language's default class-version option.
+
+| Lines  | Characters | Full parse | Edit at | Resumed from | Re-parsed | To viewport | To end  |
+| ------ | ---------- | ---------- | ------- | ------------ | --------- | ----------- | ------- |
+| 10000  | 61590      | 123.16 ms  | start   | 0            | 649       | 1.77 ms     | 1.92 ms |
+| 10000  | 61590      | 123.16 ms  | middle  | 29971        | 2137      | 2.17 ms     | 2.23 ms |
+| 10000  | 61590      | 123.16 ms  | end     | 61515        | 76        | 0.08 ms     | 0.08 ms |
+| 100000 | 584250     | 652.02 ms  | start   | 0            | 596       | 1.31 ms     | 1.62 ms |
+| 100000 | 584250     | 652.02 ms  | middle  | 291714       | 1588      | 3.09 ms     | 3.57 ms |
+| 100000 | 584250     | 652.02 ms  | end     | 583712       | 539       | 0.56 ms     | 0.56 ms |
+
+Typing 50 characters in the middle took a median 1.70 ms per keystroke at 10,000 lines and 1.72 ms at 100,000 lines. Input lengths, resume points and characters re-parsed are unchanged from the earlier run.

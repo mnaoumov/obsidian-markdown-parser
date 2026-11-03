@@ -30,7 +30,7 @@ npm run link-parity
 
 The hand-written forms tried are: for a wikilink `plain`, `escaped` (a backslash before each of `[ ] # ^ | \ %`), `with-extension`, `percent-encoded` and `folder-path`; for a markdown link `plain`, `angle` (`<...>`), `escaped` (a backslash before each punctuation character), `percent-encoded` (`encodeURIComponent`) and `entity` (`&` as `&amp;`); for a heading also `stripped`, the heading as the autocomplete writes it; for display text `escaped` and inside a table.
 
-Only names Windows can store were tried, so `| : * ? " < > \ /` in a name are left to a non-Windows device. The oracle is pinned to 1.14.5 (`oracle/link-parity-obsidian-1.14.5.json`). The 1.15.0 insider build, read on 2026-10-25, gives every verdict and every outcome the same. `src/oracle/links/link-parity.test.ts` pins them, and checks that `parseMetadata` gives the cached link and display text of all 998 notes.
+Only names Windows can store were tried, so `| : * ? " < > \ /` in a name are left to a non-Windows device. The oracle is pinned to 1.15.0 (`oracle/link-parity-obsidian-1.15.0.json`). The 1.15.0 insider build, read on 2026-10-25, gives every verdict and every outcome the same. `src/oracle/links/link-parity.test.ts` pins them, and checks that `parseMetadata` gives the cached link and display text of all 998 notes.
 
 ## What was found
 
@@ -62,7 +62,7 @@ No finding is a corpus case for the parser: it gives the cached link and display
 
 ## The full table
 
-`npm run link-parity`, on the pinned 1.14.5. A verdict is `parity` when each format has a working hand-written form, `wikilink-gap` or `markdown-gap` when only the other has one, `neither`, or `not-indexed` when the vault shows no file at the name's path. A writer's link is `ok`, `wrong-target` (no link, or a link that leads elsewhere) or `wrong-text`. In the table, `¦` stands for `|`, `⍽` for a no-break space, and `␣` for a space at the start or end of a code span.
+`npm run link-parity`, on the pinned 1.15.0. A verdict is `parity` when each format has a working hand-written form, `wikilink-gap` or `markdown-gap` when only the other has one, `neither`, or `not-indexed` when the vault shows no file at the name's path. A writer's link is `ok`, `wrong-target` (no link, or a link that leads elsewhere) or `wrong-text`. In the table, `¦` stands for `|`, `⍽` for a no-break space, and `␣` for a space at the start or end of a code span.
 
 ### Note names
 
