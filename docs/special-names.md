@@ -51,6 +51,12 @@ It also types the names above into the file explorer's rename, and, for each pai
 
 Only names Windows can store were tried here. `| : * ? " < > \` and a trailing dot or space were swept on Android, in [On Android](#on-android).
 
+### Capture settling
+
+The normalization reader reveals each linker in Reading view, polls for its internal-link anchor from Node for up to ten seconds, clicks it once, and polls for navigation for up to ten more seconds. A missing anchor or missing `data-href` aborts the capture before it writes the oracle. A rendered link whose click opens nothing still records `opened: null`: a missing render and an unsuccessful click are different observations. These bounds do not establish why the first public 1.15.0 capture missed every anchor; the successful replay alone did not establish a cause either.
+
+Rename link updates and quick-switcher offers are sampled throughout a four-second window and must agree on the last three samples. An early cached success cannot end the rename wait. A final unresolved link or empty offer list is accepted, and offer order is preserved; a snapshot still changing at the bound aborts the capture. This catches bounded settling failures without requiring a particular product result or forcing agreement with an older oracle. The waits do not prove that an update cannot arrive after their bounds.
+
 ## What was found
 
 1. **`# ^ [ ]` are warned about, not refused.** A note named with them is created by any rename, so these names are not only ones that arrive from outside.

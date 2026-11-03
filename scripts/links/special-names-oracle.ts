@@ -99,6 +99,10 @@ import {
   specialNamesOracleFileName
 } from '../../src/oracle/oracle-location.ts';
 import { openAndroidVault } from '../capture/android-vault.ts';
+import {
+  readReadingViewLink,
+  readSettledSnapshot
+} from './special-names-settle.ts';
 
 interface AdapterFile {
   readonly realpath: string;
@@ -333,6 +337,8 @@ interface ProbeGlobal {
   readonly Capacitor?: CapacitorGlobal;
   readonly electron?: Electron;
   readonly specialNamesObsidian?: ObsidianModule;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- A temporary modal is retained between serialized CDP calls and removed in finally.
+  specialNamesSwitcher?: QuickSwitcherModal;
 }
 
 interface ProtocolHandler {
@@ -411,6 +417,7 @@ interface Workspace {
   readonly getLeavesOfType: (type: string) => Leaf[];
   readonly leftSplit: WorkspaceSidedock;
   readonly protocolHandler: ProtocolHandler;
+  readonly revealLeaf: (leaf: Leaf) => Promise<void>;
   readonly setActiveLeaf: (leaf: Leaf, options: SetActiveLeafOptions) => void;
 }
 
@@ -428,8 +435,7 @@ const SETTLE_POLL_MS = 200;
 const SETTLE_POLLS = 20;
 const REVEAL_POLL_MS = 100;
 const REVEAL_POLLS = 20;
-// What a view needs to render before it is read: the switcher's suggestions, an embed, a URL's leaf, the graph.
-const SWITCHER_MS = 300;
+// Other surface delays: an embed, a URL's leaf, the graph.
 const EMBED_MS = 400;
 const URI_MS = 300;
 const GRAPH_MS = 2000;
@@ -468,30 +474,51 @@ const conn = isAndroid
 // Opens the linker in Reading view and clicks its link: the link path the cache holds, the anchor's `data-href`, and the
 // note the click opened, or `null` where none did.
 async function clickInReadingView(linkerPath: string): Promise<Pick<TypedLinkRead, 'cached' | 'href' | 'opened'>> {
-  return await conn.evalInObsidian({
-    callback: async ({ app, linkerPath: path, openMs }) => {
-      const linker = app.vault.getFileByPath(path);
-      if (linker === null) {
-        throw new Error(`No ${path}`);
-      }
-      const leaf = app.workspace.getLeaf(true);
-      await leaf.openFile(linker, { state: { mode: 'preview' } });
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, openMs);
+  return await readReadingViewLink(linkerPath, {
+    clickAnchor: async () =>
+      await conn.evalInObsidian({
+        callback: ({ app, linkerPath: path }) => {
+          const leaf = app.workspace.getLeavesOfType('markdown').find((candidate) => (candidate.view as MarkdownView).file?.path === path);
+          if (leaf === undefined) {
+            throw new Error(`No Reading-view leaf for ${path}`);
+          }
+          const anchor = (leaf.view as ContainerView).containerEl.querySelector<HTMLElement>(':scope .markdown-preview-view a.internal-link');
+          if (anchor === null) {
+            return null;
+          }
+          const linker = app.vault.getFileByPath(path);
+          const read = {
+            cached: linker === null ? null : app.metadataCache.getFileCache(linker)?.links?.[0]?.link ?? null,
+            href: anchor.dataset['href'] ?? null
+          };
+          anchor.click();
+          return read;
+        },
+        input: { linkerPath }
+      }),
+    open: async () => {
+      await conn.evalInObsidian({
+        callback: async ({ app, linkerPath: path }) => {
+          const linker = app.vault.getFileByPath(path);
+          if (linker === null) {
+            throw new Error(`No ${path}`);
+          }
+          const leaf = app.workspace.getLeaf(true);
+          await leaf.openFile(linker, { state: { mode: 'preview' } });
+          await app.workspace.revealLeaf(leaf);
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+        },
+        input: { linkerPath }
       });
-      const anchor = (leaf.view as ContainerView).containerEl.querySelector<HTMLElement>(':scope .markdown-preview-view a.internal-link');
-      anchor?.click();
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, openMs);
-      });
-      const active = app.workspace.getActiveFile()?.path ?? null;
-      return {
-        cached: app.metadataCache.getFileCache(linker)?.links?.[0]?.link ?? null,
-        href: anchor?.dataset['href'] ?? null,
-        opened: anchor === null || active === path ? null : active
-      };
     },
-    input: { linkerPath, openMs: OPEN_LINK_MS }
+    readOpened: async () =>
+      await conn.evalInObsidian({
+        callback: ({ app, linkerPath: path }) => {
+          const active = app.workspace.getActiveFile()?.path ?? null;
+          return active === path ? null : active;
+        },
+        input: { linkerPath }
+      })
   });
 }
 
@@ -927,22 +954,40 @@ async function readShadowWrites(): Promise<ShadowWriteRead[]> {
 
 // The files the quick switcher offers for `typed`.
 async function readSwitcher(typed: string): Promise<string[]> {
-  return await conn.evalInObsidian({
-    callback: async ({ app, maxOffers, switcherMs, typed: query }) => {
+  await conn.evalInObsidian({
+    callback: ({ app, typed: query }) => {
       const QuickSwitcher = app.internalPlugins.getPluginById('switcher').instance.QuickSwitcherModal;
       const modal = new QuickSwitcher(app, false);
+      // eslint-disable-next-line unicorn/no-global-object-property-assignment -- Serialized callbacks cannot share a closure; retain only this probe's modal until finally.
+      (globalThis as ProbeGlobal & typeof globalThis).specialNamesSwitcher = modal;
       modal.open();
       modal.inputEl.value = query;
       modal.inputEl.dispatchEvent(new Event('input'));
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, switcherMs);
-      });
-      const offered = (modal.chooser.values ?? []).flatMap((value) => (value?.file === undefined ? [] : [value.file.path])).slice(0, maxOffers);
-      modal.close();
-      return offered;
     },
-    input: { maxOffers: SWITCHER_MAX_OFFERS, switcherMs: SWITCHER_MS, typed }
+    input: { typed }
   });
+  try {
+    // Keep the complete order, including empty offers. A short unchanged prefix can precede an async update.
+    return await readSettledSnapshot(`quick switcher: ${typed}`, async () =>
+      await conn.evalInObsidian({
+        callback: ({ maxOffers }) => {
+          const modal = (globalThis as ProbeGlobal & typeof globalThis).specialNamesSwitcher;
+          if (modal === undefined) {
+            throw new Error('No quick switcher probe');
+          }
+          return (modal.chooser.values ?? []).flatMap((value) => (value?.file === undefined ? [] : [value.file.path])).slice(0, maxOffers);
+        },
+        input: { maxOffers: SWITCHER_MAX_OFFERS }
+      }));
+  } finally {
+    await conn.evalInObsidian({
+      callback: () => {
+        const probe = globalThis as ProbeGlobal & typeof globalThis;
+        probe.specialNamesSwitcher?.close();
+        delete probe.specialNamesSwitcher;
+      }
+    });
+  }
 }
 
 // The hand-typed links to the name at `index`, one linker each: where `resolvedLinks` maps each, and what
@@ -1038,14 +1083,9 @@ async function renameTo(from: string, to: string): Promise<null | string> {
   });
 }
 
-// The linker once `resolvedLinks` maps it to `path`, or after the settle bound.
+// Read through the whole settle window: a cached success can precede a delayed rename update or removal from the index.
 async function settleLinker(linkerPath: string, path: string): Promise<LinkerRead> {
-  let read: LinkerRead = { link: null, resolved: false };
-  for (let poll = 0; poll < SETTLE_POLLS && !read.resolved; poll++) {
-    await pause(SETTLE_POLL_MS);
-    read = await readLinker(linkerPath, path);
-  }
-  return read;
+  return await readSettledSnapshot(`rename: ${linkerPath} -> ${path}`, async () => await readLinker(linkerPath, path));
 }
 
 // Where the oracle is read: the app's version comes from Electron on desktop and from Capacitor on mobile.
