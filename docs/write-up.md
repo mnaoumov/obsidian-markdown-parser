@@ -37,6 +37,8 @@ Nothing here is matched to a description of Obsidian's behaviour. It is matched 
 
 All of them are pinned to Obsidian 1.14.5. The pin lives in one place, and `npm run oracle:refresh` re-reads every oracle from another version, then reports what changed and whether the parser still matches. Its first run re-read 1.14.4 itself: 0 of the documents both reads hold changed, so a change on a new version is that version's. Its run on the 1.15.0 insider build found two new rules for the editor's formatting marks and nothing else, and the tokenizer now takes the Obsidian version whose classes it gives. Its run on the public 1.14.5 found 0 changed readings, so the pin moved to it from 1.14.4.
 
+The complete public 1.15.0 refresh on 2026-11-03 found 6,622 changed readings, all editor classes or Source/Live Preview DOM, and no new parser regression. Metadata and Reading-view outputs were unchanged. All 162 conformance and supplemental link/name tests passed on its files with one worker. The release differential moved no family or count: 9,626 mode-judge findings over 50,466 documents and 173 live-surface findings over 400 notes on each version. The new files are saved beside the pinned files; moving the desktop pin and re-recording scores remains a separate step ([oracles.md](oracles.md#public-1150-complete-captures)).
+
 ## Results per goal
 
 ### 1. One Lezer parser for the editor and the reading view: partly
