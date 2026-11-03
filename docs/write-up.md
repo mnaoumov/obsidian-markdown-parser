@@ -1,6 +1,6 @@
 # A markdown parser for Obsidian: the write-up
 
-A report for the Obsidian team on `obsidian-markdown-parser`: what it set out to do, what it does, measured against Obsidian 1.14.4, what it does not do yet, where its code comes from, and the terms it is offered on. Each section links the page that holds the details and the numbers.
+A report for the Obsidian team on `obsidian-markdown-parser`: what it set out to do, what it does, measured against the current Obsidian 1.15.0 oracle pin (with earlier measurements dated below), what it does not do yet, where its code comes from, and the terms it is offered on. Each section links the page that holds the details and the numbers.
 
 The repository is private and nothing in it has been published.
 
@@ -35,9 +35,9 @@ Nothing here is matched to a description of Obsidian's behaviour. It is matched 
 - **The metadata worker's `CachedMetadata`**, read live, and offline by running the app's own `worker.js` on generated documents.
 - **The reading view's DOM**, for every CommonMark and GFM spec example and 169 probes of where Obsidian departs from the spec.
 
-All of them are pinned to Obsidian 1.14.5. The pin lives in one place, and `npm run oracle:refresh` re-reads every oracle from another version, then reports what changed and whether the parser still matches. Its first run re-read 1.14.4 itself: 0 of the documents both reads hold changed, so a change on a new version is that version's. Its run on the 1.15.0 insider build found two new rules for the editor's formatting marks and nothing else, and the tokenizer now takes the Obsidian version whose classes it gives. Its run on the public 1.14.5 found 0 changed readings, so the pin moved to it from 1.14.4.
+Desktop oracles are pinned to Obsidian 1.15.0; Android remains independently pinned to 1.14.4. The pin lives in one place, and `npm run oracle:refresh` re-reads every oracle from another version, then reports what changed and whether the parser still matches. Its first run re-read 1.14.4 itself: 0 of the documents both reads hold changed, so a change on a new version is that version's. Its run on the 1.15.0 insider build found two new rules for the editor's formatting marks and nothing else, and the tokenizer now takes the Obsidian version whose classes it gives. Its run on the public 1.14.5 found 0 changed readings, so the pin moved to it from 1.14.4.
 
-The complete public 1.15.0 refresh on 2026-11-03 found 6,622 changed readings, all editor classes or Source/Live Preview DOM, and no new parser regression. Metadata and Reading-view outputs were unchanged. All 162 conformance and supplemental link/name tests passed on its files with one worker. The release differential moved no family or count: 9,626 mode-judge findings over 50,466 documents and 173 live-surface findings over 400 notes on each version. The new files are saved beside the pinned files; moving the desktop pin and re-recording scores remains a separate step ([oracles.md](oracles.md#public-1150-complete-captures)).
+The complete public 1.15.0 refresh on 2026-11-03 found 6,622 changed readings, all editor classes or Source/Live Preview DOM, and no new parser regression. Metadata and Reading-view outputs were unchanged. All 162 conformance and supplemental link/name tests passed on its files with one worker. The release differential moved no family or count: 9,626 mode-judge findings over 50,466 documents and 173 live-surface findings over 400 notes on each version. The desktop pin now uses those 1.15.0 files; the superseded desktop 1.14.5 files were removed after the full suites passed ([oracles.md](oracles.md#public-1150-complete-captures)).
 
 ## Results per goal
 
@@ -128,7 +128,7 @@ Each is measured, and each has a test or a script that reproduces it.
 
 ### In the editor engine
 
-- **13 of the 674 spec examples** differ in the editor's classes, confirmed on the pinned 1.14.5 and the public 1.15.0 re-read.
+- **13 of the 674 spec examples** differ in the editor's classes, confirmed on the former 1.14.5 pin and the current public 1.15.0 pin (661/674 agree).
 
 ### In the metadata engine
 

@@ -54,7 +54,7 @@ function ownerRead(id: string): ForumIssueRead {
   return read;
 }
 
-describe('the owner\'s report samples, as Obsidian 1.14.5 reads them', () => {
+describe('the owner\'s report samples, as the pinned Obsidian reads them', () => {
   it('still breaks the front matter strings of topic 38294 in Source mode only', () => {
     const read = ownerRead('owner-38294-1');
     expect(read.sourceModeHtml).toContain('<span class="cm-hmd-frontmatter cm-string" spellcheck="false">\' and YAML syntax highlighter</span>');

@@ -2,6 +2,8 @@
 
 Measured on 2026-10-14 against Obsidian 1.14.4 (installer 1.14.4), on a harness-owned instance driven over CDP.
 
+The full suite rechecked the complete public 1.15.0 pin on 2026-11-03 with one worker: all 46,508 class-span documents still match exactly. Historical measurements and rule-discovery notes below retain their original versions.
+
 ## Result
 
 The tokenizer gives every character and every line of a document the same classes as Obsidian's editor on all 46,508 oracle documents.

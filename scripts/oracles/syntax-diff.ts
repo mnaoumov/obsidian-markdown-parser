@@ -9,6 +9,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { OracleFile } from '../../src/oracle/oracle-file.ts';
@@ -18,6 +19,10 @@ import {
   compareSyntax,
   CONSTRUCTS
 } from '../../src/oracle/classes/syntax-score.ts';
+import {
+  classOracleFileName,
+  oracleDirectory
+} from '../../src/oracle/oracle-location.ts';
 
 interface ConstructScore {
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Syntax scoring increments this counter as it compares documents.
@@ -27,13 +32,9 @@ interface ConstructScore {
   using: number;
 }
 
-const DEFAULT_ORACLES = [
-  'oracle/obsidian-1.14.5-seed-12345.json',
-  'oracle/obsidian-1.14.5-seed-777.json',
-  'oracle/obsidian-1.14.5-seed-4242.json',
-  'oracle/obsidian-1.14.5-seed-2026.json',
-  'oracle/obsidian-1.14.5-seed-9001.json'
-];
+// eslint-disable-next-line no-magic-numbers -- These seed identifiers select the historically measured corpora.
+const DEFAULT_ORACLE_SEEDS = [12_345, 777, 4242, 2026, 9001];
+const DEFAULT_ORACLES = DEFAULT_ORACLE_SEEDS.map((seed) => join(oracleDirectory(), classOracleFileName(seed)));
 const NAME_COLUMN_WIDTH = 22;
 const COUNT_COLUMN_WIDTH = 7;
 const CONTEXT = 30;

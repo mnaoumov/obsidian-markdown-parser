@@ -3,11 +3,7 @@ import type { Tree } from '@lezer/common';
 
 import { TreeFragment } from '@lezer/common';
 import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 /* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
@@ -18,7 +14,12 @@ import {
 import type { OracleFile } from '../../oracle/oracle-file.ts';
 import type { OutlineEntry } from '../conformance.ts';
 
-import { CORPUS_TEST_TIMEOUT_MS } from '../../oracle/oracle-location.ts';
+import {
+  classOracleFileName,
+  CORPUS_TEST_TIMEOUT_MS,
+  MAIN_CLASS_ORACLE_SEED,
+  oracleDirectory
+} from '../../oracle/oracle-location.ts';
 import { CONFORMANCE_CASES } from '../conformance.ts';
 import {
   isObsidianNodeName,
@@ -26,7 +27,7 @@ import {
 } from '../spec.ts';
 import { obsidianParser } from './lezer.ts';
 
-const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'oracle', 'obsidian-1.14.5-seed-12345.json');
+const ORACLE_FILE = join(oracleDirectory(), classOracleFileName(MAIN_CLASS_ORACLE_SEED));
 const EDITED_DOCUMENTS = 400;
 const EDIT_SEED = 7;
 const RANDOM_MULTIPLIER = 1_103_515_245;

@@ -1,10 +1,6 @@
 /* eslint-disable import-x/no-nodejs-modules -- The suite runs in Node and reads the oracle fixtures from disk. */
 import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 /* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
@@ -14,21 +10,19 @@ import {
 
 import type { OracleFile } from '../oracle-file.ts';
 
-import { CORPUS_TEST_TIMEOUT_MS } from '../oracle-location.ts';
+import {
+  classOracleFileName,
+  CORPUS_TEST_TIMEOUT_MS,
+  oracleDirectory
+} from '../oracle-location.ts';
 import { classSetsOf } from './score.ts';
 import {
   compareSyntax,
   CONSTRUCTS
 } from './syntax-score.ts';
 
-const ORACLE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'oracle');
-const ORACLE_FILES = [
-  'obsidian-1.14.5-seed-12345.json',
-  'obsidian-1.14.5-seed-777.json',
-  'obsidian-1.14.5-seed-4242.json',
-  'obsidian-1.14.5-seed-2026.json',
-  'obsidian-1.14.5-seed-9001.json'
-];
+const ORACLE_DIR = oracleDirectory();
+const ORACLE_FILES = [12_345, 777, 4242, 2026, 9001].map((seed) => classOracleFileName(seed));
 
 /*
  * Per construct, the documents of the five oracles that use it and the documents where the tree agrees with the live

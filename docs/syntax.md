@@ -46,6 +46,8 @@ A link's content is a file name and a subpath, and the worker resolves it as one
 
 ## Measured against the live editor
 
+Re-recorded on 2026-11-03 from the public 1.15.0 pin, sequentially with one worker: every row below is unchanged. The seven-corpus micromark and markdown-it comparisons below were also re-run: 28,551/29,596 and 28,681/29,596 documents agree with Lezer, respectively, with every per-construct count unchanged.
+
 `scripts/oracles/syntax-diff.ts` scores the tree against the classes the live editor gave five of the oracle corpora of Phase 1 (seeds 12345, 777, 4242, 2026 and 9001, 21,140 documents of every piece set), construct by construct. For each one it compares the characters the editor marks with the characters the tree's nodes cover. Whitespace is not compared, nor is the inside of a comment, where the editor still styles markdown and the tree has none. A callout is compared per line, on the editor's `HyperMD-callout` line class. A footnote definition is compared on its `[^label]:` alone, since the editor gives a link reference definition's label the same classes.
 
 | Construct | Documents using it | Agreeing | Disagreeing, by piece set |

@@ -10,6 +10,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { ClassSets } from '../../src/oracle/classes/score.ts';
@@ -20,6 +21,11 @@ import {
   compareDocument,
   lineStartsOf
 } from '../../src/oracle/classes/score.ts';
+import {
+  classOracleFileName,
+  MAIN_CLASS_ORACLE_SEED,
+  oracleDirectory
+} from '../../src/oracle/oracle-location.ts';
 
 interface ClassScore {
   readonly docs: Set<string>;
@@ -36,7 +42,7 @@ interface SetScore {
   total: number;
 }
 
-const DEFAULT_ORACLE = 'oracle/obsidian-1.14.5-seed-12345.json';
+const DEFAULT_ORACLE = join(oracleDirectory(), classOracleFileName(MAIN_CLASS_ORACLE_SEED));
 const TOP_CLASSES = 40;
 const CLASS_COLUMN_WIDTH = 36;
 const DOCS_COLUMN_WIDTH = 4;

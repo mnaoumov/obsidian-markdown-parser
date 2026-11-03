@@ -2,11 +2,7 @@
 import type { Token } from 'markdown-it';
 
 import { readFileSync } from 'node:fs';
-import {
-  dirname,
-  join
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 /* eslint-enable import-x/no-nodejs-modules -- Only the fixture imports above need Node. */
 import {
   describe,
@@ -17,7 +13,12 @@ import {
 import type { OracleFile } from '../../oracle/oracle-file.ts';
 import type { OutlineEntry } from '../conformance.ts';
 
-import { CORPUS_TEST_TIMEOUT_MS } from '../../oracle/oracle-location.ts';
+import {
+  classOracleFileName,
+  CORPUS_TEST_TIMEOUT_MS,
+  MAIN_CLASS_ORACLE_SEED,
+  oracleDirectory
+} from '../../oracle/oracle-location.ts';
 import { CONFORMANCE_CASES } from '../conformance.ts';
 import { obsidianParser } from '../lezer/lezer.ts';
 import {
@@ -31,7 +32,7 @@ import {
   parseMarkdownIt
 } from './markdown-it.ts';
 
-const ORACLE_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'oracle', 'obsidian-1.14.5-seed-12345.json');
+const ORACLE_FILE = join(oracleDirectory(), classOracleFileName(MAIN_CLASS_ORACLE_SEED));
 // The documents of the oracle file on which markdown-it and the @lezer/markdown extensions give the same Obsidian
 // nodes. `docs/syntax.md` explains the rest, and `scripts/oracles/adapter-diff.ts` shows them.
 const AGREEING_DOCUMENTS = 4085;

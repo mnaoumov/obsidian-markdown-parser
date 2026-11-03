@@ -49,7 +49,7 @@ The worker also reads the Obsidian syntax by rules of its own. On the 47 cases o
 
 | Engine | Oracle | Result |
 | --- | --- | --- |
-| The class tokenizer | the live editor's class spans, `oracle/obsidian-1.14.5-seed-*.json` | exact on all 46,508 documents, and its CodeMirror 6 host's tree node for node; 0 class differences inside Obsidian on 116 notes |
+| The class tokenizer | the live editor's class spans, `oracle/obsidian-1.15.0-seed-*.json` | exact on all 46,508 documents, and its CodeMirror 6 host's tree node for node; 0 class differences inside Obsidian on 116 notes |
 | The `@lezer/markdown` tree | the conformance corpus; the CommonMark 0.31.2 suite with the `commonmark` preset; the editor's classes per construct (`scripts/oracles/syntax-diff.ts`) | every conformance case; 651 of 652 spec examples; the per-construct agreement in [syntax.md](syntax.md#measured-against-the-live-editor), where every difference is block structure, not a rule of the syntax |
 | The micromark and markdown-it adapters | the same corpus and suites, and the Lezer tree (`scripts/oracles/adapter-diff.ts`) | every conformance case; 652 of 652 spec examples; the same Obsidian nodes as the Lezer tree on 28,551 and 28,681 of 29,596 documents |
 | The `remark-parse` 8 engine | npm `remark-parse` 8.0.3 with Obsidian's three tokenizers; the reading view's HTML of the spec examples and 169 probes | the same tree, positions included, on 240,843 documents; the reading view's HTML on every `quirk` and `syntax` row of the spec but five examples the browser or the sanitizer changes after the parse |
@@ -77,4 +77,4 @@ No projection from the `@lezer/markdown` tree has been measured yet, so the size
 
 ## Next step
 
-A prototype of the single-engine path, outside this page's scope: a `CachedMetadata` projection from the `@lezer/markdown` tree, with the `obsidian` preset and every quirk flag on, scored against the worker oracle (`oracle/worker-metadata-obsidian-1.14.5.json`) and the live app's metadata of the spec examples, with each differing document put down to one of the five items above. That turns the gap into numbers, which is what the team would need to choose between the two paths.
+A prototype of the single-engine path, outside this page's scope: a `CachedMetadata` projection from the `@lezer/markdown` tree, with the `obsidian` preset and every quirk flag on, scored against the worker oracle (`oracle/worker-metadata-obsidian-1.15.0.json`) and the live app's metadata of the spec examples, with each differing document put down to one of the five items above. That turns the gap into numbers, which is what the team would need to choose between the two paths.
