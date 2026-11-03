@@ -1,0 +1,3321 @@
+{
+  "meta": {
+    "appVersion": "1.15.0",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.15.0 Chrome/150.0.7871.250 Electron/43.8.4 Safari/537.36",
+    "vault": "temp-vault-Imu1Li"
+  },
+  "normalization": {
+    "plain": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "plain",
+          "found": "special-names/plain.md"
+        }
+      ],
+      "realpath": "special-names/plain.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/plain",
+          "href": "special-names/plain",
+          "opened": "special-names/plain.md",
+          "created": [],
+          "resolved": "special-names/plain.md",
+          "unresolved": null,
+          "followed": "special-names/plain.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/plain]]",
+          "text": "plain"
+        },
+        {
+          "cached": "special-names/plain.md",
+          "href": "special-names/plain.md",
+          "opened": "special-names/plain.md",
+          "created": [],
+          "resolved": "special-names/plain.md",
+          "unresolved": null,
+          "followed": "special-names/plain.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/plain.md)",
+          "text": "plain"
+        },
+        {
+          "cached": "special-names/plain.md",
+          "href": "special-names/plain.md",
+          "opened": "special-names/plain.md",
+          "created": [],
+          "resolved": "special-names/plain.md",
+          "unresolved": null,
+          "followed": "special-names/plain.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/plain.md>)",
+          "text": "plain"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/plain.md",
+      "realpathAfterRenames": "special-names/plain.md"
+    },
+    "méй": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "méй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "méй",
+          "found": "special-names/méй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "méй",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/méй.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/méй",
+          "href": "special-names/méй",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/méй]]",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/m%C3%A9%D0%B8%CC%86.md)",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/méй.md>)",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй",
+          "href": "special-names/méй",
+          "opened": "special-names/méй.md",
+          "created": [],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/méй]]",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/m%C3%A9%D0%B9.md)",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/méй.md>)",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй",
+          "href": "special-names/méй",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/méй]]",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/me%CC%81%D0%B8%CC%86.md)",
+          "text": "méй"
+        },
+        {
+          "cached": "special-names/méй.md",
+          "href": "special-names/méй.md",
+          "opened": "special-names/méй.md",
+          "created": [
+            "special-names/méй 1.md"
+          ],
+          "resolved": "special-names/méй.md",
+          "unresolved": null,
+          "followed": "special-names/méй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/méй.md>)",
+          "text": "méй"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfc",
+          "text": "méй",
+          "path": "special-names/forms/méй.md",
+          "realpath": "special-names/forms/méй.md",
+          "refusal": null
+        },
+        {
+          "form": "nfd",
+          "text": "méй",
+          "path": "special-names/forms/méй.md",
+          "realpath": "special-names/forms/méй.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "méй",
+          "path": "special-names/forms/méй.md",
+          "realpath": "special-names/forms/méй.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/méй.md",
+      "realpathAfterRenames": "special-names/méй.md"
+    },
+    "kéй": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "kéй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "kéй",
+          "found": "special-names/kéй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "kéй",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/kéй.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/kéй",
+          "href": "special-names/kéй",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/kéй]]",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/ke%CC%81%D0%B9.md)",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/kéй.md>)",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй",
+          "href": "special-names/kéй",
+          "opened": "special-names/kéй.md",
+          "created": [],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/kéй]]",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/k%C3%A9%D0%B9.md)",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/kéй.md>)",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй",
+          "href": "special-names/kéй",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/kéй]]",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/ke%CC%81%D0%B8%CC%86.md)",
+          "text": "kéй"
+        },
+        {
+          "cached": "special-names/kéй.md",
+          "href": "special-names/kéй.md",
+          "opened": "special-names/kéй.md",
+          "created": [
+            "special-names/kéй 1.md"
+          ],
+          "resolved": "special-names/kéй.md",
+          "unresolved": null,
+          "followed": "special-names/kéй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/kéй.md>)",
+          "text": "kéй"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfc",
+          "text": "kéй",
+          "path": "special-names/forms/kéй.md",
+          "realpath": "special-names/forms/kéй.md",
+          "refusal": null
+        },
+        {
+          "form": "nfd",
+          "text": "kéй",
+          "path": "special-names/forms/kéй.md",
+          "realpath": "special-names/forms/kéй.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "kéй",
+          "path": "special-names/forms/kéй.md",
+          "realpath": "special-names/forms/kéй.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/kéй.md",
+      "realpathAfterRenames": "special-names/kéй.md"
+    },
+    "ệ": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "ệ",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "ệ",
+          "found": "special-names/ệ.md"
+        },
+        {
+          "form": "nfd",
+          "text": "ệ",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/ệ.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/ệ",
+          "href": "special-names/ệ",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/ệ]]",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/e%CC%82%CC%A3.md)",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ệ.md>)",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ",
+          "href": "special-names/ệ",
+          "opened": "special-names/ệ.md",
+          "created": [],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/ệ]]",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%E1%BB%87.md)",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ệ.md>)",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ",
+          "href": "special-names/ệ",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/ệ]]",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/e%CC%A3%CC%82.md)",
+          "text": "ệ"
+        },
+        {
+          "cached": "special-names/ệ.md",
+          "href": "special-names/ệ.md",
+          "opened": "special-names/ệ.md",
+          "created": [
+            "special-names/ệ 1.md"
+          ],
+          "resolved": "special-names/ệ.md",
+          "unresolved": null,
+          "followed": "special-names/ệ 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ệ.md>)",
+          "text": "ệ"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfc",
+          "text": "ệ",
+          "path": "special-names/forms/ệ.md",
+          "realpath": "special-names/forms/ệ.md",
+          "refusal": null
+        },
+        {
+          "form": "nfd",
+          "text": "ệ",
+          "path": "special-names/forms/ệ.md",
+          "realpath": "special-names/forms/ệ.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "ệ",
+          "path": "special-names/forms/ệ.md",
+          "realpath": "special-names/forms/ệ.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/ệ.md",
+      "realpathAfterRenames": "special-names/ệ.md"
+    },
+    "ộ": {
+      "lookups": [
+        {
+          "form": "nfd",
+          "text": "ộ",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "ộ",
+          "found": "special-names/ộ.md"
+        }
+      ],
+      "realpath": null,
+      "typedLinks": [
+        {
+          "cached": "special-names/ộ",
+          "href": "special-names/ộ",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/ộ]]",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/o%CC%A3%CC%82.md)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ộ.md>)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ",
+          "href": "special-names/ộ",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/ộ]]",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%E1%BB%99.md)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ộ.md>)",
+          "text": "ộ"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/ộ.md",
+      "realpathAfterRenames": null
+    },
+    "ộ": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "ộ",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "ộ",
+          "found": "special-names/ộ.md"
+        },
+        {
+          "form": "nfd",
+          "text": "ộ",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/ộ.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/ộ",
+          "href": "special-names/ộ",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/ộ]]",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/o%CC%82%CC%A3.md)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ộ.md>)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ",
+          "href": "special-names/ộ",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/ộ]]",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%E1%BB%99.md)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ộ.md>)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ",
+          "href": "special-names/ộ",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/ộ]]",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/o%CC%A3%CC%82.md)",
+          "text": "ộ"
+        },
+        {
+          "cached": "special-names/ộ.md",
+          "href": "special-names/ộ.md",
+          "opened": "special-names/ộ.md",
+          "created": [
+            "special-names/ộ 1.md"
+          ],
+          "resolved": "special-names/ộ.md",
+          "unresolved": null,
+          "followed": "special-names/ộ 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ộ.md>)",
+          "text": "ộ"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfc",
+          "text": "ộ",
+          "path": "special-names/forms/ộ.md",
+          "realpath": "special-names/forms/ộ.md",
+          "refusal": null
+        },
+        {
+          "form": "nfd",
+          "text": "ộ",
+          "path": "special-names/forms/ộ.md",
+          "realpath": "special-names/forms/ộ.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "ộ",
+          "path": "special-names/forms/ộ.md",
+          "realpath": "special-names/forms/ộ.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/ộ.md",
+      "realpathAfterRenames": "special-names/ộ.md"
+    },
+    "néй": {
+      "lookups": [
+        {
+          "form": "nfc",
+          "text": "néй",
+          "found": "special-names/néй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "néй",
+          "found": null
+        }
+      ],
+      "realpath": null,
+      "typedLinks": [
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/n%C3%A9%D0%B9.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/ne%CC%81%D0%B8%CC%86.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/néй.md",
+      "realpathAfterRenames": null
+    },
+    "néй": {
+      "lookups": [
+        {
+          "form": "nfd",
+          "text": "néй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "néй",
+          "found": "special-names/néй.md"
+        }
+      ],
+      "realpath": null,
+      "typedLinks": [
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/ne%CC%81%D0%B8%CC%86.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/n%C3%A9%D0%B9.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/néй.md",
+      "realpathAfterRenames": null
+    },
+    "néй": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "néй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "néй",
+          "found": "special-names/néй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "néй",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/néй.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/n%C3%A9%D0%B8%CC%86.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/n%C3%A9%D0%B9.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй",
+          "href": "special-names/néй",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/néй]]",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/ne%CC%81%D0%B8%CC%86.md)",
+          "text": "néй"
+        },
+        {
+          "cached": "special-names/néй.md",
+          "href": "special-names/néй.md",
+          "opened": "special-names/néй.md",
+          "created": [
+            "special-names/néй 1.md"
+          ],
+          "resolved": "special-names/néй.md",
+          "unresolved": null,
+          "followed": "special-names/néй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/néй.md>)",
+          "text": "néй"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfc",
+          "text": "néй",
+          "path": "special-names/forms/néй.md",
+          "realpath": "special-names/forms/néй.md",
+          "refusal": null
+        },
+        {
+          "form": "nfd",
+          "text": "néй",
+          "path": "special-names/forms/néй.md",
+          "realpath": "special-names/forms/néй.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "néй",
+          "path": "special-names/forms/néй.md",
+          "realpath": "special-names/forms/néй.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/néй.md",
+      "realpathAfterRenames": null
+    },
+    "péй": {
+      "lookups": [
+        {
+          "form": "nfd",
+          "text": "péй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "péй",
+          "found": "special-names/péй.md"
+        }
+      ],
+      "realpath": null,
+      "typedLinks": [
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/pe%CC%81%D0%B8%CC%86.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/p%C3%A9%D0%B9.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/péй.md",
+      "realpathAfterRenames": null
+    },
+    "péй": {
+      "lookups": [
+        {
+          "form": "neither",
+          "text": "péй",
+          "found": null
+        },
+        {
+          "form": "nfc",
+          "text": "péй",
+          "found": "special-names/péй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "péй",
+          "found": null
+        }
+      ],
+      "realpath": null,
+      "typedLinks": [
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/p%C3%A9%D0%B8%CC%86.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/p%C3%A9%D0%B9.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/pe%CC%81%D0%B8%CC%86.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/péй.md",
+      "realpathAfterRenames": null
+    },
+    "péй": {
+      "lookups": [
+        {
+          "form": "nfc",
+          "text": "péй",
+          "found": "special-names/péй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "péй",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/péй.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/p%C3%A9%D0%B9.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй",
+          "href": "special-names/péй",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/péй]]",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/pe%CC%81%D0%B8%CC%86.md)",
+          "text": "péй"
+        },
+        {
+          "cached": "special-names/péй.md",
+          "href": "special-names/péй.md",
+          "opened": "special-names/péй.md",
+          "created": [
+            "special-names/péй 1.md"
+          ],
+          "resolved": "special-names/péй.md",
+          "unresolved": null,
+          "followed": "special-names/péй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/péй.md>)",
+          "text": "péй"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfd",
+          "text": "péй",
+          "path": "special-names/forms/péй.md",
+          "realpath": "special-names/forms/péй.md",
+          "refusal": null
+        },
+        {
+          "form": "nfc",
+          "text": "péй",
+          "path": "special-names/forms/péй.md",
+          "realpath": "special-names/forms/péй.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/péй.md",
+      "realpathAfterRenames": "special-names/péй.md"
+    },
+    "qéй": {
+      "lookups": [
+        {
+          "form": "nfc",
+          "text": "qéй",
+          "found": "special-names/qéй.md"
+        },
+        {
+          "form": "nfd",
+          "text": "qéй",
+          "found": null
+        },
+        {
+          "form": "neither",
+          "text": "qéй",
+          "found": null
+        },
+        {
+          "form": "neither",
+          "text": "qéй",
+          "found": null
+        }
+      ],
+      "realpath": "special-names/qéй.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/qéй",
+          "href": "special-names/qéй",
+          "opened": "special-names/qéй.md",
+          "created": [],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй.md",
+          "form": "nfc",
+          "kind": "wikilink",
+          "link": "[[special-names/qéй]]",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй.md",
+          "form": "nfc",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/q%C3%A9%D0%B9.md)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй.md",
+          "form": "nfc",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/qéй.md>)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй",
+          "href": "special-names/qéй",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "nfd",
+          "kind": "wikilink",
+          "link": "[[special-names/qéй]]",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "nfd",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/qe%CC%81%D0%B8%CC%86.md)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "nfd",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/qéй.md>)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй",
+          "href": "special-names/qéй",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/qéй]]",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/q%C3%A9%D0%B8%CC%86.md)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/qéй.md>)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй",
+          "href": "special-names/qéй",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "wikilink",
+          "link": "[[special-names/qéй]]",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/qe%CC%81%D0%B9.md)",
+          "text": "qéй"
+        },
+        {
+          "cached": "special-names/qéй.md",
+          "href": "special-names/qéй.md",
+          "opened": "special-names/qéй.md",
+          "created": [
+            "special-names/qéй 1.md"
+          ],
+          "resolved": "special-names/qéй.md",
+          "unresolved": null,
+          "followed": "special-names/qéй 1.md",
+          "form": "neither",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/qéй.md>)",
+          "text": "qéй"
+        }
+      ],
+      "formRenames": [
+        {
+          "form": "nfd",
+          "text": "qéй",
+          "path": "special-names/forms/qéй.md",
+          "realpath": "special-names/forms/qéй.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "qéй",
+          "path": "special-names/forms/qéй.md",
+          "realpath": "special-names/forms/qéй.md",
+          "refusal": null
+        },
+        {
+          "form": "neither",
+          "text": "qéй",
+          "path": "special-names/forms/qéй.md",
+          "realpath": "special-names/forms/qéй.md",
+          "refusal": null
+        },
+        {
+          "form": "nfc",
+          "text": "qéй",
+          "path": "special-names/forms/qéй.md",
+          "realpath": "special-names/forms/qéй.md",
+          "refusal": null
+        }
+      ],
+      "ontoRealpath": "special-names/onto/qéй.md",
+      "realpathAfterRenames": "special-names/qéй.md"
+    },
+    "́x": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "́x",
+          "found": "special-names/́x.md"
+        }
+      ],
+      "realpath": "special-names/́x.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/́x",
+          "href": "special-names/́x",
+          "opened": "special-names/́x.md",
+          "created": [],
+          "resolved": "special-names/́x.md",
+          "unresolved": null,
+          "followed": "special-names/́x.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/́x]]",
+          "text": "́x"
+        },
+        {
+          "cached": "special-names/́x.md",
+          "href": "special-names/́x.md",
+          "opened": "special-names/́x.md",
+          "created": [],
+          "resolved": "special-names/́x.md",
+          "unresolved": null,
+          "followed": "special-names/́x.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%CC%81x.md)",
+          "text": "́x"
+        },
+        {
+          "cached": "special-names/́x.md",
+          "href": "special-names/́x.md",
+          "opened": "special-names/́x.md",
+          "created": [],
+          "resolved": "special-names/́x.md",
+          "unresolved": null,
+          "followed": "special-names/́x.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/́x.md>)",
+          "text": "́x"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/́x.md",
+      "realpathAfterRenames": "special-names/́x.md"
+    },
+    "x ́y": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "x ́y",
+          "found": "special-names/x ́y.md"
+        }
+      ],
+      "realpath": "special-names/x ́y.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/x ́y",
+          "href": "special-names/x ́y",
+          "opened": "special-names/x ́y.md",
+          "created": [],
+          "resolved": "special-names/x ́y.md",
+          "unresolved": null,
+          "followed": "special-names/x ́y.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/x ́y]]",
+          "text": "x ́y"
+        },
+        {
+          "cached": "special-names/x ́y.md",
+          "href": "special-names/x ́y.md",
+          "opened": "special-names/x ́y.md",
+          "created": [],
+          "resolved": "special-names/x ́y.md",
+          "unresolved": null,
+          "followed": "special-names/x ́y.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/x%20%CC%81y.md)",
+          "text": "x ́y"
+        },
+        {
+          "cached": "special-names/x ́y.md",
+          "href": "special-names/x ́y.md",
+          "opened": "special-names/x ́y.md",
+          "created": [],
+          "resolved": "special-names/x ́y.md",
+          "unresolved": null,
+          "followed": "special-names/x ́y.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/x ́y.md>)",
+          "text": "x ́y"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/x ́y.md",
+      "realpathAfterRenames": "special-names/x ́y.md"
+    },
+    "ﬁx": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "ﬁx",
+          "found": "special-names/ﬁx.md"
+        }
+      ],
+      "realpath": "special-names/ﬁx.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/ﬁx",
+          "href": "special-names/ﬁx",
+          "opened": "special-names/ﬁx.md",
+          "created": [],
+          "resolved": "special-names/ﬁx.md",
+          "unresolved": null,
+          "followed": "special-names/ﬁx.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/ﬁx]]",
+          "text": "ﬁx"
+        },
+        {
+          "cached": "special-names/ﬁx.md",
+          "href": "special-names/ﬁx.md",
+          "opened": "special-names/ﬁx.md",
+          "created": [],
+          "resolved": "special-names/ﬁx.md",
+          "unresolved": null,
+          "followed": "special-names/ﬁx.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%EF%AC%81x.md)",
+          "text": "ﬁx"
+        },
+        {
+          "cached": "special-names/ﬁx.md",
+          "href": "special-names/ﬁx.md",
+          "opened": "special-names/ﬁx.md",
+          "created": [],
+          "resolved": "special-names/ﬁx.md",
+          "unresolved": null,
+          "followed": "special-names/ﬁx.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/ﬁx.md>)",
+          "text": "ﬁx"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/ﬁx.md",
+      "realpathAfterRenames": "special-names/ﬁx.md"
+    },
+    "fix": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "fix",
+          "found": "special-names/fix.md"
+        }
+      ],
+      "realpath": "special-names/fix.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/fix",
+          "href": "special-names/fix",
+          "opened": "special-names/fix.md",
+          "created": [],
+          "resolved": "special-names/fix.md",
+          "unresolved": null,
+          "followed": "special-names/fix.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/fix]]",
+          "text": "fix"
+        },
+        {
+          "cached": "special-names/fix.md",
+          "href": "special-names/fix.md",
+          "opened": "special-names/fix.md",
+          "created": [],
+          "resolved": "special-names/fix.md",
+          "unresolved": null,
+          "followed": "special-names/fix.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/fix.md)",
+          "text": "fix"
+        },
+        {
+          "cached": "special-names/fix.md",
+          "href": "special-names/fix.md",
+          "opened": "special-names/fix.md",
+          "created": [],
+          "resolved": "special-names/fix.md",
+          "unresolved": null,
+          "followed": "special-names/fix.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/fix.md>)",
+          "text": "fix"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/fix.md",
+      "realpathAfterRenames": "special-names/fix.md"
+    },
+    "Ａx": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "Ａx",
+          "found": "special-names/Ａx.md"
+        }
+      ],
+      "realpath": "special-names/Ａx.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/Ａx",
+          "href": "special-names/Ａx",
+          "opened": "special-names/Ａx.md",
+          "created": [],
+          "resolved": "special-names/Ａx.md",
+          "unresolved": null,
+          "followed": "special-names/Ａx.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/Ａx]]",
+          "text": "Ａx"
+        },
+        {
+          "cached": "special-names/Ａx.md",
+          "href": "special-names/Ａx.md",
+          "opened": "special-names/Ａx.md",
+          "created": [],
+          "resolved": "special-names/Ａx.md",
+          "unresolved": null,
+          "followed": "special-names/Ａx.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/%EF%BC%A1x.md)",
+          "text": "Ａx"
+        },
+        {
+          "cached": "special-names/Ａx.md",
+          "href": "special-names/Ａx.md",
+          "opened": "special-names/Ａx.md",
+          "created": [],
+          "resolved": "special-names/Ａx.md",
+          "unresolved": null,
+          "followed": "special-names/Ａx.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/Ａx.md>)",
+          "text": "Ａx"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/Ａx.md",
+      "realpathAfterRenames": "special-names/Ａx.md"
+    },
+    "Ax": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "Ax",
+          "found": "special-names/Ax.md"
+        }
+      ],
+      "realpath": "special-names/Ax.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/Ax",
+          "href": "special-names/Ax",
+          "opened": "special-names/Ax.md",
+          "created": [],
+          "resolved": "special-names/Ax.md",
+          "unresolved": null,
+          "followed": "special-names/Ax.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/Ax]]",
+          "text": "Ax"
+        },
+        {
+          "cached": "special-names/Ax.md",
+          "href": "special-names/Ax.md",
+          "opened": "special-names/Ax.md",
+          "created": [],
+          "resolved": "special-names/Ax.md",
+          "unresolved": null,
+          "followed": "special-names/Ax.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/Ax.md)",
+          "text": "Ax"
+        },
+        {
+          "cached": "special-names/Ax.md",
+          "href": "special-names/Ax.md",
+          "opened": "special-names/Ax.md",
+          "created": [],
+          "resolved": "special-names/Ax.md",
+          "unresolved": null,
+          "followed": "special-names/Ax.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/Ax.md>)",
+          "text": "Ax"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/Ax.md",
+      "realpathAfterRenames": "special-names/Ax.md"
+    },
+    "x²": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "x²",
+          "found": "special-names/x².md"
+        }
+      ],
+      "realpath": "special-names/x².md",
+      "typedLinks": [
+        {
+          "cached": "special-names/x²",
+          "href": "special-names/x²",
+          "opened": "special-names/x².md",
+          "created": [],
+          "resolved": "special-names/x².md",
+          "unresolved": null,
+          "followed": "special-names/x².md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/x²]]",
+          "text": "x²"
+        },
+        {
+          "cached": "special-names/x².md",
+          "href": "special-names/x².md",
+          "opened": "special-names/x².md",
+          "created": [],
+          "resolved": "special-names/x².md",
+          "unresolved": null,
+          "followed": "special-names/x².md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/x%C2%B2.md)",
+          "text": "x²"
+        },
+        {
+          "cached": "special-names/x².md",
+          "href": "special-names/x².md",
+          "opened": "special-names/x².md",
+          "created": [],
+          "resolved": "special-names/x².md",
+          "unresolved": null,
+          "followed": "special-names/x².md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/x².md>)",
+          "text": "x²"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/x².md",
+      "realpathAfterRenames": "special-names/x².md"
+    },
+    "x2": {
+      "lookups": [
+        {
+          "form": "both",
+          "text": "x2",
+          "found": "special-names/x2.md"
+        }
+      ],
+      "realpath": "special-names/x2.md",
+      "typedLinks": [
+        {
+          "cached": "special-names/x2",
+          "href": "special-names/x2",
+          "opened": "special-names/x2.md",
+          "created": [],
+          "resolved": "special-names/x2.md",
+          "unresolved": null,
+          "followed": "special-names/x2.md",
+          "form": "both",
+          "kind": "wikilink",
+          "link": "[[special-names/x2]]",
+          "text": "x2"
+        },
+        {
+          "cached": "special-names/x2.md",
+          "href": "special-names/x2.md",
+          "opened": "special-names/x2.md",
+          "created": [],
+          "resolved": "special-names/x2.md",
+          "unresolved": null,
+          "followed": "special-names/x2.md",
+          "form": "both",
+          "kind": "markdown-encoded",
+          "link": "[t](special-names/x2.md)",
+          "text": "x2"
+        },
+        {
+          "cached": "special-names/x2.md",
+          "href": "special-names/x2.md",
+          "opened": "special-names/x2.md",
+          "created": [],
+          "resolved": "special-names/x2.md",
+          "unresolved": null,
+          "followed": "special-names/x2.md",
+          "form": "both",
+          "kind": "markdown-raw",
+          "link": "[t](<special-names/x2.md>)",
+          "text": "x2"
+        }
+      ],
+      "formRenames": null,
+      "ontoRealpath": "special-names/onto/x2.md",
+      "realpathAfterRenames": "special-names/x2.md"
+    }
+  },
+  "reads": {
+    "plain": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/plain.md"
+      },
+      "text": "sntok0q\n",
+      "explorer": "plain",
+      "embed": true,
+      "indexed": "special-names/plain.md",
+      "link": "[[plain]]",
+      "switcher": [
+        "special-names/plain.md",
+        "special-names/linkers/L9.md",
+        "special-names/linkers/L8.md",
+        "special-names/linkers/L7.md",
+        "special-names/linkers/L6.md",
+        "special-names/linkers/L5.md",
+        "special-names/linkers/L4.md",
+        "special-names/linkers/L3.md",
+        "special-names/linkers/L2.md",
+        "special-names/linkers/L1.md",
+        "special-names/linkers/L0.md",
+        "special-names/linkers/L20.md",
+        "special-names/linkers/L19.md",
+        "special-names/linkers/L18.md",
+        "special-names/linkers/L17.md",
+        "special-names/linkers/L16.md",
+        "special-names/linkers/L15.md",
+        "special-names/linkers/L14.md",
+        "special-names/linkers/L13.md",
+        "special-names/linkers/L12.md"
+      ],
+      "uri": {
+        "opened": "special-names/plain.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fplain"
+      },
+      "search": [
+        "special-names/plain.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[plain]]",
+        "backResolved": true,
+        "link": "[[plain]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[plain]]",
+        "backResolved": true,
+        "link": "[[R0]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/plain]]",
+        "resolved": true
+      }
+    },
+    "méй": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/méй.md"
+      },
+      "text": "sntok1q\n",
+      "explorer": "méй",
+      "embed": true,
+      "indexed": "special-names/méй.md",
+      "link": "[[special-names/méй]]",
+      "switcher": [
+        "special-names/méй.md",
+        "special-names/forms/méй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/péй.md",
+        "special-names/néй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/péй.md",
+        "special-names/forms/néй.md",
+        "special-names/forms/kéй.md"
+      ],
+      "uri": {
+        "opened": "special-names/méй.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fm%C3%A9%D0%B9"
+      },
+      "search": [
+        "special-names/méй.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/méй]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/méй]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/méй]]",
+        "backResolved": true,
+        "link": "[[R1]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/méй]]",
+        "resolved": true
+      }
+    },
+    "kéй": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/kéй.md"
+      },
+      "text": "sntok2q\n",
+      "explorer": "kéй",
+      "embed": true,
+      "indexed": "special-names/kéй.md",
+      "link": "[[special-names/kéй]]",
+      "switcher": [
+        "special-names/kéй.md",
+        "special-names/forms/kéй.md"
+      ],
+      "uri": {
+        "opened": "special-names/kéй.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fk%C3%A9%D0%B9"
+      },
+      "search": [
+        "special-names/kéй.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/kéй]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/kéй]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/kéй]]",
+        "backResolved": true,
+        "link": "[[R2]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/kéй]]",
+        "resolved": true
+      }
+    },
+    "ệ": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/ệ.md"
+      },
+      "text": "sntok3q\n",
+      "explorer": "ệ",
+      "embed": true,
+      "indexed": "special-names/ệ.md",
+      "link": "[[special-names/ệ]]",
+      "switcher": [
+        "special-names/ệ.md",
+        "special-names/forms/ệ.md",
+        "special-names/typed/T9-1-markdown-encoded.md",
+        "special-names/typed/T9-0-markdown-encoded.md",
+        "special-names/typed/T8-2-markdown-encoded.md",
+        "special-names/typed/T8-1-markdown-encoded.md",
+        "special-names/typed/T8-0-markdown-encoded.md",
+        "special-names/typed/T7-1-markdown-encoded.md",
+        "special-names/typed/T7-0-markdown-encoded.md",
+        "special-names/typed/T6-1-markdown-encoded.md",
+        "special-names/typed/T6-0-markdown-encoded.md",
+        "special-names/typed/T5-2-markdown-encoded.md",
+        "special-names/typed/T5-1-markdown-encoded.md",
+        "special-names/typed/T5-0-markdown-encoded.md",
+        "special-names/typed/T4-1-markdown-encoded.md",
+        "special-names/typed/T4-0-markdown-encoded.md",
+        "special-names/typed/T3-2-markdown-encoded.md",
+        "special-names/typed/T3-1-markdown-encoded.md",
+        "special-names/typed/T3-0-markdown-encoded.md",
+        "special-names/typed/T2-2-markdown-encoded.md"
+      ],
+      "uri": {
+        "opened": "special-names/ệ.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2F%E1%BB%87"
+      },
+      "search": [
+        "special-names/ệ.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/ệ]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/ệ]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/ệ]]",
+        "backResolved": true,
+        "link": "[[R3]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/ệ]]",
+        "resolved": true
+      }
+    },
+    "ộ": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[ộ]]",
+      "switcher": [
+        "special-names/ộ.md",
+        "special-names/forms/ộ.md",
+        "special-names/typed/T9-1-markdown-raw.md",
+        "special-names/typed/T9-0-markdown-raw.md",
+        "special-names/typed/T8-2-markdown-raw.md",
+        "special-names/typed/T8-1-markdown-raw.md",
+        "special-names/typed/T8-0-markdown-raw.md",
+        "special-names/typed/T7-1-markdown-raw.md",
+        "special-names/typed/T7-0-markdown-raw.md",
+        "special-names/typed/T6-1-markdown-raw.md",
+        "special-names/typed/T6-0-markdown-raw.md",
+        "special-names/typed/T5-2-markdown-raw.md",
+        "special-names/typed/T5-1-markdown-raw.md",
+        "special-names/typed/T5-0-markdown-raw.md",
+        "special-names/typed/T4-1-markdown-raw.md",
+        "special-names/typed/T4-0-markdown-raw.md",
+        "special-names/typed/T3-2-markdown-raw.md",
+        "special-names/typed/T3-1-markdown-raw.md",
+        "special-names/typed/T3-0-markdown-raw.md",
+        "special-names/typed/T2-2-markdown-raw.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "[[special-names/onto/ộ]]",
+        "resolved": true
+      }
+    },
+    "ộ": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/ộ.md"
+      },
+      "text": "sntok5q\n",
+      "explorer": "ộ",
+      "embed": true,
+      "indexed": "special-names/ộ.md",
+      "link": "[[special-names/ộ]]",
+      "switcher": [
+        "special-names/ộ.md",
+        "special-names/forms/ộ.md",
+        "special-names/typed/T9-1-markdown-raw.md",
+        "special-names/typed/T9-0-markdown-raw.md",
+        "special-names/typed/T8-2-markdown-raw.md",
+        "special-names/typed/T8-1-markdown-raw.md",
+        "special-names/typed/T8-0-markdown-raw.md",
+        "special-names/typed/T7-1-markdown-raw.md",
+        "special-names/typed/T7-0-markdown-raw.md",
+        "special-names/typed/T6-1-markdown-raw.md",
+        "special-names/typed/T6-0-markdown-raw.md",
+        "special-names/typed/T5-2-markdown-raw.md",
+        "special-names/typed/T5-1-markdown-raw.md",
+        "special-names/typed/T5-0-markdown-raw.md",
+        "special-names/typed/T4-1-markdown-raw.md",
+        "special-names/typed/T4-0-markdown-raw.md",
+        "special-names/typed/T3-2-markdown-raw.md",
+        "special-names/typed/T3-1-markdown-raw.md",
+        "special-names/typed/T3-0-markdown-raw.md",
+        "special-names/typed/T2-2-markdown-raw.md"
+      ],
+      "uri": {
+        "opened": "special-names/ộ.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2F%E1%BB%99"
+      },
+      "search": [
+        "special-names/ộ.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/ộ]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/ộ]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/ộ]]",
+        "backResolved": true,
+        "link": "[[R5]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "néй": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[néй]]",
+      "switcher": [
+        "special-names/néй.md",
+        "special-names/forms/néй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/péй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/péй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "[[special-names/onto/néй]]",
+        "resolved": true
+      }
+    },
+    "néй": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[néй]]",
+      "switcher": [
+        "special-names/néй.md",
+        "special-names/forms/néй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/péй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/péй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "néй": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/néй.md"
+      },
+      "text": "sntok8q\n",
+      "explorer": "néй",
+      "embed": true,
+      "indexed": "special-names/néй.md",
+      "link": "[[special-names/néй]]",
+      "switcher": [
+        "special-names/néй.md",
+        "special-names/forms/néй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/péй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/péй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": {
+        "opened": "special-names/néй.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fn%C3%A9%D0%B9"
+      },
+      "search": [
+        "special-names/néй.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "<<refused: Destination file already exists!>>",
+        "backResolved": false,
+        "link": "[[special-names/moved/néй]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": null,
+        "backResolved": false,
+        "link": "<<no special-names/néй.md>>",
+        "resolved": false
+      },
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "péй": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[péй]]",
+      "switcher": [
+        "special-names/péй.md",
+        "special-names/forms/péй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/néй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/néй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "[[special-names/onto/péй]]",
+        "resolved": true
+      }
+    },
+    "péй": {
+      "linkResolved": false,
+      "property": false,
+      "hasBacklink": false,
+      "open": null,
+      "text": null,
+      "explorer": null,
+      "embed": false,
+      "indexed": null,
+      "link": "[[péй]]",
+      "switcher": [
+        "special-names/péй.md",
+        "special-names/forms/péй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/néй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/néй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": null,
+      "search": [],
+      "graph": {
+        "edge": false,
+        "node": false
+      },
+      "move": null,
+      "rename": null,
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "péй": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/péй.md"
+      },
+      "text": "sntok11q\n",
+      "explorer": "péй",
+      "embed": true,
+      "indexed": "special-names/péй.md",
+      "link": "[[special-names/péй]]",
+      "switcher": [
+        "special-names/péй.md",
+        "special-names/forms/péй.md",
+        "special-names/qéй.md",
+        "special-names/kéй.md",
+        "special-names/méй.md",
+        "special-names/néй.md",
+        "special-names/forms/qéй.md",
+        "special-names/forms/néй.md",
+        "special-names/forms/kéй.md",
+        "special-names/forms/méй.md"
+      ],
+      "uri": {
+        "opened": "special-names/péй.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fp%C3%A9%D0%B9"
+      },
+      "search": [
+        "special-names/péй.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/péй]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/péй]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/péй]]",
+        "backResolved": true,
+        "link": "[[R11]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "<<refused: Destination file already exists!>>",
+        "resolved": false
+      }
+    },
+    "qéй": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/qéй.md"
+      },
+      "text": "sntok12q\n",
+      "explorer": "qéй",
+      "embed": true,
+      "indexed": "special-names/qéй.md",
+      "link": "[[special-names/qéй]]",
+      "switcher": [
+        "special-names/qéй.md",
+        "special-names/forms/qéй.md"
+      ],
+      "uri": {
+        "opened": "special-names/qéй.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fq%C3%A9%D0%B9"
+      },
+      "search": [
+        "special-names/qéй.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[special-names/qéй]]",
+        "backResolved": true,
+        "link": "[[special-names/moved/qéй]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[special-names/qéй]]",
+        "backResolved": true,
+        "link": "[[R12]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/qéй]]",
+        "resolved": true
+      }
+    },
+    "́x": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/́x.md"
+      },
+      "text": "sntok13q\n",
+      "explorer": "́x",
+      "embed": true,
+      "indexed": "special-names/́x.md",
+      "link": "[[́x]]",
+      "switcher": [
+        "special-names/́x.md",
+        "special-names/x2.md",
+        "special-names/x².md",
+        "special-names/x ́y.md",
+        "special-names/Ax.md",
+        "special-names/Ａx.md",
+        "special-names/ﬁx.md",
+        "special-names/fix.md"
+      ],
+      "uri": {
+        "opened": "special-names/́x.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2F%CC%81x"
+      },
+      "search": [
+        "special-names/́x.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[́x]]",
+        "backResolved": true,
+        "link": "[[́x]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[́x]]",
+        "backResolved": true,
+        "link": "[[R13]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/́x]]",
+        "resolved": true
+      }
+    },
+    "x ́y": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x ́y.md"
+      },
+      "text": "sntok14q\n",
+      "explorer": "x ́y",
+      "embed": true,
+      "indexed": "special-names/x ́y.md",
+      "link": "[[x ́y]]",
+      "switcher": [
+        "special-names/x ́y.md"
+      ],
+      "uri": {
+        "opened": "special-names/x ́y.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fx%20%CC%81y"
+      },
+      "search": [
+        "special-names/x ́y.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x ́y]]",
+        "backResolved": true,
+        "link": "[[x ́y]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x ́y]]",
+        "backResolved": true,
+        "link": "[[R14]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x ́y]]",
+        "resolved": true
+      }
+    },
+    "ﬁx": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/ﬁx.md"
+      },
+      "text": "sntok15q\n",
+      "explorer": "ﬁx",
+      "embed": true,
+      "indexed": "special-names/ﬁx.md",
+      "link": "[[ﬁx]]",
+      "switcher": [
+        "special-names/ﬁx.md"
+      ],
+      "uri": {
+        "opened": "special-names/ﬁx.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2F%EF%AC%81x"
+      },
+      "search": [
+        "special-names/ﬁx.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[ﬁx]]",
+        "backResolved": true,
+        "link": "[[ﬁx]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[ﬁx]]",
+        "backResolved": true,
+        "link": "[[R15]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/ﬁx]]",
+        "resolved": true
+      }
+    },
+    "fix": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/fix.md"
+      },
+      "text": "sntok16q\n",
+      "explorer": "fix",
+      "embed": true,
+      "indexed": "special-names/fix.md",
+      "link": "[[fix]]",
+      "switcher": [
+        "special-names/fix.md"
+      ],
+      "uri": {
+        "opened": "special-names/fix.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Ffix"
+      },
+      "search": [
+        "special-names/fix.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[fix]]",
+        "backResolved": true,
+        "link": "[[fix]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[fix]]",
+        "backResolved": true,
+        "link": "[[R16]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/fix]]",
+        "resolved": true
+      }
+    },
+    "Ａx": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/Ａx.md"
+      },
+      "text": "sntok17q\n",
+      "explorer": "Ａx",
+      "embed": true,
+      "indexed": "special-names/Ａx.md",
+      "link": "[[Ａx]]",
+      "switcher": [
+        "special-names/Ａx.md"
+      ],
+      "uri": {
+        "opened": "special-names/Ａx.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2F%EF%BC%A1x"
+      },
+      "search": [
+        "special-names/Ａx.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[Ａx]]",
+        "backResolved": true,
+        "link": "[[Ａx]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[Ａx]]",
+        "backResolved": true,
+        "link": "[[R17]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/Ａx]]",
+        "resolved": true
+      }
+    },
+    "Ax": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/Ax.md"
+      },
+      "text": "sntok18q\n",
+      "explorer": "Ax",
+      "embed": true,
+      "indexed": "special-names/Ax.md",
+      "link": "[[Ax]]",
+      "switcher": [
+        "special-names/Ax.md",
+        "special-names/́x.md",
+        "special-names/x2.md",
+        "special-names/x².md",
+        "special-names/x ́y.md",
+        "special-names/Ａx.md",
+        "special-names/ﬁx.md",
+        "special-names/fix.md"
+      ],
+      "uri": {
+        "opened": "special-names/Ax.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2FAx"
+      },
+      "search": [
+        "special-names/Ax.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[Ax]]",
+        "backResolved": true,
+        "link": "[[Ax]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[Ax]]",
+        "backResolved": true,
+        "link": "[[R18]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/Ax]]",
+        "resolved": true
+      }
+    },
+    "x²": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x².md"
+      },
+      "text": "sntok19q\n",
+      "explorer": "x²",
+      "embed": true,
+      "indexed": "special-names/x².md",
+      "link": "[[x²]]",
+      "switcher": [
+        "special-names/x².md"
+      ],
+      "uri": {
+        "opened": "special-names/x².md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fx%C2%B2"
+      },
+      "search": [
+        "special-names/x².md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x²]]",
+        "backResolved": true,
+        "link": "[[x²]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x²]]",
+        "backResolved": true,
+        "link": "[[R19]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x²]]",
+        "resolved": true
+      }
+    },
+    "x2": {
+      "linkResolved": true,
+      "property": true,
+      "hasBacklink": true,
+      "open": {
+        "hasText": true,
+        "path": "special-names/x2.md"
+      },
+      "text": "sntok20q\n",
+      "explorer": "x2",
+      "embed": true,
+      "indexed": "special-names/x2.md",
+      "link": "[[x2]]",
+      "switcher": [
+        "special-names/x2.md"
+      ],
+      "uri": {
+        "opened": "special-names/x2.md",
+        "url": "obsidian://open?vault=temp-vault-Imu1Li&file=special-names%2Fx2"
+      },
+      "search": [
+        "special-names/x2.md"
+      ],
+      "graph": {
+        "edge": true,
+        "node": true
+      },
+      "move": {
+        "backLink": "[[x2]]",
+        "backResolved": true,
+        "link": "[[x2]]",
+        "resolved": true
+      },
+      "rename": {
+        "backLink": "[[x2]]",
+        "backResolved": true,
+        "link": "[[R20]]",
+        "resolved": true
+      },
+      "renameOnto": {
+        "link": "[[special-names/onto/x2]]",
+        "resolved": true
+      }
+    }
+  },
+  "renameChecks": [],
+  "shadowWrites": [
+    {
+      "name": "ộ",
+      "nameText": "sntok4q\n",
+      "partner": "ộ",
+      "partnerText": "edited through the vault\n"
+    },
+    {
+      "name": "néй",
+      "nameText": "sntok6q\n",
+      "partner": "néй",
+      "partnerText": "edited through the vault\n"
+    },
+    {
+      "name": "néй",
+      "nameText": "sntok7q\n",
+      "partner": "néй",
+      "partnerText": "edited through the vault\n"
+    },
+    {
+      "name": "péй",
+      "nameText": "sntok9q\n",
+      "partner": "péй",
+      "partnerText": "edited through the vault\n"
+    },
+    {
+      "name": "péй",
+      "nameText": "sntok10q\n",
+      "partner": "péй",
+      "partnerText": "edited through the vault\n"
+    }
+  ]
+}
