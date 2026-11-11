@@ -31,13 +31,18 @@ import { decodeEntities } from './entities.ts';
 import { scanMemoSettings } from './parser.ts';
 
 const AUTO_LINK_MAILTO = 'mailto:';
-const URL_PREFIX_RE = /www\.|http:\/\/|https:\/\//gu;
-const EMPHASIS_MARKER_RE = /[*_]/gu;
-const STRONG_MARKER_RE = /\*\*|__/gu;
+// The markers each locator finds the first of.
+interface Markers {
+  readonly firstCodes: readonly number[];
+  readonly prefixes: readonly string[];
+}
 const HTML_LINK_OPEN_RE = /^<a /iu;
 const HTML_LINK_CLOSE_RE = /^<\/a>/iu;
 const WORD_CHARACTER_RE = /\w/u;
 const MIN_BREAK_LENGTH = 2;
+const URL_PREFIXES = markersOf(['www.', 'http://', 'https://']);
+const EMPHASIS_MARKERS = markersOf(['*', '_']);
+const STRONG_MARKERS = markersOf(['**', '__']);
 
 /**
  * The inline tokenizers.
@@ -1047,7 +1052,7 @@ function locateEmail(_parser: RemarkParser, value: string, fromIndex: number): n
 }
 
 function locateEmphasis(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return locateFirst(EMPHASIS_MARKER_RE, value, fromIndex);
+  return locateFirst(EMPHASIS_MARKERS, value, fromIndex);
 }
 
 function locateEscape(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1059,9 +1064,22 @@ function locateEscape(_parser: RemarkParser, value: string, fromIndex: number): 
  * all the alternatives stops at the first: a search per alternative, as upstream makes, reads the rest of the text for
  * each one that is absent, and the locators are asked again at every construct.
  */
-function locateFirst(pattern: RegExp, value: string, fromIndex: number): number {
-  pattern.lastIndex = fromIndex;
-  return pattern.exec(value)?.index ?? -1;
+function locateFirst(markers: Markers, value: string, fromIndex: number): number {
+  // A scan by character code allocates nothing, where a regular expression's match makes an array at every text run.
+  const { firstCodes, prefixes } = markers;
+  const length = value.length;
+
+  for (let index = fromIndex; index < length; index++) {
+    const code = value.charCodeAt(index);
+
+    for (const [alternative, prefix] of prefixes.entries()) {
+      if (firstCodes[alternative] === code && value.startsWith(prefix, index)) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
 }
 
 function locateInlineCode(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1076,7 +1094,7 @@ function locateLink(_parser: RemarkParser, value: string, fromIndex: number): nu
 }
 
 function locateStrong(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return locateFirst(STRONG_MARKER_RE, value, fromIndex);
+  return locateFirst(STRONG_MARKERS, value, fromIndex);
 }
 
 function locateTag(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1084,7 +1102,11 @@ function locateTag(_parser: RemarkParser, value: string, fromIndex: number): num
 }
 
 function locateUrl(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return locateFirst(URL_PREFIX_RE, value, fromIndex);
+  return locateFirst(URL_PREFIXES, value, fromIndex);
+}
+
+function markersOf(prefixes: readonly string[]): Markers {
+  return { firstCodes: prefixes.map((prefix) => prefix.charCodeAt(0)), prefixes };
 }
 
 function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
