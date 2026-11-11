@@ -92,7 +92,6 @@ const FOOTNOTE_INTERRUPT_LOOKAHEAD_END = 1024;
 const WHITESPACE_RE = /\s/u;
 const FRONTMATTER_FENCE = '---';
 const INTERNAL_LINK_RE = /^(?<embed>!?)\[\[(?<content>.+?)\]\]/u;
-const INTERNAL_LINK_START_RE = /!?\[\[/gu;
 const TAG_RE = /^#[^\u{2000}-\u{206F}\u{2E00}-\u{2E7F}'!"#$%&()*+,.:;<=>?@^`{|}~[\]\\\s]+/u;
 const NUMBER_TAG_RE = /^#\d+$/u;
 const INLINE_BLOCK_ID_RE = /^\^(?<id>[a-zA-Z0-9-]+)$/u;
@@ -838,9 +837,10 @@ function locateInlineMath(_parser: RemarkParser, value: string, fromIndex: numbe
   return value.indexOf('$', fromIndex);
 }
 
+// The first `[[` or `![[`: an embed's `!` can only be the character before the first `[[`, so no match array is made.
 function locateInternalLink(_parser: RemarkParser, value: string, fromIndex: number): number {
-  INTERNAL_LINK_START_RE.lastIndex = fromIndex;
-  return INTERNAL_LINK_START_RE.exec(value)?.index ?? -1;
+  const index = value.indexOf('[[', fromIndex);
+  return index > fromIndex && value.charCodeAt(index - 1) === EXCLAMATION_MARK ? index - 1 : index;
 }
 
 // A `#` at the start of the inline content, or after whitespace.
