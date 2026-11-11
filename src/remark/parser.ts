@@ -199,11 +199,18 @@ interface PositionCarrier {
   position?: RemarkPosition;
 }
 
+interface TokenizeDispatch {
+  readonly byCharacter: ReadonlyMap<string, readonly TokenizeMethod[]>;
+  readonly ungated: readonly TokenizeMethod[];
+}
+
 interface TokenizeMethod {
   readonly notInLink?: boolean;
   readonly startCharacters?: string;
   readonly tokenize: BlockTokenizer;
 }
+
+const dispatches = new WeakMap<readonly TokenizeMethod[], TokenizeDispatch>();
 
 /**
  * The block tokenizers of `remark-parse` 8, in the order they are tried.
@@ -675,7 +682,7 @@ export class RemarkParser {
     const eat: Eat = Object.assign(eatSubvalue, { now, reset: eatAndReset, test: eatAndTest });
     const scope = new TokenizeScope(value.length);
     const outerScope = parser.scope;
-    const isStartCharacterGateEnabled = scanMemoSettings.isStartCharacterGateEnabled;
+    const dispatch = scanMemoSettings.isStartCharacterGateEnabled ? dispatchOf(methods) : undefined;
 
     // Sync the initial offset.
     updatePosition('');
@@ -687,14 +694,10 @@ export class RemarkParser {
       while (value) {
         let matched = false;
         // Most tokenizers fail at once on any other first character, and are tried at every position the text reaches.
-        const first = value.charAt(0);
+        const candidates = dispatch ? (dispatch.byCharacter.get(value.charAt(0)) ?? dispatch.ungated) : methods;
 
-        for (const method of methods) {
+        for (const method of candidates) {
           if (method.notInLink && parser.inLink) {
-            continue;
-          }
-
-          if (isStartCharacterGateEnabled && method.startCharacters !== undefined && !method.startCharacters.includes(first)) {
             continue;
           }
 
@@ -954,6 +957,31 @@ export class TokenizeScope {
 }
 
 // Only text nodes that cover as much source as their value, on one line, merge.
+/*
+ * The tokenizers to try at each first character, in their order: those that name it among their start characters and
+ * those that name none. Built once per list, which a parser keeps for as long as its tokenizers stay the same.
+ */
+function dispatchOf(methods: readonly TokenizeMethod[]): TokenizeDispatch {
+  let dispatch = dispatches.get(methods);
+  if (dispatch) {
+    return dispatch;
+  }
+
+  const byCharacter = new Map<string, readonly TokenizeMethod[]>();
+  for (const method of methods) {
+    const startCharacters = method.startCharacters ?? '';
+    for (const character of startCharacters) {
+      if (!byCharacter.has(character)) {
+        byCharacter.set(character, methods.filter((candidate) => candidate.startCharacters?.includes(character) ?? true));
+      }
+    }
+  }
+
+  dispatch = { byCharacter, ungated: methods.filter((method) => method.startCharacters === undefined) };
+  dispatches.set(methods, dispatch);
+  return dispatch;
+}
+
 function isMergeable(node: RemarkNode): boolean {
   if (node.type !== 'text' || !node.position) {
     return true;
