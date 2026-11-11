@@ -48,19 +48,20 @@ const STRONG_MARKERS = markersOf(['**', '__']);
  * The inline tokenizers.
  */
 export const INLINE_TOKENIZERS: Readonly<Partial<Record<InlineTokenizerName, InlineTokenizer>>> = {
-  autoLink: { locator: locateTag, notInLink: true, tokenize: autoLink },
-  break: { locator: locateBreak, tokenize: hardBreak },
-  code: { locator: locateInlineCode, tokenize: inlineCode },
-  deletion: { locator: locateDelete, tokenize: strikethrough },
+  autoLink: { locator: locateTag, notInLink: true, startCharacters: '<', tokenize: autoLink },
+  break: { locator: locateBreak, startCharacters: ' \n', tokenize: hardBreak },
+  code: { locator: locateInlineCode, startCharacters: '`', tokenize: inlineCode },
+  deletion: { locator: locateDelete, startCharacters: '~', tokenize: strikethrough },
   email: { locator: locateEmail, notInLink: true, tokenize: email },
-  emphasis: { locator: locateEmphasis, tokenize: emphasis },
-  escape: { locator: locateEscape, tokenize: escape },
-  html: { locator: locateTag, tokenize: inlineHtml },
-  link: { locator: locateLink, tokenize: link },
-  reference: { locator: locateLink, tokenize: reference },
-  strong: { locator: locateStrong, tokenize: strong },
+  emphasis: { locator: locateEmphasis, startCharacters: '*_', tokenize: emphasis },
+  escape: { locator: locateEscape, startCharacters: '\\', tokenize: escape },
+  html: { locator: locateTag, startCharacters: '<', tokenize: inlineHtml },
+  link: { locator: locateLink, startCharacters: '![', tokenize: link },
+  reference: { locator: locateLink, startCharacters: '![', tokenize: reference },
+  strong: { locator: locateStrong, startCharacters: '*_', tokenize: strong },
   text: { locator: () => -1, tokenize: text },
-  url: { locator: locateUrl, notInLink: true, tokenize: literalUrl }
+  // `literalUrl` reads `http://` and `https://` in any case, and `www.` in lower case only.
+  url: { locator: locateUrl, notInLink: true, startCharacters: 'hHw', tokenize: literalUrl }
 };
 
 function autoLink(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {

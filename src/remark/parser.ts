@@ -112,6 +112,12 @@ export interface InlineTokenizer {
   readonly notInLink?: boolean;
 
   /**
+   * The characters a value it eats from can start with, when it eats from no other: a value starting with none of them
+   * is not handed to it. Without them, it is tried at every position.
+   */
+  readonly startCharacters?: string;
+
+  /**
    * Eats inline content at the start of `value`.
    */
   readonly tokenize: (parser: RemarkParser, eat: Eat, value: string, isSilent: boolean) => TokenizerResult;
@@ -197,6 +203,7 @@ interface PositionCarrier {
 
 interface TokenizeMethod {
   readonly notInLink?: boolean;
+  readonly startCharacters?: string;
   readonly tokenize: BlockTokenizer;
 }
 
@@ -259,11 +266,12 @@ const LINE_ENDING_RE = /\r?\n|\r/gu;
 const BYTE_ORDER_MARK = 0xFE_FF;
 
 /**
- * Whether the scans keep {@link TokenizeScope} memos. Only the differential test turns them off, to check that a parse
- * with them gives the tree a parse without them does.
+ * Whether the scans keep {@link TokenizeScope} memos, and whether a tokenizer is skipped at a character it cannot start
+ * at. Only the differential test turns them off, to check that a parse with them gives the tree a parse without them does.
  */
 export const scanMemoSettings = {
   isEnabled: true,
+  isStartCharacterGateEnabled: true,
   /**
    * The shortest text whose locators are remembered. Every text is: on 10,000 lines of vault notes, remembering only
    * texts of 1,024 characters or more left the locators reading 9.6 million characters, and remembering all of them
@@ -652,6 +660,7 @@ export class RemarkParser {
     const eat = Object.assign(eatSubvalue, { now });
     const scope = new TokenizeScope(value.length);
     const outerScope = parser.scope;
+    const isStartCharacterGateEnabled = scanMemoSettings.isStartCharacterGateEnabled;
 
     // Sync the initial offset.
     updatePosition('');
@@ -662,9 +671,15 @@ export class RemarkParser {
       // eslint-disable-next-line no-unmodified-loop-condition -- The tokenizers change `value` through `eat`.
       while (value) {
         let matched = false;
+        // Most tokenizers fail at once on any other first character, and are tried at every position the text reaches.
+        const first = value.charAt(0);
 
         for (const method of methods) {
           if (method.notInLink && parser.inLink) {
+            continue;
+          }
+
+          if (isStartCharacterGateEnabled && method.startCharacters !== undefined && !method.startCharacters.includes(first)) {
             continue;
           }
 

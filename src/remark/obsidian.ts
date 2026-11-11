@@ -176,15 +176,19 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
   blockMethods: OBSIDIAN_BLOCK_METHODS,
   inline: {
     ...INLINE_TOKENIZERS,
-    blockId: { locator: locateBlockId, tokenize: blockIdInline },
-    comment: { locator: locateComment, tokenize: commentInline },
-    footnoteReference: { locator: locateFootnoteReference, tokenize: footnoteReference },
-    highlight: { locator: locateHighlight, tokenize: highlight },
-    inlineFootnote: { locator: locateInlineFootnote, tokenize: inlineFootnote },
-    inlineMath: { locator: locateInlineMath, tokenize: inlineMath },
-    internalLink: { locator: locateInternalLink, tokenize: internalLink },
-    reference: { locator: INLINE_TOKENIZERS.reference?.locator ?? locateNothing, tokenize: referenceUnlessFootnote },
-    tag: { locator: locateTag, tokenize: tag }
+    blockId: { locator: locateBlockId, startCharacters: '^', tokenize: blockIdInline },
+    comment: { locator: locateComment, startCharacters: '%', tokenize: commentInline },
+    footnoteReference: { locator: locateFootnoteReference, startCharacters: '[', tokenize: footnoteReference },
+    highlight: { locator: locateHighlight, startCharacters: '=', tokenize: highlight },
+    inlineFootnote: { locator: locateInlineFootnote, startCharacters: '^', tokenize: inlineFootnote },
+    inlineMath: { locator: locateInlineMath, startCharacters: String.raw`\$`, tokenize: inlineMath },
+    internalLink: { locator: locateInternalLink, startCharacters: '![', tokenize: internalLink },
+    reference: {
+      locator: INLINE_TOKENIZERS.reference?.locator ?? locateNothing,
+      startCharacters: '![',
+      tokenize: referenceUnlessFootnote
+    },
+    tag: { locator: locateTag, startCharacters: '#', tokenize: tag }
   },
   inlineMethods: OBSIDIAN_INLINE_METHODS,
   interruptBlockquote: insertAll(INTERRUPT_BLOCKQUOTE, [['math', 'fencedCode', true], ['comment', 'fencedCode', true]]),
@@ -198,6 +202,7 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
  */
 export const SOFT_BREAK_AS_HARD_TOKENIZER: InlineTokenizer = {
   locator: INLINE_TOKENIZERS.break?.locator ?? locateNothing,
+  startCharacters: ' \n',
   tokenize: softBreakAsHard
 };
 

@@ -78,12 +78,15 @@ function createRandom(seed: number): () => number {
   };
 }
 
-function parseWithoutMemos(note: string): string {
+// The tree with the memos and the start-character gate turned off.
+function parseWithoutMemos(note: string, shouldReadSoftLineBreaksAsHard: boolean): string {
   scanMemoSettings.isEnabled = false;
+  scanMemoSettings.isStartCharacterGateEnabled = false;
   try {
-    return JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard: true }));
+    return JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard }));
   } finally {
     scanMemoSettings.isEnabled = true;
+    scanMemoSettings.isStartCharacterGateEnabled = true;
   }
 }
 
@@ -105,23 +108,23 @@ describe('scan memos', () => {
     for (let index = 0; index < NOTES; index++) {
       const count = Math.floor(random() * MAX_PIECES);
       const note = Array.from({ length: count }, () => PIECES[Math.floor(random() * PIECES.length)] ?? '').join('');
-      expect(JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard: true })), note).toBe(parseWithoutMemos(note));
+      expect(JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard: true })), note).toBe(parseWithoutMemos(note, true));
     }
   });
 
   it('give the tree a parse without them gives, on runs of unclosed delimiters', () => {
     const notes = ['*a _b '.repeat(200), '[a '.repeat(200), '[[note]] '.repeat(200), '_a_b_ '.repeat(100), '*a* _b_ [c] '.repeat(100)];
     for (const note of notes) {
-      expect(JSON.stringify(parseRemark(note))).toBe(JSON.stringify(withoutMemos(() => parseRemark(note))));
+      expect(JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard: false }))).toBe(parseWithoutMemos(note, false));
+    }
+  });
+
+  it('give the tree a parse without them gives, on fuzzed notes with soft line breaks', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {
+    const random = createRandom(SEED + 1);
+    for (let index = 0; index < NOTES; index++) {
+      const count = Math.floor(random() * MAX_PIECES);
+      const note = Array.from({ length: count }, () => PIECES[Math.floor(random() * PIECES.length)] ?? '').join('');
+      expect(JSON.stringify(parseRemark(note, { shouldReadSoftLineBreaksAsHard: false })), note).toBe(parseWithoutMemos(note, false));
     }
   });
 });
-
-function withoutMemos<T>(read: () => T): T {
-  scanMemoSettings.isEnabled = false;
-  try {
-    return read();
-  } finally {
-    scanMemoSettings.isEnabled = true;
-  }
-}
