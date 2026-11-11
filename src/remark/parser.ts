@@ -827,7 +827,17 @@ export class RemarkParser {
 
       // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them. An anonymous
       // arrow, since a bundler keeping names wraps every named function expression it creates in a call.
-      return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => place(add(place(node, current), parent), current, indentation);
+      return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => {
+        if (node.position) {
+          return place(add(place(node, current), parent), current, indentation);
+        }
+
+        // A new node gets the position the two placings give it at once: the first leaves an empty indent that the
+        // second copies the eaten lines' indentation after. Merging reads only its start and end.
+        node.position = { end: now(), indent: [...indentation], start: current };
+        const result = add(node, parent);
+        return result === node ? node : place(result, current, indentation);
+      };
     }
 
     function eatAndReset<Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node {
