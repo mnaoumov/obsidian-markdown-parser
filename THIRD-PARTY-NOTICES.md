@@ -11,6 +11,8 @@ In `src/syntax/unified/micromark.ts`, the highlight pairing (`resolveAllHighligh
 `src/remark/` is a TypeScript port of `remark-parse` 8.0.3 (`parser.ts`, `block.ts`, `inline.ts`), with its helpers folded in: `parse-entities` 2.0.0 (`entities.ts`), `vfile-location` 3, `state-toggle` and `markdown-escapes` (`parser.ts`), and `collapse-white-space`, `trim-trailing-lines`, `ccount`, `is-word-character`, `is-whitespace-character`, `is-alphabetical`, `is-decimal`, `is-hexadecimal` and `is-alphanumerical`. `src/remark/html.ts` ports the handlers of `mdast-util-to-hast` 10, the final line ending of `remark-html` 13, and the `encode` of `mdurl`. All are modified, and all are under the MIT licenses in the remark-parse, parse-entities, mdast-util-to-hast, "Titus Wormer's utilities" and mdurl sections below. The edits Obsidian makes to three of `remark-parse`'s tokenizers are re-expressed from their behaviour, not copied.
 `src/syntax/quirk-rules.ts` re-expresses rules of `remark-parse` 8.0.3, the parser Obsidian's reading view and metadata worker run: its link reference definitions, autolinks, HTML blocks, HTML comments and table delimiter rows. Its character references follow `parse-entities` 2. Both are under the MIT licenses in the remark-parse and parse-entities sections below.
 
+`src/oracle/remark-obsidian/cases.ts` holds markdown inputs taken from the test suites of `@quartz-community/remark-obsidian` by `scripts/oracles/import-remark-obsidian.ts`, under the MIT license in the remark-obsidian section below.
+
 The CommonMark and GFM spec suites in `spec/` are made from the specs' examples, under the Creative Commons Attribution-ShareAlike 4.0 license (CC-BY-SA 4.0, <https://creativecommons.org/licenses/by-sa/4.0/>), and are shared under the same license:
 
 - `spec/commonmark-0.31.2.json` is the `spec.json` of the CommonMark Spec 0.31.2 by John MacFarlane (<https://spec.commonmark.org/0.31.2/>).
@@ -288,4 +290,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+```
+
+## remark-obsidian
+
+```text
+MIT License
+
+Copyright (c) 2026 Quartz Community
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```

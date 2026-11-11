@@ -41,6 +41,7 @@ import type {
   WorkerMetadataOracleFile
 } from '../../src/oracle/spec/worker-metadata.ts';
 
+import { REMARK_OBSIDIAN_CASES } from '../../src/oracle/remark-obsidian/cases.ts';
 import { CONFORMANCE_CASES } from '../../src/syntax/conformance.ts';
 
 // The app's own `package.json`, beside its `worker.js`.
@@ -133,7 +134,22 @@ const PINNED = [
   '[foo]: /url\n\n\'tit [^1]\nle\'\n\n[^1]: x',
   '[1]: https://example.com\n\n"To be or not to be."\n\nNext paragraph.',
   '[1]: https://example.com\n\n"Unclosed quote\n\nNext paragraph with a [link][1].',
-  'a[^a[b]c]\n\n[^a[b]: d'
+  'a[^a[b]c]\n\n[^a[b]: d',
+  // A child list indented less than CommonMark's content column, at it, and past it, with spaces and with a tab.
+  '1. a\n  - b',
+  '1. a\n   - b',
+  '1. a\n\t- b',
+  '- a\n - b',
+  '- a\n   - b',
+  '- a\n    - b',
+  '- a\n     - b',
+  '- a\n\t- b',
+  '10. a\n   - b',
+  '10. a\n    - b',
+  '10. a\n\t- b',
+  '1. a\n  b',
+  '- a\n\n   - b',
+  '- a\n\n    - b'
 ];
 
 /*
@@ -241,6 +257,11 @@ for (const [set, pieces] of Object.entries(SETS)) {
 // After the piece sets, so the seed still gives them the same documents.
 for (const text of PINNED) {
   docs.push({ metadata: runWorker(text), set: 'pinned', text });
+}
+
+// The inputs of another markdown parser's test suites, imported by `scripts/oracles/import-remark-obsidian.ts`.
+for (const { markdown } of REMARK_OBSIDIAN_CASES) {
+  docs.push({ metadata: runWorker(markdown), set: 'remark-obsidian', text: markdown });
 }
 
 const oracleFile: WorkerMetadataOracleFile = { docs, meta: { appVersion, perSet, seed } };
