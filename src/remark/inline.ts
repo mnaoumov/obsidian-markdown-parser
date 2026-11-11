@@ -1362,8 +1362,10 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
   let min = value.length;
   const methods = parser.tokenizers.inlineMethods;
 
-  for (const [slot, name] of methods.entries()) {
-    const tokenizer = tokenizers[name];
+  // eslint-disable-next-line unicorn/no-for-loop -- An `entries()` pair per locator and text run was most of what a parse allocated here.
+  for (let slot = 0; slot < methods.length; slot++) {
+    const name = methods[slot];
+    const tokenizer = name === undefined ? undefined : tokenizers[name];
 
     if (name === 'text' || !tokenizer) {
       continue;
