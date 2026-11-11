@@ -355,6 +355,12 @@ export class RemarkParser {
    */
   public scope: TokenizeScope | undefined;
 
+  private blockTokenizeMethods: TokenizeMethod[] | undefined;
+
+  private inlineTokenizeMethods: InlineTokenizer[] = [];
+
+  private inlineTokenizeMethodsFor: Partial<Record<InlineTokenizerName, InlineTokenizer>> | undefined;
+
   private readonly lineStarts: number[];
 
   /**
@@ -551,15 +557,19 @@ export class RemarkParser {
    * @returns The blocks.
    */
   public tokenizeBlock(value: string, location: RemarkPoint): RemarkNode[] {
-    const tokenizers = this.tokenizers.block;
-    const methods: TokenizeMethod[] = [];
-    for (const name of this.tokenizers.blockMethods) {
-      const tokenizer = tokenizers[name];
-      if (tokenizer) {
-        methods.push({ tokenize: tokenizer });
+    // Built once: every container and list item tokenizes its content again, each call building the same list.
+    if (!this.blockTokenizeMethods) {
+      const tokenizers = this.tokenizers.block;
+      const methods: TokenizeMethod[] = [];
+      for (const name of this.tokenizers.blockMethods) {
+        const tokenizer = tokenizers[name];
+        if (tokenizer) {
+          methods.push({ tokenize: tokenizer });
+        }
       }
+      this.blockTokenizeMethods = methods;
     }
-    return this.tokenize(value, location, methods);
+    return this.tokenize(value, location, this.blockTokenizeMethods);
   }
 
   /**
@@ -571,14 +581,19 @@ export class RemarkParser {
    */
   public tokenizeInline(value: string, location: RemarkPoint): RemarkNode[] {
     const tokenizers = this.inlineTokenizers;
-    const methods: InlineTokenizer[] = [];
-    for (const name of this.tokenizers.inlineMethods) {
-      const tokenizer = tokenizers[name];
-      if (tokenizer) {
-        methods.push(tokenizer);
+    // Rebuilt only when the tokenizers in use are swapped, as a link swaps them while it reads its content.
+    if (this.inlineTokenizeMethodsFor !== tokenizers) {
+      const methods: InlineTokenizer[] = [];
+      for (const name of this.tokenizers.inlineMethods) {
+        const tokenizer = tokenizers[name];
+        if (tokenizer) {
+          methods.push(tokenizer);
+        }
       }
+      this.inlineTokenizeMethods = methods;
+      this.inlineTokenizeMethodsFor = tokenizers;
     }
-    return this.tokenize(value, location, methods);
+    return this.tokenize(value, location, this.inlineTokenizeMethods);
   }
 
   /**
