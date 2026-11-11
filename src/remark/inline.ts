@@ -34,12 +34,15 @@ const AUTO_LINK_MAILTO = 'mailto:';
 // The markers each locator finds the first of.
 interface Markers {
   readonly firstCodes: readonly number[];
+  // Whether an ASCII code starts any of the prefixes, all of which start with ASCII.
+  readonly isFirstCode: Uint8Array;
   readonly prefixes: readonly string[];
 }
 const HTML_LINK_OPEN_RE = /^<a /iu;
 const HTML_LINK_CLOSE_RE = /^<\/a>/iu;
 const WORD_CHARACTER_RE = /\w/u;
 const MIN_BREAK_LENGTH = 2;
+const ASCII_CODE_COUNT = 128;
 const URL_PREFIXES = markersOf(['www.', 'http://', 'https://']);
 const EMPHASIS_MARKERS = markersOf(['*', '_']);
 const STRONG_MARKERS = markersOf(['**', '__']);
@@ -1062,18 +1065,23 @@ function locateEscape(_parser: RemarkParser, value: string, fromIndex: number): 
 }
 
 /*
- * The first index at or after `fromIndex` where `pattern`, a global regular expression, matches, or `-1`. One search for
- * all the alternatives stops at the first: a search per alternative, as upstream makes, reads the rest of the text for
- * each one that is absent, and the locators are asked again at every construct.
+ * The first index at or after `fromIndex` where one of the `markers` starts, or `-1`. One search for all the
+ * alternatives stops at the first: a search per alternative, as upstream makes, reads the rest of the text for each one
+ * that is absent, and the locators are asked again at every construct.
  */
 function locateFirst(markers: Markers, value: string, fromIndex: number): number {
   // A scan by character code allocates nothing, where a regular expression's match makes an array at every text run.
-  const { firstCodes, prefixes } = markers;
+  const { firstCodes, isFirstCode, prefixes } = markers;
   const length = value.length;
   const count = prefixes.length;
 
   for (let index = fromIndex; index < length; index++) {
     const code = value.charCodeAt(index);
+
+    // Most characters start no marker, and one table read says so.
+    if (code >= ASCII_CODE_COUNT || isFirstCode[code] === 0) {
+      continue;
+    }
 
     // An indexed loop: an `entries()` iterator per character cost more than the scan itself on long notes.
     for (let alternative = 0; alternative < count; alternative++) {
@@ -1110,7 +1118,12 @@ function locateUrl(_parser: RemarkParser, value: string, fromIndex: number): num
 }
 
 function markersOf(prefixes: readonly string[]): Markers {
-  return { firstCodes: prefixes.map((prefix) => prefix.charCodeAt(0)), prefixes };
+  const firstCodes = prefixes.map((prefix) => prefix.charCodeAt(0));
+  const isFirstCode = new Uint8Array(ASCII_CODE_COUNT);
+  for (const code of firstCodes) {
+    isFirstCode[code] = 1;
+  }
+  return { firstCodes, isFirstCode, prefixes };
 }
 
 function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
