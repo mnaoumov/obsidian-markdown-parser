@@ -50,4 +50,6 @@ Beside matching Obsidian, the oracles and engines make a test suite for Obsidian
 
 What is ported from open-source code, what was learned by reading Obsidian's code, what was only measured, and what the oracle files hold are in [docs/provenance.md](docs/provenance.md).
 
+`@quartz-community/remark-obsidian` is prior art for the mdast target and the `remark-parse` 8 engine. Its test inputs are imported into the worker oracle and measured against Obsidian ([docs/remark-obsidian.md](docs/remark-obsidian.md)).
+
 The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.

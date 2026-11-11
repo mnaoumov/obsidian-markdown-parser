@@ -23,6 +23,7 @@ Where every part of this repository comes from: what is ported from open-source 
 | Obsidian syntax in the engine (`src/remark/obsidian.ts`) | Re-expressed from behaviour | Yes |
 | `CachedMetadata` projection (`src/metadata/`) | Re-expressed from behaviour; front matter parsed with `yaml` 2 from npm | Yes |
 | Spec suites (`spec/`) | The CommonMark 0.31.2 and GFM 0.29 spec examples, CC-BY-SA 4.0 | No |
+| Imported test inputs (`src/oracle/remark-obsidian/cases.ts`) | The markdown inputs of `@quartz-community/remark-obsidian`'s test suites, MIT ([remark-obsidian.md](remark-obsidian.md)) | No; measured against the metadata worker |
 
 ## What was read
 
