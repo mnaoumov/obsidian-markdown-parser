@@ -243,64 +243,32 @@ function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): 
 }
 
 function emphasis(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
-  let index = 0;
-  let character = value.charAt(index);
+  const character = value.charAt(0);
 
   if (character !== '*' && character !== '_') {
     return;
   }
 
-  const subvalue = character;
-  const marker = character;
-  const length = value.length;
-  index++;
-  let queue = '';
-  character = '';
+  const close = findEmphasisClose(parser, value, character);
 
-  while (index < length) {
-    const previous = character;
-    character = value.charAt(index);
-
-    if (character === marker) {
-      character = value.charAt(++index);
-
-      if (character !== marker) {
-        if (!queue.trim() || previous === marker) {
-          return;
-        }
-
-        if (marker === '_' && isWordCharacter(character)) {
-          queue += marker;
-          continue;
-        }
-
-        if (silent) {
-          return true;
-        }
-
-        const now = eat.now();
-        now.column++;
-        now.offset++;
-
-        return eat(subvalue + queue + marker)({
-          children: parser.tokenizeInline(queue, now),
-          type: 'emphasis'
-        });
-      }
-
-      queue += marker;
-    }
-
-    if (character === '\\') {
-      queue += character;
-      character = value.charAt(++index);
-    }
-
-    queue += character;
-    index++;
+  if (close === -1) {
+    return;
   }
 
-  return;
+  if (silent) {
+    return true;
+  }
+
+  // The content is everything between the markers, escapes included.
+  const queue = value.slice(1, close);
+  const now = eat.now();
+  now.column++;
+  now.offset++;
+
+  return eat(value.slice(0, close + 1))({
+    children: parser.tokenizeInline(queue, now),
+    type: 'emphasis'
+  });
 }
 
 function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -317,6 +285,83 @@ function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean)
   }
 
   return;
+}
+
+/*
+ * The index of the marker that closes the emphasis `value` opens, or `-1`: upstream's scan, which builds no queue. An
+ * opener that never closes scans to the end of its text, so a run of them cost the square of the text. The scan's state
+ * at a marker is its index, whether the character before was the marker and whether the content so far holds more
+ * than whitespace, and the same state always ends the same way, so each is remembered by its index in the text and a
+ * later opener stops at the first state an earlier one passed.
+ */
+function findEmphasisClose(parser: RemarkParser, value: string, marker: string): number {
+  const memo = parser.scanMemo(marker === '*' ? 'emphasis*' : 'emphasis_', value);
+  const markerCode = marker.charCodeAt(0);
+  const visited: number[] = [];
+  const length = value.length;
+  let index = 1;
+  let character = '';
+  let hasContent = false;
+  let close = -1;
+
+  while (index < length) {
+    const previous = character;
+
+    if (memo && value.charCodeAt(index) === markerCode) {
+      const key = ((memo.base + index) * 4) + (previous === marker ? 2 : 0) + (hasContent ? 1 : 0);
+      const known = memo.map.get(key);
+
+      if (known !== undefined) {
+        close = known === -1 ? -1 : known - memo.base;
+        break;
+      }
+
+      visited.push(key);
+    }
+
+    character = value.charAt(index);
+
+    if (character === marker) {
+      character = value.charAt(++index);
+
+      if (character !== marker) {
+        if (!hasContent || previous === marker) {
+          break;
+        }
+
+        if (marker === '_' && isWordCharacter(character)) {
+          hasContent = true;
+          continue;
+        }
+
+        close = index - 1;
+        break;
+      }
+
+      hasContent = true;
+    }
+
+    if (character === '\\') {
+      hasContent = true;
+      character = value.charAt(++index);
+    }
+
+    if (!hasContent && character.trim()) {
+      hasContent = true;
+    }
+
+    index++;
+  }
+
+  if (memo) {
+    const found = close === -1 ? -1 : memo.base + close;
+
+    for (const key of visited) {
+      memo.map.set(key, found);
+    }
+  }
+
+  return close;
 }
 
 function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -349,6 +394,14 @@ function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boole
   }
 
   return;
+}
+
+/*
+ * Whether a `]` follows the start of `value`. A link or a reference without one scans to the end of its text before it
+ * fails, so a run of unclosed brackets cost the square of the text.
+ */
+function hasClosingBracket(parser: RemarkParser, value: string): boolean {
+  return locateAfterStart(parser, value, ']', locateClosingBracket) !== -1;
 }
 
 function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -521,6 +574,10 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   // Exit when this is a link and the tokenizer is already inside one.
   if (!isImage && parser.inLink) {
+    return;
+  }
+
+  if (!hasClosingBracket(parser, value)) {
     return;
   }
 
@@ -923,6 +980,32 @@ function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boole
   return eat(content)({ children, title: null, type: 'link', url: urlValue });
 }
 
+/*
+ * `locator` from index 1 of `value`, remembered under `name` in the innermost `tokenize` call's memos. Each locator
+ * finds the first place at or after where it starts, so what it found from an earlier start still holds for any start
+ * up to that place, and a construct that is far off or absent is not searched for over the rest of the text again for
+ * every position before it.
+ */
+function locateAfterStart(parser: RemarkParser, value: string, name: string, locator: InlineTokenizer['locator']): number {
+  const scope = parser.scopeOf(value);
+
+  if (!scope) {
+    return locator(parser, value, 1);
+  }
+
+  const base = scope.length - value.length;
+  const from = base + 1;
+  const last = scope.located.get(name);
+
+  if (last && last.from <= from && (last.at === -1 || from <= last.at)) {
+    return last.at === -1 ? -1 : last.at - base;
+  }
+
+  const position = locator(parser, value, 1);
+  scope.located.set(name, { at: position === -1 ? -1 : base + position, from });
+  return position;
+}
+
 function locateBreak(_parser: RemarkParser, value: string, fromIndex: number): number {
   let index = value.indexOf('\n', fromIndex);
 
@@ -935,6 +1018,10 @@ function locateBreak(_parser: RemarkParser, value: string, fromIndex: number): n
   }
 
   return index;
+}
+
+function locateClosingBracket(_parser: RemarkParser, value: string, fromIndex: number): number {
+  return value.indexOf(']', fromIndex);
 }
 
 function locateDelete(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1030,7 +1117,7 @@ function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolea
     character = value.charAt(++index);
   }
 
-  if (character !== '[') {
+  if (character !== '[' || !hasClosingBracket(parser, value)) {
     return;
   }
 
@@ -1268,7 +1355,7 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
       continue;
     }
 
-    const position = tokenizer.locator(parser, value, 1);
+    const position = locateAfterStart(parser, value, name, tokenizer.locator);
 
     if (position !== -1 && position < min) {
       min = position;

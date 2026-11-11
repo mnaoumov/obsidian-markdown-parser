@@ -36,9 +36,10 @@ import type {
 
 type HtmlSequence = readonly [open: RegExp, close: RegExp, interruptsParagraph: boolean];
 
-interface Indentation {
+// How far a walk over a line's indentation got: the indentation reached, and the index of the character that reached it.
+interface IndentationWalk {
   readonly indent: number;
-  readonly stops: Readonly<Record<number, number>>;
+  readonly index: number;
 }
 
 interface ListItemDraft {
@@ -202,6 +203,14 @@ export function isWhitespaceCharacter(character: string): boolean {
  */
 export function normalizeIdentifier(value: string): string {
   return value.replaceAll(WHITESPACE_RUN_RE, ' ').toLowerCase();
+}
+
+// Appends the blank lines held back and the line after them, in place.
+function appendLines(target: string[], emptyLines: readonly string[], line: string): void {
+  for (const emptyLine of emptyLines) {
+    target.push(emptyLine);
+  }
+  target.push(line);
 }
 
 function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -982,30 +991,42 @@ function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   });
 }
 
-function getIndentation(value: string): Indentation {
-  let index = 0;
-  let indent = 0;
-  let character = value.charAt(index);
-  const stops: Record<number, number> = {};
-  let lastIndent = 0;
+/*
+ * The indentation of a line, a tab reaching the next multiple of four, as `remark-parse`'s `get-indentation` measures
+ * it. Upstream also maps every column up to it to the index of the character that reached it, which made a line
+ * indented by n columns cost n property writes for every list around it; `getIndentationStop` reads one column's index
+ * instead.
+ */
+function getIndentation(value: string): number {
+  return walkIndentation(value, Infinity).indent;
+}
 
-  while (character === '\t' || character === ' ') {
-    const size = character === '\t' ? TAB_SIZE : 1;
+/*
+ * The index of the whitespace character at which the line's indentation first reaches `column`, or `-1` when it never
+ * does: upstream's stop for that column.
+ */
+function getIndentationStop(value: string, column: number): number {
+  const { indent, index } = walkIndentation(value, column);
+  return indent >= column ? index : -1;
+}
 
-    indent += size;
-
-    if (size > 1) {
-      indent = Math.floor(indent / size) * size;
+/**
+ * Whether `character` occurs in `value` from `start` up to, not including, `end`, reading nothing past `end`.
+ *
+ * @param value - The text.
+ * @param character - One UTF-16 code unit.
+ * @param start - The first index read.
+ * @param end - The index the search stops before.
+ * @returns Whether it occurs there.
+ */
+function hasCharacterBetween(value: string, character: string, start: number, end: number): boolean {
+  for (let index = start; index < end; index++) {
+    if (value[index] === character) {
+      return true;
     }
-
-    while (lastIndent < indent) {
-      stops[++lastIndent] = index;
-    }
-
-    character = value.charAt(++index);
   }
 
-  return { indent, stops };
+  return false;
 }
 
 function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1177,7 +1198,7 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
 
   index = 0;
   const items: ListItemDraft[] = [];
-  let allLines: string[] = [];
+  const allLines: string[] = [];
   let emptyLines: string[] = [];
 
   while (index < length) {
@@ -1192,7 +1213,14 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
 
     let size = 0;
 
-    while (index < length) {
+    /*
+     * A line indented as far as the item's content belongs to the item whatever follows, and the rest of its indentation
+     * is never read, so the walk stops there. Upstream walks the whole indentation, which for a list nested n deep walked
+     * each line n times over all of it.
+     */
+    const contentIndent = item?.indent ?? Infinity;
+
+    while (index < length && size < contentIndent) {
       character = value.charAt(index);
 
       if (character === '\t') {
@@ -1294,9 +1322,10 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
     previousEmpty = empty;
     empty = !prefixed && !content.trim().length;
 
+    // Upstream concatenates the arrays here, which copied every line of an item again for each line it added.
     if (indented && item) {
-      item.value = [...item.value, ...emptyLines, line];
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(item.value, emptyLines, line);
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     } else if (prefixed) {
       if (emptyLines.length !== 0 && item) {
@@ -1308,7 +1337,7 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
       item = { indent: size, trail: [], value: [line] };
 
       items.push(item);
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     } else if (empty) {
       emptyLines.push(line);
@@ -1322,9 +1351,9 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
       }
 
       if (item) {
-        item.value = [...item.value, ...emptyLines, line];
+        appendLines(item.value, emptyLines, line);
       }
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     }
 
@@ -1422,7 +1451,7 @@ function normalListItem(parser: RemarkParser, value: string, position: RemarkPoi
   });
 
   const lines = replaced.split('\n');
-  const trimmedLines = removeIndentation(replaced, getIndentation(max).indent).split('\n');
+  const trimmedLines = removeIndentation(replaced, getIndentation(max)).split('\n');
 
   // The first line may have lost more than its bullet above.
   trimmedLines[0] = rest;
@@ -1516,45 +1545,33 @@ function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], val
  */
 function removeIndentation(value: string, maximum: number): string {
   const values = value.split('\n');
-  let position = values.length + 1;
-  let minIndent = Infinity;
-  const matrix: Readonly<Record<number, number>>[] = [];
+  // Upstream measures a line of `maximum` spaces and a `!` with the others, so the removal is at most `maximum`.
+  let minIndent = maximum > 0 ? maximum : Infinity;
+  /*
+   * Each line is measured only up to the smallest indentation so far: a deeper line cannot lower it, and loses exactly
+   * the final smallest, so how much deeper it is never matters. Measured whole, every line of a list nested n deep was
+   * walked n times over its whole indentation.
+   */
+  const indents = values.map((line) => {
+    const indent = walkIndentation(line, minIndent).indent;
 
-  values.unshift(`${' '.repeat(maximum)}!`);
-
-  while (position--) {
-    const indentation = getIndentation(values[position] ?? '');
-
-    matrix[position] = indentation.stops;
-
-    if ((values[position] ?? '').trim().length === 0) {
-      continue;
+    if (indent > 0 && indent < minIndent && line.trim().length !== 0) {
+      minIndent = indent;
     }
 
-    if (indentation.indent && indentation.indent > 0 && indentation.indent < minIndent) {
-      minIndent = indentation.indent;
-    }
+    return indent;
+  });
+
+  if (minIndent === Infinity) {
+    return value;
   }
 
-  if (minIndent !== Infinity) {
-    position = values.length;
-
-    while (position--) {
-      const stops = matrix[position] ?? {};
-      let index = minIndent;
-
-      while (index && !Object.hasOwn(stops, index)) {
-        index--;
-      }
-
-      const stop = stops[index];
-      values[position] = stop === undefined ? values[position] ?? '' : (values[position] ?? '').slice(stop + 1);
-    }
-  }
-
-  values.shift();
-
-  return values.join('\n');
+  // Each line loses its indentation up to `minIndent`: everything to the character that reached it, or reached the line's
+  // whole indentation when that is less. A line with none is left as it is.
+  return values.map((line, position) => {
+    const column = Math.min(minIndent, indents[position] ?? 0);
+    return column === 0 ? line : line.slice(getIndentationStop(line, column) + 1);
+  }).join('\n');
 }
 
 function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1650,13 +1667,13 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
 
   while (index < length) {
     let lineIndex = value.indexOf('\n', index);
-    const pipeIndex = value.indexOf('|', index + 1);
 
     if (lineIndex === -1) {
       lineIndex = value.length;
     }
 
-    if (pipeIndex === -1 || pipeIndex > lineIndex) {
+    // Upstream searches the pipe through the rest of the document, which made every block start cost its length.
+    if (!hasCharacterBetween(value, '|', index + 1, lineIndex)) {
       if (lineCount < MIN_TABLE_ROWS) {
         return;
       }
@@ -1867,6 +1884,30 @@ function thematicBreak(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1]
   }
 
   return;
+}
+
+function walkIndentation(value: string, column: number): IndentationWalk {
+  let index = 0;
+  let indent = 0;
+  let character = value.charAt(index);
+
+  while (character === '\t' || character === ' ') {
+    const size = character === '\t' ? TAB_SIZE : 1;
+
+    indent += size;
+
+    if (size > 1) {
+      indent = Math.floor(indent / size) * size;
+    }
+
+    if (indent >= column) {
+      return { indent, index };
+    }
+
+    character = value.charAt(++index);
+  }
+
+  return { indent, index };
 }
 
 /* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/explicit-length-check, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/no-useless-else, unicorn/prefer-combined-guards, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- The port ends here. */

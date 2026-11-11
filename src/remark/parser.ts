@@ -259,6 +259,42 @@ const LINE_ENDING_RE = /\r?\n|\r/gu;
 const BYTE_ORDER_MARK = 0xFE_FF;
 
 /**
+ * Whether the scans keep {@link TokenizeScope} memos. Only the differential test turns them off, to check that a parse
+ * with them gives the tree a parse without them does.
+ */
+export const scanMemoSettings = { isEnabled: true };
+
+/**
+ * Where a locator last found its construct in a {@link TokenizeScope}'s text, as indices into that text.
+ */
+export interface LocatedIndex {
+  /**
+   * The index it found, or `-1` for none.
+   */
+  readonly at: number;
+
+  /**
+   * The index it searched from.
+   */
+  readonly from: number;
+}
+
+/**
+ * What a scan has learned about one text, kept by index into the text.
+ */
+export interface ScanMemo {
+  /**
+   * The index of the value the scan was given, in the {@link TokenizeScope}'s text.
+   */
+  readonly base: number;
+
+  /**
+   * The memo, keyed and valued as the scan chooses, by index into the text.
+   */
+  readonly map: Map<number, number>;
+}
+
+/**
  * A `remark-parse` 8 parser over one document.
  */
 export class RemarkParser {
@@ -298,6 +334,11 @@ export class RemarkParser {
    */
   public readonly offset = new Map<number, number>();
 
+  /**
+   * The memos of the innermost `tokenize` call running.
+   */
+  public scope: TokenizeScope | undefined;
+
   private readonly lineStarts: number[];
 
   /**
@@ -323,6 +364,14 @@ export class RemarkParser {
    * @param handler - Called with each run of text and each reference, and the reference's source.
    */
   public decode(value: string, position: RemarkPoint, handler: (content: string, source?: string) => void): void {
+    // Without an ampersand there is no reference, and the whole value is one run of text.
+    if (!value.includes('&')) {
+      if (value) {
+        handler(value);
+      }
+      return;
+    }
+
     decodeEntities(value, {
       indent: this.indentFrom(position),
       onReference: (content, _range, source) => {
@@ -344,6 +393,10 @@ export class RemarkParser {
    * @returns The decoded value.
    */
   public decodeRaw(value: string, position: RemarkPoint, canOmitSemicolon = true): string {
+    if (!value.includes('&')) {
+      return value;
+    }
+
     return decodeEntities(value, { indent: this.indentFrom(position), nonTerminated: canOmitSemicolon, start: position });
   }
 
@@ -449,6 +502,29 @@ export class RemarkParser {
 
     const children = this.tokenizeBlock(value, content);
     return { children, position: { end: this.eof ?? { ...start }, start }, type: 'root' };
+  }
+
+  /**
+   * The memo a scan keeps under `name` over the text of the innermost `tokenize` call, with where `value` starts in it.
+   *
+   * @param name - The scan's name.
+   * @param value - The value the scan was given: a suffix of that text.
+   * @returns The memo, or `undefined` when there is no text to key it by.
+   */
+  public scanMemo(name: string, value: string): ScanMemo | undefined {
+    const scope = this.scopeOf(value);
+    return scope && { base: scope.length - value.length, map: scope.memo(name) };
+  }
+
+  /**
+   * The memos of the innermost `tokenize` call running, when `value` can be keyed by them.
+   *
+   * @param value - A value a tokenizer of that call was given: a suffix of its text.
+   * @returns The memos, or `undefined` when there is no text to key them by.
+   */
+  public scopeOf(value: string): TokenizeScope | undefined {
+    const scope = this.scope;
+    return scope?.isValid && value.length <= scope.length ? scope : undefined;
   }
 
   /**
@@ -563,34 +639,41 @@ export class RemarkParser {
     }
 
     const eat = Object.assign(eatSubvalue, { now });
+    const scope = new TokenizeScope(value.length);
+    const outerScope = parser.scope;
 
     // Sync the initial offset.
     updatePosition('');
 
-    // Try every tokenizer; when one eats, start over on the rest.
-    // eslint-disable-next-line no-unmodified-loop-condition -- The tokenizers change `value` through `eat`.
-    while (value) {
-      let matched = false;
+    parser.scope = scanMemoSettings.isEnabled ? scope : undefined;
+    try {
+      // Try every tokenizer; when one eats, start over on the rest.
+      // eslint-disable-next-line no-unmodified-loop-condition -- The tokenizers change `value` through `eat`.
+      while (value) {
+        let matched = false;
 
-      for (const method of methods) {
-        if (method.notInLink && parser.inLink) {
-          continue;
+        for (const method of methods) {
+          if (method.notInLink && parser.inLink) {
+            continue;
+          }
+
+          const valueLength = value.length;
+
+          method.tokenize(parser, eat, value, false);
+
+          matched = valueLength !== value.length;
+
+          if (matched) {
+            break;
+          }
         }
 
-        const valueLength = value.length;
-
-        method.tokenize(parser, eat, value, false);
-
-        matched = valueLength !== value.length;
-
-        if (matched) {
-          break;
+        if (!matched) {
+          throw new Error('Infinite loop');
         }
       }
-
-      if (!matched) {
-        throw new Error('Infinite loop');
-      }
+    } finally {
+      parser.scope = outerScope;
     }
 
     parser.eof = now();
@@ -754,9 +837,57 @@ export class RemarkParser {
       }
 
       function putBack(): string {
-        return value === after ? before : subvalue + value;
+        if (value === after) {
+          return before;
+        }
+
+        // The text no longer ends as the call's text does, so no index of it is an index into that text.
+        scope.isValid = false;
+        return subvalue + value;
       }
     }
+  }
+}
+
+/**
+ * The memos of one `tokenize` call. Every value a tokenizer of that call is given is a suffix of the text it reads, so
+ * an index into a value is an index into the text once the value's start, the text's length less the value's, is added.
+ * A scan that would run to the end of the text once per position can then reuse what an earlier position found.
+ */
+export class TokenizeScope {
+  /**
+   * Whether every value is still a suffix of the text. Text put back by a reset after more was eaten is not, and turns
+   * the memos off for the rest of the call.
+   */
+  public isValid = true;
+
+  /**
+   * Where each locator last found its construct.
+   */
+  public readonly located = new Map<string, LocatedIndex>();
+
+  private readonly memos = new Map<string, Map<number, number>>();
+
+  /**
+   * Creates the memos of a text.
+   *
+   * @param length - The text's length.
+   */
+  public constructor(public readonly length: number) {}
+
+  /**
+   * The memo a scan keeps under `name`.
+   *
+   * @param name - The scan's name.
+   * @returns The memo.
+   */
+  public memo(name: string): Map<number, number> {
+    let map = this.memos.get(name);
+    if (!map) {
+      map = new Map();
+      this.memos.set(name, map);
+    }
+    return map;
   }
 }
 

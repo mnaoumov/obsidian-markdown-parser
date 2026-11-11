@@ -103,7 +103,9 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
   let lines = -1;
   let column = options.start?.column ?? 1;
   let line = options.start?.line ?? 1;
-  let queue = '';
+  // The text since the last reference is always `value.slice(queueStart, index)`, so it is sliced once rather than built
+  // a character at a time.
+  let queueStart = 0;
   const result: string[] = [];
   let character = NaN;
   // Kept across references on purpose: see the file comment.
@@ -134,7 +136,6 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
         || Number.isNaN(following)
       ) {
         // Not a character reference: nothing is consumed.
-        queue += String.fromCharCode(character);
         column++;
         continue;
       }
@@ -221,6 +222,7 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
 
         previous = now();
         index = end - 1;
+        queueStart = end;
         column += end - start + 1;
         result.push(reference);
         const next = now();
@@ -231,9 +233,7 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
         previous = next;
       } else {
         // Not a reference: the characters checked are text, and hold no line feed and no ampersand.
-        characters = value.slice(start - 1, end);
-        queue += characters;
-        column += characters.length;
+        column += end - start + 1;
         index = end - 1;
       }
     } else {
@@ -246,7 +246,6 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
       if (Number.isNaN(character)) {
         flush();
       } else {
-        queue += String.fromCharCode(character);
         column++;
       }
     }
@@ -259,10 +258,10 @@ export function decodeEntities(value: string, options: DecodeEntitiesOptions = {
   }
 
   function flush(): void {
+    const queue = value.slice(queueStart, index);
     if (queue) {
       result.push(queue);
       options.onText?.(queue, { end: now(), start: previous });
-      queue = '';
     }
   }
 }
