@@ -65,6 +65,13 @@ interface FootnoteLine {
   readonly start: number;
 }
 
+// A footnote reference and where it sits, so the reference can be replaced after the walk that found it.
+interface FootnoteReferenceSite {
+  readonly index: number;
+  readonly node: RemarkNode;
+  readonly parent: RemarkParent;
+}
+
 const TAB = 9;
 const LINE_FEED = 10;
 const SPACE = 32;
@@ -251,8 +258,37 @@ export function parseInternalLink(content: string): InternalLinkParts {
  * @param root - The tree, changed in place.
  */
 export function transformObsidianTree(root: RemarkRoot): void {
-  resolveFootnoteReferences(root);
-  attachBlockIds(root);
+  // One walk finds what both transforms need, where each used to walk the whole tree, the first twice.
+  const identifiers = new Set<string>();
+  const references: FootnoteReferenceSite[] = [];
+  const found = { hasBlockId: false };
+
+  visit(root, (node, parent, index) => {
+    switch (node.type) {
+      case 'blockId': {
+        found.hasBlockId = true;
+        break;
+      }
+      case 'footnoteDefinition': {
+        identifiers.add(node.identifier);
+        break;
+      }
+      case 'footnoteReference': {
+        references.push({ index, node, parent });
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  });
+
+  resolveFootnoteReferences(identifiers, references);
+
+  // With no block id in the tree, outside inline footnotes, there is nothing to attach.
+  if (found.hasBlockId) {
+    attachBlockIds(root);
+  }
 }
 
 // After `$$`, the whitespace up to and including a line feed; none when a character that is no whitespace comes first.
@@ -957,18 +993,10 @@ function referenceUnlessFootnote(parser: RemarkParser, eat: Eat, value: string, 
  * A footnote reference to no definition becomes the text of its label, lowercased. A reference inside an inline
  * footnote is left as it is, as Obsidian has moved the inline footnote's content out of the tree by then.
  */
-function resolveFootnoteReferences(root: RemarkRoot): void {
-  const identifiers = new Set<string>();
-
-  visit(root, (node) => {
-    if (node.type === 'footnoteDefinition') {
-      identifiers.add(node.identifier);
-    }
-  });
-
-  visit(root, (node, parent, index) => {
+function resolveFootnoteReferences(identifiers: ReadonlySet<string>, references: readonly FootnoteReferenceSite[]): void {
+  for (const { index, node, parent } of references) {
     if (node.type !== 'footnoteReference' || identifiers.has(node.identifier)) {
-      return;
+      continue;
     }
 
     const text: RemarkNode = { type: 'text', value: node.identifier };
@@ -976,7 +1004,7 @@ function resolveFootnoteReferences(root: RemarkRoot): void {
       text.position = node.position;
     }
     parent.children[index] = text;
-  });
+  }
 }
 
 /**
