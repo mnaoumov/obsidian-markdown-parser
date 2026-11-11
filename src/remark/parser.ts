@@ -65,37 +65,35 @@ export interface Eat {
    * @returns The point.
    */
   readonly now: () => RemarkPoint;
-}
-
-/**
- * Adds a node at an eaten range.
- */
-export interface EatApply {
-  /**
-   * Adds a node to `parent`, or to the tokens being made, and gives it its position.
-   *
-   * @param node - The node.
-   * @param parent - The parent, if not the tokens being made.
-   * @returns The node, or the text node it merged into.
-   */
-  <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node;
 
   /**
-   * Adds a node as {@link EatApply} does, then puts the eaten text back: for a node whose children eat it again.
+   * Eats `subvalue`, adds a node as {@link EatApply} does, then puts the text back: for a node whose children eat it
+   * again. Upstream's `eat(subvalue).reset(node)`: its arguments are read before the eat here, so none may eat.
    *
+   * @param subvalue - The text to eat. It must start the value.
    * @param node - The node.
    * @param parent - The parent, if not the tokens being made.
    * @returns The node.
    */
-  readonly reset: <Node extends RemarkNode>(node: Node, parent?: RemarkParent) => Node;
+  readonly reset: <Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent) => Node;
 
   /**
-   * The range the eaten text covers; the text is put back.
+   * The range `subvalue` covers; the text is put back. Upstream's `eat(subvalue).test()`.
    *
+   * @param subvalue - The text to eat. It must start the value.
    * @returns The range.
    */
-  readonly test: () => RemarkPosition;
+  readonly test: (subvalue: string) => RemarkPosition;
 }
+
+/**
+ * Adds a node to `parent`, or to the tokens being made, and gives it the position of the eaten range.
+ *
+ * @param node - The node.
+ * @param parent - The parent, if not the tokens being made.
+ * @returns The node, or the text node it merged into.
+ */
+export type EatApply = <Node extends RemarkNode>(node: Node, parent?: RemarkParent) => Node;
 
 /**
  * An inline tokenizer, with the locator that finds where it could start.
@@ -287,12 +285,14 @@ export interface LocatedIndex {
   /**
    * The index it found, or `-1` for none.
    */
-  readonly at: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The entry is updated in place at every search, so a text run allocates nothing.
+  at: number;
 
   /**
    * The index it searched from, or `Infinity` before it has searched.
    */
-  readonly from: number;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The entry is updated in place at every search, so a text run allocates nothing.
+  from: number;
 }
 
 /**
@@ -657,7 +657,7 @@ export class RemarkParser {
       return tokens;
     }
 
-    const eat = Object.assign(eatSubvalue, { now });
+    const eat: Eat = Object.assign(eatSubvalue, { now, reset: eatAndReset, test: eatAndTest });
     const scope = new TokenizeScope(value.length);
     const outerScope = parser.scope;
     const isStartCharacterGateEnabled = scanMemoSettings.isStartCharacterGateEnabled;
@@ -795,17 +795,11 @@ export class RemarkParser {
         throw new Error('Incorrectly eaten value');
       }
 
-      // Putting the text back restores this string rather than `subvalue + value`: the concatenation is flattened into
-      // a fresh copy of the rest of the document by the next slice, and every node value sliced from it keeps that copy
-      // alive, so a long note held one copy per reset.
-      const before = value;
       value = value.slice(subvalue.length);
-      const after = value;
 
       updatePosition(subvalue);
 
       // Obsidian's copy leaves the start at the first text eaten, where upstream leaves it at the first node added.
-      const wasAtStart = parser.atStart;
       if (subvalue) {
         parser.atStart = false;
       }
@@ -816,46 +810,62 @@ export class RemarkParser {
         indentation.push((offset.get(next) ?? 0) + 1);
       }
 
-      return Object.assign(apply, { reset, test });
-
-      function apply<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
+      // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them.
+      return function apply<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
         return place(add(place(node, current), parent), current, indentation);
+      };
+    }
+
+    function eatAndReset<Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node {
+      const startLine = line;
+      const startColumn = column;
+      const before = value;
+      const wasAtStart = parser.atStart;
+      const apply = eatSubvalue(subvalue);
+      const after = value;
+      const result = apply(node, parent);
+
+      line = startLine;
+      column = startColumn;
+      value = putBack(subvalue, before, after);
+      parser.atStart = wasAtStart;
+
+      return result;
+    }
+
+    function eatAndTest(subvalue: string): RemarkPosition {
+      const startLine = line;
+      const startColumn = column;
+      const before = value;
+      const start = now();
+      eatSubvalue(subvalue);
+      const after = value;
+      const result = place<PositionCarrier>({}, start);
+
+      line = startLine;
+      column = startColumn;
+      value = putBack(subvalue, before, after);
+
+      if (!result.position) {
+        throw new Error('Unreachable: a tested range always has a position');
       }
 
-      function reset<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
-        const result = apply(node, parent);
+      return result.position;
+    }
 
-        line = current.line;
-        column = current.column;
-        value = putBack();
-        parser.atStart = wasAtStart;
-
-        return result;
+    /*
+     * Putting the text back restores the string it was eaten from rather than `subvalue + value`: the concatenation is
+     * flattened into a fresh copy of the rest of the document by the next slice, and every node value sliced from it
+     * keeps that copy alive, so a long note held one copy per reset.
+     */
+    function putBack(subvalue: string, before: string, after: string): string {
+      if (value === after) {
+        return before;
       }
 
-      function test(): RemarkPosition {
-        const result = place<PositionCarrier>({}, current);
-
-        line = current.line;
-        column = current.column;
-        value = putBack();
-
-        if (!result.position) {
-          throw new Error('Unreachable: a tested range always has a position');
-        }
-
-        return result.position;
-      }
-
-      function putBack(): string {
-        if (value === after) {
-          return before;
-        }
-
-        // The text no longer ends as the call's text does, so no index of it is an index into that text.
-        scope.isValid = false;
-        return subvalue + value;
-      }
+      // The text no longer ends as the call's text does, so no index of it is an index into that text.
+      scope.isValid = false;
+      return subvalue + value;
     }
   }
 }

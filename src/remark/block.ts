@@ -749,11 +749,11 @@ function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
       return true;
     }
 
-    const urlStart = eat(beforeUrl).test().end;
+    const urlStart = eat.test(beforeUrl).end;
     url = parser.decodeRaw(parser.unescape(url), urlStart, false);
 
     if (title) {
-      const titleStart = eat(beforeTitle).test().end;
+      const titleStart = eat.test(beforeTitle).end;
       title = parser.decodeRaw(parser.unescape(title), titleStart);
     }
 
@@ -1360,7 +1360,7 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
     index = nextIndex + 1;
   }
 
-  const node = eat(allLines.join('\n')).reset({
+  const node = eat.reset(allLines.join('\n'), {
     children: [],
     ordered,
     spread,
@@ -1750,7 +1750,7 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
   let position = -1;
   const rows: RemarkTableRow[] = [];
 
-  const node = eat(subvalue).reset<RemarkTable>({ align, children: rows, type: 'table' });
+  const node = eat.reset<RemarkTable>(subvalue, { align, children: rows, type: 'table' });
 
   while (++position < lineCount) {
     const line = lines[position] ?? '';
@@ -1762,7 +1762,7 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
     }
 
     // Eat the row.
-    eat(line).reset(row, node);
+    eat.reset(line, row, node);
 
     length = line.length + 1;
     index = 0;

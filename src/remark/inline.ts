@@ -398,7 +398,8 @@ function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boole
  * fails, so a run of unclosed brackets cost the square of the text.
  */
 function hasClosingBracket(parser: RemarkParser, value: string): boolean {
-  return locateAfterStart(parser, value, ']', locateClosingBracket) !== -1;
+  // The slot after every inline method's is this search's own.
+  return locateAfterStart(parser, value, parser.tokenizers.inlineMethods.length, locateClosingBracket) !== -1;
 }
 
 function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -807,10 +808,10 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   subvalue += ')';
 
-  url = parser.decodeRaw(parser.unescape(url), eat(beforeUrl).test().end, false);
+  url = parser.decodeRaw(parser.unescape(url), eat.test(beforeUrl).end, false);
 
   if (title) {
-    const titleStart = eat(beforeTitle).test().end;
+    const titleStart = eat.test(beforeTitle).end;
     title = parser.decodeRaw(parser.unescape(title), titleStart);
   }
 
