@@ -9,7 +9,7 @@
  * reads it at the earliest position any of them could start, with no delimiter stack and no flanking rules.
  */
 
-/* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- A line-for-line port of upstream tokenizers: their control flow, counters, names and UTF-16 code units stay as upstream wrote them. */
+/* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch -- A line-for-line port of upstream tokenizers: their control flow, counters, names and UTF-16 code units stay as upstream wrote them. */
 
 import type {
   Eat,
@@ -30,7 +30,9 @@ import {
 import { decodeEntities } from './entities.ts';
 
 const AUTO_LINK_MAILTO = 'mailto:';
-const URL_PREFIXES = ['www.', 'http://', 'https://'];
+const URL_PREFIX_RE = /www\.|http:\/\/|https:\/\//gu;
+const EMPHASIS_MARKER_RE = /[*_]/gu;
+const STRONG_MARKER_RE = /\*\*|__/gu;
 const HTML_LINK_OPEN_RE = /^<a /iu;
 const HTML_LINK_CLOSE_RE = /^<\/a>/iu;
 const WORD_CHARACTER_RE = /\w/u;
@@ -167,18 +169,6 @@ function countOf(value: string, character: string): number {
   }
 
   return count;
-}
-
-function earliest(first: number, second: number): number {
-  if (second === -1) {
-    return first;
-  }
-
-  if (first === -1) {
-    return second;
-  }
-
-  return Math.min(first, second);
 }
 
 function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1055,11 +1045,21 @@ function locateEmail(_parser: RemarkParser, value: string, fromIndex: number): n
 }
 
 function locateEmphasis(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return earliest(value.indexOf('*', fromIndex), value.indexOf('_', fromIndex));
+  return locateFirst(EMPHASIS_MARKER_RE, value, fromIndex);
 }
 
 function locateEscape(_parser: RemarkParser, value: string, fromIndex: number): number {
   return value.indexOf('\\', fromIndex);
+}
+
+/*
+ * The first index at or after `fromIndex` where `pattern`, a global regular expression, matches, or `-1`. One search for
+ * all the alternatives stops at the first: a search per alternative, as upstream makes, reads the rest of the text for
+ * each one that is absent, and the locators are asked again at every construct.
+ */
+function locateFirst(pattern: RegExp, value: string, fromIndex: number): number {
+  pattern.lastIndex = fromIndex;
+  return pattern.exec(value)?.index ?? -1;
 }
 
 function locateInlineCode(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1068,18 +1068,13 @@ function locateInlineCode(_parser: RemarkParser, value: string, fromIndex: numbe
 
 function locateLink(_parser: RemarkParser, value: string, fromIndex: number): number {
   const linkIndex = value.indexOf('[', fromIndex);
-  const imageIndex = value.indexOf('![', fromIndex);
 
-  if (imageIndex === -1) {
-    return linkIndex;
-  }
-
-  // A link is always found when an image is.
-  return Math.min(linkIndex, imageIndex);
+  // An image's `![` is found first only when its `[` is the first one, so only the character before that is read.
+  return linkIndex > fromIndex && value.charAt(linkIndex - 1) === '!' ? linkIndex - 1 : linkIndex;
 }
 
 function locateStrong(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return earliest(value.indexOf('**', fromIndex), value.indexOf('__', fromIndex));
+  return locateFirst(STRONG_MARKER_RE, value, fromIndex);
 }
 
 function locateTag(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1087,17 +1082,7 @@ function locateTag(_parser: RemarkParser, value: string, fromIndex: number): num
 }
 
 function locateUrl(_parser: RemarkParser, value: string, fromIndex: number): number {
-  let min = -1;
-
-  for (const prefix of URL_PREFIXES) {
-    const position = value.indexOf(prefix, fromIndex);
-
-    if (position !== -1 && (min === -1 || position < min)) {
-      min = position;
-    }
-  }
-
-  return min;
+  return locateFirst(URL_PREFIX_RE, value, fromIndex);
 }
 
 function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1385,4 +1370,4 @@ function withTextOnly(parser: RemarkParser, read: () => RemarkNode[]): RemarkNod
   }
 }
 
-/* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- The port ends here. */
+/* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch -- The port ends here. */
