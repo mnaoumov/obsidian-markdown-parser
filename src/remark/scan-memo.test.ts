@@ -1,5 +1,6 @@
 import {
   afterEach,
+  beforeEach,
   describe,
   expect,
   it
@@ -87,8 +88,16 @@ function parseWithoutMemos(note: string): string {
 }
 
 describe('scan memos', () => {
+  const { minLocatorMemoLength } = scanMemoSettings;
+
+  // Every note here is short, so the locators remember even a short text.
+  beforeEach(() => {
+    scanMemoSettings.minLocatorMemoLength = 0;
+  });
+
   afterEach(() => {
     scanMemoSettings.isEnabled = true;
+    scanMemoSettings.minLocatorMemoLength = minLocatorMemoLength;
   });
 
   it('give the tree a parse without them gives, on fuzzed notes', { timeout: CORPUS_TEST_TIMEOUT_MS }, () => {

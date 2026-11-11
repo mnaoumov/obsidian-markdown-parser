@@ -28,6 +28,7 @@ import {
   normalizeIdentifier
 } from './block.ts';
 import { decodeEntities } from './entities.ts';
+import { scanMemoSettings } from './parser.ts';
 
 const AUTO_LINK_MAILTO = 'mailto:';
 const URL_PREFIX_RE = /www\.|http:\/\/|https:\/\//gu;
@@ -971,28 +972,29 @@ function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boole
 }
 
 /*
- * `locator` from index 1 of `value`, remembered under `name` in the innermost `tokenize` call's memos. Each locator
+ * `locator` from index 1 of `value`, remembered under its `slot` in the innermost `tokenize` call's memos. Each locator
  * finds the first place at or after where it starts, so what it found from an earlier start still holds for any start
  * up to that place, and a construct that is far off or absent is not searched for over the rest of the text again for
  * every position before it.
  */
-function locateAfterStart(parser: RemarkParser, value: string, name: string, locator: InlineTokenizer['locator']): number {
+function locateAfterStart(parser: RemarkParser, value: string, slot: number, locator: InlineTokenizer['locator']): number {
   const scope = parser.scopeOf(value);
 
-  if (!scope) {
+  if (!scope || scope.length < scanMemoSettings.minLocatorMemoLength) {
     return locator(parser, value, 1);
   }
 
   const base = scope.length - value.length;
   const from = base + 1;
-  const last = scope.located.get(name);
+  const last = scope.located(slot);
 
-  if (last && last.from <= from && (last.at === -1 || from <= last.at)) {
+  if (last.from <= from && (last.at === -1 || from <= last.at)) {
     return last.at === -1 ? -1 : last.at - base;
   }
 
   const position = locator(parser, value, 1);
-  scope.located.set(name, { at: position === -1 ? -1 : base + position, from });
+  last.at = position === -1 ? -1 : base + position;
+  last.from = from;
   return position;
 }
 
@@ -1332,15 +1334,16 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   const tokenizers = parser.inlineTokenizers;
   let min = value.length;
+  const methods = parser.tokenizers.inlineMethods;
 
-  for (const name of parser.tokenizers.inlineMethods) {
+  for (const [slot, name] of methods.entries()) {
     const tokenizer = tokenizers[name];
 
     if (name === 'text' || !tokenizer) {
       continue;
     }
 
-    const position = locateAfterStart(parser, value, name, tokenizer.locator);
+    const position = locateAfterStart(parser, value, slot, tokenizer.locator);
 
     if (position !== -1 && position < min) {
       min = position;
@@ -1348,6 +1351,16 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
   }
 
   const subvalue = value.slice(0, min);
+
+  // Without an ampersand the run is one text node, as `decode` would make it, with no point or handler to make first.
+  if (!subvalue.includes('&')) {
+    if (subvalue) {
+      eat(subvalue)({ type: 'text', value: subvalue });
+    }
+
+    return;
+  }
+
   const now = eat.now();
 
   parser.decode(subvalue, now, (content, source) => {

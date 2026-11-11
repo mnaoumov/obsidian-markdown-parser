@@ -1593,39 +1593,31 @@ function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
     subvalue += character;
   }
 
-  // Eat the content.
-  let content = '';
-  let queue = '';
+  // The content must be followed by a line feed and a marker. Upstream reads the line one character at a time before it
+  // looks, and the paragraph tokenizer asks at every line, so a long line was copied character by character each time.
+  const lineStart = index + 1;
+  const lineEnd = value.indexOf('\n', lineStart);
+  const marker = lineEnd === -1 ? '' : value.charAt(lineEnd + 1);
 
-  while (++index < length) {
-    character = value.charAt(index);
-
-    if (character === '\n') {
-      index--;
-      break;
-    }
-
-    if (character === ' ' || character === '\t') {
-      queue += character;
-    } else {
-      content += queue + character;
-      queue = '';
-    }
-  }
-
-  now.column += subvalue.length;
-  now.offset += subvalue.length;
-  subvalue += content + queue;
-
-  // The content must be followed by a line feed and a marker.
-  character = value.charAt(++index);
-  const marker = value.charAt(++index);
-
-  if (character !== '\n' || (marker !== '=' && marker !== '-')) {
+  if (marker !== '=' && marker !== '-') {
     return;
   }
 
-  subvalue += character;
+  // Eat the content: the line without its trailing spaces and tabs, which are kept apart.
+  const line = value.slice(lineStart, lineEnd);
+  let contentEnd = line.length;
+
+  while (contentEnd > 0 && (line.charAt(contentEnd - 1) === ' ' || line.charAt(contentEnd - 1) === '\t')) {
+    contentEnd--;
+  }
+
+  const content = line.slice(0, contentEnd);
+  let queue = line.slice(contentEnd);
+
+  now.column += subvalue.length;
+  now.offset += subvalue.length;
+  subvalue += `${content}${queue}\n`;
+  index = lineEnd + 1;
 
   // Eat the underline.
   queue = marker;

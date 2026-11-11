@@ -99,6 +99,7 @@ const INLINE_BLOCK_ID_RE = /^\^(?<id>[a-zA-Z0-9-]+)$/u;
 const BLOCK_ID_RE = /^\^(?<id>[a-zA-Z0-9-]+)(?=$|\n$|\n\n)/u;
 const INLINE_COMMENT_RE = /^%%(?<content>.*?)%%/u;
 const NO_BREAK_SPACE = '\u{A0}';
+const NON_ASCII_RE = /[\u{80}-\u{10FFFF}]/u;
 
 // The colored squares and circles that open a highlight to give it a color.
 const HIGHLIGHT_COLORS: Readonly<Record<string, string>> = {
@@ -207,7 +208,9 @@ export const SOFT_BREAK_AS_HARD_TOKENIZER: InlineTokenizer = {
  * @returns The normalized path.
  */
 export function normalizeLinkPath(path: string): string {
-  return path.replaceAll(NO_BREAK_SPACE, ' ').trim().normalize('NFC');
+  const spaced = path.includes(NO_BREAK_SPACE) ? path.replaceAll(NO_BREAK_SPACE, ' ') : path;
+  // ASCII text is in every normal form already.
+  return NON_ASCII_RE.test(spaced) ? spaced.trim().normalize('NFC') : spaced.trim();
 }
 
 /**
@@ -223,7 +226,8 @@ export function parseInternalLink(content: string): InternalLinkParts {
   const hasAlias = pipe > 0;
   let target = hasAlias ? content.slice(0, pipe).trim() : content.trim();
   const alias = hasAlias ? content.slice(pipe + 1).trim() : null;
-  const displayText = alias ?? target.split('#').filter(Boolean).join(' > ').trim();
+  // A trimmed target with no `#` is its own display text, with no array made to say so.
+  const displayText = alias ?? (target.includes('#') ? target.split('#').filter(Boolean).join(' > ').trim() : target);
 
   if (target.endsWith('\\')) {
     target = target.slice(0, -1);

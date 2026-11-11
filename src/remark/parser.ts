@@ -262,7 +262,14 @@ const BYTE_ORDER_MARK = 0xFE_FF;
  * Whether the scans keep {@link TokenizeScope} memos. Only the differential test turns them off, to check that a parse
  * with them gives the tree a parse without them does.
  */
-export const scanMemoSettings = { isEnabled: true };
+export const scanMemoSettings = {
+  isEnabled: true,
+  /**
+   * The shortest text whose locators are remembered: a shorter one is searched faster than an entry is kept for it, and
+   * most paragraphs are short. The differential test sets it to 0, so its short notes reach the memo.
+   */
+  minLocatorMemoLength: 1024
+};
 
 /**
  * Where a locator last found its construct in a {@link TokenizeScope}'s text, as indices into that text.
@@ -274,7 +281,7 @@ export interface LocatedIndex {
   readonly at: number;
 
   /**
-   * The index it searched from.
+   * The index it searched from, or `Infinity` before it has searched.
    */
   readonly from: number;
 }
@@ -573,10 +580,13 @@ export class RemarkParser {
    * @returns The offset.
    */
   public toOffset(line: number, column: number): number {
-    const last = this.lineStarts.at(-1) ?? 0;
+    const lineStarts = this.lineStarts;
+    const last = lineStarts.at(-1) ?? 0;
     let offset = -1;
-    if (line >= 1 && line <= this.lineStarts.length) {
-      offset = (this.lineStarts[line - 2] ?? 0) + column - 1 || 0;
+    if (line >= 1 && line <= lineStarts.length) {
+      // Line 1 starts at 0. Reading `lineStarts[-1]` for it instead is a property lookup off the array's fast path, and
+      // every point of every node asks for an offset.
+      offset = (line === 1 ? 0 : lineStarts[line - 2] ?? 0) + column - 1 || 0;
     }
     return offset > -1 && offset < last ? offset : -1;
   }
@@ -706,59 +716,39 @@ export class RemarkParser {
       }
     }
 
-    // Called before the first character is eaten; the function it gives is called after the last.
-    function getOffset(): () => number[] {
-      const indentation: number[] = [];
-      let pos = line + 1;
-
-      return () => {
-        const last = line + 1;
-
-        while (pos < last) {
-          indentation.push((offset.get(pos) ?? 0) + 1);
-          pos++;
-        }
-
-        return indentation;
-      };
-    }
-
     function now(): RemarkPoint {
       return { column, line, offset: parser.toOffset(line, column) };
     }
 
-    function position(): <Carrier extends PositionCarrier>(node: Carrier, indent?: number[]) => Carrier {
-      const before = now();
+    // Upstream's `position()` made this a closure over `before` for every eat.
+    function place<Carrier extends PositionCarrier>(node: Carrier, before: RemarkPoint, indent?: number[]): Carrier {
+      const previous = node.position;
+      const start = previous ? previous.start : before;
+      let combined: number[] = [];
+      let n = previous?.end.line ?? 0;
+      const l = before.line;
+      let nodeIndent = indent;
 
-      return (node, indent) => {
-        const previous = node.position;
-        const start = previous ? previous.start : before;
-        let combined: number[] = [];
-        let n = previous?.end.line ?? 0;
-        const l = before.line;
-        let nodeIndent = indent;
+      node.position = { end: now(), indent: [], start };
 
-        node.position = { end: now(), indent: [], start };
+      // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in.
+      if (previous && nodeIndent && previous.indent) {
+        combined = previous.indent;
 
-        // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in.
-        if (previous && nodeIndent && previous.indent) {
-          combined = previous.indent;
-
-          if (n < l) {
-            while (++n < l) {
-              combined.push((offset.get(n) ?? 0) + 1);
-            }
-
-            combined.push(before.column);
+        if (n < l) {
+          while (++n < l) {
+            combined.push((offset.get(n) ?? 0) + 1);
           }
 
-          nodeIndent = [...combined, ...nodeIndent];
+          combined.push(before.column);
         }
 
-        node.position.indent = nodeIndent ?? [];
+        nodeIndent = [...combined, ...nodeIndent];
+      }
 
-        return node;
-      };
+      node.position.indent = nodeIndent ?? [];
+
+      return node;
     }
 
     function add<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
@@ -780,9 +770,10 @@ export class RemarkParser {
     }
 
     function eatSubvalue(subvalue: string): EatApply {
-      const indent = getOffset();
-      const pos = position();
+      // Upstream takes the start point three times, through `getOffset`, `position` and `now`, each a closure or a copy.
+      // One point serves all three: nothing changes it before the text is eaten, and it is only read afterwards.
       const current = now();
+      const firstLine = current.line;
 
       if (!value.startsWith(subvalue)) {
         throw new Error('Incorrectly eaten value');
@@ -803,12 +794,16 @@ export class RemarkParser {
         parser.atStart = false;
       }
 
-      const indentation = indent();
+      // The indentation of each line after the first that the eaten text covers.
+      const indentation: number[] = [];
+      for (let next = firstLine + 1; next <= line; next++) {
+        indentation.push((offset.get(next) ?? 0) + 1);
+      }
 
       return Object.assign(apply, { reset, test });
 
       function apply<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
-        return pos(add(pos(node), parent), indentation);
+        return place(add(place(node, current), parent), current, indentation);
       }
 
       function reset<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
@@ -823,7 +818,7 @@ export class RemarkParser {
       }
 
       function test(): RemarkPosition {
-        const result = pos<PositionCarrier>({});
+        const result = place<PositionCarrier>({}, current);
 
         line = current.line;
         column = current.column;
@@ -861,12 +856,10 @@ export class TokenizeScope {
    */
   public isValid = true;
 
-  /**
-   * Where each locator last found its construct.
-   */
-  public readonly located = new Map<string, LocatedIndex>();
+  // Both are made on first use: most `tokenize` calls read a heading or a short line and need neither.
+  private locatedIndices: LocatedIndex[] | undefined;
 
-  private readonly memos = new Map<string, Map<number, number>>();
+  private memos: Map<string, Map<number, number>> | undefined;
 
   /**
    * Creates the memos of a text.
@@ -876,12 +869,31 @@ export class TokenizeScope {
   public constructor(public readonly length: number) {}
 
   /**
+   * Where a locator last found its construct. The entry is updated in place, so a locator asked at every text run
+   * allocates nothing after its first search, and it is found by the locator's place in the inline methods rather than
+   * by its name, which every text run would hash once per locator.
+   *
+   * @param slot - The locator's index in the inline methods.
+   * @returns The entry, with `from` set to `Infinity` before the first search.
+   */
+  public located(slot: number): LocatedIndex {
+    this.locatedIndices ??= [];
+    let entry = this.locatedIndices[slot];
+    if (!entry) {
+      entry = { at: -1, from: Infinity };
+      this.locatedIndices[slot] = entry;
+    }
+    return entry;
+  }
+
+  /**
    * The memo a scan keeps under `name`.
    *
    * @param name - The scan's name.
    * @returns The memo.
    */
   public memo(name: string): Map<number, number> {
+    this.memos ??= new Map();
     let map = this.memos.get(name);
     if (!map) {
       map = new Map();
