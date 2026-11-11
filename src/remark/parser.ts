@@ -810,10 +810,9 @@ export class RemarkParser {
         indentation.push((offset.get(next) ?? 0) + 1);
       }
 
-      // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them.
-      return function apply<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
-        return place(add(place(node, current), parent), current, indentation);
-      };
+      // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them. An anonymous
+      // arrow, since a bundler keeping names wraps every named function expression it creates in a call.
+      return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => place(add(place(node, current), parent), current, indentation);
     }
 
     function eatAndReset<Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node {
