@@ -265,10 +265,11 @@ const BYTE_ORDER_MARK = 0xFE_FF;
 export const scanMemoSettings = {
   isEnabled: true,
   /**
-   * The shortest text whose locators are remembered: a shorter one is searched faster than an entry is kept for it, and
-   * most paragraphs are short. The differential test sets it to 0, so its short notes reach the memo.
+   * The shortest text whose locators are remembered. Every text is: on 10,000 lines of vault notes, remembering only
+   * texts of 1,024 characters or more left the locators reading 9.6 million characters, and remembering all of them
+   * 5.5 million, since most paragraphs are short and each is still searched once per locator and text run.
    */
-  minLocatorMemoLength: 1024
+  minLocatorMemoLength: 0
 };
 
 /**

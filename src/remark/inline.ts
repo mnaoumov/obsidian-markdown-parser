@@ -1068,12 +1068,14 @@ function locateFirst(markers: Markers, value: string, fromIndex: number): number
   // A scan by character code allocates nothing, where a regular expression's match makes an array at every text run.
   const { firstCodes, prefixes } = markers;
   const length = value.length;
+  const count = prefixes.length;
 
   for (let index = fromIndex; index < length; index++) {
     const code = value.charCodeAt(index);
 
-    for (const [alternative, prefix] of prefixes.entries()) {
-      if (firstCodes[alternative] === code && value.startsWith(prefix, index)) {
+    // An indexed loop: an `entries()` iterator per character cost more than the scan itself on long notes.
+    for (let alternative = 0; alternative < count; alternative++) {
+      if (firstCodes[alternative] === code && value.startsWith(prefixes[alternative] ?? '', index)) {
         return index;
       }
     }
