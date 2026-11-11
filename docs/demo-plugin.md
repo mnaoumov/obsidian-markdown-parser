@@ -63,3 +63,27 @@ The first run of the day gave a live-preview keystroke on the long note 87.9 ms 
 - **The walk splits every node's classes.** It builds `new Set(classes.split(' '))` from the token class prop of each node. V8 caches a split only for an internalized string, and the language made its class strings with `join`, so the same walk over the same 138,000 nodes took 39 ms on the parser's tree against 25 ms on the stock one. The language now internalizes them.
 
 These are single runs, so the smallest times carry the most noise.
+
+## The metadata against the worker
+
+The demo plugin times `parseMetadata` but not the app's worker, which runs in a thread of its own. `npx jiti scripts/demo/metadata-bench.ts --worker <path to worker.js>... [--vault <dir>] [--lines <n>]... [--depth <n>]... [--size <n>]... [--runs <n>]` times both offline. It loads each named release's `worker.js` into a Node `vm` context, the way `scripts/capture/worker-oracle.ts` does, and runs the worker and `parseMetadata` on the same texts. It prints the median of `--runs` (3) after a warm-up, and says which workers gave the same `CachedMetadata`. Obsidian 1.15.1 added a format version, `v: 1`, to the metadata the worker posts. Apart from that field, the comparison covers the whole metadata, key order included. The texts are the vault's notes repeated to `--lines`, lists and quotes nested `--depth` deep, and `--size` unclosed emphasis openers, brackets, backtick runs, wikilinks on one line, and a footnote definition and a reference definition title ten times `--size` characters long.
+
+One run on 2026-11-11, on an AMD Ryzen 5 7500F that other jobs held at 100% CPU, so the times are noisy. The workers are those of 1.14.5, 1.15.0 and 1.15.1, read from the `obsidian-versions` history.
+
+| Text | Characters | `parseMetadata` | Worker 1.14.5 | Worker 1.15.0 | Worker 1.15.1 |
+| :--- | ---------: | --------------: | ------------: | ------------: | ------------: |
+| Vault notes, 10,000 lines | 374,468 | 196 ms | 2,768 ms | 1,488 ms | 311 ms |
+| Vault notes, 100,000 lines | 3,648,939 | 7,307 ms | 8,262 ms | 6,823 ms | 321 ms |
+| List nested 500 deep | 254,889 | 1,197 ms | 1,326 ms | 1,652 ms | 835 ms |
+| List nested 600 deep | 365,889 | 1,465 ms | 1,949 ms | 2,001 ms | 1,525 ms |
+| Quote nested 600 deep | 1,206 | 2.0 ms | 21.4 ms | 14.1 ms | 0.8 ms |
+| 10,000 unclosed emphasis openers | 60,000 | 40,655 ms | 49,618 ms | 36,177 ms | 1,519 ms |
+| 10,000 unclosed brackets | 30,000 | 5,366 ms | 4,937 ms | 4,105 ms | 2,368 ms |
+| 10,000 unclosed backtick runs | 69,991 | 45.5 ms | 63.6 ms | 57.6 ms | 1.4 ms |
+| 10,000 wikilinks on one line | 90,000 | 388 ms | 554 ms | 483 ms | 18.4 ms |
+| Footnote definition of 100,000 characters | 100,023 | 7.4 ms | 27.8 ms | 25.0 ms | 7.9 ms |
+| Reference definition title of 100,000 characters | 100,017 | 4.4 ms | 25.9 ms | 29.1 ms | 2.0 ms |
+
+**The metadata is the same** from `parseMetadata` and all three workers, on every text. That includes lists nested past 512 levels and definitions longer than the 1,024 characters the worker scans for a footnote definition's end.
+
+**1.15.1 changed the speed comparison.** `parseMetadata` was about as fast as the 1.14.5 and 1.15.0 workers, because it ports the same `remark-parse` 8, and it was faster on most texts, though not on the 100,000-line note, the unclosed emphasis openers or the unclosed brackets. The 1.15.1 worker, with the team's `remark` optimization, runs the 100,000-line note 23 times faster than `parseMetadata` and 10,000 unclosed emphasis openers 27 times faster. Both older workers and `parseMetadata` grow faster than the text on these two, and the 1.15.1 worker does not. The editor's figures above were measured on 1.14.4. The optimization was in the worker, and they have not been re-measured on 1.15.1.
