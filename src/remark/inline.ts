@@ -15,8 +15,10 @@ import type {
   Eat,
   InlineTokenizer,
   InlineTokenizerName,
+  LocatedIndex,
   RemarkParser,
-  TokenizerResult
+  TokenizerResult,
+  TokenizeScope
 } from './parser.ts';
 import type {
   RemarkNode,
@@ -47,6 +49,20 @@ const ASCII_CODE_COUNT = 128;
 const URL_PREFIXES = markersOf(['www.', 'http://', 'https://']);
 const EMPHASIS_MARKERS = markersOf(['*', '_']);
 const STRONG_MARKERS = markersOf(['**', '__']);
+// A locator `text` asks, its slot in the inline methods, and the markers it finds the first of, if any.
+interface TextLocator {
+  readonly locator: InlineTokenizer['locator'];
+  readonly markers?: Markers;
+  readonly slot: number;
+}
+const TEXT_LOCATORS = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, TextLocator[]>();
+const TEXT_ONLY_TOKENIZERS = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, Partial<Record<InlineTokenizerName, InlineTokenizer>>>();
+// The locators that find the first of several markers, which `locateAfterStart` remembers marker by marker.
+const MARKERS_OF_LOCATOR = new Map<InlineTokenizer['locator'], Markers>([
+  [locateEmphasis, EMPHASIS_MARKERS],
+  [locateStrong, STRONG_MARKERS],
+  [locateUrl, URL_PREFIXES]
+]);
 
 /**
  * The inline tokenizers.
@@ -402,8 +418,8 @@ function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boole
  * fails, so a run of unclosed brackets cost the square of the text.
  */
 function hasClosingBracket(parser: RemarkParser, value: string): boolean {
-  // The slot after every inline method's is this search's own.
-  return locateAfterStart(parser, value, parser.tokenizers.inlineMethods.length, locateClosingBracket) !== -1;
+  const scope = parser.scopeOf(value);
+  return (scope ? scope.indexOf(value, ']', 1) : locateClosingBracket(parser, value, 1)) !== -1;
 }
 
 function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
@@ -988,22 +1004,20 @@ function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boole
  * up to that place, and a construct that is far off or absent is not searched for over the rest of the text again for
  * every position before it.
  */
-function locateAfterStart(parser: RemarkParser, value: string, slot: number, locator: InlineTokenizer['locator']): number {
-  const scope = parser.scopeOf(value);
-
-  if (!scope || scope.length < scanMemoSettings.minLocatorMemoLength) {
-    return locator(parser, value, 1);
+function locateAfterStart(parser: RemarkParser, value: string, scope: null | TokenizeScope, entry: TextLocator): number {
+  if (!scope) {
+    return entry.locator(parser, value, 1);
   }
 
   const base = scope.length - value.length;
   const from = base + 1;
-  const last = scope.located(slot);
+  const last = scope.located(entry.slot);
 
   if (last.from <= from && (last.at === -1 || from <= last.at)) {
     return last.at === -1 ? -1 : last.at - base;
   }
 
-  const position = locator(parser, value, 1);
+  const position = entry.markers ? locateEachAfterStart(entry.markers, value, base, last) : entry.locator(parser, value, 1);
   last.at = position === -1 ? -1 : base + position;
   last.from = from;
   return position;
@@ -1029,6 +1043,44 @@ function locateClosingBracket(_parser: RemarkParser, value: string, fromIndex: n
 
 function locateDelete(_parser: RemarkParser, value: string, fromIndex: number): number {
   return value.indexOf('~~', fromIndex);
+}
+
+/*
+ * The first of the `markers` from index 1 of `value`, each marker remembered on its own in `entry`. A search for all of
+ * them at once stops at the nearest, so the next search past it read the text up to every other marker again, character
+ * by character; each marker's own search is the engine's native string search instead, and runs on from where that
+ * marker was last found, so the text is read once per marker over the whole `tokenize` call.
+ */
+function locateEachAfterStart(markers: Markers, value: string, base: number, entry: LocatedIndex): number {
+  const from = base + 1;
+  const { prefixes } = markers;
+  const count = prefixes.length;
+  let alternatives = entry.alternatives;
+  if (!alternatives) {
+    alternatives = [];
+    for (let alternative = 0; alternative < count; alternative++) {
+      alternatives.push({ at: -1, from: Infinity });
+    }
+    entry.alternatives = alternatives;
+  }
+
+  let nearest = -1;
+  for (let alternative = 0; alternative < count; alternative++) {
+    const last = alternatives[alternative];
+    if (!last) {
+      continue;
+    }
+    if (!(last.from <= from && (last.at === -1 || from <= last.at))) {
+      const index = value.indexOf(prefixes[alternative] ?? '', 1);
+      last.at = index === -1 ? -1 : base + index;
+      last.from = from;
+    }
+    if (last.at !== -1 && (nearest === -1 || last.at < nearest)) {
+      nearest = last.at;
+    }
+  }
+
+  return nearest === -1 ? -1 : nearest - base;
 }
 
 function locateEmail(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1372,20 +1424,13 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
     return true;
   }
 
-  const tokenizers = parser.inlineTokenizers;
   let min = value.length;
-  const methods = parser.tokenizers.inlineMethods;
+  const locators = textLocatorsOf(parser);
+  const valueScope = parser.scopeOf(value);
+  const scope = valueScope && valueScope.length >= scanMemoSettings.minLocatorMemoLength ? valueScope : null;
 
-  // eslint-disable-next-line unicorn/no-for-loop -- An `entries()` pair per locator and text run was most of what a parse allocated here.
-  for (let slot = 0; slot < methods.length; slot++) {
-    const name = methods[slot];
-    const tokenizer = name === undefined ? undefined : tokenizers[name];
-
-    if (name === 'text' || !tokenizer) {
-      continue;
-    }
-
-    const position = locateAfterStart(parser, value, slot, tokenizer.locator);
+  for (const entry of locators) {
+    const position = locateAfterStart(parser, value, scope, entry);
 
     if (position !== -1 && position < min) {
       min = position;
@@ -1412,11 +1457,40 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
   return;
 }
 
+/*
+ * The locators `text` asks, with their slots, for one set of inline tokenizers: built once per set, where looking each
+ * one up by name at every text run cost as much as the remembered searches it led to.
+ */
+function textLocatorsOf(parser: RemarkParser): readonly TextLocator[] {
+  const tokenizers = parser.inlineTokenizers;
+  let locators = TEXT_LOCATORS.get(tokenizers);
+  if (!locators) {
+    locators = [];
+    const methods = parser.tokenizers.inlineMethods;
+    for (const [slot, name] of methods.entries()) {
+      const tokenizer = tokenizers[name];
+      if (name === 'text' || !tokenizer) {
+        continue;
+      }
+      const markers = MARKERS_OF_LOCATOR.get(tokenizer.locator);
+      locators.push(markers ? { locator: tokenizer.locator, markers, slot } : { locator: tokenizer.locator, slot });
+    }
+    TEXT_LOCATORS.set(tokenizers, locators);
+  }
+  return locators;
+}
+
 // Reads `read` with every inline tokenizer but `text` removed, inside a link, as autolinks read their content.
 function withTextOnly(parser: RemarkParser, read: () => RemarkNode[]): RemarkNode[] {
   const tokenizers = parser.inlineTokenizers;
   const exit = parser.enterLink();
-  parser.inlineTokenizers = tokenizers.text ? { text: tokenizers.text } : {};
+  // One text-only set per set, so its list and dispatch are built once rather than at every autolink.
+  let textOnly = TEXT_ONLY_TOKENIZERS.get(tokenizers);
+  if (!textOnly) {
+    textOnly = tokenizers.text ? { text: tokenizers.text } : {};
+    TEXT_ONLY_TOKENIZERS.set(tokenizers, textOnly);
+  }
+  parser.inlineTokenizers = textOnly;
   try {
     return read();
   } finally {

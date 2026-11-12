@@ -206,11 +206,24 @@ export interface RemarkTokenizers {
  */
 export type TokenizerResult = boolean | RemarkNode | undefined;
 
+// The tokenizer list built from one set of block tokenizers, and its dispatch.
+interface BlockTokenizeBuilt {
+  readonly dispatch: TokenizeDispatch;
+  readonly methods: TokenizeMethod[];
+}
+
 // The tokenizer list built from one set of inline tokenizers, and its dispatch.
 interface InlineTokenizeBuilt {
   readonly dispatch: TokenizeDispatch;
   readonly methods: InlineTokenizer[];
 }
+
+/*
+ * The lists and dispatches are built once per set of tokenizers and shared by every parser, since the sets are module
+ * constants: built per parser, the inline dispatch alone, 128 lists, cost half a millisecond of every parse.
+ */
+const blockTokenizeBuilt = new WeakMap<RemarkTokenizers, BlockTokenizeBuilt>();
+const inlineTokenizeBuilt = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, InlineTokenizeBuilt>();
 
 type Interruptors = readonly BlockTokenizerName[];
 
@@ -313,6 +326,13 @@ export const scanMemoSettings = {
  * Where a locator last found its construct in a {@link TokenizeScope}'s text, as indices into that text.
  */
 export interface LocatedIndex {
+  /**
+   * For a locator that finds the first of several markers, where each marker was last found, in the markers' order:
+   * made on the first search.
+   */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Made on the entry's first search.
+  alternatives?: LocatedIndex[];
+
   /**
    * The index it found, or `-1` for none.
    */
@@ -451,11 +471,7 @@ export class RemarkParser {
    */
   public scope: TokenizeScope | undefined;
 
-  private blockTokenizeDispatch: TokenizeDispatch | undefined;
-
-  private blockTokenizeMethods: TokenizeMethod[] | undefined;
-
-  private readonly inlineTokenizeBuilt = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, InlineTokenizeBuilt>();
+  private blockTokenizeBuilt: BlockTokenizeBuilt | undefined;
 
   private inlineTokenizeDispatch: TokenizeDispatch | undefined;
 
@@ -472,7 +488,8 @@ export class RemarkParser {
    * @param tokenizers - The tokenizers.
    */
   public constructor(private readonly text: string, public readonly tokenizers: RemarkTokenizers) {
-    this.inlineTokenizers = { ...tokenizers.inline };
+    // The set itself, never changed: a copy would be a new key, and build its list and dispatch again for every parser.
+    this.inlineTokenizers = tokenizers.inline;
     this.lineStarts = [];
     for (const match of text.matchAll(LINE_ENDING_RE)) {
       this.lineStarts.push(match.index + match[0].length);
@@ -676,21 +693,26 @@ export class RemarkParser {
    */
   public tokenizeBlock(value: string, location: RemarkPoint): RemarkNode[] {
     // Built once: every container and list item tokenizes its content again, each call building the same list.
-    if (!this.blockTokenizeMethods) {
-      const tokenizers = this.tokenizers.block;
-      const starts = this.tokenizers.blockStarts;
-      const methods: TokenizeMethod[] = [];
-      for (const name of this.tokenizers.blockMethods) {
-        const tokenizer = tokenizers[name];
-        const blockStart = starts?.[name];
-        if (tokenizer) {
-          methods.push(blockStart ? { blockStart, tokenize: tokenizer } : { tokenize: tokenizer });
+    let built = this.blockTokenizeBuilt;
+    if (!built) {
+      built = blockTokenizeBuilt.get(this.tokenizers);
+      if (!built) {
+        const tokenizers = this.tokenizers.block;
+        const starts = this.tokenizers.blockStarts;
+        const methods: TokenizeMethod[] = [];
+        for (const name of this.tokenizers.blockMethods) {
+          const tokenizer = tokenizers[name];
+          const blockStart = starts?.[name];
+          if (tokenizer) {
+            methods.push(blockStart ? { blockStart, tokenize: tokenizer } : { tokenize: tokenizer });
+          }
         }
+        built = { dispatch: dispatchOf(methods), methods };
+        blockTokenizeBuilt.set(this.tokenizers, built);
       }
-      this.blockTokenizeMethods = methods;
-      this.blockTokenizeDispatch = dispatchOf(methods);
+      this.blockTokenizeBuilt = built;
     }
-    return this.tokenize(value, location, this.blockTokenizeMethods, this.blockTokenizeDispatch);
+    return this.tokenize(value, location, built.methods, built.dispatch);
   }
 
   /**
@@ -705,7 +727,7 @@ export class RemarkParser {
     // Rebuilt only when the tokenizers in use are swapped, as a link swaps them while it reads its content.
     if (this.inlineTokenizeMethodsFor !== tokenizers) {
       // A link swaps them back on its way out, so each set's list and dispatch are kept rather than built again.
-      let built = this.inlineTokenizeBuilt.get(tokenizers);
+      let built = inlineTokenizeBuilt.get(tokenizers);
       if (!built) {
         const methods: InlineTokenizer[] = [];
         for (const name of this.tokenizers.inlineMethods) {
@@ -715,7 +737,7 @@ export class RemarkParser {
           }
         }
         built = { dispatch: dispatchOf(methods), methods };
-        this.inlineTokenizeBuilt.set(tokenizers, built);
+        inlineTokenizeBuilt.set(tokenizers, built);
       }
       this.inlineTokenizeMethods = built.methods;
       this.inlineTokenizeDispatch = built.dispatch;
@@ -1047,7 +1069,9 @@ export class TokenizeScope {
    */
   public isValid = true;
 
-  // Both are made on first use: most `tokenize` calls read a heading or a short line and need neither.
+  // All three are made on first use: most `tokenize` calls read a heading or a short line and need none.
+  private foundIndices: Map<string, LocatedIndex> | undefined;
+
   private locatedIndices: LocatedIndex[] | undefined;
 
   private memos: Map<string, Map<number, number>> | undefined;
@@ -1058,6 +1082,32 @@ export class TokenizeScope {
    * @param length - The text's length.
    */
   public constructor(public readonly length: number) {}
+
+  /**
+   * `value.indexOf(search, fromIndex)`, remembered by `search`: what a search found from an earlier start still holds
+   * for any start up to that place, so a character searched for from every block start is read once over the text.
+   *
+   * @param value - A suffix of the text.
+   * @param search - What to find.
+   * @param fromIndex - Where in `value` to search from.
+   * @returns The index in `value`, or `-1`.
+   */
+  public indexOf(value: string, search: string, fromIndex: number): number {
+    const base = this.length - value.length;
+    const from = base + fromIndex;
+    this.foundIndices ??= new Map();
+    let entry = this.foundIndices.get(search);
+    if (!entry) {
+      entry = { at: -1, from: Infinity };
+      this.foundIndices.set(search, entry);
+    }
+    if (!(entry.from <= from && (entry.at === -1 || from <= entry.at))) {
+      const index = value.indexOf(search, fromIndex);
+      entry.at = index === -1 ? -1 : base + index;
+      entry.from = from;
+    }
+    return entry.at === -1 ? -1 : entry.at - base;
+  }
 
   /**
    * Where a locator last found its construct. The entry is updated in place, so a locator asked at every text run

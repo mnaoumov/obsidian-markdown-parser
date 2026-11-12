@@ -1698,8 +1698,13 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
       lineIndex = value.length;
     }
 
-    // Upstream searches the pipe through the rest of the document, which made every block start cost its length.
-    if (!hasCharacterBetween(value, '|', index + 1, lineIndex)) {
+    /*
+     * Upstream searches the pipe through the rest of the document, which made every block start cost its length. The
+     * call's memo runs that search once over its text; without one, only the line is read.
+     */
+    const scope = parser.scopeOf(value);
+    const pipe = scope ? scope.indexOf(value, '|', index + 1) : -1;
+    if (scope ? pipe === -1 || pipe >= lineIndex : !hasCharacterBetween(value, '|', index + 1, lineIndex)) {
       if (lineCount < MIN_TABLE_ROWS) {
         return;
       }
