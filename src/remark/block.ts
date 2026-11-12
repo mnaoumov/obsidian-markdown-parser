@@ -1465,9 +1465,12 @@ function normalListItem(parser: RemarkParser, value: string, position: RemarkPoi
   let bullet = '';
   let rest = '';
 
-  // Replace the bullet with spaces, so the indentation removal below strips it.
-  const replaced = value.replace(BULLET_RE, (...parameters: unknown[]) => {
-    const groups = parameters.at(-1) as Record<string, string | undefined>;
+  const lines = value.split('\n');
+  const match = BULLET_RE.exec(value);
+
+  // Replace the bullet with spaces, so the indentation removal below strips it. The match ends with the first line.
+  if (match) {
+    const groups = match.groups ?? {};
     const indent = groups['indent'] ?? '';
     let marker = groups['marker'] ?? '';
     const spacing = groups['spacing'] ?? '';
@@ -1480,12 +1483,10 @@ function normalListItem(parser: RemarkParser, value: string, position: RemarkPoi
     }
 
     max = indent + ' '.repeat(marker.length) + spacing;
+    lines[0] = max + rest;
+  }
 
-    return max + rest;
-  });
-
-  const lines = replaced.split('\n');
-  const trimmedLines = removeIndentation(replaced, getIndentation(max)).split('\n');
+  const trimmedLines = removeIndentation(lines, getIndentation(max));
 
   // The first line may have lost more than its bullet above.
   trimmedLines[0] = rest;
@@ -1577,8 +1578,8 @@ function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], val
  * Removes the smallest indentation of the lines from every line. Obsidian's edit: a line with no indentation, a lazy
  * line, does not stop the removal; it is left as it is.
  */
-function removeIndentation(value: string, maximum: number): string {
-  const values = value.split('\n');
+// Each line loses its indentation, up to `maximum`; `values` itself comes back when none loses any.
+function removeIndentation(values: string[], maximum: number): string[] {
   // Upstream measures a line of `maximum` spaces and a `!` with the others, so the removal is at most `maximum`.
   let minIndent = maximum > 0 ? maximum : Infinity;
   /*
@@ -1597,7 +1598,7 @@ function removeIndentation(value: string, maximum: number): string {
   });
 
   if (minIndent === Infinity) {
-    return value;
+    return values;
   }
 
   // Each line loses its indentation up to `minIndent`: everything to the character that reached it, or reached the line's
@@ -1605,7 +1606,7 @@ function removeIndentation(value: string, maximum: number): string {
   return values.map((line, position) => {
     const column = Math.min(minIndent, indents[position] ?? 0);
     return column === 0 ? line : line.slice(getIndentationStop(line, column) + 1);
-  }).join('\n');
+  });
 }
 
 function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {

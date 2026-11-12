@@ -144,3 +144,5 @@ The metadata is still the same as the 1.15.1 worker's on every text. The long fo
 4. The 10,000-line vault row went from 1.8 to 1.4.
 
 The 100,000-line row gave between 1.3 and 1.8 in three runs. The wikilinks' median of 857 ms is the load: their minimums were 22.8 ms and 17.8 ms. These rows still need a run on an idle machine.
+
+A list item's bullet is now read with one match instead of a replace callback, and its lines are split once instead of three times. Measured on 2026-11-12 under a heavier load, where a parse's wall time was about four times its CPU time, the 100,000-line vault row's minimum CPU time over 7 runs went from 421 to 499 ms before the change to 390 to 407 ms after it, in three alternating rounds each. Against the worker in the same process, the ratio of minimum CPU times was 1.07 and 1.24 in two runs. With the worker loaded in the process, `parseMetadata` took about a fifth more CPU time than without it, so part of the gap in the table above comes from sharing the heap with the worker rather than from the engine.
