@@ -89,7 +89,6 @@
     "obsidian": {
       "@codemirror/view": "$@codemirror/view"
     },
-    "re2js": "^2.9.1",
     "type-fest": "^5.10.0"
   },
   "dependencies": {
