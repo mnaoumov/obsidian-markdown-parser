@@ -330,7 +330,7 @@ export default class MarkdownParserDemoPlugin extends Plugin {
     for (const file of files) {
       const text = await this.app.vault.cachedRead(file);
       const start = performance.now();
-      const metadata = parseMetadata(text);
+      const metadata = parseMetadata(text, { obsidianVersion: apiVersion });
       parseMs += performance.now() - start;
       const where = findValueDifference(this.app.metadataCache.getFileCache(file), metadata);
       if (where !== null) {

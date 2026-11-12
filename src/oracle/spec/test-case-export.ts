@@ -608,7 +608,7 @@ function buildEditorVsReadingViewSuite(forum: ForumIssueFile, editingModes: Edit
 function buildMetadataFailingSuite(worker: WorkerMetadataOracleFile, forum: ForumIssueFile): TestCaseSuite<MetadataFailingCase> {
   const obsidianVersion = requireVersion(forum.meta.appVersion);
   const throws = buildMetadataSuite(worker).cases.filter((testCase) => testCase.metadata === null).map((testCase): MetadataFailingCase => {
-    const failure = workerFailureOf(testCase.markdown);
+    const failure = workerFailureOf(testCase.markdown, { obsidianVersion: requireVersion(worker.meta.appVersion) });
     if (failure === null) {
       throw new Error(`The worker threw on ${testCase.id}, and no known trigger explains it`);
     }

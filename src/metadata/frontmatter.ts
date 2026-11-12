@@ -30,6 +30,16 @@ import {
   WorkerFailure
 } from './link-path.ts';
 
+/**
+ * How the worker reads the front matter's links.
+ */
+export interface FrontmatterLinksOfOptions {
+  /**
+   * Whether an object with a key `hasOwnProperty` makes the worker throw, as it does up to Obsidian 1.15.0.
+   */
+  readonly isHasOwnPropertyKeyFatal: boolean;
+}
+
 interface OwnKeyCheck {
   readonly hasOwnProperty?: unknown;
 }
@@ -59,13 +69,14 @@ const BROWSER_BINARY: ScalarTag = {
  * one that is a whole markdown link whose destination is no URL.
  *
  * @param frontmatter - The front matter.
+ * @param options - How the worker reads them.
  * @returns The links, in the order of the keys.
- * @throws {@link WorkerFailure} where the worker throws: a markdown link with no destination, or an object whose
- * `hasOwnProperty` is a value of its own.
+ * @throws {@link WorkerFailure} where the worker throws: a markdown link with no destination, or, up to Obsidian
+ * 1.15.0, an object whose `hasOwnProperty` is a value of its own.
  */
-export function frontmatterLinksOf(frontmatter: FrontMatterCache): FrontmatterLinkCache[] {
+export function frontmatterLinksOf(frontmatter: FrontMatterCache, options: FrontmatterLinksOfOptions): FrontmatterLinkCache[] {
   const links: FrontmatterLinkCache[] = [];
-  addLinksOfObject(links, '', frontmatter);
+  addLinksOfObject(links, '', frontmatter, options);
   return links;
 }
 
@@ -85,11 +96,11 @@ export function parseFrontmatter(yaml: string): FrontMatterCache | null {
   return value === null || typeof value !== 'object' || Array.isArray(value) ? null : (value as FrontMatterCache);
 }
 
-function addLinksOf(links: FrontmatterLinkCache[], parentKey: string, key: string, value: unknown): void {
+function addLinksOf(links: FrontmatterLinkCache[], parentKey: string, key: string, value: unknown, options: FrontmatterLinksOfOptions): void {
   const path = parentKey ? `${parentKey}.${key}` : key;
 
   if (typeof value !== 'string') {
-    addLinksOfObject(links, path, value);
+    addLinksOfObject(links, path, value, options);
     return;
   }
 
@@ -127,10 +138,10 @@ function addLinksOf(links: FrontmatterLinkCache[], parentKey: string, key: strin
   links.push({ key: path, link, original: value, displayText: groups['text'] ?? '' });
 }
 
-function addLinksOfObject(links: FrontmatterLinkCache[], path: string, value: unknown): void {
+function addLinksOfObject(links: FrontmatterLinkCache[], path: string, value: unknown, options: FrontmatterLinksOfOptions): void {
   if (Array.isArray(value)) {
     for (const [index, item] of value.entries()) {
-      addLinksOf(links, path, String(index), item);
+      addLinksOf(links, path, String(index), item, options);
     }
     return;
   }
@@ -140,15 +151,18 @@ function addLinksOfObject(links: FrontmatterLinkCache[], path: string, value: un
   }
 
   for (const key in value) {
-    if (isOwnKey(value, key)) {
-      addLinksOf(links, path, key, (value as Record<string, unknown>)[key]);
+    if (isOwnKey(value, key, options)) {
+      addLinksOf(links, path, key, (value as Record<string, unknown>)[key], options);
     }
   }
 }
 
-// The worker calls the object's own `hasOwnProperty` for each key, which throws when a key of that name hides it.
-function isOwnKey(value: object, key: string): boolean {
-  if (typeof (value as OwnKeyCheck).hasOwnProperty !== 'function') {
+/*
+ * Up to 1.15.0 the worker calls the object's own `hasOwnProperty` for each key, which throws when a key of that name
+ * hides it; from 1.15.1 it reads the key whatever the object holds.
+ */
+function isOwnKey(value: object, key: string, options: FrontmatterLinksOfOptions): boolean {
+  if (options.isHasOwnPropertyKeyFatal && typeof (value as OwnKeyCheck).hasOwnProperty !== 'function') {
     throw new WorkerFailure('hasOwnPropertyKey', 'A front matter object whose hasOwnProperty is one of its keys.');
   }
   return Object.hasOwn(value, key);

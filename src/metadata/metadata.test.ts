@@ -44,6 +44,16 @@ describe('parseMetadata', () => {
   it('is null where the worker throws', () => {
     expect(parseMetadata('---\nk: "[t]()"\n---\n')).toBeNull();
     expect(parseMetadata('---\nhasOwnProperty: 1\n---\n')).toBeNull();
+    expect(parseMetadata('---\nk: "[t]()"\n---\n', { obsidianVersion: '1.15.1' })).toBeNull();
+  });
+
+  it('reads a front matter key hasOwnProperty, and posts v: 1 after the block ids, from Obsidian 1.15.1 on', () => {
+    expect(JSON.stringify(parseMetadata('---\nhasOwnProperty: 1\n---\na ^b', { obsidianVersion: '1.15.1' }))).toBe(
+      '{"sections":[{"type":"yaml","position":{"start":{"line":0,"col":0,"offset":0},"end":{"line":2,"col":3,"offset":25}}},{"type":"paragraph","position":{"start":{"line":3,"col":0,"offset":26},"end":{"line":3,"col":4,"offset":30}},"id":"b"}],"blocks":{"b":{"position":{"start":{"line":3,"col":0,"offset":26},"end":{"line":3,"col":4,"offset":30}},"id":"b"}},"v":1,"frontmatter":{"hasOwnProperty":1},"frontmatterPosition":{"start":{"line":0,"col":0,"offset":0},"end":{"line":2,"col":3,"offset":25}},"frontmatterLinks":[]}'
+    );
+    expect(parseMetadata('', { obsidianVersion: '1.15.1' })).toEqual({ v: 1 });
+    expect(parseMetadata('', { obsidianVersion: '1.16.0' })).toEqual({ v: 1 });
+    expect(parseMetadata('', { obsidianVersion: '1.15.0' })).toEqual({});
   });
 
   it('drops a byte order mark, as the worker reads the bytes', () => {
