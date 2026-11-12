@@ -79,6 +79,9 @@ const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
   interruptParagraph: INTERRUPT_PARAGRAPH
 };
 
+// Each set of tokenizers with soft line breaks read as hard ones.
+const WITH_SOFT_BREAKS_AS_HARD = new WeakMap<RemarkTokenizers, RemarkTokenizers>();
+
 /**
  * Parses a document as Obsidian's `remark-parse` 8 does.
  *
@@ -103,7 +106,13 @@ export function parseRemarkTree(markdown: string, options?: ParseRemarkTreeOptio
   const shouldReadObsidianSyntax = options?.shouldReadObsidianSyntax ?? true;
   let tokenizers = shouldReadObsidianSyntax ? OBSIDIAN_TOKENIZERS : MARKDOWN_TOKENIZERS;
   if (options?.shouldReadSoftLineBreaksAsHard) {
-    tokenizers = { ...tokenizers, inline: { ...tokenizers.inline, break: SOFT_BREAK_AS_HARD_TOKENIZER } };
+    // One set per set, as the parser shares what it builds from a set across parses.
+    let withHardBreaks = WITH_SOFT_BREAKS_AS_HARD.get(tokenizers);
+    if (!withHardBreaks) {
+      withHardBreaks = { ...tokenizers, inline: { ...tokenizers.inline, break: SOFT_BREAK_AS_HARD_TOKENIZER } };
+      WITH_SOFT_BREAKS_AS_HARD.set(tokenizers, withHardBreaks);
+    }
+    tokenizers = withHardBreaks;
   }
   const parser = new RemarkParser(markdown, tokenizers);
   const root = parser.parse();

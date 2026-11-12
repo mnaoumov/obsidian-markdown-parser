@@ -8,7 +8,7 @@
  * gone. The tokenizers are in `block.ts` and `inline.ts`.
  */
 
-/* eslint-disable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/prefer-ternary -- A line-for-line port: its control flow and names stay as upstream wrote them, and perfectionist/sort-classes orders public members first. */
+/* eslint-disable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- A line-for-line port: its control flow and names stay as upstream wrote them, and perfectionist/sort-classes orders public members first. */
 
 import type {
   RemarkNode,
@@ -206,11 +206,24 @@ export interface RemarkTokenizers {
  */
 export type TokenizerResult = boolean | RemarkNode | undefined;
 
+// The tokenizer list built from one set of block tokenizers, and its dispatch.
+interface BlockTokenizeBuilt {
+  readonly dispatch: TokenizeDispatch;
+  readonly methods: TokenizeMethod[];
+}
+
 // The tokenizer list built from one set of inline tokenizers, and its dispatch.
 interface InlineTokenizeBuilt {
   readonly dispatch: TokenizeDispatch;
   readonly methods: InlineTokenizer[];
 }
+
+/*
+ * The lists and dispatches are built once per set of tokenizers and shared by every parser, since the sets are module
+ * constants: built per parser, the inline dispatch alone, 128 lists, cost half a millisecond of every parse.
+ */
+const blockTokenizeBuilt = new WeakMap<RemarkTokenizers, BlockTokenizeBuilt>();
+const inlineTokenizeBuilt = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, InlineTokenizeBuilt>();
 
 type Interruptors = readonly BlockTokenizerName[];
 
@@ -314,6 +327,13 @@ export const scanMemoSettings = {
  */
 export interface LocatedIndex {
   /**
+   * For a locator that finds the first of several markers, where each marker was last found, in the markers' order:
+   * made on the first search.
+   */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Made on the entry's first search.
+  alternatives?: LocatedIndex[];
+
+  /**
    * The index it found, or `-1` for none.
    */
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The entry is updated in place at every search, so a text run allocates nothing.
@@ -339,6 +359,22 @@ export interface ScanMemo {
    * The memo, keyed and valued as the scan chooses, by index into the text.
    */
   readonly map: Map<number, number>;
+}
+
+/*
+ * The state of one `tokenize` call: what is left of its text, where that starts, the nodes it made and its memos. One
+ * object, read by the parser's methods, where upstream made a closure over each for every call; the 1.15.1 metadata
+ * worker keeps it the same way.
+ */
+class TokenizeFrame {
+  public column: number;
+
+  public line: number;
+
+  public constructor(public value: string, location: RemarkPoint, public readonly tokens: RemarkNode[], public readonly scope: TokenizeScope) {
+    this.column = location.column;
+    this.line = location.line;
+  }
 }
 
 /**
@@ -451,11 +487,15 @@ export class RemarkParser {
    */
   public scope: TokenizeScope | undefined;
 
-  private blockTokenizeDispatch: TokenizeDispatch | undefined;
+  private blockTokenizeBuilt: BlockTokenizeBuilt | undefined;
 
-  private blockTokenizeMethods: TokenizeMethod[] | undefined;
+  /*
+   * The one eat every tokenizer is given, acting on the frame of the `tokenize` call running. A tokenizer eats only while
+   * its own call runs: the calls it makes for nested content have returned before it eats again.
+   */
+  private readonly eat: Eat;
 
-  private readonly inlineTokenizeBuilt = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, InlineTokenizeBuilt>();
+  private frame: TokenizeFrame | undefined;
 
   private inlineTokenizeDispatch: TokenizeDispatch | undefined;
 
@@ -472,13 +512,20 @@ export class RemarkParser {
    * @param tokenizers - The tokenizers.
    */
   public constructor(private readonly text: string, public readonly tokenizers: RemarkTokenizers) {
-    this.inlineTokenizers = { ...tokenizers.inline };
+    // The set itself, never changed: a copy would be a new key, and build its list and dispatch again for every parser.
+    this.inlineTokenizers = tokenizers.inline;
     this.lineStarts = [];
     for (const match of text.matchAll(LINE_ENDING_RE)) {
       this.lineStarts.push(match.index + match[0].length);
     }
     this.lineStarts.push(text.length + 1);
     this.offset = new LineOffsets(this.lineStarts.length);
+    const eatSubvalue = (subvalue: string): EatApply => this.eatSubvalue(this.currentFrame(), subvalue);
+    this.eat = Object.assign(eatSubvalue, {
+      now: (): RemarkPoint => this.pointOf(this.currentFrame()),
+      reset: <Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node => this.eatAndReset(this.currentFrame(), subvalue, node, parent),
+      test: (subvalue: string): RemarkPosition => this.eatAndTest(this.currentFrame(), subvalue)
+    });
   }
 
   /**
@@ -676,21 +723,26 @@ export class RemarkParser {
    */
   public tokenizeBlock(value: string, location: RemarkPoint): RemarkNode[] {
     // Built once: every container and list item tokenizes its content again, each call building the same list.
-    if (!this.blockTokenizeMethods) {
-      const tokenizers = this.tokenizers.block;
-      const starts = this.tokenizers.blockStarts;
-      const methods: TokenizeMethod[] = [];
-      for (const name of this.tokenizers.blockMethods) {
-        const tokenizer = tokenizers[name];
-        const blockStart = starts?.[name];
-        if (tokenizer) {
-          methods.push(blockStart ? { blockStart, tokenize: tokenizer } : { tokenize: tokenizer });
+    let built = this.blockTokenizeBuilt;
+    if (!built) {
+      built = blockTokenizeBuilt.get(this.tokenizers);
+      if (!built) {
+        const tokenizers = this.tokenizers.block;
+        const starts = this.tokenizers.blockStarts;
+        const methods: TokenizeMethod[] = [];
+        for (const name of this.tokenizers.blockMethods) {
+          const tokenizer = tokenizers[name];
+          const blockStart = starts?.[name];
+          if (tokenizer) {
+            methods.push(blockStart ? { blockStart, tokenize: tokenizer } : { tokenize: tokenizer });
+          }
         }
+        built = { dispatch: dispatchOf(methods), methods };
+        blockTokenizeBuilt.set(this.tokenizers, built);
       }
-      this.blockTokenizeMethods = methods;
-      this.blockTokenizeDispatch = dispatchOf(methods);
+      this.blockTokenizeBuilt = built;
     }
-    return this.tokenize(value, location, this.blockTokenizeMethods, this.blockTokenizeDispatch);
+    return this.tokenize(value, location, built.methods, built.dispatch);
   }
 
   /**
@@ -705,7 +757,7 @@ export class RemarkParser {
     // Rebuilt only when the tokenizers in use are swapped, as a link swaps them while it reads its content.
     if (this.inlineTokenizeMethodsFor !== tokenizers) {
       // A link swaps them back on its way out, so each set's list and dispatch are kept rather than built again.
-      let built = this.inlineTokenizeBuilt.get(tokenizers);
+      let built = inlineTokenizeBuilt.get(tokenizers);
       if (!built) {
         const methods: InlineTokenizer[] = [];
         for (const name of this.tokenizers.inlineMethods) {
@@ -715,7 +767,7 @@ export class RemarkParser {
           }
         }
         built = { dispatch: dispatchOf(methods), methods };
-        this.inlineTokenizeBuilt.set(tokenizers, built);
+        inlineTokenizeBuilt.set(tokenizers, built);
       }
       this.inlineTokenizeMethods = built.methods;
       this.inlineTokenizeDispatch = built.dispatch;
@@ -772,6 +824,132 @@ export class RemarkParser {
     return queue.join('');
   }
 
+  // Upstream's `add`: adjacent text merges; blockquotes do not in `commonmark` and `gfm` modes.
+  private addEaten<Node extends RemarkNode>(frame: TokenizeFrame, node: Node, parent?: RemarkParent): Node {
+    const children = parent ? parent.children : frame.tokens;
+    const previous = children.at(-1);
+    let result: RemarkNode = node;
+
+    if (previous?.type === 'text' && node.type === 'text' && isMergeable(previous) && isMergeable(node)) {
+      previous.value += node.value;
+      result = previous;
+    }
+
+    if (result !== previous) {
+      children.push(result);
+    }
+
+    return result as Node;
+  }
+
+  // Adds a node at the range eaten from `current`, as the function an eat returns does.
+  private applyEaten<Node extends RemarkNode>(
+    frame: TokenizeFrame,
+    current: RemarkPoint,
+    indentation: number[],
+    node: Node,
+    parent?: RemarkParent
+  ): Node {
+    if (node.position) {
+      return this.place(frame, this.addEaten(frame, this.place(frame, node, current), parent), current, indentation);
+    }
+
+    // A new node gets the position the two placings give it at once: the first leaves an empty indent that the second
+    // copies the eaten lines' indentation after. Merging reads only its start and end.
+    node.position = { end: this.pointOf(frame), indent: [...indentation], start: current };
+    const result = this.addEaten(frame, node, parent);
+    return result === node ? node : this.place(frame, result, current, indentation);
+  }
+
+  /*
+   * Eats `subvalue` off the frame's value and moves its point past it, and gives the point it started at. Upstream takes
+   * that point three times, through `getOffset`, `position` and `now`, each a closure or a copy; one serves all three,
+   * since nothing changes it before the text is eaten and it is only read afterwards.
+   */
+  private consume(frame: TokenizeFrame, subvalue: string): RemarkPoint {
+    const current = this.pointOf(frame);
+
+    /*
+     * Upstream compares the text eaten with the start of the value at every eat, which read every eaten character once
+     * more and cost a fifth of a long note's parse. The tokenizers eat only what they read off the value, and the
+     * oracles check every position, so only a text longer than the value is refused; the 1.15.1 metadata worker refuses
+     * none.
+     */
+    if (subvalue.length > frame.value.length) {
+      throw new Error('Incorrectly eaten value');
+    }
+
+    frame.value = frame.value.slice(subvalue.length);
+
+    this.updatePosition(frame, subvalue);
+
+    // Obsidian's copy leaves the start at the first text eaten, where upstream leaves it at the first node added.
+    if (subvalue) {
+      this.atStart = false;
+    }
+
+    return current;
+  }
+
+  // The frame of the `tokenize` call running, which every eat acts on.
+  private currentFrame(): TokenizeFrame {
+    if (!this.frame) {
+      throw new Error('Nothing is being tokenized');
+    }
+    return this.frame;
+  }
+
+  private eatAndReset<Node extends RemarkNode>(frame: TokenizeFrame, subvalue: string, node: Node, parent?: RemarkParent): Node {
+    const startLine = frame.line;
+    const startColumn = frame.column;
+    const before = frame.value;
+    const wasAtStart = this.atStart;
+    const current = this.consume(frame, subvalue);
+    const indentation = this.indentationAfter(current.line, frame.line);
+    const after = frame.value;
+    const result = this.applyEaten(frame, current, indentation, node, parent);
+
+    frame.line = startLine;
+    frame.column = startColumn;
+    frame.value = this.putBack(frame, subvalue, before, after);
+    this.atStart = wasAtStart;
+
+    return result;
+  }
+
+  private eatAndTest(frame: TokenizeFrame, subvalue: string): RemarkPosition {
+    const startLine = frame.line;
+    const startColumn = frame.column;
+    const before = frame.value;
+    const start = this.consume(frame, subvalue);
+    const after = frame.value;
+    const result: RemarkPosition = { end: this.pointOf(frame), indent: [], start };
+
+    frame.line = startLine;
+    frame.column = startColumn;
+    frame.value = this.putBack(frame, subvalue, before, after);
+
+    return result;
+  }
+
+  private eatSubvalue(frame: TokenizeFrame, subvalue: string): EatApply {
+    const current = this.consume(frame, subvalue);
+    const indentation = this.indentationAfter(current.line, frame.line);
+
+    // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them. An anonymous
+    // arrow, since a bundler keeping names wraps every named function expression it creates in a call.
+    return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => this.applyEaten(frame, current, indentation, node, parent);
+  }
+
+  // The indentation of each line after `firstLine` up to `lastLine`: those an eaten text covers after its first.
+  private indentationAfter(firstLine: number, lastLine: number): number[] {
+    const indentation: number[] = [];
+    for (let next = firstLine + 1; next <= lastLine; next++) {
+      indentation.push((this.offset.get(next) ?? 0) + 1);
+    }
+    return indentation;
+  }
+
   private indentFrom(position: RemarkPoint): number[] {
     const result: number[] = [];
     let line = position.line;
@@ -783,37 +961,85 @@ export class RemarkParser {
     return result;
   }
 
+  // Upstream's `position()` made this a closure over `before` for every eat.
+  private place<Carrier extends PositionCarrier>(frame: TokenizeFrame, node: Carrier, before: RemarkPoint, indent?: number[]): Carrier {
+    const previous = node.position;
+    const start = previous ? previous.start : before;
+    let combined: number[] = [];
+    let n = previous?.end.line ?? 0;
+    const l = before.line;
+    let nodeIndent = indent;
+
+    node.position = { end: this.pointOf(frame), indent: [], start };
+
+    // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in.
+    if (previous && nodeIndent && previous.indent) {
+      combined = previous.indent;
+
+      if (n < l) {
+        while (++n < l) {
+          combined.push((this.offset.get(n) ?? 0) + 1);
+        }
+
+        combined.push(before.column);
+      }
+
+      nodeIndent = [...combined, ...nodeIndent];
+    }
+
+    node.position.indent = nodeIndent ?? [];
+
+    return node;
+  }
+
+  // Upstream's `now`.
+  private pointOf(frame: TokenizeFrame): RemarkPoint {
+    return { column: frame.column, line: frame.line, offset: this.toOffset(frame.line, frame.column) };
+  }
+
+  /*
+   * Putting the text back restores the string it was eaten from rather than `subvalue + value`: the concatenation is
+   * flattened into a fresh copy of the rest of the document by the next slice, and every node value sliced from it keeps
+   * that copy alive, so a long note held one copy per reset.
+   */
+  private putBack(frame: TokenizeFrame, subvalue: string, before: string, after: string): string {
+    if (frame.value === after) {
+      return before;
+    }
+
+    // The text no longer ends as the call's text does, so no index of it is an index into that text.
+    frame.scope.isValid = false;
+    return subvalue + frame.value;
+  }
+
   private tokenize(
     initialValue: string,
     location: RemarkPoint,
     methods: readonly TokenizeMethod[],
     methodDispatch: TokenizeDispatch | undefined
   ): RemarkNode[] {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias, consistent-this, unicorn/no-this-assignment -- The nested functions below are the upstream closure over the parser.
-    const parser = this;
-    const offset = this.offset;
     const tokens: RemarkNode[] = [];
-    let value = initialValue;
-    let line = location.line;
-    let column = location.column;
 
-    if (!value) {
+    if (!initialValue) {
       return tokens;
     }
 
-    const eat: Eat = Object.assign(eatSubvalue, { now, reset: eatAndReset, test: eatAndTest });
-    const scope = new TokenizeScope(value.length);
-    const outerScope = parser.scope;
+    const scope = new TokenizeScope(initialValue.length);
+    const frame = new TokenizeFrame(initialValue, location, tokens, scope);
+    const outerFrame = this.frame;
+    const outerScope = this.scope;
     const dispatch = scanMemoSettings.isStartCharacterGateEnabled ? methodDispatch : undefined;
+    const eat = this.eat;
 
     // Sync the initial offset.
-    updatePosition('');
+    this.updatePosition(frame, '');
 
-    parser.scope = scanMemoSettings.isEnabled ? scope : undefined;
+    this.frame = frame;
+    this.scope = scanMemoSettings.isEnabled ? scope : undefined;
     try {
       // Try every tokenizer; when one eats, start over on the rest.
-      // eslint-disable-next-line no-unmodified-loop-condition -- The tokenizers change `value` through `eat`.
-      while (value) {
+      while (frame.value) {
+        const value = frame.value;
         let matched = false;
         // Most tokenizers fail at once on any other first character, and are tried at every position the text reaches.
         const candidates = dispatch ? (dispatch.byCode[value.codePointAt(0) ?? ASCII_CODE_COUNT] ?? dispatch.ungated) : methods;
@@ -824,7 +1050,7 @@ export class RemarkParser {
         let isMeasured = false;
 
         for (const method of candidates) {
-          if (method.notInLink && parser.inLink) {
+          if (method.notInLink && this.inLink) {
             continue;
           }
 
@@ -839,11 +1065,9 @@ export class RemarkParser {
             }
           }
 
-          const valueLength = value.length;
+          method.tokenize(this, eat, frame.value, false);
 
-          method.tokenize(parser, eat, value, false);
-
-          matched = valueLength !== value.length;
+          matched = value.length !== frame.value.length;
 
           if (matched) {
             break;
@@ -855,182 +1079,38 @@ export class RemarkParser {
         }
       }
     } finally {
-      parser.scope = outerScope;
+      this.frame = outerFrame;
+      this.scope = outerScope;
     }
 
-    parser.eof = now();
+    this.eof = this.pointOf(frame);
 
     return tokens;
+  }
 
-    function updatePosition(subvalue: string): void {
-      let lastIndex = -1;
-      let index = subvalue.indexOf('\n');
+  private updatePosition(frame: TokenizeFrame, subvalue: string): void {
+    let lastIndex = -1;
+    let index = subvalue.indexOf('\n');
 
-      while (index !== -1) {
-        line++;
-        lastIndex = index;
-        index = subvalue.indexOf('\n', index + 1);
-      }
-
-      if (lastIndex === -1) {
-        column += subvalue.length;
-      } else {
-        column = subvalue.length - lastIndex;
-      }
-
-      const lineOffset = offset.get(line);
-      if (lineOffset !== null) {
-        if (lastIndex !== -1) {
-          column += lineOffset;
-        } else if (column <= lineOffset) {
-          column = lineOffset + 1;
-        }
-      }
+    while (index !== -1) {
+      frame.line++;
+      lastIndex = index;
+      index = subvalue.indexOf('\n', index + 1);
     }
 
-    function now(): RemarkPoint {
-      return { column, line, offset: parser.toOffset(line, column) };
+    if (lastIndex === -1) {
+      frame.column += subvalue.length;
+    } else {
+      frame.column = subvalue.length - lastIndex;
     }
 
-    // Upstream's `position()` made this a closure over `before` for every eat.
-    function place<Carrier extends PositionCarrier>(node: Carrier, before: RemarkPoint, indent?: number[]): Carrier {
-      const previous = node.position;
-      const start = previous ? previous.start : before;
-      let combined: number[] = [];
-      let n = previous?.end.line ?? 0;
-      const l = before.line;
-      let nodeIndent = indent;
-
-      node.position = { end: now(), indent: [], start };
-
-      // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in.
-      if (previous && nodeIndent && previous.indent) {
-        combined = previous.indent;
-
-        if (n < l) {
-          while (++n < l) {
-            combined.push((offset.get(n) ?? 0) + 1);
-          }
-
-          combined.push(before.column);
-        }
-
-        nodeIndent = [...combined, ...nodeIndent];
+    const lineOffset = this.offset.get(frame.line);
+    if (lineOffset !== null) {
+      if (lastIndex !== -1) {
+        frame.column += lineOffset;
+      } else if (frame.column <= lineOffset) {
+        frame.column = lineOffset + 1;
       }
-
-      node.position.indent = nodeIndent ?? [];
-
-      return node;
-    }
-
-    function add<Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node {
-      const children = parent ? parent.children : tokens;
-      const previous = children.at(-1);
-      let result: RemarkNode = node;
-
-      // Adjacent text merges; blockquotes do not in `commonmark` and `gfm` modes.
-      if (previous?.type === 'text' && node.type === 'text' && isMergeable(previous) && isMergeable(node)) {
-        previous.value += node.value;
-        result = previous;
-      }
-
-      if (result !== previous) {
-        children.push(result);
-      }
-
-      return result as Node;
-    }
-
-    function eatSubvalue(subvalue: string): EatApply {
-      // Upstream takes the start point three times, through `getOffset`, `position` and `now`, each a closure or a copy.
-      // One point serves all three: nothing changes it before the text is eaten, and it is only read afterwards.
-      const current = now();
-      const firstLine = current.line;
-
-      if (!value.startsWith(subvalue)) {
-        throw new Error('Incorrectly eaten value');
-      }
-
-      value = value.slice(subvalue.length);
-
-      updatePosition(subvalue);
-
-      // Obsidian's copy leaves the start at the first text eaten, where upstream leaves it at the first node added.
-      if (subvalue) {
-        parser.atStart = false;
-      }
-
-      // The indentation of each line after the first that the eaten text covers.
-      const indentation: number[] = [];
-      for (let next = firstLine + 1; next <= line; next++) {
-        indentation.push((offset.get(next) ?? 0) + 1);
-      }
-
-      // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them. An anonymous
-      // arrow, since a bundler keeping names wraps every named function expression it creates in a call.
-      return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => {
-        if (node.position) {
-          return place(add(place(node, current), parent), current, indentation);
-        }
-
-        // A new node gets the position the two placings give it at once: the first leaves an empty indent that the
-        // second copies the eaten lines' indentation after. Merging reads only its start and end.
-        node.position = { end: now(), indent: [...indentation], start: current };
-        const result = add(node, parent);
-        return result === node ? node : place(result, current, indentation);
-      };
-    }
-
-    function eatAndReset<Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node {
-      const startLine = line;
-      const startColumn = column;
-      const before = value;
-      const wasAtStart = parser.atStart;
-      const apply = eatSubvalue(subvalue);
-      const after = value;
-      const result = apply(node, parent);
-
-      line = startLine;
-      column = startColumn;
-      value = putBack(subvalue, before, after);
-      parser.atStart = wasAtStart;
-
-      return result;
-    }
-
-    function eatAndTest(subvalue: string): RemarkPosition {
-      const startLine = line;
-      const startColumn = column;
-      const before = value;
-      const start = now();
-      eatSubvalue(subvalue);
-      const after = value;
-      const result = place<PositionCarrier>({}, start);
-
-      line = startLine;
-      column = startColumn;
-      value = putBack(subvalue, before, after);
-
-      if (!result.position) {
-        throw new Error('Unreachable: a tested range always has a position');
-      }
-
-      return result.position;
-    }
-
-    /*
-     * Putting the text back restores the string it was eaten from rather than `subvalue + value`: the concatenation is
-     * flattened into a fresh copy of the rest of the document by the next slice, and every node value sliced from it
-     * keeps that copy alive, so a long note held one copy per reset.
-     */
-    function putBack(subvalue: string, before: string, after: string): string {
-      if (value === after) {
-        return before;
-      }
-
-      // The text no longer ends as the call's text does, so no index of it is an index into that text.
-      scope.isValid = false;
-      return subvalue + value;
     }
   }
 }
@@ -1047,7 +1127,9 @@ export class TokenizeScope {
    */
   public isValid = true;
 
-  // Both are made on first use: most `tokenize` calls read a heading or a short line and need neither.
+  // All three are made on first use: most `tokenize` calls read a heading or a short line and need none.
+  private foundIndices: Map<string, LocatedIndex> | undefined;
+
   private locatedIndices: LocatedIndex[] | undefined;
 
   private memos: Map<string, Map<number, number>> | undefined;
@@ -1058,6 +1140,32 @@ export class TokenizeScope {
    * @param length - The text's length.
    */
   public constructor(public readonly length: number) {}
+
+  /**
+   * `value.indexOf(search, fromIndex)`, remembered by `search`: what a search found from an earlier start still holds
+   * for any start up to that place, so a character searched for from every block start is read once over the text.
+   *
+   * @param value - A suffix of the text.
+   * @param search - What to find.
+   * @param fromIndex - Where in `value` to search from.
+   * @returns The index in `value`, or `-1`.
+   */
+  public indexOf(value: string, search: string, fromIndex: number): number {
+    const base = this.length - value.length;
+    const from = base + fromIndex;
+    this.foundIndices ??= new Map();
+    let entry = this.foundIndices.get(search);
+    if (!entry) {
+      entry = { at: -1, from: Infinity };
+      this.foundIndices.set(search, entry);
+    }
+    if (!(entry.from <= from && (entry.at === -1 || from <= entry.at))) {
+      const index = value.indexOf(search, fromIndex);
+      entry.at = index === -1 ? -1 : base + index;
+      entry.from = from;
+    }
+    return entry.at === -1 ? -1 : entry.at - base;
+  }
 
   /**
    * Where a locator last found its construct. The entry is updated in place, so a locator asked at every text run
@@ -1146,4 +1254,4 @@ function isMergeable(node: RemarkNode): boolean {
   return start.line !== end.line || end.column - start.column === node.value.length;
 }
 
-/* eslint-enable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/prefer-ternary -- The port ends here. */
+/* eslint-enable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- The port ends here. */

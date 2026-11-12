@@ -109,3 +109,38 @@ The same bench on 2026-11-11, again on a machine other jobs held at 100% CPU, so
 | Reference definition title of 100,000 characters | 100,017 | 12.1 ms | 28.9 ms | 0.59 |
 
 The metadata is still the same as the 1.15.1 worker's on every text. `parseMetadata` now grows with the text on every row and beats the worker on the nested lists, the unclosed emphasis openers and brackets, and the reference title. It is still slower on the vault notes, the backtick runs, the wikilinks, the nested quote and the long footnote, by 1.6 to 6 times. Its 10,000 brackets ran under a second in every run, where the worker's took about 29 s. A profile of the backtick runs alone gave 3.3 ms per parse at best, under 2 times the worker's best, so that row's 6.1 is partly the load. These rows need a run on an idle machine before any of them is quoted as settled.
+
+### After the second round
+
+Those five rows were then worked on, with the metadata unchanged. The engine changes:
+
+1. A locator that finds the first of several markers (emphasis, strong, URLs) remembers each marker on its own and finds it with the engine's native string search. Before, it used one character-by-character scan for all of them.
+2. The table's pipe search and the link's closing bracket search run once per `tokenize` call, through the call's memo (`TokenizeScope.indexOf`).
+3. The block and inline tokenizer lists and their dispatch tables are built once per set of tokenizers and shared by every parse. Built per parse, they cost about half a millisecond each time.
+4. A `tokenize` call keeps its state in one frame object that the parser's own methods read. Before, each call made a closure per helper.
+5. An eat no longer compares the eaten text with the start of the value. That check read every eaten character a second time and cost about a fifth of a long note's parse. The 1.15.1 worker makes no such check.
+
+The same bench on 2026-11-12, on the same machine, with other bulk jobs holding it at 25 to 75% CPU. `parseMetadata` and the worker each give the median of 5 runs. The last column is the ratio of their minimums over 31 interleaved runs (`parseMetadata`'s over the worker's). The five rows above were each measured in a process of their own, and the other rows in one process.
+
+| Text | Characters | `parseMetadata` | Worker 1.15.1 | Ratio of minimums |
+| :--- | ---------: | --------------: | ------------: | ----------------: |
+| Vault notes, 10,000 lines | 374,468 | 97.8 ms | 231 ms | 1.4 |
+| Vault notes, 100,000 lines | 3,648,939 | 1,743 ms | 1,594 ms | 1.8 |
+| List nested 500 deep | 254,889 | 446 ms | 4,150 ms | 0.08 |
+| List nested 600 deep | 365,889 | 1,159 ms | 7,558 ms | 0.06 |
+| Quote nested 600 deep | 1,206 | 0.7 ms | 2.3 ms | 1.2 |
+| 10,000 unclosed emphasis openers | 60,000 | 85.2 ms | 10,322 ms | below 0.01 |
+| 10,000 unclosed brackets | 30,000 | 49.2 ms | 48,446 ms | below 0.01 |
+| 10,000 unclosed backtick runs | 69,991 | 6.0 ms | 7.6 ms | 1.4 |
+| 10,000 wikilinks on one line | 90,000 | 857 ms | 201 ms | 1.3 |
+| Footnote definition of 100,000 characters | 100,023 | 1.7 ms | 62.6 ms | 0.22 |
+| Reference definition title of 100,000 characters | 100,017 | 5.1 ms | 88.4 ms | 0.52 |
+
+The metadata is still the same as the 1.15.1 worker's on every text. The long footnote now beats the worker. On the other four rows the gap narrowed:
+
+1. The backtick runs went from 6.1 to 1.4.
+2. The wikilinks went from 2.5 to 1.3.
+3. The nested quote went from about 2 to 1.2.
+4. The 10,000-line vault row went from 1.8 to 1.4.
+
+The 100,000-line row gave between 1.3 and 1.8 in three runs. The wikilinks' median of 857 ms is the load: their minimums were 22.8 ms and 17.8 ms. These rows still need a run on an idle machine.
