@@ -313,7 +313,7 @@ function highlightLine(params: HighlightLineParams): HighlightedLine {
   if (line.length === 0 && lineIndex === lines.length - 1) {
     return { classes: [], from: offset, spans: [], to: offset };
   }
-  const { classes, spans } = tokenizeLine({ line, lineIndex, readLine: (n): string | undefined => lines[lineIndex + n], state });
+  const { classes, spans } = tokenizeLine({ line, lineIndex, readLine: (n): null | string => lines[lineIndex + n] ?? null, state });
   return {
     classes,
     from: offset,

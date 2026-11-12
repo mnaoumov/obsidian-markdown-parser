@@ -141,8 +141,8 @@ function hostedClassSets(text: string): ClassSets {
   return classSetsOf(text, treeNodes(parse(editorClassLanguage, text)));
 }
 
-function lineNodeAt(tree: Tree, from: number): string | undefined {
-  return treeNodes(tree).find((node) => node[0] === from)?.[3];
+function lineNodeAt(tree: Tree, from: number): null | string {
+  return treeNodes(tree).find((node) => node[0] === from)?.[3] ?? null;
 }
 
 // Each node of the tree as its text and its name.

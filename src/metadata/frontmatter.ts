@@ -73,16 +73,16 @@ export function frontmatterLinksOf(frontmatter: FrontMatterCache): FrontmatterLi
  * Parses the front matter's YAML as the worker does.
  *
  * @param yaml - The lines between the front matter's delimiters.
- * @returns The value, when it is an object and no array; `undefined` when it is anything else or does not parse.
+ * @returns The value, when it is an object and no array; `null` when it is anything else or does not parse.
  */
-export function parseFrontmatter(yaml: string): FrontMatterCache | undefined {
+export function parseFrontmatter(yaml: string): FrontMatterCache | null {
   let value: unknown;
   try {
     value = parse(yaml, { customTags: withBrowserBinary, logLevel: 'error' });
   } catch {
-    return undefined;
+    return null;
   }
-  return value === null || typeof value !== 'object' || Array.isArray(value) ? undefined : (value as FrontMatterCache);
+  return value === null || typeof value !== 'object' || Array.isArray(value) ? null : (value as FrontMatterCache);
 }
 
 function addLinksOf(links: FrontmatterLinkCache[], parentKey: string, key: string, value: unknown): void {

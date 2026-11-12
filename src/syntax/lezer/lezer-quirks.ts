@@ -201,7 +201,7 @@ class SingleLineSetextGuard implements LeafBlockParser {
   public nextLine(cx: BlockContext, line: Line, leaf: LeafBlock): boolean {
     if (isSetextUnderline(cx, line) && !isSingleLineSetextUnderline(line, leaf)) {
       // In place: the caller is iterating this very array for the current line.
-      const index = leaf.parsers.findIndex((leafParser) => SetextHeadingParserClass !== undefined && leafParser instanceof SetextHeadingParserClass);
+      const index = leaf.parsers.findIndex((leafParser) => SetextHeadingParserClass !== null && leafParser instanceof SetextHeadingParserClass);
       if (index !== -1) {
         leaf.parsers.splice(index, 1);
       }
@@ -343,14 +343,14 @@ function codeOf(ch: string): number {
   return ch.codePointAt(0) ?? -1;
 }
 
-function findSetextHeadingParserClass(): (abstract new () => LeafBlockParser) | undefined {
+function findSetextHeadingParserClass(): (abstract new () => LeafBlockParser) | null {
   const internals: unknown = parser;
   if (!hasParserInternals(internals)) {
-    return undefined;
+    return null;
   }
   const factory = internals.leafBlockParsers[internals.blockNames.indexOf('SetextHeading')];
   const instance = factory?.(null, null);
-  return instance?.constructor as (abstract new () => LeafBlockParser) | undefined;
+  return (instance?.constructor as (abstract new () => LeafBlockParser) | undefined) ?? null;
 }
 
 function hasParserInternals(value: unknown): value is ParserInternals {

@@ -19,6 +19,7 @@ import { createMarkdownMode } from './markdown-mode.ts';
 interface CodeMirror5 {
   readonly defineMIME: (mime: string, spec: string) => void;
   readonly defineMode: (name: string, factory: (options: object, spec: MarkdownSpec) => object) => void;
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror 5's findModeByName, which answers `undefined` for an unknown name.
   readonly findModeByName: (name: string) => ModeInfo | undefined;
   readonly getMode: (options: object, spec: object | string) => AnyMode;
   readonly innerMode: (mode: AnyMode, state: object) => InnerMode;

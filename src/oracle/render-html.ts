@@ -150,22 +150,22 @@ function embedImage(embed: string): string {
   return `<img${kept.map((attribute) => ` ${attribute}`).join('')}>`;
 }
 
-function normalizeAttribute(attribute: string): string | undefined {
+function normalizeAttribute(attribute: string): null | string {
   const groups = ATTRIBUTE_PARTS_RE.exec(attribute)?.groups;
   const name = groups?.['name'] ?? '';
   if (DROPPED_ATTRIBUTES.has(name)) {
-    return undefined;
+    return null;
   }
   if (name === 'class') {
     const classes = (groups?.['value'] ?? '').split(CLASS_LIST_RE).filter((value) => value !== '' && !DROPPED_CLASSES.has(value));
-    return classes.length > 0 ? `class="${classes.join(' ')}"` : undefined;
+    return classes.length > 0 ? `class="${classes.join(' ')}"` : null;
   }
   return decodeTarget(attribute);
 }
 
 function normalizeTag(tag: string): string {
   const groups = TAG_PARTS_RE.exec(tag)?.groups;
-  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => normalizeAttribute(attribute)).filter((attribute) => attribute !== undefined);
+  const attributes = (groups?.['attributes']?.match(ATTRIBUTE_RE) ?? []).map((attribute) => normalizeAttribute(attribute)).filter((attribute) => attribute !== null);
   return `<${[groups?.['name'] ?? '', ...attributes.toSorted(compareKeys)].join(' ')}>`;
 }
 

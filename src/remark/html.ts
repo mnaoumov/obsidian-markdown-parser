@@ -530,9 +530,9 @@ function serializeAll(nodes: readonly HastNode[]): string {
 }
 
 // The size `200` or `200x100` names; a height of 0 is none.
-function sizeOf(value: string): EmbedSize | undefined {
+function sizeOf(value: string): EmbedSize | null {
   const groups = SIZE_RE.exec(value)?.groups;
-  return groups && { height: Number(groups['height'] ?? '0'), width: Number(groups['width']) };
+  return groups ? { height: Number(groups['height'] ?? '0'), width: Number(groups['width']) } : null;
 }
 
 function table(context: RenderContext, node: RemarkTable): HastElement {

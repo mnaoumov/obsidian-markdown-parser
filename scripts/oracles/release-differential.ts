@@ -98,14 +98,14 @@ const [fromSide, toSide] = sides as [Side, Side];
 const outDirectory = values['out-dir'] ?? join(repoRoot, 'dist', 'release-differential', `${fromSide.version}-to-${toSide.version}`);
 
 // The first oracle file a judge run needs that one of the versions lacks, named for the report.
-function missingFile(fileNamesOf: (version: string) => readonly string[]): string | undefined {
+function missingFile(fileNamesOf: (version: string) => readonly string[]): null | string {
   for (const side of sides) {
     const missing = fileNamesOf(side.version).find((fileName) => !existsSync(join(side.directory, fileName)));
     if (missing !== undefined) {
       return `no ${missing} in ${side.directory}`;
     }
   }
-  return undefined;
+  return null;
 }
 
 function readReport(path: string): unknown {
@@ -135,16 +135,16 @@ const modeJudgeSkipped = missingFile((version) => [...CLASS_ORACLE_SEEDS.map((se
 const liveSurfacesSkipped = missingFile((version) => [liveSurfacesOracleFileName(version)]);
 
 for (const side of sides) {
-  if (modeJudgeSkipped === undefined) {
+  if (modeJudgeSkipped === null) {
     run(side, 'modes/mode-judge.ts', ['--out', reportPath(side, 'mode-judge')]);
   }
-  if (liveSurfacesSkipped === undefined) {
+  if (liveSurfacesSkipped === null) {
     run(side, 'self-check.ts', ['--count', '0', '--live-surfaces', '--out', reportPath(side, 'self-check')]);
   }
 }
 
-function tablePair(name: string, skipped: string | undefined, tableOf: (side: Side) => SideTable): FamilyTablePair {
-  if (skipped !== undefined) {
+function tablePair(name: string, skipped: null | string, tableOf: (side: Side) => SideTable): FamilyTablePair {
+  if (skipped !== null) {
     return { name, skipped };
   }
   const from = tableOf(fromSide);

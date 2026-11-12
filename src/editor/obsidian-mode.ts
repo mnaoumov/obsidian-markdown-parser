@@ -201,18 +201,18 @@ export function createObsidianMode(): ObsidianMode {
    * `$` on its line, escaped or not, opens a math block, whose lines carry `HyperMD-math`. A markdown link's text opens
    * no math.
    */
-  function enterMath(stream: Stream, state: ObsidianState): string | undefined {
+  function enterMath(stream: Stream, state: ObsidianState): null | string {
     const temporary = matchRe(stream, /^\${1,2}/u, false);
     if (!temporary) {
       // A bare URL or email address.
-      return !state.hmdLinkType && (matchRe(stream, URL_RE) || matchRe(stream, EMAIL_RE)) ? `${rawMode.getType(state) ?? ''} url` : undefined;
+      return !state.hmdLinkType && (matchRe(stream, URL_RE) || matchRe(stream, EMAIL_RE)) ? `${rawMode.getType(state) ?? ''} url` : null;
     }
     if (state.linkText || state.hmdLinkType === LinkType.Footref) {
-      return undefined;
+      return null;
     }
     if (!isMathAt(stream)) {
       state.hmdLineStartedWithMath = false;
-      return undefined;
+      return null;
     }
     if (stream.pos === 0) {
       state.hmdLineStartedWithMath = true;
@@ -323,7 +323,7 @@ export function createObsidianMode(): ObsidianMode {
         state.linkText = false;
         const math = enterMath(stream, state);
         state.hmdEnteredMath = false;
-        return math ?? null;
+        return math;
       }
     }
     /*
@@ -338,7 +338,7 @@ export function createObsidianMode(): ObsidianMode {
       state.linkText = false;
       const math = enterMath(stream, state);
       state.hmdEnteredMath = false;
-      return math ?? null;
+      return math;
     }
     let ans = '';
     let temporary: null | RegExpMatchArray;

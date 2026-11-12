@@ -8,9 +8,9 @@
 import { StringStream as CodeMirrorStringStream } from '@codemirror/streamparser';
 
 /**
- * Reads the line `offset` lines after the current one, or `undefined` past the end of the document.
+ * Reads the line `offset` lines after the current one, or `null` past the end of the document.
  */
-export type LineReader = (offset: number) => string | undefined;
+export type LineReader = (offset: number) => null | string;
 
 /**
  * Parameters of {@link StringStream}'s constructor.
@@ -66,7 +66,8 @@ export class StringStream extends CodeMirrorStringStream {
    * @param n - How many lines ahead.
    * @returns The line, or `undefined` past the end of the document.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror 5's StringStream.lookAhead, which answers `undefined` past the end of the document.
   public lookAhead(n: number): string | undefined {
-    return this.readLine(n);
+    return this.readLine(n) ?? undefined;
   }
 }

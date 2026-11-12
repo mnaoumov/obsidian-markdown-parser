@@ -29,7 +29,7 @@ export interface MarkdownEditorConfig {
   /**
    * Reads an Obsidian inline construct at the start of an inline token, when the layer above allows them.
    */
-  readonly inlineHook: (stream: Stream, state: MarkdownState) => string | undefined;
+  readonly inlineHook: (stream: Stream, state: MarkdownState) => null | string;
 }
 
 /**
@@ -192,6 +192,7 @@ export interface MarkdownState {
   taskList: boolean;
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   taskOpen?: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror 5's markdown mode, whose text handler answers `undefined` for no text, apart from `null`, the style of a token with no class.
   readonly text: (stream: Stream, state: MarkdownState) => null | string | undefined;
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The line tokenizer updates this state while consuming tokens and resetting lines.
   thisLine: LineInfo;
@@ -208,6 +209,7 @@ export interface Stream extends CodeMirrorStringStream {
   /**
    * Reads the line `n` lines after the current one.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror's StringStream.lookAhead, which answers `undefined` past the end of the document.
   readonly lookAhead: (n: number) => string | undefined;
 }
 
@@ -681,6 +683,7 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     return type?.split(' ').includes(TOKEN_TYPES.code) ? type : `${type ?? ''} ${TOKEN_TYPES.code}`;
   }
 
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror 5's markdown mode, whose text handler answers `undefined` for no text, apart from `null`, the style of a token with no class.
   function handleText(stream: Stream, state: MarkdownState): null | string | undefined {
     return matchRe(stream, TEXT_RE) ? getType(state) : undefined;
   }
@@ -689,8 +692,8 @@ export function createMarkdownMode(config: MarkdownModeConfig): MarkdownMode {
     const isFirstTokenInQuote = state.quoteOpen;
     state.quoteOpen = false;
     const isExtensionsAllowed = isEditor && state.extensionsAllowed;
-    const hooked = isExtensionsAllowed ? editor.inlineHook(stream, state) : undefined;
-    if (hooked !== undefined) {
+    const hooked = isExtensionsAllowed ? editor.inlineHook(stream, state) : null;
+    if (hooked !== null) {
       return hooked;
     }
 

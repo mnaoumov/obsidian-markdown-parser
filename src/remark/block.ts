@@ -21,7 +21,8 @@ import type {
   BlockStart,
   BlockTokenizer,
   BlockTokenizerName,
-  RemarkParser
+  RemarkParser,
+  TokenizerResult
 } from './parser.ts';
 import type {
   RemarkBlockquote,
@@ -246,7 +247,7 @@ function appendLines(target: string[], emptyLines: readonly string[], line: stri
   target.push(line);
 }
 
-function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let length = value.length + 1;
   let index = -1;
   const now = eat.now();
@@ -367,7 +368,7 @@ function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   });
 }
 
-function blankLine(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | undefined {
+function blankLine(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let subvalue = '';
   let index = 0;
   const length = value.length;
@@ -395,7 +396,7 @@ function blankLine(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   return;
 }
 
-function blockHtml(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function blockHtml(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   const length = value.length;
   let index = 0;
 
@@ -452,7 +453,7 @@ function blockHtml(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   return eat(subvalue)({ type: 'html', value: subvalue });
 }
 
-function blockquote(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function blockquote(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   const offsets = parser.offset;
   const now = eat.now();
   let currentLine = now.line;
@@ -581,7 +582,7 @@ function calloutOf(header: RegExpExecArray): RemarkCallout {
   };
 }
 
-function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let index = 0;
   const length = value.length;
   let subvalue = '';
@@ -802,7 +803,7 @@ function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   return;
 }
 
-function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let length = value.length + 1;
   let index = 0;
   let subvalue = '';
@@ -1062,7 +1063,7 @@ function hasCharacterBetween(value: string, character: string, start: number, en
   return false;
 }
 
-function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let index = -1;
   const length = value.length;
   let subvalue = '';
@@ -1161,7 +1162,7 @@ function isUnclosedUrlCharacter(character: string): boolean {
   return character !== '[' && character !== ']' && !isWhitespaceCharacter(character);
 }
 
-function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let index = 0;
   let length = value.length;
   let start: null | number = null;
@@ -1500,7 +1501,7 @@ function normalListItem(parser: RemarkParser, value: string, position: RemarkPoi
   return trimmedLines.join('\n');
 }
 
-function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let index = value.indexOf('\n');
   const length = value.length;
 
@@ -1607,7 +1608,7 @@ function removeIndentation(value: string, maximum: number): string {
   }).join('\n');
 }
 
-function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   const now = eat.now();
   const length = value.length;
   let index = -1;
@@ -1682,7 +1683,7 @@ function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
   });
 }
 
-function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   // Get the rows: lines with a pipe after their first character.
   let index = 0;
   let lineCount = 0;
@@ -1861,7 +1862,7 @@ function tableCellPadding(cell: string): RemarkTableCellPadding {
   return { end, start };
 }
 
-function thematicBreak(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
+function thematicBreak(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
   let index = -1;
   const length = value.length + 1;
   let subvalue = '';

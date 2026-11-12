@@ -15,7 +15,8 @@ import type {
   Eat,
   InlineTokenizer,
   InlineTokenizerName,
-  RemarkParser
+  RemarkParser,
+  TokenizerResult
 } from './parser.ts';
 import type {
   RemarkNode,
@@ -67,7 +68,7 @@ export const INLINE_TOKENIZERS: Readonly<Partial<Record<InlineTokenizerName, Inl
   url: { locator: locateUrl, notInLink: true, startCharacters: 'hHw', tokenize: literalUrl }
 };
 
-function autoLink(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function autoLink(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let subvalue = '';
   const length = value.length;
   let index = 0;
@@ -181,7 +182,7 @@ function countOf(value: string, character: string): number {
   return count;
 }
 
-function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let index = 0;
   const length = value.length;
   let firstDot = -1;
@@ -242,7 +243,7 @@ function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): 
   });
 }
 
-function emphasis(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function emphasis(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   const character = value.charAt(0);
 
   if (character !== '*' && character !== '_') {
@@ -271,7 +272,7 @@ function emphasis(parser: RemarkParser, eat: Eat, value: string, silent: boolean
   });
 }
 
-function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   if (value.startsWith('\\')) {
     const character = value.charAt(1);
 
@@ -364,7 +365,7 @@ function findEmphasisClose(parser: RemarkParser, value: string, marker: string):
   return close;
 }
 
-function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   const length = value.length;
   let index = -1;
   let queue = '';
@@ -405,7 +406,7 @@ function hasClosingBracket(parser: RemarkParser, value: string): boolean {
   return locateAfterStart(parser, value, parser.tokenizers.inlineMethods.length, locateClosingBracket) !== -1;
 }
 
-function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let length = value.length;
   let index = 0;
   let closingFenceStart: number | undefined;
@@ -491,7 +492,7 @@ function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: bool
   });
 }
 
-function inlineHtml(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function inlineHtml(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   const length = value.length;
 
   if (!value.startsWith('<') || length < 3) {
@@ -549,7 +550,7 @@ function isWordCharacter(character: string): boolean {
   return WORD_CHARACTER_RE.test(character.charAt(0));
 }
 
-function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let subvalue = '';
   let index = 0;
   let character = value.charAt(0);
@@ -839,7 +840,7 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
   });
 }
 
-function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   const length = value.length;
   let protocolless = false;
   let index = 0;
@@ -1126,7 +1127,7 @@ function markersOf(prefixes: readonly string[]): Markers {
   return { firstCodes, isFirstCode, prefixes };
 }
 
-function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let character = value.charAt(0);
   let index = 0;
   const length = value.length;
@@ -1275,7 +1276,7 @@ function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolea
   });
 }
 
-function strikethrough(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function strikethrough(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let character = '';
   let previous = '';
   let preceding = '';
@@ -1313,7 +1314,7 @@ function strikethrough(parser: RemarkParser, eat: Eat, value: string, silent: bo
   return;
 }
 
-function strong(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function strong(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   let index = 0;
   let character = value.charAt(index);
 
@@ -1366,7 +1367,7 @@ function strong(parser: RemarkParser, eat: Eat, value: string, silent: boolean):
   return;
 }
 
-function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
+function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): TokenizerResult {
   if (silent) {
     return true;
   }

@@ -301,9 +301,9 @@ function parseRawHtml(cx: InlineContext, next: number, start: number): number {
   return tag ? cx.addElement(cx.elt('HTMLTag', start, start + tag[0].length)) : start + 1;
 }
 
-function pieceAt(text: string, pos: number): string | undefined {
+function pieceAt(text: string, pos: number): null | string {
   DESTINATION_PIECE_RE.lastIndex = pos;
-  return DESTINATION_PIECE_RE.exec(text)?.[0];
+  return DESTINATION_PIECE_RE.exec(text)?.[0] ?? null;
 }
 
 // The length of a destination not in pointy brackets at the start of `text`, or 0 when there is none: its parentheses
@@ -312,7 +312,7 @@ function plainDestinationLength(text: string): number {
   let pos = 0;
   let depth = 0;
   let piece = pieceAt(text, pos);
-  while (piece !== undefined && !(piece === ')' && depth === 0)) {
+  while (piece !== null && !(piece === ')' && depth === 0)) {
     depth += PARENTHESIS_DEPTH[piece] ?? 0;
     pos += piece.length;
     piece = pieceAt(text, pos);
