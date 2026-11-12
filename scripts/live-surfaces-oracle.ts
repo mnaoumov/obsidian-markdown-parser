@@ -201,6 +201,8 @@ interface Workspace {
 const JSON_INDENT = 2;
 const PROGRESS_EVERY = 50;
 const BATCH_SIZE = 50;
+// How long the renames are left to settle before the notes are read: the metadata cache re-reads the rewritten notes.
+const RENAME_SETTLE_MS = 1000;
 const here = dirname(fileURLToPath(import.meta.url));
 
 const { values } = parseArgs({
@@ -412,24 +414,26 @@ async function readTexts(paths: readonly string[]): Promise<string[]> {
   });
 }
 
-// Renames every target, to its new path or back, through `fileManager.renameFile`, which rewrites the links to it.
+/*
+ * Renames every target, to its new path or back, through `fileManager.renameFile`, which rewrites the links to it. Each
+ * rename is its own eval and the settle wait is Node's: on a loaded machine the renames of one eval, each rewriting the
+ * notes that link to its target, ran past the 30-second cap of an eval.
+ */
 async function renameTargets(isBack: boolean): Promise<void> {
-  await conn.evalInObsidian({
-    callback: async ({ app, isBack: isRenamingBack, targets }) => {
-      for (const target of targets) {
-        const from = isRenamingBack ? target.renamedPath : target.path;
+  for (const target of LIVE_SURFACE_TARGETS) {
+    await conn.evalInObsidian({
+      callback: async ({ app, from, to }) => {
         const file = app.vault.getFileByPath(from);
         if (file === null) {
           throw new Error(`No target ${from}`);
         }
-        await app.fileManager.renameFile(file, isRenamingBack ? target.path : target.renamedPath);
-      }
-      const SETTLE_MS = 1000;
-      await new Promise((resolve) => {
-        globalThis.setTimeout(resolve, SETTLE_MS);
-      });
-    },
-    input: { isBack, targets: LIVE_SURFACE_TARGETS }
+        await app.fileManager.renameFile(file, to);
+      },
+      input: isBack ? { from: target.renamedPath, to: target.path } : { from: target.path, to: target.renamedPath }
+    });
+  }
+  await new Promise((resolve) => {
+    setTimeout(resolve, RENAME_SETTLE_MS);
   });
 }
 
