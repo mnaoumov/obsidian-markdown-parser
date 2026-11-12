@@ -168,10 +168,16 @@ interface Workspace {
 }
 
 const MAX_READS = 20;
+const MAX_CAPPED_ATTEMPTS = 3;
 const SETTLE_MS = 30;
 const PARSE_TIMEOUT_MS = 10_000;
 const PROGRESS_EVERY = 250;
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// Obsidian-integration-testing's error for an eval its cap killed, known by name: the global install is not typed here.
+function isEvalCapExceeded(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'EvalCapExceededError' || error.constructor.name === 'EvalCapExceededError');
+}
 
 const { values } = parseArgs({
   options: {
@@ -226,8 +232,25 @@ try {
     }
   });
 
-  // One read of the editor's tree, after giving it `text` when there is one. Each read is its own short eval.
+  /*
+   * One read of the editor's tree, after giving it `text` when there is one. On a loaded machine a starved renderer can
+   * hold one read past the eval cap, which kills that eval and leaves the app running, so the read is made again: it sets
+   * the same text, so a retried read gives what the first would have.
+   */
   async function readTree(text: null | string): Promise<string> {
+    for (let attempt = 1;; attempt++) {
+      try {
+        return await readTreeOnce(text);
+      } catch (error) {
+        if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+          throw error;
+        }
+        process.stderr.write(`oracle: a read ran past the eval cap, reading again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
+      }
+    }
+  }
+
+  async function readTreeOnce(text: null | string): Promise<string> {
     return conn.evalInObsidian({
       callback: ({ app, parseTimeout, text: newText }) => {
         const language = (globalThis as OracleGlobal & typeof globalThis).__oracleCmLanguage;
