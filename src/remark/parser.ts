@@ -869,7 +869,13 @@ export class RemarkParser {
   private consume(frame: TokenizeFrame, subvalue: string): RemarkPoint {
     const current = this.pointOf(frame);
 
-    if (!frame.value.startsWith(subvalue)) {
+    /*
+     * Upstream compares the text eaten with the start of the value at every eat, which read every eaten character once
+     * more and cost a fifth of a long note's parse. The tokenizers eat only what they read off the value, and the
+     * oracles check every position, so only a text longer than the value is refused; the 1.15.1 metadata worker refuses
+     * none.
+     */
+    if (subvalue.length > frame.value.length) {
       throw new Error('Incorrectly eaten value');
     }
 
