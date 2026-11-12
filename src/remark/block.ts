@@ -76,7 +76,6 @@ const GRAVE_ACCENT_CODE = 96;
 const TILDE_CODE = 126;
 
 const BLANK_LINE_RE = /^[ \t]*(?:\n|$)/u;
-const TRAILING_LINES_RE = /\n+$/u;
 const CALLOUT_RE = /^\[!(?<header>[^\]]+)\](?<fold>[+-]?)(?:\s|$)/u;
 const WHITESPACE_RUN_RE = /\s+/gu;
 const LOOSE_LIST_ITEM_RE = /\n\n(?!\s*$)/u;
@@ -1142,7 +1141,7 @@ function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
       lang: null,
       meta: null,
       type: 'code',
-      value: content.replace(TRAILING_LINES_RE, '')
+      value: withoutTrailingLineFeeds(content)
     });
   }
 
@@ -1565,7 +1564,7 @@ function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], val
   }
 
   const now = eat.now();
-  subvalue = subvalue.replace(TRAILING_LINES_RE, '');
+  subvalue = withoutTrailingLineFeeds(subvalue);
 
   return eat(subvalue)({
     children: parser.tokenizeInline(subvalue, now),
@@ -1934,6 +1933,19 @@ function walkIndentation(value: string, column: number): IndentationWalk {
   }
 
   return { indent, index };
+}
+
+/*
+ * `value` without the line feeds that end it, as upstream's `replace(/\n+$/, '')`: that expression tries a match at
+ * every line feed of the value, which on a long paragraph cost more than reading its end.
+ */
+function withoutTrailingLineFeeds(value: string): string {
+  let end = value.length;
+  // A line feed is one code unit, so a code point read at the unit before the end is one only when it is one.
+  while (end > 0 && value.codePointAt(end - 1) === LINE_FEED_CODE) {
+    end--;
+  }
+  return end === value.length ? value : value.slice(0, end);
 }
 
 /* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/explicit-length-check, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/no-useless-else, unicorn/prefer-combined-guards, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- The port ends here. */
