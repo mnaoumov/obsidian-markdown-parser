@@ -351,21 +351,29 @@ function attachBlockIds(root: RemarkRoot): void {
   }
 }
 
-function blockIdBlock(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function blockIdBlock(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   const match = BLOCK_ID_RE.exec(value);
   if (!match) {
     return;
   }
-  return isSilent || eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  if (isSilent) {
+    return true;
+  }
+  parser.hasFootnoteOrBlockId = true;
+  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 // Only the rest of the inline content, to its end, can be a block id.
-function blockIdInline(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function blockIdInline(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   const match = INLINE_BLOCK_ID_RE.exec(value);
   if (!match) {
     return;
   }
-  return isSilent || eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  if (isSilent) {
+    return true;
+  }
+  parser.hasFootnoteOrBlockId = true;
+  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 /*
@@ -560,11 +568,12 @@ function footnoteDefinition(parser: RemarkParser, eat: Eat, value: string, isSil
   const children = parser.tokenizeBlock(content.join(''), start);
   exit();
 
+  parser.hasFootnoteOrBlockId = true;
   return add({ children, identifier: label.toLowerCase(), label, type: 'footnoteDefinition' });
 }
 
 // `[^label]`, with a label of no whitespace.
-function footnoteReference(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function footnoteReference(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   if (value.charCodeAt(0) !== LEFT_BRACKET || value.charCodeAt(1) !== CARET) {
     return;
   }
@@ -593,6 +602,7 @@ function footnoteReference(_parser: RemarkParser, eat: Eat, value: string, isSil
   }
 
   const label = value.slice(DELIMITER_LENGTH, labelEnd);
+  parser.hasFootnoteOrBlockId = true;
   return eat(value.slice(0, index))({ identifier: label.toLowerCase(), label, type: 'footnoteReference' });
 }
 
@@ -741,6 +751,7 @@ function inlineFootnote(parser: RemarkParser, eat: Eat, value: string, isSilent:
 
   const start = shifted(eat, DELIMITER_LENGTH);
   const add = eat(value.slice(0, index));
+  parser.hasFootnoteOrBlockId = true;
   return add({ children: parser.tokenizeInline(value.slice(DELIMITER_LENGTH, contentEnd), start), type: 'inlineFootnote' });
 }
 

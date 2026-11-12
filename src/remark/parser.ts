@@ -413,6 +413,12 @@ export class RemarkParser {
   public eof: RemarkPoint | undefined;
 
   /**
+   * Whether a tokenizer made a footnote definition or reference, an inline footnote or a block id: the nodes the tree
+   * transforms after the parse act on, which a parse without them can skip.
+   */
+  public hasFootnoteOrBlockId = false;
+
+  /**
    * Whether the tokenizer is inside a container block.
    */
   public inBlock = false;

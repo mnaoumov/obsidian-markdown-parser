@@ -30,6 +30,21 @@ import {
 } from './parser.ts';
 
 /**
+ * A tree from {@link parseRemarkTree}.
+ */
+export interface ParsedRemarkTree {
+  /**
+   * Whether a tokenizer made a footnote definition or reference, an inline footnote or a block id.
+   */
+  readonly hasFootnoteOrBlockId: boolean;
+
+  /**
+   * The tree.
+   */
+  readonly root: RemarkRoot;
+}
+
+/**
  * The options of {@link parseRemark}.
  */
 export interface ParseRemarkOptions {
@@ -47,6 +62,11 @@ export interface ParseRemarkOptions {
    */
   readonly shouldReadSoftLineBreaksAsHard?: boolean;
 }
+
+/**
+ * The options of {@link parseRemarkTree}, those of {@link parseRemark}.
+ */
+export type ParseRemarkTreeOptions = ParseRemarkOptions;
 
 const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
   block: BLOCK_TOKENIZERS,
@@ -67,14 +87,29 @@ const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
  * @returns Its mdast tree.
  */
 export function parseRemark(markdown: string, options?: ParseRemarkOptions): RemarkRoot {
+  return parseRemarkTree(markdown, options).root;
+}
+
+/**
+ * Parses a document as {@link parseRemark} does, and says whether its tree holds a footnote or a block id, so a caller
+ * that walks the tree for them can skip the walk.
+ *
+ * @param markdown - The document.
+ * @param options - Whether the Obsidian syntax is read.
+ * @returns Its mdast tree, and whether a tokenizer made a footnote definition or reference, an inline footnote or a
+ * block id.
+ */
+export function parseRemarkTree(markdown: string, options?: ParseRemarkTreeOptions): ParsedRemarkTree {
   const shouldReadObsidianSyntax = options?.shouldReadObsidianSyntax ?? true;
   let tokenizers = shouldReadObsidianSyntax ? OBSIDIAN_TOKENIZERS : MARKDOWN_TOKENIZERS;
   if (options?.shouldReadSoftLineBreaksAsHard) {
     tokenizers = { ...tokenizers, inline: { ...tokenizers.inline, break: SOFT_BREAK_AS_HARD_TOKENIZER } };
   }
-  const root = new RemarkParser(markdown, tokenizers).parse();
-  if (shouldReadObsidianSyntax) {
+  const parser = new RemarkParser(markdown, tokenizers);
+  const root = parser.parse();
+  // The transforms act on footnotes and block ids alone, so a tree with none is left as it is without a walk.
+  if (shouldReadObsidianSyntax && parser.hasFootnoteOrBlockId) {
     transformObsidianTree(root);
   }
-  return root;
+  return { hasFootnoteOrBlockId: parser.hasFootnoteOrBlockId, root };
 }
