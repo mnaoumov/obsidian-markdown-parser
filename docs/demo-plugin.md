@@ -87,3 +87,25 @@ One run on 2026-11-11, on an AMD Ryzen 5 7500F that other jobs held at 100% CPU,
 **The metadata is the same** from `parseMetadata` and all three workers, on every text. That includes lists nested past 512 levels and definitions longer than the 1,024 characters the worker scans for a footnote definition's end.
 
 **1.15.1 changed the speed comparison.** `parseMetadata` was about as fast as the 1.14.5 and 1.15.0 workers, because it ports the same `remark-parse` 8, and it was faster on most texts, though not on the 100,000-line note, the unclosed emphasis openers or the unclosed brackets. The 1.15.1 worker, with the team's `remark` optimization, runs the 100,000-line note 23 times faster than `parseMetadata` and 10,000 unclosed emphasis openers 27 times faster. Both older workers and `parseMetadata` grow faster than the text on these two, and the 1.15.1 worker does not. The editor's figures above were measured on 1.14.4. The optimization was in the worker, and they have not been re-measured on 1.15.1.
+
+### After the engine's speed-ups
+
+The engine was then made linear where it grew faster than the text, and cheaper per character. The scans that ran to the end of the text from every position, the unclosed emphasis and bracket scans and the inline locators, remember what they found per `tokenize` call (`TokenizeScope`, pinned against the parse without the memos by `src/remark/scan-memo.test.ts`). Each inline tokenizer names the characters it can start at, and each block tokenizer names where it can start by its first character and its first one after spaces and tabs (`BLOCK_STARTS`), so neither is tried elsewhere. Line offsets live in a typed array, an eat makes one closure, and the transforms after the parse walk the tree only when it holds a footnote or a block id. What was read in the 1.15.1 worker to learn its design is in [`provenance.md`](provenance.md).
+
+The same bench on 2026-11-11, again on a machine other jobs held at 100% CPU, so the times swing by up to 3x from run to run and only the ratio within a row means much. `parseMetadata` and the worker each give the median of 5 runs, and the last column the ratio of their minimums over 31 interleaved runs (`parseMetadata`'s over the worker's), taken in a separate run.
+
+| Text | Characters | `parseMetadata` | Worker 1.15.1 | Ratio of minimums |
+| :--- | ---------: | --------------: | ------------: | ----------------: |
+| Vault notes, 10,000 lines | 374,468 | 329 ms | 172 ms | 1.8 |
+| Vault notes, 100,000 lines | 3,648,939 | 9,614 ms | 2,972 ms | 2.6 |
+| List nested 500 deep | 254,889 | 2,328 ms | 4,107 ms | 0.44 |
+| List nested 600 deep | 365,889 | 3,774 ms | 7,121 ms | 0.39 |
+| Quote nested 600 deep | 1,206 | 1.0 ms | 4.8 ms | 1.8 |
+| 10,000 unclosed emphasis openers | 60,000 | 208 ms | 7,867 ms | 0.015 |
+| 10,000 unclosed brackets | 30,000 | 172 ms | 28,924 ms | below 0.01 |
+| 10,000 unclosed backtick runs | 69,991 | 68.8 ms | 14.0 ms | 6.1 |
+| 10,000 wikilinks on one line | 90,000 | 155 ms | 88.3 ms | 2.5 |
+| Footnote definition of 100,000 characters | 100,023 | 49.7 ms | 80.1 ms | 1.6 |
+| Reference definition title of 100,000 characters | 100,017 | 12.1 ms | 28.9 ms | 0.59 |
+
+The metadata is still the same as the 1.15.1 worker's on every text. `parseMetadata` now grows with the text on every row and beats the worker on the nested lists, the unclosed emphasis openers and brackets, and the reference title. It is still slower on the vault notes, the backtick runs, the wikilinks, the nested quote and the long footnote, by 1.6 to 6 times. Its 10,000 brackets ran under a second in every run, where the worker's took about 29 s. A profile of the backtick runs alone gave 3.3 ms per parse at best, under 2 times the worker's best, so that row's 6.1 is partly the load. These rows need a run on an idle machine before any of them is quoted as settled.
