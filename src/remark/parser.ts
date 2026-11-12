@@ -192,6 +192,12 @@ export interface RemarkTokenizers {
  */
 export type TokenizerResult = boolean | RemarkNode | undefined;
 
+// The tokenizer list built from one set of inline tokenizers, and its dispatch.
+interface InlineTokenizeBuilt {
+  readonly dispatch: TokenizeDispatch;
+  readonly methods: InlineTokenizer[];
+}
+
 type Interruptors = readonly BlockTokenizerName[];
 
 interface PositionCarrier {
@@ -200,7 +206,8 @@ interface PositionCarrier {
 }
 
 interface TokenizeDispatch {
-  readonly byCharacter: ReadonlyMap<string, readonly TokenizeMethod[]>;
+  // Indexed by the code of an ASCII first character; a table read is cheaper than hashing a one-character string.
+  readonly byCode: readonly (readonly TokenizeMethod[])[];
   readonly ungated: readonly TokenizeMethod[];
 }
 
@@ -210,7 +217,7 @@ interface TokenizeMethod {
   readonly tokenize: BlockTokenizer;
 }
 
-const dispatches = new WeakMap<readonly TokenizeMethod[], TokenizeDispatch>();
+const ASCII_CODE_COUNT = 128;
 
 /**
  * The block tokenizers of `remark-parse` 8, in the order they are tried.
@@ -362,7 +369,13 @@ export class RemarkParser {
    */
   public scope: TokenizeScope | undefined;
 
+  private blockTokenizeDispatch: TokenizeDispatch | undefined;
+
   private blockTokenizeMethods: TokenizeMethod[] | undefined;
+
+  private readonly inlineTokenizeBuilt = new WeakMap<Partial<Record<InlineTokenizerName, InlineTokenizer>>, InlineTokenizeBuilt>();
+
+  private inlineTokenizeDispatch: TokenizeDispatch | undefined;
 
   private inlineTokenizeMethods: InlineTokenizer[] = [];
 
@@ -575,8 +588,9 @@ export class RemarkParser {
         }
       }
       this.blockTokenizeMethods = methods;
+      this.blockTokenizeDispatch = dispatchOf(methods);
     }
-    return this.tokenize(value, location, this.blockTokenizeMethods);
+    return this.tokenize(value, location, this.blockTokenizeMethods, this.blockTokenizeDispatch);
   }
 
   /**
@@ -590,17 +604,24 @@ export class RemarkParser {
     const tokenizers = this.inlineTokenizers;
     // Rebuilt only when the tokenizers in use are swapped, as a link swaps them while it reads its content.
     if (this.inlineTokenizeMethodsFor !== tokenizers) {
-      const methods: InlineTokenizer[] = [];
-      for (const name of this.tokenizers.inlineMethods) {
-        const tokenizer = tokenizers[name];
-        if (tokenizer) {
-          methods.push(tokenizer);
+      // A link swaps them back on its way out, so each set's list and dispatch are kept rather than built again.
+      let built = this.inlineTokenizeBuilt.get(tokenizers);
+      if (!built) {
+        const methods: InlineTokenizer[] = [];
+        for (const name of this.tokenizers.inlineMethods) {
+          const tokenizer = tokenizers[name];
+          if (tokenizer) {
+            methods.push(tokenizer);
+          }
         }
+        built = { dispatch: dispatchOf(methods), methods };
+        this.inlineTokenizeBuilt.set(tokenizers, built);
       }
-      this.inlineTokenizeMethods = methods;
+      this.inlineTokenizeMethods = built.methods;
+      this.inlineTokenizeDispatch = built.dispatch;
       this.inlineTokenizeMethodsFor = tokenizers;
     }
-    return this.tokenize(value, location, this.inlineTokenizeMethods);
+    return this.tokenize(value, location, this.inlineTokenizeMethods, this.inlineTokenizeDispatch);
   }
 
   /**
@@ -665,7 +686,8 @@ export class RemarkParser {
   private tokenize(
     initialValue: string,
     location: RemarkPoint,
-    methods: readonly TokenizeMethod[]
+    methods: readonly TokenizeMethod[],
+    methodDispatch: TokenizeDispatch | undefined
   ): RemarkNode[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias, consistent-this, unicorn/no-this-assignment -- The nested functions below are the upstream closure over the parser.
     const parser = this;
@@ -682,7 +704,7 @@ export class RemarkParser {
     const eat: Eat = Object.assign(eatSubvalue, { now, reset: eatAndReset, test: eatAndTest });
     const scope = new TokenizeScope(value.length);
     const outerScope = parser.scope;
-    const dispatch = scanMemoSettings.isStartCharacterGateEnabled ? dispatchOf(methods) : undefined;
+    const dispatch = scanMemoSettings.isStartCharacterGateEnabled ? methodDispatch : undefined;
 
     // Sync the initial offset.
     updatePosition('');
@@ -694,7 +716,7 @@ export class RemarkParser {
       while (value) {
         let matched = false;
         // Most tokenizers fail at once on any other first character, and are tried at every position the text reaches.
-        const candidates = dispatch ? (dispatch.byCharacter.get(value.charAt(0)) ?? dispatch.ungated) : methods;
+        const candidates = dispatch ? (dispatch.byCode[value.codePointAt(0) ?? ASCII_CODE_COUNT] ?? dispatch.ungated) : methods;
 
         for (const method of candidates) {
           if (method.notInLink && parser.inLink) {
@@ -962,24 +984,29 @@ export class TokenizeScope {
  * those that name none. Built once per list, which a parser keeps for as long as its tokenizers stay the same.
  */
 function dispatchOf(methods: readonly TokenizeMethod[]): TokenizeDispatch {
-  let dispatch = dispatches.get(methods);
-  if (dispatch) {
-    return dispatch;
+  const ungated = methods.filter((method) => method.startCharacters === undefined);
+
+  // The block list, and the text-only list a link reads its content with, gate nothing: an empty table reads past its end.
+  if (ungated.length === methods.length) {
+    return { byCode: [], ungated };
   }
 
-  const byCharacter = new Map<string, readonly TokenizeMethod[]>();
+  // A character no tokenizer names starts only the ungated ones; NaN, from an empty value, and non-ASCII read past the end.
+  const byCode: (readonly TokenizeMethod[])[] = Array.from({ length: ASCII_CODE_COUNT }, () => ungated);
   for (const method of methods) {
     const startCharacters = method.startCharacters ?? '';
     for (const character of startCharacters) {
-      if (!byCharacter.has(character)) {
-        byCharacter.set(character, methods.filter((candidate) => candidate.startCharacters?.includes(character) ?? true));
+      const code = character.codePointAt(0) ?? ASCII_CODE_COUNT;
+      if (code >= ASCII_CODE_COUNT) {
+        throw new Error(`A start character must be ASCII: ${character}`);
+      }
+      if (byCode[code] === ungated) {
+        byCode[code] = methods.filter((candidate) => candidate.startCharacters?.includes(character) ?? true);
       }
     }
   }
 
-  dispatch = { byCharacter, ungated: methods.filter((method) => method.startCharacters === undefined) };
-  dispatches.set(methods, dispatch);
-  return dispatch;
+  return { byCode, ungated };
 }
 
 function isMergeable(node: RemarkNode): boolean {

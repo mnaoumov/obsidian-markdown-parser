@@ -405,14 +405,27 @@ function numberFootnotes(root: RemarkRoot): FootnoteNumbering {
   const inlineIndexes = new Map<RemarkNode, number>();
   const numbered = new Set<string>();
   const notes: FootnoteNote[] = [];
+  // The notes in order, from one walk: a reference's definition can come after it, so it is looked up once the walk ends.
+  const sites: RemarkNode[] = [];
 
   visitOutsideInlineFootnotes(root, (node) => {
-    if (node.type === 'footnoteDefinition') {
-      definitions.set(node.identifier, node);
+    switch (node.type) {
+      case 'footnoteDefinition': {
+        definitions.set(node.identifier, node);
+        break;
+      }
+      case 'footnoteReference':
+      case 'inlineFootnote': {
+        sites.push(node);
+        break;
+      }
+      default: {
+        break;
+      }
     }
   });
 
-  visitOutsideInlineFootnotes(root, (node) => {
+  for (const node of sites) {
     if (node.type === 'inlineFootnote') {
       inlineIndexes.set(node, notes.length);
       notes.push({ children: node.children, isInline: true });
@@ -420,7 +433,7 @@ function numberFootnotes(root: RemarkRoot): FootnoteNumbering {
       numbered.add(node.identifier);
       notes.push({ children: definitions.get(node.identifier)?.children ?? [], isInline: false });
     }
-  });
+  }
 
   return { inlineIndexes, notes };
 }
