@@ -18,6 +18,7 @@
 /* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/explicit-length-check, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/no-useless-else, unicorn/prefer-combined-guards, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- A line-for-line port of upstream tokenizers: their control flow, counters and names stay as upstream wrote them. */
 
 import type {
+  BlockStart,
   BlockTokenizer,
   BlockTokenizerName,
   RemarkParser
@@ -36,9 +37,10 @@ import type {
 
 type HtmlSequence = readonly [open: RegExp, close: RegExp, interruptsParagraph: boolean];
 
-interface Indentation {
+// How far a walk over a line's indentation got: the indentation reached, and the index of the character that reached it.
+interface IndentationWalk {
   readonly indent: number;
-  readonly stops: Readonly<Record<number, number>>;
+  readonly index: number;
 }
 
 interface ListItemDraft {
@@ -57,8 +59,23 @@ const MAX_SETEXT_INDENT = 3;
 const MIN_TABLE_ROWS = 2;
 const MIN_TABLE_COLUMNS = 1;
 
+const TAB_CODE = 9;
+const LINE_FEED_CODE = 10;
+const SPACE_CODE = 32;
+const NUMBER_SIGN_CODE = 35;
+const ASTERISK_CODE = 42;
+const PLUS_SIGN_CODE = 43;
+const HYPHEN_CODE = 45;
+const DIGIT_ZERO_CODE = 48;
+const DIGIT_NINE_CODE = 57;
+const LESS_THAN_CODE = 60;
+const GREATER_THAN_CODE = 62;
+const LEFT_BRACKET_CODE = 91;
+const UNDERSCORE_CODE = 95;
+const GRAVE_ACCENT_CODE = 96;
+const TILDE_CODE = 126;
+
 const BLANK_LINE_RE = /^[ \t]*(?:\n|$)/u;
-const TRAILING_LINES_RE = /\n+$/u;
 const CALLOUT_RE = /^\[!(?<header>[^\]]+)\](?<fold>[+-]?)(?:\s|$)/u;
 const WHITESPACE_RUN_RE = /\s+/gu;
 const LOOSE_LIST_ITEM_RE = /\n\n(?!\s*$)/u;
@@ -185,6 +202,23 @@ export const BLOCK_TOKENIZERS: Readonly<Partial<Record<BlockTokenizerName, Block
 };
 
 /**
+ * Where each block tokenizer can start, read from its own opening checks: each skips spaces and tabs and then needs one
+ * of a few characters, but `indentedCode`, which needs indentation or a blank line first. `paragraph`, `setextHeading`
+ * and `table` can start anywhere.
+ */
+export const BLOCK_STARTS: Readonly<Partial<Record<BlockTokenizerName, BlockStart>>> = {
+  atxHeading: (_first, after) => after === NUMBER_SIGN_CODE,
+  blankLine: (_first, after) => after === LINE_FEED_CODE || Number.isNaN(after),
+  blockquote: (_first, after) => after === GREATER_THAN_CODE,
+  definition: (_first, after) => after === LEFT_BRACKET_CODE,
+  fencedCode: (_first, after) => after === GRAVE_ACCENT_CODE || after === TILDE_CODE,
+  html: (_first, after) => after === LESS_THAN_CODE,
+  indentedCode: (first) => first === SPACE_CODE || first === TAB_CODE || first === LINE_FEED_CODE,
+  list: (_first, after) => after === ASTERISK_CODE || after === PLUS_SIGN_CODE || after === HYPHEN_CODE || (after >= DIGIT_ZERO_CODE && after <= DIGIT_NINE_CODE),
+  thematicBreak: (_first, after) => after === ASTERISK_CODE || after === HYPHEN_CODE || after === UNDERSCORE_CODE
+};
+
+/**
  * Whether a character is whitespace, as `is-whitespace-character` tests it.
  *
  * @param character - The character, or `''`.
@@ -202,6 +236,14 @@ export function isWhitespaceCharacter(character: string): boolean {
  */
 export function normalizeIdentifier(value: string): string {
   return value.replaceAll(WHITESPACE_RUN_RE, ' ').toLowerCase();
+}
+
+// Appends the blank lines held back and the line after them, in place.
+function appendLines(target: string[], emptyLines: readonly string[], line: string): void {
+  for (const emptyLine of emptyLines) {
+    target.push(emptyLine);
+  }
+  target.push(line);
 }
 
 function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -740,11 +782,11 @@ function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
       return true;
     }
 
-    const urlStart = eat(beforeUrl).test().end;
+    const urlStart = eat.test(beforeUrl).end;
     url = parser.decodeRaw(parser.unescape(url), urlStart, false);
 
     if (title) {
-      const titleStart = eat(beforeTitle).test().end;
+      const titleStart = eat.test(beforeTitle).end;
       title = parser.decodeRaw(parser.unescape(title), titleStart);
     }
 
@@ -982,30 +1024,42 @@ function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
   });
 }
 
-function getIndentation(value: string): Indentation {
-  let index = 0;
-  let indent = 0;
-  let character = value.charAt(index);
-  const stops: Record<number, number> = {};
-  let lastIndent = 0;
+/*
+ * The indentation of a line, a tab reaching the next multiple of four, as `remark-parse`'s `get-indentation` measures
+ * it. Upstream also maps every column up to it to the index of the character that reached it, which made a line
+ * indented by n columns cost n property writes for every list around it; `getIndentationStop` reads one column's index
+ * instead.
+ */
+function getIndentation(value: string): number {
+  return walkIndentation(value, Infinity).indent;
+}
 
-  while (character === '\t' || character === ' ') {
-    const size = character === '\t' ? TAB_SIZE : 1;
+/*
+ * The index of the whitespace character at which the line's indentation first reaches `column`, or `-1` when it never
+ * does: upstream's stop for that column.
+ */
+function getIndentationStop(value: string, column: number): number {
+  const { indent, index } = walkIndentation(value, column);
+  return indent >= column ? index : -1;
+}
 
-    indent += size;
-
-    if (size > 1) {
-      indent = Math.floor(indent / size) * size;
+/**
+ * Whether `character` occurs in `value` from `start` up to, not including, `end`, reading nothing past `end`.
+ *
+ * @param value - The text.
+ * @param character - One UTF-16 code unit.
+ * @param start - The first index read.
+ * @param end - The index the search stops before.
+ * @returns Whether it occurs there.
+ */
+function hasCharacterBetween(value: string, character: string, start: number, end: number): boolean {
+  for (let index = start; index < end; index++) {
+    if (value[index] === character) {
+      return true;
     }
-
-    while (lastIndent < indent) {
-      stops[++lastIndent] = index;
-    }
-
-    character = value.charAt(++index);
   }
 
-  return { indent, stops };
+  return false;
 }
 
 function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1087,7 +1141,7 @@ function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
       lang: null,
       meta: null,
       type: 'code',
-      value: content.replace(TRAILING_LINES_RE, '')
+      value: withoutTrailingLineFeeds(content)
     });
   }
 
@@ -1177,7 +1231,7 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
 
   index = 0;
   const items: ListItemDraft[] = [];
-  let allLines: string[] = [];
+  const allLines: string[] = [];
   let emptyLines: string[] = [];
 
   while (index < length) {
@@ -1192,7 +1246,14 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
 
     let size = 0;
 
-    while (index < length) {
+    /*
+     * A line indented as far as the item's content belongs to the item whatever follows, and the rest of its indentation
+     * is never read, so the walk stops there. Upstream walks the whole indentation, which for a list nested n deep walked
+     * each line n times over all of it.
+     */
+    const contentIndent = item?.indent ?? Infinity;
+
+    while (index < length && size < contentIndent) {
       character = value.charAt(index);
 
       if (character === '\t') {
@@ -1294,9 +1355,10 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
     previousEmpty = empty;
     empty = !prefixed && !content.trim().length;
 
+    // Upstream concatenates the arrays here, which copied every line of an item again for each line it added.
     if (indented && item) {
-      item.value = [...item.value, ...emptyLines, line];
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(item.value, emptyLines, line);
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     } else if (prefixed) {
       if (emptyLines.length !== 0 && item) {
@@ -1308,7 +1370,7 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
       item = { indent: size, trail: [], value: [line] };
 
       items.push(item);
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     } else if (empty) {
       emptyLines.push(line);
@@ -1322,16 +1384,16 @@ function list(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: s
       }
 
       if (item) {
-        item.value = [...item.value, ...emptyLines, line];
+        appendLines(item.value, emptyLines, line);
       }
-      allLines = [...allLines, ...emptyLines, line];
+      appendLines(allLines, emptyLines, line);
       emptyLines = [];
     }
 
     index = nextIndex + 1;
   }
 
-  const node = eat(allLines.join('\n')).reset({
+  const node = eat.reset(allLines.join('\n'), {
     children: [],
     ordered,
     spread,
@@ -1422,7 +1484,7 @@ function normalListItem(parser: RemarkParser, value: string, position: RemarkPoi
   });
 
   const lines = replaced.split('\n');
-  const trimmedLines = removeIndentation(replaced, getIndentation(max).indent).split('\n');
+  const trimmedLines = removeIndentation(replaced, getIndentation(max)).split('\n');
 
   // The first line may have lost more than its bullet above.
   trimmedLines[0] = rest;
@@ -1502,7 +1564,7 @@ function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], val
   }
 
   const now = eat.now();
-  subvalue = subvalue.replace(TRAILING_LINES_RE, '');
+  subvalue = withoutTrailingLineFeeds(subvalue);
 
   return eat(subvalue)({
     children: parser.tokenizeInline(subvalue, now),
@@ -1516,45 +1578,33 @@ function paragraph(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], val
  */
 function removeIndentation(value: string, maximum: number): string {
   const values = value.split('\n');
-  let position = values.length + 1;
-  let minIndent = Infinity;
-  const matrix: Readonly<Record<number, number>>[] = [];
+  // Upstream measures a line of `maximum` spaces and a `!` with the others, so the removal is at most `maximum`.
+  let minIndent = maximum > 0 ? maximum : Infinity;
+  /*
+   * Each line is measured only up to the smallest indentation so far: a deeper line cannot lower it, and loses exactly
+   * the final smallest, so how much deeper it is never matters. Measured whole, every line of a list nested n deep was
+   * walked n times over its whole indentation.
+   */
+  const indents = values.map((line) => {
+    const indent = walkIndentation(line, minIndent).indent;
 
-  values.unshift(`${' '.repeat(maximum)}!`);
-
-  while (position--) {
-    const indentation = getIndentation(values[position] ?? '');
-
-    matrix[position] = indentation.stops;
-
-    if ((values[position] ?? '').trim().length === 0) {
-      continue;
+    if (indent > 0 && indent < minIndent && line.trim().length !== 0) {
+      minIndent = indent;
     }
 
-    if (indentation.indent && indentation.indent > 0 && indentation.indent < minIndent) {
-      minIndent = indentation.indent;
-    }
+    return indent;
+  });
+
+  if (minIndent === Infinity) {
+    return value;
   }
 
-  if (minIndent !== Infinity) {
-    position = values.length;
-
-    while (position--) {
-      const stops = matrix[position] ?? {};
-      let index = minIndent;
-
-      while (index && !Object.hasOwn(stops, index)) {
-        index--;
-      }
-
-      const stop = stops[index];
-      values[position] = stop === undefined ? values[position] ?? '' : (values[position] ?? '').slice(stop + 1);
-    }
-  }
-
-  values.shift();
-
-  return values.join('\n');
+  // Each line loses its indentation up to `minIndent`: everything to the character that reached it, or reached the line's
+  // whole indentation when that is less. A line with none is left as it is.
+  return values.map((line, position) => {
+    const column = Math.min(minIndent, indents[position] ?? 0);
+    return column === 0 ? line : line.slice(getIndentationStop(line, column) + 1);
+  }).join('\n');
 }
 
 function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1576,39 +1626,31 @@ function setextHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
     subvalue += character;
   }
 
-  // Eat the content.
-  let content = '';
-  let queue = '';
+  // The content must be followed by a line feed and a marker. Upstream reads the line one character at a time before it
+  // looks, and the paragraph tokenizer asks at every line, so a long line was copied character by character each time.
+  const lineStart = index + 1;
+  const lineEnd = value.indexOf('\n', lineStart);
+  const marker = lineEnd === -1 ? '' : value.charAt(lineEnd + 1);
 
-  while (++index < length) {
-    character = value.charAt(index);
-
-    if (character === '\n') {
-      index--;
-      break;
-    }
-
-    if (character === ' ' || character === '\t') {
-      queue += character;
-    } else {
-      content += queue + character;
-      queue = '';
-    }
-  }
-
-  now.column += subvalue.length;
-  now.offset += subvalue.length;
-  subvalue += content + queue;
-
-  // The content must be followed by a line feed and a marker.
-  character = value.charAt(++index);
-  const marker = value.charAt(++index);
-
-  if (character !== '\n' || (marker !== '=' && marker !== '-')) {
+  if (marker !== '=' && marker !== '-') {
     return;
   }
 
-  subvalue += character;
+  // Eat the content: the line without its trailing spaces and tabs, which are kept apart.
+  const line = value.slice(lineStart, lineEnd);
+  let contentEnd = line.length;
+
+  while (contentEnd > 0 && (line.charAt(contentEnd - 1) === ' ' || line.charAt(contentEnd - 1) === '\t')) {
+    contentEnd--;
+  }
+
+  const content = line.slice(0, contentEnd);
+  let queue = line.slice(contentEnd);
+
+  now.column += subvalue.length;
+  now.offset += subvalue.length;
+  subvalue += `${content}${queue}\n`;
+  index = lineEnd + 1;
 
   // Eat the underline.
   queue = marker;
@@ -1650,13 +1692,13 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
 
   while (index < length) {
     let lineIndex = value.indexOf('\n', index);
-    const pipeIndex = value.indexOf('|', index + 1);
 
     if (lineIndex === -1) {
       lineIndex = value.length;
     }
 
-    if (pipeIndex === -1 || pipeIndex > lineIndex) {
+    // Upstream searches the pipe through the rest of the document, which made every block start cost its length.
+    if (!hasCharacterBetween(value, '|', index + 1, lineIndex)) {
       if (lineCount < MIN_TABLE_ROWS) {
         return;
       }
@@ -1741,7 +1783,7 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
   let position = -1;
   const rows: RemarkTableRow[] = [];
 
-  const node = eat(subvalue).reset<RemarkTable>({ align, children: rows, type: 'table' });
+  const node = eat.reset<RemarkTable>(subvalue, { align, children: rows, type: 'table' });
 
   while (++position < lineCount) {
     const line = lines[position] ?? '';
@@ -1753,7 +1795,7 @@ function table(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: 
     }
 
     // Eat the row.
-    eat(line).reset(row, node);
+    eat.reset(line, row, node);
 
     length = line.length + 1;
     index = 0;
@@ -1867,6 +1909,43 @@ function thematicBreak(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1]
   }
 
   return;
+}
+
+function walkIndentation(value: string, column: number): IndentationWalk {
+  let index = 0;
+  let indent = 0;
+  let character = value.charAt(index);
+
+  while (character === '\t' || character === ' ') {
+    const size = character === '\t' ? TAB_SIZE : 1;
+
+    indent += size;
+
+    if (size > 1) {
+      indent = Math.floor(indent / size) * size;
+    }
+
+    if (indent >= column) {
+      return { indent, index };
+    }
+
+    character = value.charAt(++index);
+  }
+
+  return { indent, index };
+}
+
+/*
+ * `value` without the line feeds that end it, as upstream's `replace(/\n+$/, '')`: that expression tries a match at
+ * every line feed of the value, which on a long paragraph cost more than reading its end.
+ */
+function withoutTrailingLineFeeds(value: string): string {
+  let end = value.length;
+  // A line feed is one code unit, so a code point read at the unit before the end is one only when it is one.
+  while (end > 0 && value.codePointAt(end - 1) === LINE_FEED_CODE) {
+    end--;
+  }
+  return end === value.length ? value : value.slice(0, end);
 }
 
 /* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/explicit-length-check, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/no-useless-else, unicorn/prefer-combined-guards, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- The port ends here. */

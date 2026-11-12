@@ -9,7 +9,7 @@
  * reads it at the earliest position any of them could start, with no delimiter stack and no flanking rules.
  */
 
-/* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- A line-for-line port of upstream tokenizers: their control flow, counters, names and UTF-16 code units stay as upstream wrote them. */
+/* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch -- A line-for-line port of upstream tokenizers: their control flow, counters, names and UTF-16 code units stay as upstream wrote them. */
 
 import type {
   Eat,
@@ -28,31 +28,43 @@ import {
   normalizeIdentifier
 } from './block.ts';
 import { decodeEntities } from './entities.ts';
+import { scanMemoSettings } from './parser.ts';
 
 const AUTO_LINK_MAILTO = 'mailto:';
-const URL_PREFIXES = ['www.', 'http://', 'https://'];
+// The markers each locator finds the first of.
+interface Markers {
+  readonly firstCodes: readonly number[];
+  // Whether an ASCII code starts any of the prefixes, all of which start with ASCII.
+  readonly isFirstCode: Uint8Array;
+  readonly prefixes: readonly string[];
+}
 const HTML_LINK_OPEN_RE = /^<a /iu;
 const HTML_LINK_CLOSE_RE = /^<\/a>/iu;
 const WORD_CHARACTER_RE = /\w/u;
 const MIN_BREAK_LENGTH = 2;
+const ASCII_CODE_COUNT = 128;
+const URL_PREFIXES = markersOf(['www.', 'http://', 'https://']);
+const EMPHASIS_MARKERS = markersOf(['*', '_']);
+const STRONG_MARKERS = markersOf(['**', '__']);
 
 /**
  * The inline tokenizers.
  */
 export const INLINE_TOKENIZERS: Readonly<Partial<Record<InlineTokenizerName, InlineTokenizer>>> = {
-  autoLink: { locator: locateTag, notInLink: true, tokenize: autoLink },
-  break: { locator: locateBreak, tokenize: hardBreak },
-  code: { locator: locateInlineCode, tokenize: inlineCode },
-  deletion: { locator: locateDelete, tokenize: strikethrough },
+  autoLink: { locator: locateTag, notInLink: true, startCharacters: '<', tokenize: autoLink },
+  break: { locator: locateBreak, startCharacters: ' \n', tokenize: hardBreak },
+  code: { locator: locateInlineCode, startCharacters: '`', tokenize: inlineCode },
+  deletion: { locator: locateDelete, startCharacters: '~', tokenize: strikethrough },
   email: { locator: locateEmail, notInLink: true, tokenize: email },
-  emphasis: { locator: locateEmphasis, tokenize: emphasis },
-  escape: { locator: locateEscape, tokenize: escape },
-  html: { locator: locateTag, tokenize: inlineHtml },
-  link: { locator: locateLink, tokenize: link },
-  reference: { locator: locateLink, tokenize: reference },
-  strong: { locator: locateStrong, tokenize: strong },
+  emphasis: { locator: locateEmphasis, startCharacters: '*_', tokenize: emphasis },
+  escape: { locator: locateEscape, startCharacters: '\\', tokenize: escape },
+  html: { locator: locateTag, startCharacters: '<', tokenize: inlineHtml },
+  link: { locator: locateLink, startCharacters: '![', tokenize: link },
+  reference: { locator: locateLink, startCharacters: '![', tokenize: reference },
+  strong: { locator: locateStrong, startCharacters: '*_', tokenize: strong },
   text: { locator: () => -1, tokenize: text },
-  url: { locator: locateUrl, notInLink: true, tokenize: literalUrl }
+  // `literalUrl` reads `http://` and `https://` in any case, and `www.` in lower case only.
+  url: { locator: locateUrl, notInLink: true, startCharacters: 'hHw', tokenize: literalUrl }
 };
 
 function autoLink(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -169,18 +181,6 @@ function countOf(value: string, character: string): number {
   return count;
 }
 
-function earliest(first: number, second: number): number {
-  if (second === -1) {
-    return first;
-  }
-
-  if (first === -1) {
-    return second;
-  }
-
-  return Math.min(first, second);
-}
-
 function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
   let index = 0;
   const length = value.length;
@@ -243,64 +243,32 @@ function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): 
 }
 
 function emphasis(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
-  let index = 0;
-  let character = value.charAt(index);
+  const character = value.charAt(0);
 
   if (character !== '*' && character !== '_') {
     return;
   }
 
-  const subvalue = character;
-  const marker = character;
-  const length = value.length;
-  index++;
-  let queue = '';
-  character = '';
+  const close = findEmphasisClose(parser, value, character);
 
-  while (index < length) {
-    const previous = character;
-    character = value.charAt(index);
-
-    if (character === marker) {
-      character = value.charAt(++index);
-
-      if (character !== marker) {
-        if (!queue.trim() || previous === marker) {
-          return;
-        }
-
-        if (marker === '_' && isWordCharacter(character)) {
-          queue += marker;
-          continue;
-        }
-
-        if (silent) {
-          return true;
-        }
-
-        const now = eat.now();
-        now.column++;
-        now.offset++;
-
-        return eat(subvalue + queue + marker)({
-          children: parser.tokenizeInline(queue, now),
-          type: 'emphasis'
-        });
-      }
-
-      queue += marker;
-    }
-
-    if (character === '\\') {
-      queue += character;
-      character = value.charAt(++index);
-    }
-
-    queue += character;
-    index++;
+  if (close === -1) {
+    return;
   }
 
-  return;
+  if (silent) {
+    return true;
+  }
+
+  // The content is everything between the markers, escapes included.
+  const queue = value.slice(1, close);
+  const now = eat.now();
+  now.column++;
+  now.offset++;
+
+  return eat(value.slice(0, close + 1))({
+    children: parser.tokenizeInline(queue, now),
+    type: 'emphasis'
+  });
 }
 
 function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -317,6 +285,83 @@ function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean)
   }
 
   return;
+}
+
+/*
+ * The index of the marker that closes the emphasis `value` opens, or `-1`: upstream's scan, which builds no queue. An
+ * opener that never closes scans to the end of its text, so a run of them cost the square of the text. The scan's state
+ * at a marker is its index, whether the character before was the marker and whether the content so far holds more
+ * than whitespace, and the same state always ends the same way, so each is remembered by its index in the text and a
+ * later opener stops at the first state an earlier one passed.
+ */
+function findEmphasisClose(parser: RemarkParser, value: string, marker: string): number {
+  const memo = parser.scanMemo(marker === '*' ? 'emphasis*' : 'emphasis_', value);
+  const markerCode = marker.charCodeAt(0);
+  const visited: number[] = [];
+  const length = value.length;
+  let index = 1;
+  let character = '';
+  let hasContent = false;
+  let close = -1;
+
+  while (index < length) {
+    const previous = character;
+
+    if (memo && value.charCodeAt(index) === markerCode) {
+      const key = ((memo.base + index) * 4) + (previous === marker ? 2 : 0) + (hasContent ? 1 : 0);
+      const known = memo.map.get(key);
+
+      if (known !== undefined) {
+        close = known === -1 ? -1 : known - memo.base;
+        break;
+      }
+
+      visited.push(key);
+    }
+
+    character = value.charAt(index);
+
+    if (character === marker) {
+      character = value.charAt(++index);
+
+      if (character !== marker) {
+        if (!hasContent || previous === marker) {
+          break;
+        }
+
+        if (marker === '_' && isWordCharacter(character)) {
+          hasContent = true;
+          continue;
+        }
+
+        close = index - 1;
+        break;
+      }
+
+      hasContent = true;
+    }
+
+    if (character === '\\') {
+      hasContent = true;
+      character = value.charAt(++index);
+    }
+
+    if (!hasContent && character.trim()) {
+      hasContent = true;
+    }
+
+    index++;
+  }
+
+  if (memo) {
+    const found = close === -1 ? -1 : memo.base + close;
+
+    for (const key of visited) {
+      memo.map.set(key, found);
+    }
+  }
+
+  return close;
 }
 
 function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -349,6 +394,15 @@ function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boole
   }
 
   return;
+}
+
+/*
+ * Whether a `]` follows the start of `value`. A link or a reference without one scans to the end of its text before it
+ * fails, so a run of unclosed brackets cost the square of the text.
+ */
+function hasClosingBracket(parser: RemarkParser, value: string): boolean {
+  // The slot after every inline method's is this search's own.
+  return locateAfterStart(parser, value, parser.tokenizers.inlineMethods.length, locateClosingBracket) !== -1;
 }
 
 function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -521,6 +575,10 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   // Exit when this is a link and the tokenizer is already inside one.
   if (!isImage && parser.inLink) {
+    return;
+  }
+
+  if (!hasClosingBracket(parser, value)) {
     return;
   }
 
@@ -753,10 +811,10 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   subvalue += ')';
 
-  url = parser.decodeRaw(parser.unescape(url), eat(beforeUrl).test().end, false);
+  url = parser.decodeRaw(parser.unescape(url), eat.test(beforeUrl).end, false);
 
   if (title) {
-    const titleStart = eat(beforeTitle).test().end;
+    const titleStart = eat.test(beforeTitle).end;
     title = parser.decodeRaw(parser.unescape(title), titleStart);
   }
 
@@ -923,6 +981,33 @@ function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boole
   return eat(content)({ children, title: null, type: 'link', url: urlValue });
 }
 
+/*
+ * `locator` from index 1 of `value`, remembered under its `slot` in the innermost `tokenize` call's memos. Each locator
+ * finds the first place at or after where it starts, so what it found from an earlier start still holds for any start
+ * up to that place, and a construct that is far off or absent is not searched for over the rest of the text again for
+ * every position before it.
+ */
+function locateAfterStart(parser: RemarkParser, value: string, slot: number, locator: InlineTokenizer['locator']): number {
+  const scope = parser.scopeOf(value);
+
+  if (!scope || scope.length < scanMemoSettings.minLocatorMemoLength) {
+    return locator(parser, value, 1);
+  }
+
+  const base = scope.length - value.length;
+  const from = base + 1;
+  const last = scope.located(slot);
+
+  if (last.from <= from && (last.at === -1 || from <= last.at)) {
+    return last.at === -1 ? -1 : last.at - base;
+  }
+
+  const position = locator(parser, value, 1);
+  last.at = position === -1 ? -1 : base + position;
+  last.from = from;
+  return position;
+}
+
 function locateBreak(_parser: RemarkParser, value: string, fromIndex: number): number {
   let index = value.indexOf('\n', fromIndex);
 
@@ -935,6 +1020,10 @@ function locateBreak(_parser: RemarkParser, value: string, fromIndex: number): n
   }
 
   return index;
+}
+
+function locateClosingBracket(_parser: RemarkParser, value: string, fromIndex: number): number {
+  return value.indexOf(']', fromIndex);
 }
 
 function locateDelete(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -968,11 +1057,41 @@ function locateEmail(_parser: RemarkParser, value: string, fromIndex: number): n
 }
 
 function locateEmphasis(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return earliest(value.indexOf('*', fromIndex), value.indexOf('_', fromIndex));
+  return locateFirst(EMPHASIS_MARKERS, value, fromIndex);
 }
 
 function locateEscape(_parser: RemarkParser, value: string, fromIndex: number): number {
   return value.indexOf('\\', fromIndex);
+}
+
+/*
+ * The first index at or after `fromIndex` where one of the `markers` starts, or `-1`. One search for all the
+ * alternatives stops at the first: a search per alternative, as upstream makes, reads the rest of the text for each one
+ * that is absent, and the locators are asked again at every construct.
+ */
+function locateFirst(markers: Markers, value: string, fromIndex: number): number {
+  // A scan by character code allocates nothing, where a regular expression's match makes an array at every text run.
+  const { firstCodes, isFirstCode, prefixes } = markers;
+  const length = value.length;
+  const count = prefixes.length;
+
+  for (let index = fromIndex; index < length; index++) {
+    const code = value.charCodeAt(index);
+
+    // Most characters start no marker, and one table read says so.
+    if (code >= ASCII_CODE_COUNT || isFirstCode[code] === 0) {
+      continue;
+    }
+
+    // An indexed loop: an `entries()` iterator per character cost more than the scan itself on long notes.
+    for (let alternative = 0; alternative < count; alternative++) {
+      if (firstCodes[alternative] === code && value.startsWith(prefixes[alternative] ?? '', index)) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
 }
 
 function locateInlineCode(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -981,18 +1100,13 @@ function locateInlineCode(_parser: RemarkParser, value: string, fromIndex: numbe
 
 function locateLink(_parser: RemarkParser, value: string, fromIndex: number): number {
   const linkIndex = value.indexOf('[', fromIndex);
-  const imageIndex = value.indexOf('![', fromIndex);
 
-  if (imageIndex === -1) {
-    return linkIndex;
-  }
-
-  // A link is always found when an image is.
-  return Math.min(linkIndex, imageIndex);
+  // An image's `![` is found first only when its `[` is the first one, so only the character before that is read.
+  return linkIndex > fromIndex && value.charAt(linkIndex - 1) === '!' ? linkIndex - 1 : linkIndex;
 }
 
 function locateStrong(_parser: RemarkParser, value: string, fromIndex: number): number {
-  return earliest(value.indexOf('**', fromIndex), value.indexOf('__', fromIndex));
+  return locateFirst(STRONG_MARKERS, value, fromIndex);
 }
 
 function locateTag(_parser: RemarkParser, value: string, fromIndex: number): number {
@@ -1000,17 +1114,16 @@ function locateTag(_parser: RemarkParser, value: string, fromIndex: number): num
 }
 
 function locateUrl(_parser: RemarkParser, value: string, fromIndex: number): number {
-  let min = -1;
+  return locateFirst(URL_PREFIXES, value, fromIndex);
+}
 
-  for (const prefix of URL_PREFIXES) {
-    const position = value.indexOf(prefix, fromIndex);
-
-    if (position !== -1 && (min === -1 || position < min)) {
-      min = position;
-    }
+function markersOf(prefixes: readonly string[]): Markers {
+  const firstCodes = prefixes.map((prefix) => prefix.charCodeAt(0));
+  const isFirstCode = new Uint8Array(ASCII_CODE_COUNT);
+  for (const code of firstCodes) {
+    isFirstCode[code] = 1;
   }
-
-  return min;
+  return { firstCodes, isFirstCode, prefixes };
 }
 
 function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolean): boolean | RemarkNode | undefined {
@@ -1030,7 +1143,7 @@ function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolea
     character = value.charAt(++index);
   }
 
-  if (character !== '[') {
+  if (character !== '[' || !hasClosingBracket(parser, value)) {
     return;
   }
 
@@ -1260,15 +1373,18 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
 
   const tokenizers = parser.inlineTokenizers;
   let min = value.length;
+  const methods = parser.tokenizers.inlineMethods;
 
-  for (const name of parser.tokenizers.inlineMethods) {
-    const tokenizer = tokenizers[name];
+  // eslint-disable-next-line unicorn/no-for-loop -- An `entries()` pair per locator and text run was most of what a parse allocated here.
+  for (let slot = 0; slot < methods.length; slot++) {
+    const name = methods[slot];
+    const tokenizer = name === undefined ? undefined : tokenizers[name];
 
     if (name === 'text' || !tokenizer) {
       continue;
     }
 
-    const position = tokenizer.locator(parser, value, 1);
+    const position = locateAfterStart(parser, value, slot, tokenizer.locator);
 
     if (position !== -1 && position < min) {
       min = position;
@@ -1276,6 +1392,16 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): b
   }
 
   const subvalue = value.slice(0, min);
+
+  // Without an ampersand the run is one text node, as `decode` would make it, with no point or handler to make first.
+  if (!subvalue.includes('&')) {
+    if (subvalue) {
+      eat(subvalue)({ type: 'text', value: subvalue });
+    }
+
+    return;
+  }
+
   const now = eat.now();
 
   parser.decode(subvalue, now, (content, source) => {
@@ -1298,4 +1424,4 @@ function withTextOnly(parser: RemarkParser, read: () => RemarkNode[]): RemarkNod
   }
 }
 
-/* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- The port ends here. */
+/* eslint-enable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/no-declarations-before-early-exit, unicorn/prefer-code-point, unicorn/prefer-combined-guards, unicorn/prefer-else-if, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch -- The port ends here. */

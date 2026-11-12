@@ -27,7 +27,10 @@ import type {
   RemarkRoot
 } from './types.ts';
 
-import { BLOCK_TOKENIZERS } from './block.ts';
+import {
+  BLOCK_STARTS,
+  BLOCK_TOKENIZERS
+} from './block.ts';
 import { INLINE_TOKENIZERS } from './inline.ts';
 import {
   BLOCK_METHODS,
@@ -65,12 +68,20 @@ interface FootnoteLine {
   readonly start: number;
 }
 
+// A footnote reference and where it sits, so the reference can be replaced after the walk that found it.
+interface FootnoteReferenceSite {
+  readonly index: number;
+  readonly node: RemarkNode;
+  readonly parent: RemarkParent;
+}
+
 const TAB = 9;
 const LINE_FEED = 10;
 const SPACE = 32;
 const EXCLAMATION_MARK = 33;
 const DOLLAR = 36;
 const PERCENT = 37;
+const HYPHEN = 45;
 const COLON = 58;
 const LEFT_BRACKET = 91;
 const BACKSLASH = 92;
@@ -92,13 +103,13 @@ const FOOTNOTE_INTERRUPT_LOOKAHEAD_END = 1024;
 const WHITESPACE_RE = /\s/u;
 const FRONTMATTER_FENCE = '---';
 const INTERNAL_LINK_RE = /^(?<embed>!?)\[\[(?<content>.+?)\]\]/u;
-const INTERNAL_LINK_START_RE = /!?\[\[/gu;
 const TAG_RE = /^#[^\u{2000}-\u{206F}\u{2E00}-\u{2E7F}'!"#$%&()*+,.:;<=>?@^`{|}~[\]\\\s]+/u;
 const NUMBER_TAG_RE = /^#\d+$/u;
 const INLINE_BLOCK_ID_RE = /^\^(?<id>[a-zA-Z0-9-]+)$/u;
 const BLOCK_ID_RE = /^\^(?<id>[a-zA-Z0-9-]+)(?=$|\n$|\n\n)/u;
 const INLINE_COMMENT_RE = /^%%(?<content>.*?)%%/u;
 const NO_BREAK_SPACE = '\u{A0}';
+const NON_ASCII_RE = /[\u{80}-\u{10FFFF}]/u;
 
 // The colored squares and circles that open a highlight to give it a color.
 const HIGHLIGHT_COLORS: Readonly<Record<string, string>> = {
@@ -173,17 +184,30 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
     math: mathBlock
   },
   blockMethods: OBSIDIAN_BLOCK_METHODS,
+  // Read from each tokenizer's opening checks. `definition` is replaced, and its replacement needs the same `[`.
+  blockStarts: {
+    ...BLOCK_STARTS,
+    blockId: (first) => first === CARET,
+    comment: (_first, after) => after === PERCENT,
+    footnoteDefinition: (_first, after) => after === LEFT_BRACKET,
+    frontmatter: (first) => first === HYPHEN,
+    math: (_first, after) => after === DOLLAR
+  },
   inline: {
     ...INLINE_TOKENIZERS,
-    blockId: { locator: locateBlockId, tokenize: blockIdInline },
-    comment: { locator: locateComment, tokenize: commentInline },
-    footnoteReference: { locator: locateFootnoteReference, tokenize: footnoteReference },
-    highlight: { locator: locateHighlight, tokenize: highlight },
-    inlineFootnote: { locator: locateInlineFootnote, tokenize: inlineFootnote },
-    inlineMath: { locator: locateInlineMath, tokenize: inlineMath },
-    internalLink: { locator: locateInternalLink, tokenize: internalLink },
-    reference: { locator: INLINE_TOKENIZERS.reference?.locator ?? locateNothing, tokenize: referenceUnlessFootnote },
-    tag: { locator: locateTag, tokenize: tag }
+    blockId: { locator: locateBlockId, startCharacters: '^', tokenize: blockIdInline },
+    comment: { locator: locateComment, startCharacters: '%', tokenize: commentInline },
+    footnoteReference: { locator: locateFootnoteReference, startCharacters: '[', tokenize: footnoteReference },
+    highlight: { locator: locateHighlight, startCharacters: '=', tokenize: highlight },
+    inlineFootnote: { locator: locateInlineFootnote, startCharacters: '^', tokenize: inlineFootnote },
+    inlineMath: { locator: locateInlineMath, startCharacters: String.raw`\$`, tokenize: inlineMath },
+    internalLink: { locator: locateInternalLink, startCharacters: '![', tokenize: internalLink },
+    reference: {
+      locator: INLINE_TOKENIZERS.reference?.locator ?? locateNothing,
+      startCharacters: '![',
+      tokenize: referenceUnlessFootnote
+    },
+    tag: { locator: locateTag, startCharacters: '#', tokenize: tag }
   },
   inlineMethods: OBSIDIAN_INLINE_METHODS,
   interruptBlockquote: insertAll(INTERRUPT_BLOCKQUOTE, [['math', 'fencedCode', true], ['comment', 'fencedCode', true]]),
@@ -197,6 +221,7 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
  */
 export const SOFT_BREAK_AS_HARD_TOKENIZER: InlineTokenizer = {
   locator: INLINE_TOKENIZERS.break?.locator ?? locateNothing,
+  startCharacters: ' \n',
   tokenize: softBreakAsHard
 };
 
@@ -207,7 +232,9 @@ export const SOFT_BREAK_AS_HARD_TOKENIZER: InlineTokenizer = {
  * @returns The normalized path.
  */
 export function normalizeLinkPath(path: string): string {
-  return path.replaceAll(NO_BREAK_SPACE, ' ').trim().normalize('NFC');
+  const spaced = path.includes(NO_BREAK_SPACE) ? path.replaceAll(NO_BREAK_SPACE, ' ') : path;
+  // ASCII text is in every normal form already.
+  return NON_ASCII_RE.test(spaced) ? spaced.trim().normalize('NFC') : spaced.trim();
 }
 
 /**
@@ -223,7 +250,8 @@ export function parseInternalLink(content: string): InternalLinkParts {
   const hasAlias = pipe > 0;
   let target = hasAlias ? content.slice(0, pipe).trim() : content.trim();
   const alias = hasAlias ? content.slice(pipe + 1).trim() : null;
-  const displayText = alias ?? target.split('#').filter(Boolean).join(' > ').trim();
+  // A trimmed target with no `#` is its own display text, with no array made to say so.
+  const displayText = alias ?? (target.includes('#') ? target.split('#').filter(Boolean).join(' > ').trim() : target);
 
   if (target.endsWith('\\')) {
     target = target.slice(0, -1);
@@ -243,8 +271,37 @@ export function parseInternalLink(content: string): InternalLinkParts {
  * @param root - The tree, changed in place.
  */
 export function transformObsidianTree(root: RemarkRoot): void {
-  resolveFootnoteReferences(root);
-  attachBlockIds(root);
+  // One walk finds what both transforms need, where each used to walk the whole tree, the first twice.
+  const identifiers = new Set<string>();
+  const references: FootnoteReferenceSite[] = [];
+  const found = { hasBlockId: false };
+
+  visit(root, (node, parent, index) => {
+    switch (node.type) {
+      case 'blockId': {
+        found.hasBlockId = true;
+        break;
+      }
+      case 'footnoteDefinition': {
+        identifiers.add(node.identifier);
+        break;
+      }
+      case 'footnoteReference': {
+        references.push({ index, node, parent });
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  });
+
+  resolveFootnoteReferences(identifiers, references);
+
+  // With no block id in the tree, outside inline footnotes, there is nothing to attach.
+  if (found.hasBlockId) {
+    attachBlockIds(root);
+  }
 }
 
 // After `$$`, the whitespace up to and including a line feed; none when a character that is no whitespace comes first.
@@ -294,21 +351,29 @@ function attachBlockIds(root: RemarkRoot): void {
   }
 }
 
-function blockIdBlock(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function blockIdBlock(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   const match = BLOCK_ID_RE.exec(value);
   if (!match) {
     return;
   }
-  return isSilent || eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  if (isSilent) {
+    return true;
+  }
+  parser.hasFootnoteOrBlockId = true;
+  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 // Only the rest of the inline content, to its end, can be a block id.
-function blockIdInline(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function blockIdInline(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   const match = INLINE_BLOCK_ID_RE.exec(value);
   if (!match) {
     return;
   }
-  return isSilent || eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  if (isSilent) {
+    return true;
+  }
+  parser.hasFootnoteOrBlockId = true;
+  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 /*
@@ -503,11 +568,12 @@ function footnoteDefinition(parser: RemarkParser, eat: Eat, value: string, isSil
   const children = parser.tokenizeBlock(content.join(''), start);
   exit();
 
+  parser.hasFootnoteOrBlockId = true;
   return add({ children, identifier: label.toLowerCase(), label, type: 'footnoteDefinition' });
 }
 
 // `[^label]`, with a label of no whitespace.
-function footnoteReference(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
+function footnoteReference(parser: RemarkParser, eat: Eat, value: string, isSilent: boolean): TokenizerResult {
   if (value.charCodeAt(0) !== LEFT_BRACKET || value.charCodeAt(1) !== CARET) {
     return;
   }
@@ -536,6 +602,7 @@ function footnoteReference(_parser: RemarkParser, eat: Eat, value: string, isSil
   }
 
   const label = value.slice(DELIMITER_LENGTH, labelEnd);
+  parser.hasFootnoteOrBlockId = true;
   return eat(value.slice(0, index))({ identifier: label.toLowerCase(), label, type: 'footnoteReference' });
 }
 
@@ -684,6 +751,7 @@ function inlineFootnote(parser: RemarkParser, eat: Eat, value: string, isSilent:
 
   const start = shifted(eat, DELIMITER_LENGTH);
   const add = eat(value.slice(0, index));
+  parser.hasFootnoteOrBlockId = true;
   return add({ children: parser.tokenizeInline(value.slice(DELIMITER_LENGTH, contentEnd), start), type: 'inlineFootnote' });
 }
 
@@ -829,9 +897,10 @@ function locateInlineMath(_parser: RemarkParser, value: string, fromIndex: numbe
   return value.indexOf('$', fromIndex);
 }
 
+// The first `[[` or `![[`: an embed's `!` can only be the character before the first `[[`, so no match array is made.
 function locateInternalLink(_parser: RemarkParser, value: string, fromIndex: number): number {
-  INTERNAL_LINK_START_RE.lastIndex = fromIndex;
-  return INTERNAL_LINK_START_RE.exec(value)?.index ?? -1;
+  const index = value.indexOf('[[', fromIndex);
+  return index > fromIndex && value.charCodeAt(index - 1) === EXCLAMATION_MARK ? index - 1 : index;
 }
 
 // A `#` at the start of the inline content, or after whitespace.
@@ -948,18 +1017,10 @@ function referenceUnlessFootnote(parser: RemarkParser, eat: Eat, value: string, 
  * A footnote reference to no definition becomes the text of its label, lowercased. A reference inside an inline
  * footnote is left as it is, as Obsidian has moved the inline footnote's content out of the tree by then.
  */
-function resolveFootnoteReferences(root: RemarkRoot): void {
-  const identifiers = new Set<string>();
-
-  visit(root, (node) => {
-    if (node.type === 'footnoteDefinition') {
-      identifiers.add(node.identifier);
-    }
-  });
-
-  visit(root, (node, parent, index) => {
+function resolveFootnoteReferences(identifiers: ReadonlySet<string>, references: readonly FootnoteReferenceSite[]): void {
+  for (const { index, node, parent } of references) {
     if (node.type !== 'footnoteReference' || identifiers.has(node.identifier)) {
-      return;
+      continue;
     }
 
     const text: RemarkNode = { type: 'text', value: node.identifier };
@@ -967,7 +1028,7 @@ function resolveFootnoteReferences(root: RemarkRoot): void {
       text.position = node.position;
     }
     parent.children[index] = text;
-  });
+  }
 }
 
 /**

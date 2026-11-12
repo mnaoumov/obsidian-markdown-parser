@@ -46,7 +46,7 @@ import type {
 } from './types.ts';
 
 import { normalizeLinkPath } from '../remark/obsidian.ts';
-import { parseRemark } from '../remark/parse.ts';
+import { parseRemarkTree } from '../remark/parse.ts';
 import {
   frontmatterLinksOf,
   parseFrontmatter
@@ -339,7 +339,7 @@ function locOf(point: RemarkPoint): Loc {
   return { line: point.line - 1, col: point.column - 1, offset: point.offset };
 }
 
-function metadataOf(text: string, root: RemarkRoot): CachedMetadata {
+function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolean): CachedMetadata {
   const metadata: MutableMetadata = {
     links: [],
     embeds: [],
@@ -372,7 +372,8 @@ function metadataOf(text: string, root: RemarkRoot): CachedMetadata {
     }
   }
 
-  const { inlineIndexes, notes } = numberFootnotes(root);
+  // A tree with no footnote has no note to number, so it is not walked for them.
+  const { inlineIndexes, notes } = hasFootnoteOrBlockId ? numberFootnotes(root) : { inlineIndexes: new Map<RemarkNode, number>(), notes: [] };
   if (notes.length > 0) {
     addFootnoteSection(metadata, text, root, notes);
   }
@@ -393,7 +394,8 @@ function metadataOf(text: string, root: RemarkRoot): CachedMetadata {
 // Throws `WorkerFailure` where the worker throws.
 function metadataOrFailure(markdown: string): CachedMetadata {
   const text = new TextDecoder().decode(new TextEncoder().encode(markdown));
-  return metadataOf(text, parseRemark(text, { shouldReadSoftLineBreaksAsHard: true }));
+  const { hasFootnoteOrBlockId, root } = parseRemarkTree(text, { shouldReadSoftLineBreaksAsHard: true });
+  return metadataOf(text, root, hasFootnoteOrBlockId);
 }
 
 /*
@@ -405,14 +407,27 @@ function numberFootnotes(root: RemarkRoot): FootnoteNumbering {
   const inlineIndexes = new Map<RemarkNode, number>();
   const numbered = new Set<string>();
   const notes: FootnoteNote[] = [];
+  // The notes in order, from one walk: a reference's definition can come after it, so it is looked up once the walk ends.
+  const sites: RemarkNode[] = [];
 
   visitOutsideInlineFootnotes(root, (node) => {
-    if (node.type === 'footnoteDefinition') {
-      definitions.set(node.identifier, node);
+    switch (node.type) {
+      case 'footnoteDefinition': {
+        definitions.set(node.identifier, node);
+        break;
+      }
+      case 'footnoteReference':
+      case 'inlineFootnote': {
+        sites.push(node);
+        break;
+      }
+      default: {
+        break;
+      }
     }
   });
 
-  visitOutsideInlineFootnotes(root, (node) => {
+  for (const node of sites) {
     if (node.type === 'inlineFootnote') {
       inlineIndexes.set(node, notes.length);
       notes.push({ children: node.children, isInline: true });
@@ -420,7 +435,7 @@ function numberFootnotes(root: RemarkRoot): FootnoteNumbering {
       numbered.add(node.identifier);
       notes.push({ children: definitions.get(node.identifier)?.children ?? [], isInline: false });
     }
-  });
+  }
 
   return { inlineIndexes, notes };
 }
