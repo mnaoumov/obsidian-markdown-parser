@@ -21,6 +21,12 @@ import type {
 import { decodeEntities } from './entities.ts';
 
 /**
+ * Whether a block tokenizer can start at a place, from the code of its first character and of its first character after
+ * spaces and tabs. Either is `NaN` at the end of the value.
+ */
+export type BlockStart = (firstCode: number, afterIndentCode: number) => boolean;
+
+/**
  * A block tokenizer: eats a block at the start of `value`, or, with `silent`, says whether it would.
  */
 export type BlockTokenizer = (parser: RemarkParser, eat: Eat, value: string, isSilent: boolean) => TokenizerResult;
@@ -162,6 +168,12 @@ export interface RemarkTokenizers {
   readonly blockMethods: readonly BlockTokenizerName[];
 
   /**
+   * Where a block tokenizer can start, by name: a block whose start says no is not tried there. A tokenizer with none is
+   * tried everywhere. Each must say yes wherever its tokenizer could eat or answer yes in silent mode.
+   */
+  readonly blockStarts?: Readonly<Partial<Record<BlockTokenizerName, BlockStart>>>;
+
+  /**
    * The inline tokenizers.
    */
   readonly inline: Readonly<Partial<Record<InlineTokenizerName, InlineTokenizer>>>;
@@ -212,12 +224,15 @@ interface TokenizeDispatch {
 }
 
 interface TokenizeMethod {
+  readonly blockStart?: BlockStart;
   readonly notInLink?: boolean;
   readonly startCharacters?: string;
   readonly tokenize: BlockTokenizer;
 }
 
 const ASCII_CODE_COUNT = 128;
+const SPACE_CODE = 32;
+const TAB_CODE = 9;
 
 /**
  * The block tokenizers of `remark-parse` 8, in the order they are tried.
@@ -490,7 +505,22 @@ export class RemarkParser {
    * @returns Whether one does.
    */
   public interrupts(interruptors: Interruptors, eat: Eat, value: string): boolean {
-    return interruptors.some((name) => Boolean(this.tokenizers.block[name]?.(this, eat, value, true)));
+    const tokenizers = this.tokenizers.block;
+    const starts = scanMemoSettings.isStartCharacterGateEnabled ? this.tokenizers.blockStarts : undefined;
+    const firstCode = value.codePointAt(0) ?? NaN;
+    const afterIndentCode = starts ? codeAfterIndent(value) : NaN;
+
+    // Asked at every line of every paragraph: a block that cannot start there is not asked.
+    for (const name of interruptors) {
+      const start = starts?.[name];
+      if (start && !start(firstCode, afterIndentCode)) {
+        continue;
+      }
+      if (tokenizers[name]?.(this, eat, value, true)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -580,11 +610,13 @@ export class RemarkParser {
     // Built once: every container and list item tokenizes its content again, each call building the same list.
     if (!this.blockTokenizeMethods) {
       const tokenizers = this.tokenizers.block;
+      const starts = this.tokenizers.blockStarts;
       const methods: TokenizeMethod[] = [];
       for (const name of this.tokenizers.blockMethods) {
         const tokenizer = tokenizers[name];
+        const blockStart = starts?.[name];
         if (tokenizer) {
-          methods.push({ tokenize: tokenizer });
+          methods.push(blockStart ? { blockStart, tokenize: tokenizer } : { tokenize: tokenizer });
         }
       }
       this.blockTokenizeMethods = methods;
@@ -718,9 +750,25 @@ export class RemarkParser {
         // Most tokenizers fail at once on any other first character, and are tried at every position the text reaches.
         const candidates = dispatch ? (dispatch.byCode[value.codePointAt(0) ?? ASCII_CODE_COUNT] ?? dispatch.ungated) : methods;
 
+        // A block's first characters are read once per place, and only when a block tokenizer asks.
+        let firstCode = NaN;
+        let afterIndentCode = NaN;
+        let isMeasured = false;
+
         for (const method of candidates) {
           if (method.notInLink && parser.inLink) {
             continue;
+          }
+
+          if (dispatch && method.blockStart) {
+            if (!isMeasured) {
+              firstCode = value.codePointAt(0) ?? NaN;
+              afterIndentCode = codeAfterIndent(value);
+              isMeasured = true;
+            }
+            if (!method.blockStart(firstCode, afterIndentCode)) {
+              continue;
+            }
           }
 
           const valueLength = value.length;
@@ -976,6 +1024,17 @@ export class TokenizeScope {
     }
     return map;
   }
+}
+
+// The code of the first character after the spaces and tabs that open `value`, or `NaN` when none follows them.
+function codeAfterIndent(value: string): number {
+  let index = 0;
+  let code = value.codePointAt(0) ?? NaN;
+  // Spaces and tabs are one code unit each, so the index moves by code points too.
+  while (code === SPACE_CODE || code === TAB_CODE) {
+    code = value.codePointAt(++index) ?? NaN;
+  }
+  return code;
 }
 
 // Only text nodes that cover as much source as their value, on one line, merge.

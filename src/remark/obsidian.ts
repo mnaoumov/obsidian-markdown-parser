@@ -27,7 +27,10 @@ import type {
   RemarkRoot
 } from './types.ts';
 
-import { BLOCK_TOKENIZERS } from './block.ts';
+import {
+  BLOCK_STARTS,
+  BLOCK_TOKENIZERS
+} from './block.ts';
 import { INLINE_TOKENIZERS } from './inline.ts';
 import {
   BLOCK_METHODS,
@@ -78,6 +81,7 @@ const SPACE = 32;
 const EXCLAMATION_MARK = 33;
 const DOLLAR = 36;
 const PERCENT = 37;
+const HYPHEN = 45;
 const COLON = 58;
 const LEFT_BRACKET = 91;
 const BACKSLASH = 92;
@@ -180,6 +184,15 @@ export const OBSIDIAN_TOKENIZERS: RemarkTokenizers = {
     math: mathBlock
   },
   blockMethods: OBSIDIAN_BLOCK_METHODS,
+  // Read from each tokenizer's opening checks. `definition` is replaced, and its replacement needs the same `[`.
+  blockStarts: {
+    ...BLOCK_STARTS,
+    blockId: (first) => first === CARET,
+    comment: (_first, after) => after === PERCENT,
+    footnoteDefinition: (_first, after) => after === LEFT_BRACKET,
+    frontmatter: (first) => first === HYPHEN,
+    math: (_first, after) => after === DOLLAR
+  },
   inline: {
     ...INLINE_TOKENIZERS,
     blockId: { locator: locateBlockId, startCharacters: '^', tokenize: blockIdInline },

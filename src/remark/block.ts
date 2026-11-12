@@ -18,6 +18,7 @@
 /* eslint-disable complexity, no-magic-numbers, no-useless-assignment, no-useless-return, unicorn/consistent-boolean-name, unicorn/explicit-length-check, unicorn/no-break-in-nested-loop, unicorn/no-declarations-before-early-exit, unicorn/no-useless-else, unicorn/prefer-combined-guards, unicorn/prefer-includes-over-repeated-comparisons, unicorn/prefer-simple-condition-first, unicorn/prefer-switch, unicorn/prefer-ternary -- A line-for-line port of upstream tokenizers: their control flow, counters and names stay as upstream wrote them. */
 
 import type {
+  BlockStart,
   BlockTokenizer,
   BlockTokenizerName,
   RemarkParser
@@ -57,6 +58,22 @@ const MAX_THEMATIC_BREAK_COUNT = 3;
 const MAX_SETEXT_INDENT = 3;
 const MIN_TABLE_ROWS = 2;
 const MIN_TABLE_COLUMNS = 1;
+
+const TAB_CODE = 9;
+const LINE_FEED_CODE = 10;
+const SPACE_CODE = 32;
+const NUMBER_SIGN_CODE = 35;
+const ASTERISK_CODE = 42;
+const PLUS_SIGN_CODE = 43;
+const HYPHEN_CODE = 45;
+const DIGIT_ZERO_CODE = 48;
+const DIGIT_NINE_CODE = 57;
+const LESS_THAN_CODE = 60;
+const GREATER_THAN_CODE = 62;
+const LEFT_BRACKET_CODE = 91;
+const UNDERSCORE_CODE = 95;
+const GRAVE_ACCENT_CODE = 96;
+const TILDE_CODE = 126;
 
 const BLANK_LINE_RE = /^[ \t]*(?:\n|$)/u;
 const TRAILING_LINES_RE = /\n+$/u;
@@ -183,6 +200,23 @@ export const BLOCK_TOKENIZERS: Readonly<Partial<Record<BlockTokenizerName, Block
   setextHeading,
   table,
   thematicBreak
+};
+
+/**
+ * Where each block tokenizer can start, read from its own opening checks: each skips spaces and tabs and then needs one
+ * of a few characters, but `indentedCode`, which needs indentation or a blank line first. `paragraph`, `setextHeading`
+ * and `table` can start anywhere.
+ */
+export const BLOCK_STARTS: Readonly<Partial<Record<BlockTokenizerName, BlockStart>>> = {
+  atxHeading: (_first, after) => after === NUMBER_SIGN_CODE,
+  blankLine: (_first, after) => after === LINE_FEED_CODE || Number.isNaN(after),
+  blockquote: (_first, after) => after === GREATER_THAN_CODE,
+  definition: (_first, after) => after === LEFT_BRACKET_CODE,
+  fencedCode: (_first, after) => after === GRAVE_ACCENT_CODE || after === TILDE_CODE,
+  html: (_first, after) => after === LESS_THAN_CODE,
+  indentedCode: (first) => first === SPACE_CODE || first === TAB_CODE || first === LINE_FEED_CODE,
+  list: (_first, after) => after === ASTERISK_CODE || after === PLUS_SIGN_CODE || after === HYPHEN_CODE || (after >= DIGIT_ZERO_CODE && after <= DIGIT_NINE_CODE),
+  thematicBreak: (_first, after) => after === ASTERISK_CODE || after === HYPHEN_CODE || after === UNDERSCORE_CODE
 };
 
 /**

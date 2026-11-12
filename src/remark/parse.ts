@@ -10,7 +10,10 @@
 import type { RemarkTokenizers } from './parser.ts';
 import type { RemarkRoot } from './types.ts';
 
-import { BLOCK_TOKENIZERS } from './block.ts';
+import {
+  BLOCK_STARTS,
+  BLOCK_TOKENIZERS
+} from './block.ts';
 import { INLINE_TOKENIZERS } from './inline.ts';
 import {
   OBSIDIAN_TOKENIZERS,
@@ -48,6 +51,7 @@ export interface ParseRemarkOptions {
 const MARKDOWN_TOKENIZERS: RemarkTokenizers = {
   block: BLOCK_TOKENIZERS,
   blockMethods: BLOCK_METHODS,
+  blockStarts: BLOCK_STARTS,
   inline: INLINE_TOKENIZERS,
   inlineMethods: INLINE_METHODS,
   interruptBlockquote: INTERRUPT_BLOCKQUOTE,

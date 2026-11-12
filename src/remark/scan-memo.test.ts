@@ -60,7 +60,24 @@ const PIECES = [
   '[^1]',
   '[^1]: ',
   '[r]: /u ',
-  'é'
+  'é',
+  // The openings the block start gates read.
+  '\t',
+  ' '.repeat(4),
+  '```',
+  '~~~',
+  '---',
+  '***',
+  '___',
+  '-',
+  '=',
+  '+ ',
+  '* ',
+  '2) ',
+  '<div>',
+  '<!-- ',
+  '-->',
+  '^id'
 ];
 const NOTES = 4000;
 const MAX_PIECES = 60;
