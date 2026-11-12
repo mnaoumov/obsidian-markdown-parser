@@ -36,7 +36,16 @@ The worker parses the document with Obsidian's `remark-parse` 8 and walks the tr
 The worker throws on two kinds of front matter. It then posts `null` instead of metadata, and so does `parseMetadata`:
 
 - a string value that is a markdown link with no destination, such as `[text]()` or `[text]( )`;
-- an object with a key `hasOwnProperty`, which hides the method the worker calls on it.
+- up to 1.15.0, an object with a key `hasOwnProperty`, which hides the method the worker calls on it. From 1.15.1 on the worker reads such an object like any other.
+
+## Releases
+
+`parseMetadata(text, { obsidianVersion })` gives the metadata of the worker of that release, and without a version that of 1.15.0. The 1.15.1 worker differs from 1.15.0's in two ways, measured on the worker oracle on 2026-11-11:
+
+1. It posts a field `v: 1` on every document, after `blocks` and before `frontmatter`, so an empty note gives `{ v: 1 }`. On 3,712 of the 3,743 worker documents this is the only difference.
+2. A front matter key `hasOwnProperty` no longer makes it throw. 12 worker documents the 1.15.0 worker posted `null` for now get metadata, and the other 19 still give `null`, since each holds a markdown link with no destination.
+
+With its own version, `parseMetadata` gives the worker's metadata on every document of both releases' worker oracles.
 
 ## How it is checked
 
