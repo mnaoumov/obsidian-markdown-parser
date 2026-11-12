@@ -340,6 +340,65 @@ export interface ScanMemo {
 }
 
 /**
+ * The column offset of each line's content, by line number from 1: a `Map`'s `get`, `has` and `set`, kept in a typed
+ * array over the document's lines, since every point and every eaten line reads it. A line past the document, which
+ * no parse should reach, falls back to a `Map`.
+ */
+export class LineOffsets {
+  private readonly beyond = new Map<number, number>();
+
+  // `NaN` marks a line with no offset set, as a `Map` without the key.
+  private readonly byLine: Float64Array;
+
+  /**
+   * Creates the offsets of a document.
+   *
+   * @param lineCount - Its number of lines.
+   */
+  public constructor(lineCount: number) {
+    this.byLine = new Float64Array(lineCount + 2).fill(NaN);
+  }
+
+  /**
+   * The offset of a line.
+   *
+   * @param line - The line.
+   * @returns Its offset, or `undefined` when none is set.
+   */
+  public get(line: number): number | undefined {
+    if (Number.isSafeInteger(line) && line >= 0 && line < this.byLine.length) {
+      const value = this.byLine[line] ?? NaN;
+      return Number.isNaN(value) ? undefined : value;
+    }
+    return this.beyond.get(line);
+  }
+
+  /**
+   * Whether a line has an offset.
+   *
+   * @param line - The line.
+   * @returns Whether it has.
+   */
+  public has(line: number): boolean {
+    return this.get(line) !== undefined;
+  }
+
+  /**
+   * Sets the offset of a line.
+   *
+   * @param line - The line.
+   * @param value - Its offset.
+   */
+  public set(line: number, value: number): void {
+    if (Number.isSafeInteger(line) && line >= 0 && line < this.byLine.length) {
+      this.byLine[line] = value;
+    } else {
+      this.beyond.set(line, value);
+    }
+  }
+}
+
+/**
  * A `remark-parse` 8 parser over one document.
  */
 export class RemarkParser {
@@ -377,7 +436,7 @@ export class RemarkParser {
   /**
    * The column offset each line's content starts at, set by the containers that strip their markers.
    */
-  public readonly offset = new Map<number, number>();
+  public readonly offset: LineOffsets;
 
   /**
    * The memos of the innermost `tokenize` call running.
@@ -411,6 +470,7 @@ export class RemarkParser {
       this.lineStarts.push(match.index + match[0].length);
     }
     this.lineStarts.push(text.length + 1);
+    this.offset = new LineOffsets(this.lineStarts.length);
   }
 
   /**
