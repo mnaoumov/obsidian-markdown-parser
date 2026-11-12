@@ -152,7 +152,7 @@ export function workerFailureOf(markdown: string): null | WorkerFailure {
 
 function addFootnoteSection(metadata: MutableMetadata, text: string, root: RemarkRoot, notes: readonly FootnoteNote[]): void {
   const position = footnoteSectionPosition(text, root);
-  let id: string | undefined;
+  let id: null | string = null;
   for (const note of notes) {
     for (const child of note.children) {
       id = lastBlockId(child, !note.isInline) ?? id;
@@ -171,12 +171,12 @@ function childrenText(walk: Walk, children: readonly RemarkNode[]): string {
   return children.map((child) => displayTextOf(walk, child)).join('');
 }
 
-// A markdown link's destination decoded, or `undefined` where `decodeURI` refuses it.
-function decodeLinkPath(destination: string): string | undefined {
+// A markdown link's destination decoded, or `null` where `decodeURI` refuses it.
+function decodeLinkPath(destination: string): null | string {
   try {
     return normalizeLinkPath(decodeURI(destination));
   } catch {
-    return undefined;
+    return null;
   }
 }
 
@@ -198,7 +198,7 @@ function displayTextOf(walk: Walk, node: RemarkNode): string {
     }
     case 'image': {
       const link = imageLinkOf(node);
-      if (link !== undefined) {
+      if (link !== null) {
         return link;
       }
       value = imageAltOf(node) || (node.title ?? '');
@@ -282,18 +282,18 @@ function imageAltOf(image: RemarkImage): string {
 }
 
 // An image's destination as an embed's link, when it is no URL; `decodeURI` refusing it leaves it as it is.
-function imageLinkOf(image: RemarkImage): string | undefined {
-  return !image.url || !isLinkPath(image.url) ? undefined : decodeLinkPath(image.url) ?? normalizeLinkPath(image.url);
+function imageLinkOf(image: RemarkImage): null | string {
+  return !image.url || !isLinkPath(image.url) ? null : decodeLinkPath(image.url) ?? normalizeLinkPath(image.url);
 }
 
-function lastBlockId(node: RemarkNode, isInlineFootnoteHidden: boolean): string | undefined {
+function lastBlockId(node: RemarkNode, isInlineFootnoteHidden: boolean): null | string {
   if (node.type === 'blockId') {
     return node.value;
   }
   if (!('children' in node) || (isInlineFootnoteHidden && node.type === 'inlineFootnote')) {
-    return undefined;
+    return null;
   }
-  let id: string | undefined;
+  let id: null | string = null;
   for (const child of node.children) {
     id = lastBlockId(child, isInlineFootnoteHidden) ?? id;
   }
@@ -498,7 +498,7 @@ function walkNode(walk: Walk, node: RemarkNode, parent: RemarkNode, isInNote: bo
     }
     case 'image': {
       const link = imageLinkOf(node);
-      if (link !== undefined) {
+      if (link !== null) {
         const position = positionOf(node.position);
         metadata.embeds.push({ position, link, original: text.slice(position.start.offset, position.end.offset), displayText: node.alt ?? '' });
       }
@@ -525,8 +525,8 @@ function walkNode(walk: Walk, node: RemarkNode, parent: RemarkNode, isInNote: bo
       break;
     }
     case 'link': {
-      const link = node.url && isLinkPath(node.url) ? decodeLinkPath(node.url) : undefined;
-      if (link !== undefined) {
+      const link = node.url && isLinkPath(node.url) ? decodeLinkPath(node.url) : null;
+      if (link !== null) {
         const position = positionOf(node.position);
         const displayText = childrenText(walk, node.children);
         metadata.links.push({ position, link, original: text.slice(position.start.offset, position.end.offset), displayText: displayText.endsWith('\n') ? displayText.slice(0, -1) : displayText });

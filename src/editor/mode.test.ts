@@ -24,7 +24,7 @@ function cyclic(value: number): Cyclic {
 }
 
 function stream(line: string, lineIndex: number): StringStream {
-  return new StringStream({ line, lineIndex, readLine: (): undefined => undefined });
+  return new StringStream({ line, lineIndex, readLine: (): null => null });
 }
 
 function token(): null {

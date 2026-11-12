@@ -36,6 +36,8 @@ import {
   constants
 } from 'micromark-util-symbol';
 
+import type { StateResult } from './micromark-state.ts';
+
 /**
  * The list construct of the `listItem` quirk, in place of micromark's `list`.
  */
@@ -57,8 +59,8 @@ const indentConstruct: Construct = { partial: true, tokenize: withContext(tokeni
 const siblingMarkerConstruct: Construct = { partial: true, tokenize: withContext(tokenizeSiblingMarker) };
 
 // Whether micromark reads indented code, which caps how far whitespace before a block may go.
-function codeIndentLimit(context: TokenizeContext): number | undefined {
-  return context.parser.constructs.disable.null?.includes('codeIndented') === true ? undefined : constants.tabSize;
+function codeIndentLimit(context: TokenizeContext): null | number {
+  return context.parser.constructs.disable.null?.includes('codeIndented') === true ? null : constants.tabSize;
 }
 
 function containerSize(context: TokenizeContext): number {
@@ -80,7 +82,7 @@ function tokenizeIndent(context: TokenizeContext, effects: Effects, ok: State, n
   return factorySpace(effects, afterPrefix, 'listItemIndent', size + 1);
 
   // The item's content, or more than four columns of whitespace short of it.
-  function afterPrefix(code: Code): State | undefined {
+  function afterPrefix(code: Code): StateResult {
     const indent = tailColumns(context, 'listItemIndent');
     return indent === size || (indent > constants.tabSize && !markdownLineEnding(code) && code !== codes.eof) ? ok(code) : nok(code);
   }
@@ -93,16 +95,16 @@ function tokenizeListContinuation(context: TokenizeContext, effects: Effects, ok
   return effects.check(blankLine, onBlank, notBlank);
 
   // A blank line never ends an item by itself, not even one whose first line is empty.
-  function onBlank(code: Code): State | undefined {
+  function onBlank(code: Code): StateResult {
     return factorySpace(effects, ok, 'listItemIndent', containerSize(context) + 1)(code);
   }
 
-  function notBlank(code: Code): State | undefined {
+  function notBlank(code: Code): StateResult {
     return markdownSpace(code) ? effects.check(siblingMarkerConstruct, notInCurrentItem, effects.attempt(indentConstruct, ok, notInCurrentItem))(code) : notInCurrentItem(code);
   }
 
   // A sibling item may be indented as far as the item's content, short of it.
-  function notInCurrentItem(code: Code): State | undefined {
+  function notInCurrentItem(code: Code): StateResult {
     if (context.containerState) {
       context.containerState._closeFlow = true;
     }
@@ -120,9 +122,9 @@ function tokenizeListEnd(this: TokenizeContext, effects: Effects): undefined {
 
 function tokenizeListItemPrefixWhitespace(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   const limit = codeIndentLimit(context);
-  return factorySpace(effects, afterPrefix, 'listItemPrefixWhitespace', limit === undefined ? undefined : limit + 1);
+  return factorySpace(effects, afterPrefix, 'listItemPrefixWhitespace', limit === null ? undefined : limit + 1);
 
-  function afterPrefix(code: Code): State | undefined {
+  function afterPrefix(code: Code): StateResult {
     return !markdownSpace(code) && tailColumns(context, 'listItemPrefixWhitespace') > 0 ? ok(code) : nok(code);
   }
 }
@@ -132,7 +134,7 @@ function tokenizeListStart(context: TokenizeContext, effects: Effects, ok: State
   let size = 0;
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     const state = context.containerState;
     if (!state) {
       return nok(code);
@@ -159,7 +161,7 @@ function tokenizeListStart(context: TokenizeContext, effects: Effects, ok: State
   }
 
   // Any number of digits.
-  function inside(code: Code): State | undefined {
+  function inside(code: Code): StateResult {
     if (asciiDigit(code)) {
       size++;
       effects.consume(code);
@@ -174,7 +176,7 @@ function tokenizeListStart(context: TokenizeContext, effects: Effects, ok: State
     return nok(code);
   }
 
-  function atMarker(code: Code): State | undefined {
+  function atMarker(code: Code): StateResult {
     effects.enter('listItemMarker');
     effects.consume(code);
     effects.exit('listItemMarker');
@@ -186,11 +188,11 @@ function tokenizeListStart(context: TokenizeContext, effects: Effects, ok: State
   }
 
   // An item whose first line is empty has its content right after its marker.
-  function onBlank(code: Code): State | undefined {
+  function onBlank(code: Code): StateResult {
     return endOfPrefix(code);
   }
 
-  function otherPrefix(code: Code): State | undefined {
+  function otherPrefix(code: Code): StateResult {
     if (markdownSpace(code)) {
       effects.enter('listItemPrefixWhitespace');
       effects.consume(code);
@@ -200,7 +202,7 @@ function tokenizeListStart(context: TokenizeContext, effects: Effects, ok: State
     return nok(code);
   }
 
-  function endOfPrefix(code: Code): State | undefined {
+  function endOfPrefix(code: Code): StateResult {
     const prefix = effects.exit('listItemPrefix');
     if (context.containerState) {
       context.containerState.size = initialSize + context.sliceSerialize(prefix, true).length;
@@ -218,7 +220,7 @@ function tokenizeSiblingMarker(context: TokenizeContext, effects: Effects, ok: S
   // With no column short of the content, there is no whitespace to take: one would be an empty token.
   return size > 1 ? factorySpace(effects, start, 'linePrefix', size) : start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     if (isOrdered) {
       return digits(code);
     }
@@ -231,7 +233,7 @@ function tokenizeSiblingMarker(context: TokenizeContext, effects: Effects, ok: S
     return afterMarker;
   }
 
-  function digits(code: Code): State | undefined {
+  function digits(code: Code): StateResult {
     if (asciiDigit(code)) {
       if (!hasDigits) {
         effects.enter('listItemValue');
@@ -250,7 +252,7 @@ function tokenizeSiblingMarker(context: TokenizeContext, effects: Effects, ok: S
     return afterMarker;
   }
 
-  function afterMarker(code: Code): State | undefined {
+  function afterMarker(code: Code): StateResult {
     return code === codes.eof || markdownLineEnding(code) || markdownSpace(code) ? ok(code) : nok(code);
   }
 }

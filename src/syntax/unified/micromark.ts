@@ -43,6 +43,7 @@ import type {
   ObsidianSyntaxOptions
 } from '../options.ts';
 import type { CalloutMarker } from '../spec.ts';
+import type { StateResult } from './micromark-state.ts';
 
 import {
   OBSIDIAN_SYNTAX_PRESETS,
@@ -397,7 +398,7 @@ function delimitedBlockTokenizer(spec: DelimitedBlockSpec): Construct['tokenize'
     let isContentOpen = false;
     return start;
 
-    function start(code: Code): State | undefined {
+    function start(code: Code): StateResult {
       return lookahead(
         effects,
         true,
@@ -423,11 +424,11 @@ function delimitedBlockTokenizer(spec: DelimitedBlockSpec): Construct['tokenize'
       )(code);
     }
 
-    function atLineEnd(code: Code): State | undefined {
+    function atLineEnd(code: Code): StateResult {
       return code === null ? done(code) : effects.check(nonLazyContinuation, atNextLine, done)(code);
     }
 
-    function atNextLine(code: Code): State | undefined {
+    function atNextLine(code: Code): StateResult {
       if (!isContentOpen) {
         effects.enter(ObsidianToken.Content);
         isContentOpen = true;
@@ -438,7 +439,7 @@ function delimitedBlockTokenizer(spec: DelimitedBlockSpec): Construct['tokenize'
       return lineStart;
     }
 
-    function lineStart(code: Code): State | undefined {
+    function lineStart(code: Code): StateResult {
       let isClosed = false;
       return lookahead(
         effects,
@@ -463,7 +464,7 @@ function delimitedBlockTokenizer(spec: DelimitedBlockSpec): Construct['tokenize'
       )(code);
     }
 
-    function done(code: Code): State | undefined {
+    function done(code: Code): StateResult {
       if (isContentOpen) {
         effects.exit(ObsidianToken.Content);
       }
@@ -564,7 +565,7 @@ function lookahead(
       let isEntered = false;
       return inside;
 
-      function inside(code: Code): State | undefined {
+      function inside(code: Code): StateResult {
         if (code === null || (shouldStopAtLineEnding && isLineEnding(code))) {
           if (isEntered) {
             peekEffects.exit(ObsidianToken.Peek);
@@ -665,7 +666,7 @@ function run(effects: Effects, ops: readonly Op[], ok: State, nok: State): State
   let chunk: Token | undefined;
   return step;
 
-  function step(code: Code): State | undefined {
+  function step(code: Code): StateResult {
     for (let op = ops[index]; op !== undefined; op = ops[index]) {
       if (op.kind === 'consume') {
         left ??= op.length;
@@ -724,7 +725,7 @@ function tokenizeBlankLine(effects: Effects, ok: State, nok: State): State {
   let isEntered = false;
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     if (isSpaceOrTab(code)) {
       if (!isEntered) {
         effects.enter(ObsidianToken.Part);
@@ -865,7 +866,7 @@ function tokenizeComment(effects: Effects, ok: State, nok: State): State {
 function tokenizeFenceAhead(effects: Effects, ok: State, nok: State): State {
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     effects.enter('lineEnding');
     effects.consume(code);
     effects.exit('lineEnding');
@@ -909,7 +910,7 @@ function tokenizeFootnoteDefinitionContinuation(effects: Effects, ok: State, nok
   let columns = 0;
   return effects.check(blankLine, ok, indent);
 
-  function indent(code: Code): State | undefined {
+  function indent(code: Code): StateResult {
     if (isSpaceOrTab(code) && columns < CODE_INDENT) {
       if (columns === 0) {
         effects.enter(ObsidianToken.FootnoteDefinitionIndent);
@@ -956,21 +957,21 @@ function tokenizeFrontMatter(context: TokenizeContext, effects: Effects, ok: Sta
   let content: 'none' | 'open' | 'pending' = 'none';
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     return context.now().offset === 0 ? lookahead(effects, true, (text) => isFrontMatterFence(text) ? [enter(ObsidianNode.FrontMatter), ...leaf(ObsidianNode.FrontMatterMark, FRONT_MATTER_FENCE_SIZE)] : null, atLineEnd, nok)(code) : nok(code);
   }
 
-  function atLineEnd(code: Code): State | undefined {
+  function atLineEnd(code: Code): StateResult {
     return code === null ? done(code) : effects.check(fenceAhead, atClosingFence, atContentLine)(code);
   }
 
-  function atClosingFence(code: Code): State | undefined {
+  function atClosingFence(code: Code): StateResult {
     exitContent();
     lineEnding(code);
     return lookahead(effects, true, () => [...leaf(ObsidianNode.FrontMatterMark, FRONT_MATTER_FENCE_SIZE), exit(ObsidianNode.FrontMatter)], ok, nok);
   }
 
-  function atContentLine(code: Code): State | undefined {
+  function atContentLine(code: Code): StateResult {
     if (content === 'none') {
       // The line ending after the opening fence is outside the content.
       lineEnding(code);
@@ -998,7 +999,7 @@ function tokenizeFrontMatter(context: TokenizeContext, effects: Effects, ok: Sta
     );
   }
 
-  function done(code: Code): State | undefined {
+  function done(code: Code): StateResult {
     exitContent();
     effects.exit(ObsidianNode.FrontMatter);
     return ok(code);
@@ -1027,7 +1028,7 @@ function tokenizeHighlight(context: TokenizeContext, effects: Effects, ok: State
   const before = context.previous === Char.Space ? ' ' : '';
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     if (context.previous === Char.Equals) {
       return nok(code);
     }
@@ -1035,7 +1036,7 @@ function tokenizeHighlight(context: TokenizeContext, effects: Effects, ok: State
     return more(code);
   }
 
-  function more(code: Code): State | undefined {
+  function more(code: Code): StateResult {
     if (code === Char.Equals) {
       effects.consume(code);
       size++;
@@ -1135,14 +1136,14 @@ function tokenizeLinkDefinition(context: TokenizeContext, effects: Effects, ok: 
 function tokenizeNonLazyContinuation(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     effects.enter('lineEnding');
     effects.consume(code);
     effects.exit('lineEnding');
     return lineStart;
   }
 
-  function lineStart(code: Code): State | undefined {
+  function lineStart(code: Code): StateResult {
     return code === null || context.parser.lazy[context.now().line] === true ? nok(code) : ok(code);
   }
 }

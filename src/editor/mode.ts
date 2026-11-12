@@ -35,6 +35,7 @@ export interface Mode<State> {
    * @param indentUnit - The indent unit.
    * @returns A style for the line, if any.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors CodeMirror 5's Mode.blankLine, whose modes return `undefined` as well as `null` for no style.
   readonly blankLine?: (state: State, indentUnit: number) => null | string | undefined;
 
   /**

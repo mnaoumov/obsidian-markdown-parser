@@ -201,8 +201,8 @@ function describe(tokens: readonly string[], index: number): string {
 }
 
 // The child that opens an element's content: white space skipped.
-function firstContent(nodes: readonly ChildNode[]): ChildNode | undefined {
-  return nodes.find((node) => !isText(node) || node.value.trim() !== '');
+function firstContent(nodes: readonly ChildNode[]): ChildNode | null {
+  return nodes.find((node) => !isText(node) || node.value.trim() !== '') ?? null;
 }
 
 function firstDifference(left: readonly string[], right: readonly string[]): null | number {
@@ -215,8 +215,8 @@ function firstDifference(left: readonly string[], right: readonly string[]): nul
   return null;
 }
 
-function isElement(node: ChildNode | undefined): node is Element {
-  return node !== undefined && 'tagName' in node;
+function isElement(node: ChildNode | null): node is Element {
+  return node !== null && 'tagName' in node;
 }
 
 function isText(node: ChildNode): node is TextNode {
@@ -240,8 +240,8 @@ function pushListItem(item: Element, isReference: boolean, tokens: string[]): vo
   if (isReference) {
     // The item's first block is a paragraph, or the text of a tight item; its text opens on the mark.
     const first = firstContent(item.childNodes);
-    const opening = isElement(first) ? (first.tagName === 'p' ? first.childNodes.at(0) : undefined) : first;
-    if (opening !== undefined && isText(opening)) {
+    const opening = isElement(first) ? (first.tagName === 'p' ? first.childNodes.at(0) ?? null : null) : first;
+    if (opening !== null && isText(opening)) {
       const status = TASK_MARK_PATTERN.exec(opening.value.trimStart())?.groups?.['status'];
       if (status !== undefined) {
         mark = status === ' ' ? ' [ ]' : ' [x]';

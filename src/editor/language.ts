@@ -326,13 +326,13 @@ class EditorClassParse implements PartialParse {
     const lineEnd = lineFrom + line.length;
     // A line depends on its own newline: without one it is the last line, and an empty last line is never parsed.
     let readTo = lineEnd + 1;
-    const readLine = (n: number): string | undefined => {
+    const readLine = (n: number): null | string => {
       let pos = lineEnd;
-      let text: string | undefined = line;
+      let text = line;
       for (let step = 0; step < n; step++) {
         if (pos >= this.to) {
           readTo = Math.max(readTo, this.to + 1);
-          return undefined;
+          return null;
         }
         text = this.readLineAt(pos + 1);
         this.lineTexts.set(pos + 1, text);

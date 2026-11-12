@@ -400,8 +400,8 @@ console.log(
 );
 
 // The first oracle file a suite reads that the newer version lacks, which a re-read limited by `--only` leaves out.
-function missingSuiteFile(suite: ConformanceSuite): string | undefined {
-  return suite.fileNamesOf(toVersion).find((fileName) => !existsSync(join(toDirectory, fileName)));
+function missingSuiteFile(suite: ConformanceSuite): null | string {
+  return suite.fileNamesOf(toVersion).find((fileName) => !existsSync(join(toDirectory, fileName))) ?? null;
 }
 
 let isSuitesPassed = true;
@@ -410,7 +410,7 @@ if (!values['skip-tests']) {
   const suites: string[] = [];
   for (const suite of CONFORMANCE_SUITES) {
     const missing = missingSuiteFile(suite);
-    if (missing === undefined) {
+    if (missing === null) {
       suites.push(suite.path);
     } else {
       console.log(`${suite.path}: skipped, no ${missing} in ${toDirectory}`);

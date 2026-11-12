@@ -200,7 +200,9 @@ export interface RemarkTokenizers {
 }
 
 /**
- * What a tokenizer gives: the node it added, or in silent mode whether it would.
+ * What a tokenizer gives: the node it added, or in silent mode whether it would, and `undefined` when it does not match.
+ * The `undefined` is `remark-parse` 8's tokenizer contract, which the port keeps, so a tokenizer is typed by this alias
+ * rather than spelling the union.
  */
 export type TokenizerResult = boolean | RemarkNode | undefined;
 
@@ -363,14 +365,14 @@ export class LineOffsets {
    * The offset of a line.
    *
    * @param line - The line.
-   * @returns Its offset, or `undefined` when none is set.
+   * @returns Its offset, or `null` when none is set.
    */
-  public get(line: number): number | undefined {
+  public get(line: number): null | number {
     if (Number.isSafeInteger(line) && line >= 0 && line < this.byLine.length) {
       const value = this.byLine[line] ?? NaN;
-      return Number.isNaN(value) ? undefined : value;
+      return Number.isNaN(value) ? null : value;
     }
-    return this.beyond.get(line);
+    return this.beyond.get(line) ?? null;
   }
 
   /**
@@ -380,7 +382,7 @@ export class LineOffsets {
    * @returns Whether it has.
    */
   public has(line: number): boolean {
-    return this.get(line) !== undefined;
+    return this.get(line) !== null;
   }
 
   /**
@@ -647,9 +649,9 @@ export class RemarkParser {
    *
    * @param name - The scan's name.
    * @param value - The value the scan was given: a suffix of that text.
-   * @returns The memo, or `undefined` when there is no text to key it by.
+   * @returns The memo, or `null` when there is no text to key it by.
    */
-  public scanMemo(name: string, value: string): ScanMemo | undefined {
+  public scanMemo(name: string, value: string): null | ScanMemo {
     const scope = this.scopeOf(value);
     return scope && { base: scope.length - value.length, map: scope.memo(name) };
   }
@@ -658,11 +660,11 @@ export class RemarkParser {
    * The memos of the innermost `tokenize` call running, when `value` can be keyed by them.
    *
    * @param value - A value a tokenizer of that call was given: a suffix of its text.
-   * @returns The memos, or `undefined` when there is no text to key them by.
+   * @returns The memos, or `null` when there is no text to key them by.
    */
-  public scopeOf(value: string): TokenizeScope | undefined {
+  public scopeOf(value: string): null | TokenizeScope {
     const scope = this.scope;
-    return scope?.isValid && value.length <= scope.length ? scope : undefined;
+    return scope?.isValid && value.length <= scope.length ? scope : null;
   }
 
   /**
@@ -877,7 +879,7 @@ export class RemarkParser {
       }
 
       const lineOffset = offset.get(line);
-      if (lineOffset !== undefined) {
+      if (lineOffset !== null) {
         if (lastIndex !== -1) {
           column += lineOffset;
         } else if (column <= lineOffset) {

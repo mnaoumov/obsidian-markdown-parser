@@ -439,9 +439,9 @@ function definitionUnlessFootnote(parser: RemarkParser, eat: Eat, value: string,
   return BLOCK_TOKENIZERS.definition?.(parser, eat, value, isSilent);
 }
 
-function firstBlockIdOutsideLists(item: RemarkNode): string | undefined {
+function firstBlockIdOutsideLists(item: RemarkNode): null | string {
   if (!('children' in item) || item.type === 'inlineFootnote') {
-    return undefined;
+    return null;
   }
   for (const child of item.children) {
     if (child.type === 'blockId') {
@@ -451,11 +451,11 @@ function firstBlockIdOutsideLists(item: RemarkNode): string | undefined {
       continue;
     }
     const id = firstBlockIdOutsideLists(child);
-    if (id !== undefined) {
+    if (id !== null) {
       return id;
     }
   }
-  return undefined;
+  return null;
 }
 
 /*
@@ -644,7 +644,7 @@ function highlight(parser: RemarkParser, eat: Eat, value: string, isSilent: bool
   }
 
   const content = highlightContent(value);
-  if (content === undefined) {
+  if (content === null) {
     return;
   }
   if (isSilent) {
@@ -667,7 +667,7 @@ function highlight(parser: RemarkParser, eat: Eat, value: string, isSilent: bool
  */
 
 // The content of a highlight `value` opens: up to the first `==` after a character that is no whitespace.
-function highlightContent(value: string): string | undefined {
+function highlightContent(value: string): null | string {
   // The content read so far lags one character behind the cursor, so the `=` before a closing one is not in it.
   let content = '';
   let previous = '';
@@ -683,7 +683,7 @@ function highlightContent(value: string): string | undefined {
     previous = character;
   }
 
-  return undefined;
+  return null;
 }
 
 /*
@@ -850,14 +850,14 @@ function isSpaceOrTab(code: number): boolean {
   return code === SPACE || code === TAB;
 }
 
-function lastBlockId(node: RemarkNode): string | undefined {
+function lastBlockId(node: RemarkNode): null | string {
   if (node.type === 'blockId') {
     return node.value;
   }
   if (!('children' in node) || node.type === 'inlineFootnote') {
-    return undefined;
+    return null;
   }
-  let id: string | undefined;
+  let id: null | string = null;
   for (const child of node.children) {
     id = lastBlockId(child) ?? id;
   }

@@ -65,6 +65,7 @@ import type {
   ObsidianDefinition,
   ObsidianHtmlBlockKind
 } from '../quirk-rules.ts';
+import type { StateResult } from './micromark-state.ts';
 
 import {
   COMMENT_OPEN,
@@ -649,7 +650,7 @@ function runTokenOps(effects: Effects, ops: readonly TokenOp[], ok: State): Stat
   let left = 0;
   return step;
 
-  function step(code: Code): State | undefined {
+  function step(code: Code): StateResult {
     for (let op = ops[index]; op !== undefined; op = ops[index]) {
       if (op.kind === 'consume') {
         if (left === 0) {
@@ -686,7 +687,7 @@ function scanAhead(decide: (text: string, next: Code) => boolean | null): Constr
       let isEntered = false;
       return step;
 
-      function step(code: Code): State | undefined {
+      function step(code: Code): StateResult {
         const answer = decide(text, code);
         if (answer !== null) {
           if (isEntered) {
@@ -776,13 +777,13 @@ function tokenizeBareUnderline(effects: Effects, ok: State, nok: State): State {
   let marker: Code = null;
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     marker = code;
     effects.enter(PEEK);
     return inside(code);
   }
 
-  function inside(code: Code): State | undefined {
+  function inside(code: Code): StateResult {
     if (code === marker) {
       effects.consume(code);
       return inside;
@@ -825,14 +826,14 @@ function tokenizeEmptyListItem(context: TokenizeContext, effects: Effects, ok: S
   const startList = baseList.tokenize.call(context, effects, ok, nok);
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     if (!context.interrupt) {
       return nok(code);
     }
     return effects.check(emptyListItemLine, code === Char.Dash ? afterDash : interrupting, nok)(code);
   }
 
-  function afterDash(code: Code): State | undefined {
+  function afterDash(code: Code): StateResult {
     if (!isSingleLine) {
       return nok(code);
     }
@@ -843,7 +844,7 @@ function tokenizeEmptyListItem(context: TokenizeContext, effects: Effects, ok: S
     return !isIndented(context) && paragraphLinesBeforeDocumentLine(context) === 1;
   }
 
-  function interrupting(code: Code): State | undefined {
+  function interrupting(code: Code): StateResult {
     context.interrupt = undefined;
     return startList(code);
   }
@@ -853,7 +854,7 @@ function tokenizeEmptyListItem(context: TokenizeContext, effects: Effects, ok: S
 function tokenizeEmptyListItemLine(effects: Effects, ok: State, nok: State): State {
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     effects.enter(PEEK);
     if (BULLET_CODES.has(code)) {
       effects.consume(code);
@@ -866,7 +867,7 @@ function tokenizeEmptyListItemLine(effects: Effects, ok: State, nok: State): Sta
     return nok(code);
   }
 
-  function delimiter(code: Code): State | undefined {
+  function delimiter(code: Code): StateResult {
     if (code === Char.Dot || code === Char.CloseParen) {
       effects.consume(code);
       return whitespace;
@@ -874,7 +875,7 @@ function tokenizeEmptyListItemLine(effects: Effects, ok: State, nok: State): Sta
     return nok(code);
   }
 
-  function whitespace(code: Code): State | undefined {
+  function whitespace(code: Code): StateResult {
     if (SPACE_OR_TAB_CODES.has(code)) {
       effects.consume(code);
       return whitespace;
@@ -888,14 +889,14 @@ function tokenizeEmptyListItemLine(effects: Effects, ok: State, nok: State): Sta
 function tokenizeEmptyNextLine(effects: Effects, ok: State, nok: State): State {
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     effects.enter('lineEnding');
     effects.consume(code);
     effects.exit('lineEnding');
     return after;
   }
 
-  function after(code: Code): State | undefined {
+  function after(code: Code): StateResult {
     return code === null || isLineEnding(code) ? ok(code) : nok(code);
   }
 }
@@ -904,14 +905,14 @@ function tokenizeEmptyNextLine(effects: Effects, ok: State, nok: State): State {
 function tokenizeNextLineInContainers(context: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     effects.enter('lineEnding');
     effects.consume(code);
     effects.exit('lineEnding');
     return after;
   }
 
-  function after(code: Code): State | undefined {
+  function after(code: Code): StateResult {
     return code === null || context.parser.lazy[context.now().line] === true ? nok(code) : ok(code);
   }
 }
@@ -996,11 +997,11 @@ function tokenizeObsidianAutolink(effects: Effects, ok: State, nok: State): Stat
   });
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     return effects.check(ahead, open, nok)(code);
   }
 
-  function open(code: Code): State | undefined {
+  function open(code: Code): StateResult {
     effects.enter('autolink');
     effects.enter('autolinkMarker');
     effects.consume(code);
@@ -1013,7 +1014,7 @@ function tokenizeObsidianAutolink(effects: Effects, ok: State, nok: State): Stat
     return inside;
   }
 
-  function inside(code: Code): State | undefined {
+  function inside(code: Code): StateResult {
     if (left > 0) {
       effects.consume(code);
       left -= code !== null && code > MAX_BMP_CODE_POINT ? SURROGATE_PAIR : 1;
@@ -1046,33 +1047,33 @@ function tokenizeObsidianCharacterReference(effects: Effects, ok: State, nok: St
   });
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     return effects.check(ahead, open, nok)(code);
   }
 
-  function open(code: Code): State | undefined {
+  function open(code: Code): StateResult {
     effects.enter('characterReference');
     marker(code, 'characterReferenceMarker');
     return source.charAt(index) === '#' ? numeric : value;
   }
 
-  function numeric(code: Code): State | undefined {
+  function numeric(code: Code): StateResult {
     marker(code, 'characterReferenceMarkerNumeric');
     return source.charAt(index).toLowerCase() === 'x' ? hexadecimal : value;
   }
 
-  function hexadecimal(code: Code): State | undefined {
+  function hexadecimal(code: Code): StateResult {
     marker(code, 'characterReferenceMarkerHexadecimal');
     return value;
   }
 
-  function value(code: Code): State | undefined {
+  function value(code: Code): StateResult {
     const token = effects.enter('characterReferenceValue');
     token._obsidianValue = reference?.value;
     return inValue(code);
   }
 
-  function inValue(code: Code): State | undefined {
+  function inValue(code: Code): StateResult {
     const isSemicolon = source.charAt(index) === ';';
     if (!isSemicolon && index < source.length) {
       effects.consume(code);
@@ -1087,7 +1088,7 @@ function tokenizeObsidianCharacterReference(effects: Effects, ok: State, nok: St
     return done(code);
   }
 
-  function done(code: Code): State | undefined {
+  function done(code: Code): StateResult {
     effects.exit('characterReference');
     return ok(code);
   }
@@ -1140,11 +1141,11 @@ function tokenizeObsidianHtmlFlow(context: TokenizeContext, effects: Effects, ok
   });
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     return effects.check(firstLine, opened, nok)(code);
   }
 
-  function opened(code: Code): State | undefined {
+  function opened(code: Code): StateResult {
     // An interrupting construct only has to show that it starts.
     if (context.interrupt) {
       return ok(code);
@@ -1153,7 +1154,7 @@ function tokenizeObsidianHtmlFlow(context: TokenizeContext, effects: Effects, ok
     return lineStart(code);
   }
 
-  function lineStart(code: Code): State | undefined {
+  function lineStart(code: Code): StateResult {
     if (code === null || isLineEnding(code)) {
       return lineEnd(code);
     }
@@ -1162,7 +1163,7 @@ function tokenizeObsidianHtmlFlow(context: TokenizeContext, effects: Effects, ok
     return inLine(code);
   }
 
-  function inLine(code: Code): State | undefined {
+  function inLine(code: Code): StateResult {
     if (code === null || isLineEnding(code)) {
       effects.exit('htmlFlowData');
       return kind?.end?.test(lineText) === true ? done(code) : lineEnd(code);
@@ -1172,25 +1173,25 @@ function tokenizeObsidianHtmlFlow(context: TokenizeContext, effects: Effects, ok
     return inLine;
   }
 
-  function lineEnd(code: Code): State | undefined {
+  function lineEnd(code: Code): StateResult {
     if (code === null) {
       return done(code);
     }
     return kind?.end === null ? effects.check(emptyNextLine, done, nextLine)(code) : nextLine(code);
   }
 
-  function nextLine(code: Code): State | undefined {
+  function nextLine(code: Code): StateResult {
     return effects.check(nextLineInContainers, atNextLine, done)(code);
   }
 
-  function atNextLine(code: Code): State | undefined {
+  function atNextLine(code: Code): StateResult {
     effects.enter('lineEnding');
     effects.consume(code);
     effects.exit('lineEnding');
     return lineStart;
   }
 
-  function done(code: Code): State | undefined {
+  function done(code: Code): StateResult {
     effects.exit('htmlFlow');
     return ok(code);
   }
@@ -1217,7 +1218,7 @@ function tokenizeObsidianTable(context: TokenizeContext, effects: Effects, ok: S
       let text = '';
       return inLine;
 
-      function inLine(code: Code): State | undefined {
+      function inLine(code: Code): StateResult {
         if (code !== null && !isLineEnding(code)) {
           if (text === '') {
             aheadEffects.enter(PEEK);
@@ -1254,7 +1255,7 @@ function tokenizeObsidianTable(context: TokenizeContext, effects: Effects, ok: S
   const rowAheadAfterLineEnding: Construct = { partial: true, tokenize: tokenizeRowAheadAfterLineEnding };
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     if (context.interrupt) {
       return nok(code);
     }
@@ -1271,7 +1272,7 @@ function tokenizeObsidianTable(context: TokenizeContext, effects: Effects, ok: S
     return isObsidianTableRow(header) && isObsidianTableRow(delimiter) && hasObsidianTableLeadingPipe(delimiter) === hasLeadingPipe && obsidianTableAlignments(delimiter) !== null;
   }
 
-  function open(code: Code): State | undefined {
+  function open(code: Code): StateResult {
     const header = ' '.repeat(headerOffset) + (lines[0] ?? '');
     const delimiter = lines[1] ?? '';
     effects.enter('obsidianTable');
@@ -1286,29 +1287,29 @@ function tokenizeObsidianTable(context: TokenizeContext, effects: Effects, ok: S
     ], afterHead)(code);
   }
 
-  function afterHead(code: Code): State | undefined {
+  function afterHead(code: Code): StateResult {
     return code === null ? done(code) : effects.check(nextLineInContainers, (after) => effects.check(rowAheadAfterLineEnding, startBody, done)(after), done)(code);
   }
 
   // The line ending before the body is outside it, as in `micromark-extension-gfm-table`'s layout.
-  function startBody(code: Code): State | undefined {
+  function startBody(code: Code): StateResult {
     return runTokenOps(effects, [...leafOps('lineEnding', 1), { kind: 'enter', type: 'tableBody' }, ...tableRowOps(next, 0, 'tableData')], afterBodyRow)(code);
   }
 
-  function bodyRow(code: Code): State | undefined {
+  function bodyRow(code: Code): StateResult {
     return runTokenOps(effects, [...leafOps('lineEnding', 1), ...tableRowOps(next, 0, 'tableData')], afterBodyRow)(code);
   }
 
-  function afterBodyRow(code: Code): State | undefined {
+  function afterBodyRow(code: Code): StateResult {
     return code === null ? endBody(code) : effects.check(nextLineInContainers, (after) => effects.check(rowAheadAfterLineEnding, bodyRow, endBody)(after), endBody)(code);
   }
 
-  function endBody(code: Code): State | undefined {
+  function endBody(code: Code): StateResult {
     effects.exit('tableBody');
     return done(code);
   }
 
-  function done(code: Code): State | undefined {
+  function done(code: Code): StateResult {
     effects.exit('table');
     effects.exit('obsidianTable');
     return ok(code);
@@ -1333,7 +1334,7 @@ function tokenizeSingleLineSetextUnderline(context: TokenizeContext, effects: Ef
   const underline = setextUnderline.tokenize.call(context, effects, ok, nok);
   return start;
 
-  function start(code: Code): State | undefined {
+  function start(code: Code): StateResult {
     return isIndented(context) || paragraphLinesBefore(context, context.now().line) !== 1 ? nok(code) : effects.check(bareUnderline, underline, nok)(code);
   }
 }
