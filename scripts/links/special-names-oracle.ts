@@ -1093,16 +1093,17 @@ async function renameTo(from: string, to: string): Promise<null | string> {
  * Only for a step that gives the same answer when run again: opening a search for one query, or reading its results.
  */
 async function retriedOnEvalCap<T>(what: string, step: () => Promise<T>): Promise<T> {
-  for (let attempt = 1;; attempt++) {
+  for (let attempt = 1; attempt < MAX_CAPPED_ATTEMPTS; attempt++) {
     try {
       return await step();
     } catch (error) {
-      if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+      if (!isEvalCapExceeded(error)) {
         throw error;
       }
       process.stderr.write(`special-names-oracle: ${what} ran past the eval cap, running it again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
     }
   }
+  return step();
 }
 
 // Read through the whole settle window: a cached success can precede a delayed rename update or removal from the index.

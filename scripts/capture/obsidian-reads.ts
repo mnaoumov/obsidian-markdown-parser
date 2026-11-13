@@ -320,16 +320,17 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
    * made again: it only reads, so a retried poll gives what the first would have.
    */
   async function readModePoll(): Promise<ModePoll> {
-    for (let attempt = 1;; attempt++) {
+    for (let attempt = 1; attempt < MAX_CAPPED_ATTEMPTS; attempt++) {
       try {
         return await readModePollOnce();
       } catch (error) {
-        if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+        if (!isEvalCapExceeded(error)) {
           throw error;
         }
         process.stderr.write(`obsidian-reads: a mode poll ran past the eval cap, polling again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
       }
     }
+    return readModePollOnce();
   }
 
   async function readModePollOnce(): Promise<ModePoll> {

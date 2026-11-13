@@ -238,16 +238,17 @@ try {
    * the same text, so a retried read gives what the first would have.
    */
   async function readTree(text: null | string): Promise<string> {
-    for (let attempt = 1;; attempt++) {
+    for (let attempt = 1; attempt < MAX_CAPPED_ATTEMPTS; attempt++) {
       try {
         return await readTreeOnce(text);
       } catch (error) {
-        if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+        if (!isEvalCapExceeded(error)) {
           throw error;
         }
         process.stderr.write(`oracle: a read ran past the eval cap, reading again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
       }
     }
+    return readTreeOnce(text);
   }
 
   async function readTreeOnce(text: null | string): Promise<string> {
