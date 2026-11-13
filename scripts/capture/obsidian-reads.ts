@@ -540,7 +540,13 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
   }
 }
 
-// Obsidian-integration-testing's error for an eval its cap killed, known by name: the global install is not typed here.
-function isEvalCapExceeded(error: unknown): boolean {
+/**
+ * Whether `error` is obsidian-integration-testing's error for an eval its cap killed, known by name: the global install is
+ * not typed here.
+ *
+ * @param error - The error thrown by an eval.
+ * @returns Whether the eval cap killed the eval.
+ */
+export function isEvalCapExceeded(error: unknown): boolean {
   return error instanceof Error && (error.name === 'EvalCapExceededError' || error.constructor.name === 'EvalCapExceededError');
 }
