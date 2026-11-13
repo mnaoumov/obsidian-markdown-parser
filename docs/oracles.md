@@ -39,8 +39,8 @@ A class-span re-read follows the corpus as it is now. Every pinned file holds th
 The editing-mode capture can also run by itself in bounded batches:
 
 ```sh
-npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.0 --checkpoint <file> --max-documents 100
-npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.0 --resume <file> --max-documents 100
+npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.1 --checkpoint <file> --max-documents 100
+npx jiti scripts/modes/editing-modes-oracle.ts --obsidian-version 1.15.1 --resume <file> --max-documents 100
 ```
 
 The limit counts new documents in that invocation. Each completed read replaces the checkpoint atomically. Resuming requires the same app version, browser user agent and exact corpus prefix; the saved readings are kept unchanged. The reader replays the prefix's syntax-tree reads to restore sub-mode initialization order, without repeating its DOM measurements. An incomplete batch writes only its checkpoint; the final oracle is written only after every document has been read. Omit the limit to finish the remainder in one invocation. When an editing-mode capture was completed separately, omit `editing-modes` from a subsequent refresh's `--only` list.
@@ -60,7 +60,7 @@ It compares each oracle of one version (by default the pinned one, in `oracle/`)
 
 Then it runs the suites that check the parser against Obsidian (`highlight`, `language`, `editing-modes`, `forum-issues`, `spec-quirks`, `quirk-probes` and `worker-metadata`) on the newer version's files, by setting `ORACLE_OBSIDIAN_VERSION` and `ORACLE_DIRECTORY`. That covers what the report does not score itself: the reading view's HTML of the spec examples and the probes, and every quirk the suites explain. A suite whose files the newer version lacks is skipped, and the report names the missing file, so a partial re-read (`--only`) runs only the suites it read for; none is run against another version's files, because a pass would then say nothing about the newer one. It exits 1 when the parser newly differs anywhere or a suite it ran fails.
 
-The parser's score is shown on both versions because it is not 100% everywhere on the pinned one: 13 spec examples differ in the editor's classes on both 1.14.5 and 1.15.0. A new version is judged by what it changes, not by that baseline.
+The parser's score is shown on both versions because it is not 100% everywhere on the pinned one: 13 spec examples differ in the editor's classes on 1.14.5, 1.15.0 and 1.15.1. A new version is judged by what it changes, not by that baseline.
 
 ## The release differential
 
@@ -108,13 +108,30 @@ An `-all` file holds every case of its source and a `-failing` file only the cas
 
 ## The last run
 
+### Public 1.15.1, complete captures
+
+2026-11-11 to 2026-11-13, against public Obsidian 1.15.1. Every desktop oracle was read again into `oracle/`: eleven class-span files (46,508 documents), 674 spec examples, 169 quirk probes, 36 forum documents, 618 editing-mode documents, 400 live-surface notes, 3,743 worker documents, link parity, both special-name sweeps and all seven link cases. The pin moved to 1.15.1 and the 1.15.0 files were removed after the full suite passed on the new ones: 39 files and 674 tests with one worker. Android remains pinned to 1.14.4.
+
+The drift report (`npm run oracle:drift -- --from-version 1.15.0 --to-version 1.15.1`) found 5,360 changed readings, and the parser newly differs on none:
+
+- **The editor changed nothing.** All 46,508 class-span documents, 674 spec examples, 36 forum documents and 618 editing-mode documents give the same classes, and the parser is exact on all of them, 661 of the 674 spec examples as before.
+- **The metadata worker adds a top-level `v: 1`** after `blocks` on every document, and it no longer throws on a front matter key `hasOwnProperty`: 12 worker documents that gave `null` now give metadata. `parseMetadata` follows both from `obsidianVersion: '1.15.1'` ([`metadata.md`](metadata.md)), and is exact on all 3,743 worker documents of each version.
+- **The Reading view sanitizer changed twice.** It now drops an inline processing instruction (spec example 627, which joins the sanitizer row of `SPEC_DIFFERENCES`) and keeps a `<search>` element (the quirk probe `foo\n<search>`, already in the rendered list).
+- **Source mode and Live Preview** changed the DOM of 12 editing-mode documents, all callouts, with the same classes. The live surface caches changed with the worker's `v`, and one table note's cache after opening changed too. Links, Backlinks, Outline, renames and `processFrontMatter` are unchanged.
+
+The conformance suites pass on the 1.15.1 files. The release differential moved no mode-judge family: 48 families with 9,669 findings over 50,925 documents on each version. On the live surfaces, `editor-reformats-table` went from 5 findings to 4, the table note above. The other six families did not move.
+
+The link cases and the normalization sweep read the same as on 1.15.0, vault names aside. Link parity indexed two paths in the other order. The ordinary special-name sweep recorded the link onto `.x` after an API rename as unresolved again, as the 1.14.5 read did, so that observation still varies between reads. Its rename to `r*s` was refused with no notice read, where 1.15.0's read had the notice, which may be a notice that closed before it was read.
+
+Three captures needed fixes for a loaded machine, where a starved renderer runs one eval past the 30-second cap: a class-span document, an editing-mode poll and a special-names search are now run again on the cap, a live surface rename runs in its own eval, and a special-names linker that Reading view has not rendered is opened again once.
+
 ### Public 1.15.0, complete captures
 
 2026-11-03, against public Obsidian 1.15.0. Every desktop oracle is complete in `oracle/`: eleven class-span files (46,508 documents), 674 spec examples, 169 quirk probes, 36 forum documents, 618 editing-mode documents, 400 live-surface notes, 3,284 worker documents, link parity, both special-name sweeps and all seven link cases. The desktop pin now uses the complete 1.15.0 set. The superseded desktop 1.14.5 files were removed after the full suites passed; their historical measurements and provenance remain documented. Android remains pinned to 1.14.4.
 
 The complete drift report found 6,622 changed readings: 6,284 class-span documents, 142 spec class readings, 85 editing-mode class readings and 111 editing-mode Source/Live Preview DOM readings. No metadata, Reading-view, quirk-probe, forum or live-surface reading changed. The parser was exact on all 46,508 class documents, 661 of 674 spec class readings, all 674 spec metadata readings, all 3,284 worker documents, all 36 forum documents, all 618 editing-mode documents and all 400 live-surface caches, on both versions. No document newly differed. All 162 tests across the seven conformance suites and three supplemental link/name suites passed on 1.15.0 with one worker; none was skipped. After the pin and class-reader migration, the full 36-file suite passed all 648 tests with one worker and file parallelism disabled. Standalone syntax and adapter scores were re-recorded and are unchanged ([syntax scores](syntax.md#measured-against-the-live-editor)); the main class oracle remains exact on 4,228/4,228 documents. The repeated benchmark and its shared-CPU runtime context are recorded in [the CM6 host notes](cm6-host.md#public-1150-pin-remeasurement).
 
-The release differential moved no family or count: 48 mode-judge families with 9,626 findings over 50,466 documents, and seven live-surface families with 173 findings over 400 notes, on each version. The comparison used `npm run oracle:differential -- --from-version 1.14.5 --to-version 1.15.0`. To reproduce it after the pin move, restore the 1.14.5 files from git into a separate directory and pass `--from-dir <directory>`; the current default compares from 1.15.0.
+The release differential moved no family or count: 48 mode-judge families with 9,626 findings over 50,466 documents, and seven live-surface families with 173 findings over 400 notes, on each version. The comparison used `npm run oracle:differential -- --from-version 1.14.5 --to-version 1.15.0`. To reproduce it after the pin move, restore the 1.14.5 files from git into a separate directory and pass `--from-dir <directory>`.
 
 The editing-mode capture resumed its saved 406-read prefix and completed all 618 reads. A JSON comparison confirmed that every saved read was unchanged and the completed checkpoint equalled the final oracle before the partial file was removed. Completed class, spec, quirk and forum captures were reused throughout.
 

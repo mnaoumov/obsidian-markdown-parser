@@ -77,4 +77,4 @@ No projection from the `@lezer/markdown` tree has been measured yet, so the size
 
 ## Next step
 
-A prototype of the single-engine path, outside this page's scope: a `CachedMetadata` projection from the `@lezer/markdown` tree, with the `obsidian` preset and every quirk flag on, scored against the worker oracle (`oracle/worker-metadata-obsidian-1.15.0.json`) and the live app's metadata of the spec examples, with each differing document put down to one of the five items above. That turns the gap into numbers, which is what the team would need to choose between the two paths.
+A prototype of the single-engine path, outside this page's scope: a `CachedMetadata` projection from the `@lezer/markdown` tree, with the `obsidian` preset and every quirk flag on, scored against the worker oracle (`oracle/worker-metadata-obsidian-1.15.1.json`) and the live app's metadata of the spec examples, with each differing document put down to one of the five items above. That turns the gap into numbers, which is what the team would need to choose between the two paths.

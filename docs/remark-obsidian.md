@@ -18,7 +18,7 @@ The `test/parity/` corpora were not imported. They are that harness's own measur
 
 ## Measured against Obsidian
 
-`scripts/capture/worker-oracle.ts` runs Obsidian 1.15.0's metadata worker on every imported input, as the set `remark-obsidian` of `oracle/worker-metadata-obsidian-1.15.0.json`. The worker parses all 445 without throwing. `parseMetadata` gives the worker's whole `CachedMetadata` on every one of them, and `src/oracle/spec/worker-metadata.test.ts` keeps it that way, so the inputs found no difference in the projection.
+`scripts/capture/worker-oracle.ts` runs Obsidian 1.15.1's metadata worker on every imported input, as the set `remark-obsidian` of `oracle/worker-metadata-obsidian-1.15.1.json`. The worker parses all 445 without throwing. `parseMetadata` gives the worker's whole `CachedMetadata` on every one of them, and `src/oracle/spec/worker-metadata.test.ts` keeps it that way, so the inputs found no difference in the projection.
 
 The package's expected output and Obsidian's were compared by hand for the inputs the metadata settles: wikilinks and embeds (path, heading, alias, escaped pipes, whitespace trimming, a `[[` inside a target, a doubled bracket in an alias), tags (`#123`, a tag ended by the next `#`, a tag after an inline construct), and what `collectWikilinks` and `collectEmbedPaths` collect. All of them agree. The inputs about block structure and HTML, such as callouts, setext headings and code spans, were not compared one by one. The package's assertions on those are about its own mdast shape, which no Obsidian surface reports in the same form.
 
