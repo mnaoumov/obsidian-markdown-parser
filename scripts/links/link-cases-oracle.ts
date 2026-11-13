@@ -12,6 +12,7 @@
  * Usage: `jiti scripts/links/link-cases-oracle.ts [--obsidian-version <version>] [--out-dir <directory>]`.
  */
 
+import { disposeAsync } from '@mnaoumov/typescript-lib/disposable';
 import { execSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -319,5 +320,5 @@ try {
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
   console.log(`link-cases-oracle: written to ${outFile}`);
 } finally {
-  await conn[Symbol.asyncDispose]();
+  await disposeAsync(conn);
 }

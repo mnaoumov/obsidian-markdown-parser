@@ -11,6 +11,7 @@
 
 /// <reference lib="dom.iterable" />
 
+import { disposeAsync } from '@mnaoumov/typescript-lib/disposable';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import process from 'node:process';
@@ -534,9 +535,9 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     await readUntilStable('$x$ and $$y$$\n$$\n\\frac{a}{b}\n$$\n');
     // Math is typeset by MathJax, which loads on first use.
     await readEditingModes('$x$\n');
-    return { dispose: async () => conn[Symbol.asyncDispose](), meta, readEditingModes, readHighlightedCode, readRendered, readUntilStable };
+    return { dispose: async () => disposeAsync(conn), meta, readEditingModes, readHighlightedCode, readRendered, readUntilStable };
   } catch (error) {
-    await conn[Symbol.asyncDispose]();
+    await disposeAsync(conn);
     throw error;
   }
 }
