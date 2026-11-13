@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * The Obsidian version the desktop oracle files in `oracle/` were read from.
  */
-export const PINNED_OBSIDIAN_VERSION = '1.15.0';
+export const PINNED_OBSIDIAN_VERSION = '1.15.1';
 
 /**
  * The independently measured Android version. A desktop pin move does not refresh the device oracles.

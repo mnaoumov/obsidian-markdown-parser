@@ -58,10 +58,9 @@ const ALL_SUITES = [
   SUITES.metadataFailing
 ];
 const FORUM_EDITING_MODE_CASES = 14;
-const METADATA_ISSUE_CASES = 13;
-const EXPECTED_METADATA_CASES = 9;
-const WORKER_THROWS_ON_BLANK_LINK_DESTINATION = 17;
-const WORKER_THROWS_ON_HAS_OWN_PROPERTY_KEY = 14;
+const METADATA_ISSUE_CASES = 11;
+const EXPECTED_METADATA_CASES = 7;
+const WORKER_THROWS_ON_BLANK_LINK_DESTINATION = 19;
 const QUIRK_PROBE_COUNT = 169;
 const COMMONMARK_NO_SPEC_FAILING_CASES = 70;
 const GFM_NO_SPEC_FAILING_CASES = 27;
@@ -150,7 +149,7 @@ describe('the exported test cases', () => {
     expect(new Set(SUITES.editorVsReadingView.cases.map((testCase) => testCase.issue))).toEqual(new Set([...Array.from({ length: 8 }, (_, index) => `issue-${String(index + 5)}`), 'issue-existing-50661', 'judged']));
     const samples = SUITES.metadataFailing.cases.filter((testCase) => testCase.id.startsWith('issue-'));
     expect(samples).toHaveLength(METADATA_ISSUE_CASES);
-    expect(new Set(samples.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-2', 'issue-3', 'issue-4', 'issue-topic-119821']));
+    expect(new Set(samples.map((testCase) => testCase.issue))).toEqual(new Set(['issue-1', 'issue-3', 'issue-4', 'issue-topic-119821']));
     expect(SUITES.metadataFailing.cases.filter((testCase) => testCase.expectedMetadata !== undefined)).toHaveLength(EXPECTED_METADATA_CASES);
   });
 
@@ -160,7 +159,8 @@ describe('the exported test cases', () => {
     expect(failing.map(({ id, markdown, metadata, obsidianVersion }) => ({ id, markdown, metadata, obsidianVersion }))).toEqual(throws);
     expect(SUITES.metadataFailing.cases).toHaveLength(throws.length + METADATA_ISSUE_CASES);
     expect(failing.filter((testCase) => testCase.issue === 'issue-1')).toHaveLength(WORKER_THROWS_ON_BLANK_LINK_DESTINATION);
-    expect(failing.filter((testCase) => testCase.issue === 'issue-2')).toHaveLength(WORKER_THROWS_ON_HAS_OWN_PROPERTY_KEY);
+    // Obsidian 1.15.1 reads a key `hasOwnProperty`, so no document throws on issue 2.
+    expect(failing.filter((testCase) => testCase.issue === 'issue-2')).toEqual([]);
   });
 
   it('give each editing mode case Source mode, Live Preview and Reading view, with one Source mode line per markdown line', () => {
@@ -186,13 +186,13 @@ describe('the exported test cases', () => {
 
   it('expect of the metadata issues what the worker gives once the fault is out', () => {
     const byId = new Map(SUITES.metadataFailing.cases.map((testCase) => [testCase.id, testCase]));
-    for (const id of ['issue-1-1', 'issue-1-2', 'issue-2-1', 'issue-2-2']) {
+    for (const id of ['issue-1-1', 'issue-1-2']) {
       expect(byId.get(id)?.metadata).toBeNull();
       expect(byId.get(id)?.expectedMetadata).toMatchObject({ headings: [{ heading: 'Heading' }], links: [{ link: 'Target' }], tags: [{ tag: '#tag' }] });
     }
     expect(byId.get('issue-1-1')?.expectedMetadata).toMatchObject({ frontmatter: { k: '[text]()' } });
-    // eslint-disable-next-line unicorn/name-replacements -- `obj` is the property name in the note as the forum reported it.
-    expect(byId.get('issue-2-2')?.expectedMetadata).toMatchObject({ frontmatter: { obj: { hasOwnProperty: 1 } } });
+    // Obsidian 1.15.1 gives issue 2's samples the metadata they should have, so they are left out.
+    expect([byId.has('issue-2-1'), byId.has('issue-2-2')]).toEqual([false, false]);
     for (const id of ['issue-3-1', 'issue-3-2']) {
       expect(byId.get(id)?.expectedMetadata).toMatchObject({ sections: [{ type: 'paragraph' }, ...id === 'issue-3-1' ? [{ id: 'abc', type: 'footnoteDefinition' }] : []] });
     }
