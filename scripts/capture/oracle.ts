@@ -15,6 +15,7 @@
  */
 
 import { format } from '@mnaoumov/typescript-dev-toolkit/formatters/dprint';
+import { disposeAsync } from '@mnaoumov/typescript-lib/disposable';
 import { execSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -327,5 +328,5 @@ try {
   await format({ paths: [outFile] });
   console.log(`oracle: ${String(results.length)} docs written to ${outFile}`);
 } finally {
-  await conn[Symbol.asyncDispose]();
+  await disposeAsync(conn);
 }

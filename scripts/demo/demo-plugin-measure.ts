@@ -15,6 +15,7 @@
  * Usage: `jiti scripts/demo/demo-plugin-measure.ts [--vault <dir>] [--lines 100000] [--obsidian-version <version>]`.
  */
 
+import { disposeAsync } from '@mnaoumov/typescript-lib/disposable';
 import { execSync } from 'node:child_process';
 import {
   readdirSync,
@@ -235,7 +236,7 @@ try {
     JSON_INDENT
   ));
 } finally {
-  await conn[Symbol.asyncDispose]();
+  await disposeAsync(conn);
 }
 
 // The vault's notes repeated, whole, until the text has the requested number of lines.

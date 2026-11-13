@@ -32,6 +32,7 @@
 
 /// <reference lib="dom.iterable" />
 
+import { disposeAsync } from '@mnaoumov/typescript-lib/disposable';
 import { execSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -626,7 +627,7 @@ async function openDesktopVault(obsidianVersion: string | undefined): Promise<Or
       return readFileSync(join(basePath, path), 'utf-8');
     },
     [Symbol.asyncDispose]: async (): Promise<void> => {
-      await cdp[Symbol.asyncDispose]();
+      await disposeAsync(cdp);
     },
     writeFiles: async (files, paths): Promise<void> => {
       for (const path of paths) {
@@ -1324,5 +1325,5 @@ try {
   writeFileSync(outFile, `${JSON.stringify(oracleFile, null, JSON_INDENT)}\n`);
   console.log(`special-names-oracle: ${String(names.length)} names written to ${outFile}`);
 } finally {
-  await conn[Symbol.asyncDispose]();
+  await disposeAsync(conn);
 }
