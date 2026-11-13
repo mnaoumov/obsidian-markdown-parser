@@ -56,6 +56,24 @@ import {
   WorkerFailure
 } from './link-path.ts';
 
+/**
+ * Which Obsidian release's metadata worker {@link parseMetadata} reproduces.
+ */
+export interface ParseMetadataOptions {
+  /**
+   * The Obsidian version, as `x.y.z`. From 1.15.1 on, the worker posts `v: 1` on every document, after the block ids,
+   * and a front matter key `hasOwnProperty` no longer makes it throw.
+   *
+   * @default The metadata of Obsidian 1.15.0.
+   */
+  readonly obsidianVersion?: string;
+}
+
+/**
+ * Which Obsidian release's metadata worker {@link workerFailureOf} reproduces.
+ */
+export type WorkerFailureOfOptions = ParseMetadataOptions;
+
 interface FootnoteNote {
   readonly children: readonly RemarkNode[];
   readonly isInline: boolean;
@@ -93,6 +111,8 @@ interface MutableMetadata {
   readonly referenceLinks: ReferenceLinkCache[];
   readonly sections: SectionCache[];
   readonly tags: TagCache[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Set after the lists, so it takes the worker's key order.
+  v?: number;
 }
 
 interface Walk {
@@ -100,6 +120,14 @@ interface Walk {
   readonly listParents: Map<RemarkList, RemarkListItem>;
   readonly metadata: MutableMetadata;
   readonly text: string;
+}
+
+/**
+ * What the worker of one Obsidian release does differently.
+ */
+interface WorkerRelease {
+  readonly hasFormatVersion: boolean;
+  readonly isHasOwnPropertyKeyFatal: boolean;
 }
 
 // A block id the engine has taken out of the tree, after the last block of the document.
@@ -110,6 +138,10 @@ const DEFAULT_HEADING_LEVEL = 1;
 const DELETED_WHEN_EMPTY = new Set(['embeds', 'footnoteRefs', 'footnotes', 'headings', 'links', 'listItems', 'referenceLinks', 'sections', 'tags']);
 
 const ORIGIN: RemarkPoint = { column: 1, line: 1, offset: 0 };
+const VERSION_RE = /^(?<major>\d+)\.(?<minor>\d+)(?:\.(?<patch>\d+))?/u;
+// The first release whose worker posts `v` and reads a front matter key `hasOwnProperty`.
+const FORMAT_VERSION_RELEASE = '1.15.1';
+const FORMAT_VERSION = 1;
 
 /**
  * Builds the metadata Obsidian's metadata worker posts for a document.
@@ -118,12 +150,13 @@ const ORIGIN: RemarkPoint = { column: 1, line: 1, offset: 0 };
  * every position counts from after it.
  *
  * @param markdown - The document.
+ * @param options - Which release's worker to reproduce.
  * @returns The metadata, with the fields the document has; `null` where the worker throws and posts `null`, which a
  * front matter string `[text]()` makes it do.
  */
-export function parseMetadata(markdown: string): CachedMetadata | null {
+export function parseMetadata(markdown: string, options: ParseMetadataOptions = {}): CachedMetadata | null {
   try {
-    return metadataOrFailure(markdown);
+    return metadataOrFailure(markdown, options);
   } catch (error) {
     if (error instanceof WorkerFailure) {
       return null;
@@ -136,11 +169,12 @@ export function parseMetadata(markdown: string): CachedMetadata | null {
  * Why Obsidian's metadata worker throws on a document, where {@link parseMetadata} gives `null`.
  *
  * @param markdown - The document.
+ * @param options - Which release's worker to reproduce.
  * @returns The failure, naming what makes the worker throw; `null` where the worker posts metadata.
  */
-export function workerFailureOf(markdown: string): null | WorkerFailure {
+export function workerFailureOf(markdown: string, options: WorkerFailureOfOptions = {}): null | WorkerFailure {
   try {
-    metadataOrFailure(markdown);
+    metadataOrFailure(markdown, options);
     return null;
   } catch (error) {
     if (error instanceof WorkerFailure) {
@@ -286,6 +320,19 @@ function imageLinkOf(image: RemarkImage): null | string {
   return !image.url || !isLinkPath(image.url) ? null : decodeLinkPath(image.url) ?? normalizeLinkPath(image.url);
 }
 
+// Whether `obsidianVersion` is `release` or later; an unknown version is earlier than every release.
+function isAtLeast(obsidianVersion: string | undefined, release: string): boolean {
+  const parts = versionParts(obsidianVersion);
+  const releaseParts = versionParts(release);
+  for (const [index, part] of parts.entries()) {
+    const releasePart = releaseParts[index] ?? 0;
+    if (part !== releasePart) {
+      return part > releasePart;
+    }
+  }
+  return true;
+}
+
 function lastBlockId(node: RemarkNode, isInlineFootnoteHidden: boolean): null | string {
   if (node.type === 'blockId') {
     return node.value;
@@ -339,7 +386,7 @@ function locOf(point: RemarkPoint): Loc {
   return { line: point.line - 1, col: point.column - 1, offset: point.offset };
 }
 
-function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolean): CachedMetadata {
+function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolean, release: WorkerRelease): CachedMetadata {
   const metadata: MutableMetadata = {
     links: [],
     embeds: [],
@@ -353,6 +400,9 @@ function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolea
     listItems: [],
     blocks: {}
   };
+  if (release.hasFormatVersion) {
+    metadata.v = FORMAT_VERSION;
+  }
 
   const first = root.children.at(0);
   if (first?.type === 'yaml') {
@@ -360,7 +410,7 @@ function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolea
     if (frontmatter) {
       metadata.frontmatter = frontmatter;
       metadata.frontmatterPosition = positionOf(first.position);
-      metadata.frontmatterLinks = frontmatterLinksOf(frontmatter);
+      metadata.frontmatterLinks = frontmatterLinksOf(frontmatter, { isHasOwnPropertyKeyFatal: release.isHasOwnPropertyKeyFatal });
     }
   }
 
@@ -392,10 +442,10 @@ function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolea
 }
 
 // Throws `WorkerFailure` where the worker throws.
-function metadataOrFailure(markdown: string): CachedMetadata {
+function metadataOrFailure(markdown: string, options: ParseMetadataOptions): CachedMetadata {
   const text = new TextDecoder().decode(new TextEncoder().encode(markdown));
   const { hasFootnoteOrBlockId, root } = parseRemarkTree(text, { shouldReadSoftLineBreaksAsHard: true });
-  return metadataOf(text, root, hasFootnoteOrBlockId);
+  return metadataOf(text, root, hasFootnoteOrBlockId, workerReleaseOf(options.obsidianVersion));
 }
 
 /*
@@ -449,6 +499,11 @@ function sectionType(node: RemarkNode): string {
     return 'callout';
   }
   return node.type === 'obsidianCommentBlock' ? 'comment' : node.type;
+}
+
+function versionParts(version: string | undefined): readonly number[] {
+  const groups = version === undefined ? undefined : VERSION_RE.exec(version)?.groups;
+  return [Number(groups?.['major'] ?? 0), Number(groups?.['minor'] ?? 0), Number(groups?.['patch'] ?? 0)];
 }
 
 function visitOutsideInlineFootnotes(node: RemarkNode, visitor: (node: RemarkNode) => void): void {
@@ -567,6 +622,11 @@ function withoutEmptyFields(metadata: MutableMetadata): CachedMetadata {
     }
   }
   return result;
+}
+
+function workerReleaseOf(obsidianVersion: string | undefined): WorkerRelease {
+  const isFormatVersioned = isAtLeast(obsidianVersion, FORMAT_VERSION_RELEASE);
+  return { hasFormatVersion: isFormatVersioned, isHasOwnPropertyKeyFatal: !isFormatVersioned };
 }
 
 /* eslint-enable perfectionist/sort-objects -- The worker's key order ends here. */

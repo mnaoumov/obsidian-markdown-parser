@@ -13,6 +13,7 @@ import type {
 import { parseMetadata } from '../../metadata/metadata.ts';
 import {
   liveSurfacesOracleFileName,
+  oracleObsidianVersion,
   readOracleFile
 } from '../oracle-location.ts';
 import { liveSurfaceFamilyCounts } from '../release-differential.ts';
@@ -64,7 +65,7 @@ describe('the live surface oracle', () => {
   });
 
   it('holds the cache parseMetadata gives, read before the note is opened', () => {
-    const differing = file.reads.filter((read) => JSON.stringify(read.cache) !== JSON.stringify(parseMetadata(read.markdown))).map((read) => read.id);
+    const differing = file.reads.filter((read) => JSON.stringify(read.cache) !== JSON.stringify(parseMetadata(read.markdown, { obsidianVersion: oracleObsidianVersion() }))).map((read) => read.id);
     expect(differing).toEqual([]);
   });
 

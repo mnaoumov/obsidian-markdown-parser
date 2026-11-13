@@ -74,7 +74,7 @@ const NOT_REPRODUCED: Readonly<Record<keyof ObsidianQuirkFlags, readonly string[
 const ENGINE_RAW_HTML = [21, 31, 149, 151, 152, 155, 156, 157, 158, 160, 165, 171, 174, 175, 181, 184, 190, 191, 623].map((example) => `commonmark:${String(example)}`);
 const ENGINE_COMPARISON = [148, 187, 344, 494, 630, 631, 642, 643].map((example) => `commonmark:${String(example)}`);
 const ENGINE_RENDERED = [
-  ...[150, 163, 169, 170, 172, 173, 176, 177, 178, 179, 180, 182, 183, 201, 308, 309, 491, 572, 579, 613, 614, 615, 616, 617, 628, 629].map((example) => `commonmark:${String(example)}`),
+  ...[150, 163, 169, 170, 172, 173, 176, 177, 178, 179, 180, 182, 183, 201, 308, 309, 491, 572, 579, 613, 614, 615, 616, 617, 627, 628, 629].map((example) => `commonmark:${String(example)}`),
   'gfm:652'
 ];
 

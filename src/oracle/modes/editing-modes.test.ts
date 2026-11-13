@@ -36,7 +36,7 @@ describe('the editing mode oracle', () => {
   }, CORPUS_TEST_TIMEOUT_MS);
 
   it('is the metadata that the projection gives on every document', () => {
-    const differing = ORACLE.reads.filter((read) => JSON.stringify(parseMetadata(read.markdown)) !== JSON.stringify(read.metadata));
+    const differing = ORACLE.reads.filter((read) => JSON.stringify(parseMetadata(read.markdown, { obsidianVersion: oracleObsidianVersion() })) !== JSON.stringify(read.metadata));
     expect(differing.map((read) => read.id)).toEqual([]);
   }, CORPUS_TEST_TIMEOUT_MS);
 

@@ -42,6 +42,7 @@ import {
   dirname,
   join
 } from 'node:path';
+import process from 'node:process';
 import {
   fileURLToPath,
   pathToFileURL
@@ -99,6 +100,7 @@ import {
   specialNamesOracleFileName
 } from '../../src/oracle/oracle-location.ts';
 import { openAndroidVault } from '../capture/android-vault.ts';
+import { isEvalCapExceeded } from '../capture/obsidian-reads.ts';
 import {
   readReadingViewLink,
   readSettledSnapshot
@@ -433,6 +435,7 @@ const REWRITE_EVERY = 4;
 // A rename's link update, a search, a rename typed into the explorer: polled every 200 ms for up to 4 s.
 const SETTLE_POLL_MS = 200;
 const SETTLE_POLLS = 20;
+const MAX_CAPPED_ATTEMPTS = 3;
 const REVEAL_POLL_MS = 100;
 const REVEAL_POLLS = 20;
 // Other surface delays: an embed, a URL's leaf, the graph.
@@ -898,16 +901,18 @@ async function readRenameOnto(index: number, name: string): Promise<RenameOntoRe
 
 // The sweep's notes a global search for `token` found, once two polls in a row agree on a non-empty list.
 async function readSearch(token: string): Promise<string[]> {
-  await conn.evalInObsidian({
-    callback: ({ app, token: query }) => {
-      app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch(query);
-    },
-    input: { token }
+  await retriedOnEvalCap('a search', async () => {
+    await conn.evalInObsidian({
+      callback: ({ app, token: query }) => {
+        app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch(query);
+      },
+      input: { token }
+    });
   });
   let paths: string[] = [];
   for (let poll = 0; poll < SETTLE_POLLS; poll++) {
     await pause(SETTLE_POLL_MS);
-    const next = await readSearchResults();
+    const next = await retriedOnEvalCap('a search poll', readSearchResults);
     if (next.length > 0 && next.join('\n') === paths.join('\n')) {
       break;
     }
@@ -1081,6 +1086,23 @@ async function renameTo(from: string, to: string): Promise<null | string> {
     },
     input: { from, to }
   });
+}
+
+/*
+ * Runs `step` again when a starved renderer holds it past the eval cap, which kills that eval and leaves the app running.
+ * Only for a step that gives the same answer when run again: opening a search for one query, or reading its results.
+ */
+async function retriedOnEvalCap<T>(what: string, step: () => Promise<T>): Promise<T> {
+  for (let attempt = 1;; attempt++) {
+    try {
+      return await step();
+    } catch (error) {
+      if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+        throw error;
+      }
+      process.stderr.write(`special-names-oracle: ${what} ran past the eval cap, running it again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
+    }
+  }
 }
 
 // Read through the whole settle window: a cached success can precede a delayed rename update or removal from the index.

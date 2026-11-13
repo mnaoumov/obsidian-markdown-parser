@@ -608,7 +608,7 @@ function buildEditorVsReadingViewSuite(forum: ForumIssueFile, editingModes: Edit
 function buildMetadataFailingSuite(worker: WorkerMetadataOracleFile, forum: ForumIssueFile): TestCaseSuite<MetadataFailingCase> {
   const obsidianVersion = requireVersion(forum.meta.appVersion);
   const throws = buildMetadataSuite(worker).cases.filter((testCase) => testCase.metadata === null).map((testCase): MetadataFailingCase => {
-    const failure = workerFailureOf(testCase.markdown);
+    const failure = workerFailureOf(testCase.markdown, { obsidianVersion: requireVersion(worker.meta.appVersion) });
     if (failure === null) {
       throw new Error(`The worker threw on ${testCase.id}, and no known trigger explains it`);
     }
@@ -623,11 +623,16 @@ function buildMetadataFailingSuite(worker: WorkerMetadataOracleFile, forum: Foru
       obsidianVersion: testCase.obsidianVersion
     };
   });
-  const samples = METADATA_ISSUE_SAMPLES.map((sample): MetadataFailingCase => {
+  // A sample whose worker metadata is already what it should be is fixed in this release, as `hasOwnProperty` is in 1.15.1.
+  const samples = METADATA_ISSUE_SAMPLES.flatMap((sample): MetadataFailingCase[] => {
     const { metadata } = forumRead(forum, sample.markdown);
     const standIn = sample.standIn === undefined ? null : forumRead(forum, sample.standIn).metadata;
-    return {
-      ...(sample.expectedOf !== undefined) && { expectedMetadata: sample.expectedOf(metadata, standIn) },
+    const expectedMetadata = sample.expectedOf?.(metadata, standIn);
+    if (expectedMetadata !== undefined && JSON.stringify(expectedMetadata) === JSON.stringify(metadata)) {
+      return [];
+    }
+    return [{
+      ...(expectedMetadata !== undefined) && { expectedMetadata },
       forumUrl: sample.forumUrl,
       id: sample.id,
       issue: sample.issue,
@@ -635,7 +640,7 @@ function buildMetadataFailingSuite(worker: WorkerMetadataOracleFile, forum: Foru
       metadata,
       note: sample.note,
       obsidianVersion
-    };
+    }];
   });
   return {
     about: 'Notes whose metadata Obsidian\'s metadata worker drops or misplaces, each under the issue reported on the Obsidian forum (`issue`, `forumUrl`): first every document of the full file the worker threw on, under the same id, then the forum samples, `<issue>-<sample>`. `metadata` is the CachedMetadata the worker posted, as JSON with its key order, or null where it threw and the note lost all its metadata. `expectedMetadata`, where what the note should give is clear, is that metadata as it should be, built from the worker\'s own output as `note` says; it is absent where the right answer is the team\'s call, and on the full file\'s documents, for which no stand-in was read.',

@@ -84,6 +84,11 @@ export interface CachedMetadata {
    * The tags.
    */
   readonly tags?: readonly TagCache[];
+
+  /**
+   * The worker's format version, `1`, which the worker posts on every document from Obsidian 1.15.1 on.
+   */
+  readonly v?: number;
 }
 
 /**

@@ -392,7 +392,7 @@ export const SPEC_DIFFERENCES: readonly SpecDifference[] = [
   },
   {
     behaviour: 'The reading view\'s HTML sanitizer removes `<script>`, `<style>`, comments, processing instructions, declarations, CDATA, elements it does not know and their attributes.',
-    commonmark: [150, 163, 169, 170, 172, 173, 176, 177, 178, 179, 180, 182, 183, 201, 308, 309, 491, 613, 614, 615, 616, 617, 628, 629],
+    commonmark: [150, 163, 169, 170, 172, 173, 176, 177, 178, 179, 180, 182, 183, 201, 308, 309, 491, 613, 614, 615, 616, 617, 627, 628, 629],
     gfm: [652],
     kind: 'rendering',
     name: 'HTML sanitizer'

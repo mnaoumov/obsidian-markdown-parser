@@ -36,11 +36,20 @@ The worker parses the document with Obsidian's `remark-parse` 8 and walks the tr
 The worker throws on two kinds of front matter. It then posts `null` instead of metadata, and so does `parseMetadata`:
 
 - a string value that is a markdown link with no destination, such as `[text]()` or `[text]( )`;
-- an object with a key `hasOwnProperty`, which hides the method the worker calls on it.
+- up to 1.15.0, an object with a key `hasOwnProperty`, which hides the method the worker calls on it. From 1.15.1 on the worker reads such an object like any other.
+
+## Releases
+
+`parseMetadata(text, { obsidianVersion })` gives the metadata of the worker of that release, and without a version that of 1.15.0. The 1.15.1 worker differs from 1.15.0's in two ways, measured on the worker oracle on 2026-11-11:
+
+1. It posts a field `v: 1` on every document, after `blocks` and before `frontmatter`, so an empty note gives `{ v: 1 }`. On 3,712 of the 3,743 worker documents this is the only difference.
+2. A front matter key `hasOwnProperty` no longer makes it throw. 12 worker documents the 1.15.0 worker posted `null` for now get metadata, and the other 19 still give `null`, since each holds a markdown link with no destination.
+
+With its own version, `parseMetadata` gives the worker's metadata on every document of both releases' worker oracles.
 
 ## How it is checked
 
-- **The worker oracle.** `scripts/capture/worker-oracle.ts` runs the app's own `worker.js` offline in a Node `vm`, with `atob` and `btoa` as a browser worker has them. It runs on the 47 documents of the conformance corpus, on 3,200 fuzzed documents from eight piece sets: syntax alone, among blocks and lists, and inside quotes, plus headings, markdown links and images, and YAML front matter, on 51 pinned documents the piece sets do not reach: list items and quotes nested in each other, with a tab between quote levels in two of them, a `%%` inside an internal link's content, the shapes of the rules above from comments to columns, each first checked on the live app, and a child list indented less than, at and past its parent's content column ([remark-obsidian.md](remark-obsidian.md#list-indentation)), and on the 445 inputs imported from another parser's test suites ([remark-obsidian.md](remark-obsidian.md)). It writes each document's whole metadata, or the `null` the worker posted, to `oracle/worker-metadata-obsidian-1.15.0.json`. `src/oracle/spec/worker-metadata.test.ts` pins `parseMetadata` to every one of them by full JSON equality.
-- **The live app.** The same test pins it to the metadata the live app gave for all 674 examples of the spec oracle (`oracle/spec-obsidian-1.15.0.json`).
+- **The worker oracle.** `scripts/capture/worker-oracle.ts` runs the app's own `worker.js` offline in a Node `vm`, with `atob` and `btoa` as a browser worker has them. It runs on the 47 documents of the conformance corpus, on 3,200 fuzzed documents from eight piece sets: syntax alone, among blocks and lists, and inside quotes, plus headings, markdown links and images, and YAML front matter, on 51 pinned documents the piece sets do not reach: list items and quotes nested in each other, with a tab between quote levels in two of them, a `%%` inside an internal link's content, the shapes of the rules above from comments to columns, each first checked on the live app, and a child list indented less than, at and past its parent's content column ([remark-obsidian.md](remark-obsidian.md#list-indentation)), and on the 445 inputs imported from another parser's test suites ([remark-obsidian.md](remark-obsidian.md)). It writes each document's whole metadata, or the `null` the worker posted, to `oracle/worker-metadata-obsidian-1.15.1.json`. `src/oracle/spec/worker-metadata.test.ts` pins `parseMetadata` to every one of them by full JSON equality.
+- **The live app.** The same test pins it to the metadata the live app gave for all 674 examples of the spec oracle (`oracle/spec-obsidian-1.15.1.json`).
 - **Outside the repository**, the same comparison gives 0 differences on 180,000 fuzzed documents from twelve piece sets, among them 27,435 with parsed front matter, 33,868 that list a markdown link or image, and 999 the worker posts `null` for. It gives 0 too on the 41,875 documents the oracle files then held.
 - `src/metadata/metadata.test.ts` pins the rules above one by one.

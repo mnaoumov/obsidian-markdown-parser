@@ -1,8 +1,8 @@
 {
   "meta": {
-    "appVersion": "1.15.0",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.15.0 Chrome/150.0.7871.250 Electron/43.8.4 Safari/537.36",
-    "vault": "temp-vault-lsIYMR"
+    "appVersion": "1.15.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.15.1 Chrome/150.0.7871.250 Electron/43.8.9 Safari/537.36",
+    "vault": "temp-vault-JgeACa"
   },
   "reads": {
     "plain": {
@@ -42,7 +42,7 @@
       ],
       "uri": {
         "opened": "special-names/plain.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fplain"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fplain"
       },
       "search": [
         "special-names/plain.md"
@@ -87,7 +87,7 @@
       ],
       "uri": {
         "opened": null,
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%23y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%23y"
       },
       "search": [
         "special-names/x#y.md"
@@ -131,7 +131,7 @@
       ],
       "uri": {
         "opened": null,
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2F%23x"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2F%23x"
       },
       "search": [
         "special-names/#x.md"
@@ -176,7 +176,7 @@
       ],
       "uri": {
         "opened": "special-names/x^y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5Ey"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5Ey"
       },
       "search": [
         "special-names/x^y.md"
@@ -220,7 +220,7 @@
       ],
       "uri": {
         "opened": "special-names/^x.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2F%5Ex"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2F%5Ex"
       },
       "search": [
         "special-names/^x.md"
@@ -266,7 +266,7 @@
       ],
       "uri": {
         "opened": "special-names/x[y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5By"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5By"
       },
       "search": [
         "special-names/x[y.md"
@@ -311,7 +311,7 @@
       ],
       "uri": {
         "opened": "special-names/x]y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5Dy"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5Dy"
       },
       "search": [
         "special-names/x]y.md"
@@ -355,7 +355,7 @@
       ],
       "uri": {
         "opened": "special-names/x[y]z.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5By%5Dz"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5By%5Dz"
       },
       "search": [
         "special-names/x[y]z.md"
@@ -399,7 +399,7 @@
       ],
       "uri": {
         "opened": "special-names/x[[y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5B%5By"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5B%5By"
       },
       "search": [
         "special-names/x[[y.md"
@@ -443,7 +443,7 @@
       ],
       "uri": {
         "opened": "special-names/x]]y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%5D%5Dy"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%5D%5Dy"
       },
       "search": [
         "special-names/x]]y.md"
@@ -487,7 +487,7 @@
       ],
       "uri": {
         "opened": null,
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%23%5Ey"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%23%5Ey"
       },
       "search": [
         "special-names/x#^y.md"
@@ -531,7 +531,7 @@
       ],
       "uri": {
         "opened": "special-names/m.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fm%23n"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fm%23n"
       },
       "search": [
         "special-names/m#n.md"
@@ -575,7 +575,7 @@
       ],
       "uri": {
         "opened": "special-names/x%%y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%25%25y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%25%25y"
       },
       "search": [
         "special-names/x%%y.md"
@@ -623,7 +623,7 @@
       ],
       "uri": {
         "opened": "special-names/x%y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%25y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%25y"
       },
       "search": [
         "special-names/x%y.md"
@@ -667,7 +667,7 @@
       ],
       "uri": {
         "opened": "special-names/x%20y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%2520y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%2520y"
       },
       "search": [
         "special-names/x%20y.md"
@@ -711,7 +711,7 @@
       ],
       "uri": {
         "opened": "special-names/x%23y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%2523y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%2523y"
       },
       "search": [
         "special-names/x%23y.md"
@@ -755,7 +755,7 @@
       ],
       "uri": {
         "opened": "special-names/x%2Fy.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%252Fy"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%252Fy"
       },
       "search": [
         "special-names/x%2Fy.md"
@@ -802,7 +802,7 @@
       "rename": null,
       "renameOnto": {
         "link": "[[.x]]",
-        "resolved": true
+        "resolved": false
       }
     },
     "x.y": {
@@ -823,7 +823,7 @@
       ],
       "uri": {
         "opened": "special-names/x.y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx.y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx.y"
       },
       "search": [
         "special-names/x.y.md"
@@ -885,7 +885,7 @@
       ],
       "uri": {
         "opened": "special-names/ x.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2F%20x"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2F%20x"
       },
       "search": [
         "special-names/ x.md"
@@ -944,7 +944,7 @@
       ],
       "uri": {
         "opened": "special-names/x  y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%20%20y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%20%20y"
       },
       "search": [
         "special-names/x  y.md"
@@ -1003,7 +1003,7 @@
       ],
       "uri": {
         "opened": "special-names/x y.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fx%20y"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fx%20y"
       },
       "search": [
         "special-names/x y.md"
@@ -1088,7 +1088,7 @@
       ],
       "uri": {
         "opened": "special-names/p q.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fp%20q"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fp%20q"
       },
       "search": [
         "special-names/p q.md"
@@ -1132,7 +1132,7 @@
       ],
       "uri": {
         "opened": "special-names/café.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fcaf%C3%A9"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fcaf%C3%A9"
       },
       "search": [
         "special-names/café.md"
@@ -1202,7 +1202,7 @@
       ],
       "uri": {
         "opened": "special-names/naïve.md",
-        "url": "obsidian://open?vault=temp-vault-lsIYMR&file=special-names%2Fna%C3%AFve"
+        "url": "obsidian://open?vault=temp-vault-JgeACa&file=special-names%2Fna%C3%AFve"
       },
       "search": [
         "special-names/naïve.md"
@@ -1266,7 +1266,7 @@
       "saved": false
     },
     {
-      "message": "File name cannot contain any of these characters: * \" \\ / < > : | ?",
+      "message": null,
       "name": "r*s",
       "saved": false
     },

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "appVersion": "1.15.0",
+    "appVersion": "1.15.1",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.15.0 Chrome/150.0.7871.250 Electron/43.8.4 Safari/537.36"
   },
   "probes": [
@@ -562,7 +562,7 @@
       "markdown": "foo\n<search>",
       "preset": "commonmark",
       "quirk": "htmlBlock",
-      "html": "<p>foo\n</p><p></p>",
+      "html": "<p>foo\n</p><search><p></p></search>",
       "sections": [
         "paragraph@0-1"
       ]

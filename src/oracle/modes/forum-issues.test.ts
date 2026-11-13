@@ -12,6 +12,7 @@ import type {
 import { parseMetadata } from '../../metadata/metadata.ts';
 import { compareDocument } from '../classes/score.ts';
 import {
+  CORPUS_TEST_TIMEOUT_MS,
   forumIssueOracleFileName,
   oracleObsidianVersion,
   readOracleFile
@@ -40,7 +41,7 @@ describe('the forum issue oracle', () => {
   });
 
   it('is the metadata that the projection gives on every document', () => {
-    const differing = ORACLE.reads.filter((read) => JSON.stringify(parseMetadata(read.markdown)) !== JSON.stringify(read.metadata));
+    const differing = ORACLE.reads.filter((read) => JSON.stringify(parseMetadata(read.markdown, { obsidianVersion: oracleObsidianVersion() })) !== JSON.stringify(read.metadata));
     expect(differing.map((read) => read.markdown)).toEqual([]);
   });
 });
@@ -91,9 +92,10 @@ describe('the owner\'s report samples, as the pinned Obsidian reads them', () =>
     expect(read.html).toMatch(/<\/div><\/div>\n<\/li>\n<li>Subitem 2\.3<\/li>/u);
   });
 
+  // The reduction judges the note again for every shorter candidate, which took 26 s on a loaded machine.
   it('files the callout of topic 80930 under a known family that cites the open topic 57053', () => {
     const { markdown } = ownerRead('owner-80930-1');
     const families = judgeModesPredicted(markdown).map((difference) => differenceKey(difference)).filter((key) => key.startsWith('editor:quote')).map((key) => familyOf(key, reduceDifference(markdown, key)));
     expect(families.map((family) => [family?.id, family?.kind, family?.forumUrl])).toEqual([['quote-onto-indented-list-item', 'known', 'https://forum.obsidian.md/t/57053']]);
-  });
+  }, CORPUS_TEST_TIMEOUT_MS);
 });

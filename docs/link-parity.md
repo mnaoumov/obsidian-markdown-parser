@@ -30,7 +30,7 @@ npm run link-parity
 
 The hand-written forms tried are: for a wikilink `plain`, `escaped` (a backslash before each of `[ ] # ^ | \ %`), `with-extension`, `percent-encoded` and `folder-path`; for a markdown link `plain`, `angle` (`<...>`), `escaped` (a backslash before each punctuation character), `percent-encoded` (`encodeURIComponent`) and `entity` (`&` as `&amp;`); for a heading also `stripped`, the heading as the autocomplete writes it; for display text `escaped` and inside a table.
 
-Only names Windows can store were tried, so `| : * ? " < > \ /` in a name are left to a non-Windows device. The oracle is pinned to 1.15.0 (`oracle/link-parity-obsidian-1.15.0.json`). The 1.15.0 insider build, read on 2026-10-25, gives every verdict and every outcome the same. `src/oracle/links/link-parity.test.ts` pins them, and checks that `parseMetadata` gives the cached link and display text of all 998 notes.
+Only names Windows can store were tried, so `| : * ? " < > \ /` in a name are left to a non-Windows device. The oracle is pinned to 1.15.1 (`oracle/link-parity-obsidian-1.15.1.json`). The 1.15.0 insider build, read on 2026-10-25, gives every verdict and every outcome the same. `src/oracle/links/link-parity.test.ts` pins them, and checks that `parseMetadata` gives the cached link and display text of all 998 notes.
 
 ## What was found
 

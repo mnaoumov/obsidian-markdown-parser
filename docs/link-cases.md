@@ -18,7 +18,7 @@ npm run link-cases
 
 `scripts/links/link-cases-oracle.ts` writes the files of each case of `src/oracle/links/link-cases.ts` into the empty vault of an owned Obsidian, through the vault, with link updates on and the `shortest` link format. Then each case acts. One renames a file through `fileManager.renameFile`. One merges a note into another with note composer's `mergeFile`, as its *Merge current file with another file* command does. The generator cases ask `generateMarkdownLink` for a link with `Use [[Wikilinks]]` on and then off, and write both links into the case's note. Last, the oracle reads the note's text and every link and embed its cache holds, with the file the app's own `getFirstLinkpathDest` sends each one to, which is what clicking the link opens. `npm run link-cases` prints the table below.
 
-The oracle is pinned to 1.15.0 (`oracle/link-cases-obsidian-1.15.0.json`). The 1.15.0 insider build, read on 2026-10-25, gives every read the same. `src/oracle/links/link-cases.test.ts` pins every verdict, and checks that `parseMetadata` gives the cached links of every case's note.
+The oracle is pinned to 1.15.1 (`oracle/link-cases-obsidian-1.15.1.json`). The 1.15.0 insider build, read on 2026-10-25, gives every read the same. `src/oracle/links/link-cases.test.ts` pins every verdict, and checks that `parseMetadata` gives the cached links of every case's note.
 
 ## What was found
 

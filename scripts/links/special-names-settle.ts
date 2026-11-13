@@ -15,6 +15,7 @@ interface ReadingViewProbe {
 
 const POLL_MS = 200;
 const MAX_POLLS = 50;
+const MAX_OPENS = 2;
 const SNAPSHOT_POLLS = 20;
 const STABLE_POLLS = 3;
 
@@ -23,11 +24,14 @@ const STABLE_POLLS = 3;
  * an anchor whose click opens nothing is a measured result. Every app call stays short; the waits run in Node.
  */
 export async function readReadingViewLink(linkerPath: string, probe: ReadingViewProbe): Promise<ReadingViewLink> {
-  await probe.open();
   let anchor: null | ReadingLink = null;
-  for (let poll = 0; anchor === null && poll < MAX_POLLS; poll++) {
-    await pause();
-    anchor = await probe.clickAnchor();
+  // A starved renderer can leave Reading view unrendered past the polls, so the note is opened again once.
+  for (let open = 0; anchor === null && open < MAX_OPENS; open++) {
+    await probe.open();
+    for (let poll = 0; anchor === null && poll < MAX_POLLS; poll++) {
+      await pause();
+      anchor = await probe.clickAnchor();
+    }
   }
   if (anchor === null) {
     throw new Error(`Reading-view anchor did not render: ${linkerPath}`);

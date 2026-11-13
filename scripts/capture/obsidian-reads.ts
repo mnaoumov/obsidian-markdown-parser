@@ -13,6 +13,7 @@
 
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import type { OracleNode } from '../../src/oracle/oracle-file.ts';
@@ -254,6 +255,7 @@ const PARSE_TIMEOUT_MS = 10_000;
 const MODE_POLL_MS = 100;
 const MODE_MAX_POLLS = 100;
 const MODE_STABLE_POLLS = 5;
+const MAX_CAPPED_ATTEMPTS = 3;
 
 /**
  * Connects to an owned Obsidian and sets it up for the reads: a plugin that hands out `@codemirror/language`, the note
@@ -312,8 +314,25 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     return last.html;
   }
 
-  // One poll of the DOM of the mode `readMode` set, without the appended line the cursor sits on.
+  /*
+   * One poll of the DOM of the mode `readMode` set, without the appended line the cursor sits on. On a loaded machine a
+   * starved renderer can hold one poll past the eval cap, which kills that eval and leaves the app running, so the poll is
+   * made again: it only reads, so a retried poll gives what the first would have.
+   */
   async function readModePoll(): Promise<ModePoll> {
+    for (let attempt = 1;; attempt++) {
+      try {
+        return await readModePollOnce();
+      } catch (error) {
+        if (attempt >= MAX_CAPPED_ATTEMPTS || !isEvalCapExceeded(error)) {
+          throw error;
+        }
+        process.stderr.write(`obsidian-reads: a mode poll ran past the eval cap, polling again (attempt ${String(attempt + 1)} of ${String(MAX_CAPPED_ATTEMPTS)})\n`);
+      }
+    }
+  }
+
+  async function readModePollOnce(): Promise<ModePoll> {
     return await conn.evalInObsidian({
       callback: ({ app }) => {
         const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(true);
@@ -519,4 +538,15 @@ export async function connectObsidianReader(obsidianVersion: string | undefined,
     await conn[Symbol.asyncDispose]();
     throw error;
   }
+}
+
+/**
+ * Whether `error` is obsidian-integration-testing's error for an eval its cap killed, known by name: the global install is
+ * not typed here.
+ *
+ * @param error - The error thrown by an eval.
+ * @returns Whether the eval cap killed the eval.
+ */
+export function isEvalCapExceeded(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'EvalCapExceededError' || error.constructor.name === 'EvalCapExceededError');
 }

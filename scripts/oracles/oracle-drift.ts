@@ -202,8 +202,8 @@ function editingModesRows(): DriftRow[] {
     },
     {
       ...compareReadings('editing modes, worker metadata', readings(from, (read) => read.metadata), readings(to, (read) => read.metadata)),
-      parserFrom: scoreMetadata(metadataItems(from)),
-      parserTo: scoreMetadata(metadataItems(to))
+      parserFrom: scoreMetadata(metadataItems(from), fromVersion),
+      parserTo: scoreMetadata(metadataItems(to), toVersion)
     },
     compareReadings('editing modes, reading view (strict line breaks)', readings(from, (read) => read.html), readings(to, (read) => read.html)),
     compareReadings('editing modes, Source mode and Live Preview', readings(from, (read) => [read.sourceModeHtml, read.livePreviewHtml]), readings(to, (read) => [read.sourceModeHtml, read.livePreviewHtml]))
@@ -234,8 +234,8 @@ function forumRows(): DriftRow[] {
     },
     {
       ...compareReadings('forum issues, worker metadata', readings(from, (read) => read.metadata), readings(to, (read) => read.metadata)),
-      parserFrom: scoreMetadata(metadataItems(from)),
-      parserTo: scoreMetadata(metadataItems(to))
+      parserFrom: scoreMetadata(metadataItems(from), fromVersion),
+      parserTo: scoreMetadata(metadataItems(to), toVersion)
     },
     compareReadings('forum issues, reading view (strict line breaks)', readings(from, (read) => read.html), readings(to, (read) => read.html))
   ];
@@ -273,8 +273,8 @@ function liveSurfaceRows(): DriftRow[] {
   return [
     {
       ...compareReadings('live surfaces, cache', readings(from, (read) => read.cache), readings(to, (read) => read.cache)),
-      parserFrom: scoreMetadata(metadataItems(from)),
-      parserTo: scoreMetadata(metadataItems(to))
+      parserFrom: scoreMetadata(metadataItems(from), fromVersion),
+      parserTo: scoreMetadata(metadataItems(to), toVersion)
     },
     row('cache after opening', (read) => read.cacheAfterOpen),
     row('resolvedLinks and unresolvedLinks', (read) => [read.resolvedLinks, read.unresolvedLinks]),
@@ -319,8 +319,8 @@ function scoreClasses(docs: readonly OracleDocument[], obsidianVersion: string):
   return { failing: docs.filter((document) => compareDocument(document, { obsidianVersion }).differences.length > 0).map((document) => classKey(document)), total: docs.length };
 }
 
-function scoreMetadata(items: readonly MetadataItem[]): Score {
-  return { failing: items.filter((item) => JSON.stringify(parseMetadata(item.markdown)) !== JSON.stringify(item.metadata)).map((item) => item.key), total: items.length };
+function scoreMetadata(items: readonly MetadataItem[], obsidianVersion: string): Score {
+  return { failing: items.filter((item) => JSON.stringify(parseMetadata(item.markdown, { obsidianVersion })) !== JSON.stringify(item.metadata)).map((item) => item.key), total: items.length };
 }
 
 function specEditorDocument(read: SpecOracleRead): OracleDocument {
@@ -344,8 +344,8 @@ function specRows(): DriftRow[] {
     },
     {
       ...compareReadings('spec, worker metadata', readings(from, (read) => read.metadata), readings(to, (read) => read.metadata)),
-      parserFrom: scoreMetadata(metadataItems(from)),
-      parserTo: scoreMetadata(metadataItems(to))
+      parserFrom: scoreMetadata(metadataItems(from), fromVersion),
+      parserTo: scoreMetadata(metadataItems(to), toVersion)
     },
     compareReadings('spec, reading view', readings(from, (read) => read.html), readings(to, (read) => read.html)),
     compareReadings('spec, reading view (strict line breaks)', readings(from, (read) => read.htmlStrict), readings(to, (read) => read.htmlStrict))
@@ -361,7 +361,7 @@ function workerRow(): DriftRow {
   function items(file: WorkerMetadataOracleFile): MetadataItem[] {
     return file.docs.map((document) => ({ key: `${document.set}: ${document.text}`, markdown: document.text, metadata: document.metadata }));
   }
-  return { ...compareReadings('worker metadata', readings(from), readings(to)), parserFrom: scoreMetadata(items(from)), parserTo: scoreMetadata(items(to)) };
+  return { ...compareReadings('worker metadata', readings(from), readings(to)), parserFrom: scoreMetadata(items(from), fromVersion), parserTo: scoreMetadata(items(to), toVersion) };
 }
 
 console.log(`Oracle drift from Obsidian ${fromVersion} (${fromDirectory}) to ${toVersion} (${toDirectory})\n`);
