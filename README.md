@@ -135,6 +135,23 @@ The oracles and engines also make a test suite for Obsidian itself. Each finder 
 6. [Development](docs/development.md): building, checking, releasing and measuring from a clone.
 7. [Write-up](docs/write-up.md): the goals, the result per goal, and the known gaps.
 
+## See also
+
+[My other Obsidian resources](https://mnaoumov.dev/obsidian/)
+
+| Library | Features | How `obsidian-markdown-parser` differs |
+| --- | --- | --- |
+| [`@moritzrs/micromark-extension-ofm`](https://github.com/MoritzRS/obsidian-ext) | micromark extensions for callouts, tags, wikilinks and embeds; `mdast-util-ofm` and `remark-ofm` beside it | Covers part of the same syntax for micromark; adds highlights, comments, math, footnotes and block ids, Obsidian's positions, and the other ecosystems |
+| [`@quartz-community/remark-obsidian`](https://github.com/quartz-community/remark-obsidian) | remark plugin on a vendored `remark-parse` 8 with Obsidian's readers; `legacy` and `strict` presets; measured against Obsidian; writes its nodes back with `remark-stringify`; Quartz's parser | Same goal for the reading view tree; adds the editor's classes, the `CachedMetadata` projection, Lezer and markdown-it adapters and incremental parsing; omits writing back to markdown |
+| [`@silicajs/remark-obsidian`](https://github.com/agdevhq/silica/tree/main/packages/remark-obsidian) | remark plugin for wikilinks, embeds with sizes, callouts, highlights, comments, block ids, inline footnotes and tags; serializes them; tag helpers | Covers part of the same syntax for remark; adds Obsidian's exact readings measured against the app, metadata and the editor's classes; omits serializing and tag helpers |
+| [`lezer-markdown-obsidian`](https://github.com/erykwalder/lezer-markdown-obsidian) | `@lezer/markdown` extensions for comments, footnotes, tags, internal links, highlights and front matter; a best-effort match, not checked against the app | Same goal for Lezer; adds measured parity with the live editor, its CSS classes and the other ecosystems |
+| [`markdown-it-obsidian-callouts`](https://github.com/ebullient/markdown-it-obsidian-callouts) | markdown-it callouts and Admonition code blocks rendered as Obsidian's callout HTML with its icons | Narrower than it for callout rendering; adds the rest of the syntax as tokens; omits icons and Admonition blocks |
+| [`mdian`](https://github.com/ngtrio/mdian) | remark and rehype plugins for wikilinks, embeds, highlights, comments and callouts; React preset; heading and block anchors; external video embeds | Covers part of the same syntax for parsing; adds Obsidian's exact readings, metadata and the editor's classes; omits rendering components and external embeds |
+| [`obsidian-markdown`](https://github.com/gordonbrander/obsidian-markdown) | markdown-it renderer for Obsidian Flavored Markdown; web components for notes and properties; a written specification with a test suite | Same goal for markdown-it rendering; adds parity measured against the running app, metadata and the editor's classes; omits web components and a prose specification |
+| [`remark-obsidian`](https://github.com/johackim/remark-obsidian) | remark plugin for callouts, highlights, strikethrough, wikilinks and note embeds, rendered as links | Covers part of the same syntax; adds the rest of it, Obsidian's positions and metadata |
+
+Last searched for similar libraries on 2026-11-25.
+
 ## Contributing
 
 Issues and pull requests are welcome. Before a change to the parser, run the checks in [development.md](docs/development.md); a change that moves a measured number updates the page that states it.
