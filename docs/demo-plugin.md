@@ -1,6 +1,6 @@
 # The demo plugin
 
-`src/demo-plugin/` is a private Obsidian plugin that runs this parser inside the app, next to the stock editor and metadata worker. It is never published. Measured on 2026-10-22 against Obsidian 1.14.4.
+`src/demo-plugin/` is a private Obsidian plugin that runs this parser inside the app, next to the stock editor and metadata worker. It is never published. First measured on 2026-10-22 against Obsidian 1.14.4. The editor's cost was re-measured on 2026-11-24 against 1.15.1.
 
 ## Running it
 
@@ -46,16 +46,16 @@ One run of `npx jiti scripts/demo/demo-plugin-measure.ts --lines 100000` on 2026
 
 **Metadata: 0 differences** on all 116 notes, `long.md` included, which took 646 ms in all. The first run left `long.md` out: `parseMetadata`'s peak memory then grew with the square of the note (360 MB at 25,000 lines, 2.5 GB at 100,000) and took the app down. The engine put eaten text back as `subvalue + value`, which the next slice flattened into a fresh copy of the rest of the note, and every node value sliced from that copy kept it alive. It now puts back the string it sliced from, and the peak in Node is 250 MB at 100,000 lines and grows with the note.
 
-**Cost.** Medians, in milliseconds, with the slowest keystroke in brackets:
+**Cost.** Re-measured on 2026-11-24 with Obsidian 1.15.1 (`--obsidian-version 1.15.1`), at `3642e25`, on the same machine with no other job running. Classes, nodes and metadata were again 0 differences on all 116 notes. Medians, in milliseconds, with the slowest keystroke in brackets:
 
 | Note | Mode | Full parse, parser | Full parse, stock | Keystroke, parser | Keystroke, stock |
 | :--- | :--- | -----------------: | ----------------: | ----------------: | ---------------: |
-| 178 lines | source | 2.8 | 3.3 | 1.6 (4.8) | 3.1 (15.2) |
-| 178 lines | live preview | 3.0 | 4.2 | 2.5 (3.4) | 3.3 (4.9) |
-| 100,001 lines | source | 735 | 852 | 2.2 (5.0) | 3.5 (7.4) |
-| 100,001 lines | live preview | 727 | 877 | 25.3 (85.9) | 26.1 (94.0) |
+| 178 lines | source | 5.3 | 4.7 | 1.6 (4.1) | 3.0 (15.0) |
+| 178 lines | live preview | 3.4 | 3.7 | 2.8 (3.9) | 3.4 (5.7) |
+| 100,001 lines | source | 882 | 985 | 1.8 (5.4) | 2.8 (7.0) |
+| 100,001 lines | live preview | 927 | 1,009 | 28.4 (44.6) | 26.0 (77.6) |
 
-A full parse is 14 to 17% faster than the stock language's. A keystroke costs about the same as the stock one on the long note in both modes, and less on the short note.
+On the long note a full parse is 8 to 10% faster than the stock language's. On the short note the two are within a millisecond. A keystroke costs less than the stock one in source mode. In live preview on the long note it is about the same by median, and its slowest keystroke is lower. On 1.14.4, measured on 2026-10-22 on a machine running other jobs, a full parse was 14 to 17% faster, and the long note's live-preview keystroke was 25.3 ms against 26.1 ms.
 
 The first run of the day gave a live-preview keystroke on the long note 87.9 ms against the stock 29.4 ms. A CPU profile of the keystrokes over CDP found two causes, both in how live preview reads the tree:
 
@@ -86,7 +86,7 @@ One run on 2026-11-11, on an AMD Ryzen 5 7500F that other jobs held at 100% CPU,
 
 **The metadata is the same** from `parseMetadata` and all three workers, on every text. That includes lists nested past 512 levels and definitions longer than the 1,024 characters the worker scans for a footnote definition's end.
 
-**1.15.1 changed the speed comparison.** `parseMetadata` was about as fast as the 1.14.5 and 1.15.0 workers, because it ports the same `remark-parse` 8, and it was faster on most texts, though not on the 100,000-line note, the unclosed emphasis openers or the unclosed brackets. The 1.15.1 worker, with the team's `remark` optimization, runs the 100,000-line note 23 times faster than `parseMetadata` and 10,000 unclosed emphasis openers 27 times faster. Both older workers and `parseMetadata` grow faster than the text on these two, and the 1.15.1 worker does not. The editor's figures above were measured on 1.14.4. The optimization was in the worker, and they have not been re-measured on 1.15.1.
+**1.15.1 changed the speed comparison.** `parseMetadata` was about as fast as the 1.14.5 and 1.15.0 workers, because it ports the same `remark-parse` 8, and it was faster on most texts, though not on the 100,000-line note, the unclosed emphasis openers or the unclosed brackets. The 1.15.1 worker, with the team's `remark` optimization, runs the 100,000-line note 23 times faster than `parseMetadata` and 10,000 unclosed emphasis openers 27 times faster. Both older workers and `parseMetadata` grow faster than the text on these two, and the 1.15.1 worker does not. The optimization was in the worker. The editor's figures above were re-measured on 1.15.1.
 
 ### After the engine's speed-ups
 

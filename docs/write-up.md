@@ -7,7 +7,7 @@ The repository is private and nothing in it has been published.
 ## In short
 
 - **The editor's classes are reproduced exactly.** All 46,508 documents of eleven fuzzed corpora get the live editor's class on every character and line. Swapped in as the editor's language inside Obsidian, the parser gives 0 class differences from the stock language on 116 notes, and live preview draws the same widgets.
-- **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian a full parse is 14 to 17% faster than the stock language's, and a keystroke costs the same as the stock one, in live preview too.
+- **Live parsing works for the editor.** The tokenizer resumes from any line outside a fenced block or a script or style element, and after an edit it takes the old tree back once its state matches the old parse. An edit at the start of a 100,000-line document re-parses to the end in under 1 ms. Inside Obsidian 1.15.1 a full parse of a long note is 8 to 10% faster than the stock language's, and a keystroke costs about the same as the stock one, in live preview too.
 - **The metadata worker's `CachedMetadata` is reproduced exactly**, as JSON with key order, on every document measured: 3,743 run through the worker offline, the live app's metadata of all 674 spec examples, and 115 vault notes inside Obsidian.
 - **The Obsidian syntax is defined once** and ships for `@lezer/markdown`, micromark with mdast, and markdown-it, each checked against one conformance corpus and the CommonMark 0.31.2 suite.
 - **It is three engines, not the single Lezer parser asked for.** Each of Obsidian's three outputs comes from a different kind of parser today, and each engine here is that kind of parser. What one engine would take is costed below, and it turns on one question for the team.
@@ -72,8 +72,10 @@ Inside Obsidian, with the parser swapped in as the editor's language ([demo-plug
 
 | Mode | Full parse, parser | Full parse, stock | Keystroke, parser | Keystroke, stock |
 | --- | ---: | ---: | ---: | ---: |
-| Source | 735 ms | 852 ms | 2.2 ms | 3.5 ms |
-| Live preview | 727 ms | 877 ms | 25.3 ms | 26.1 ms |
+| Source | 882 ms | 985 ms | 1.8 ms | 2.8 ms |
+| Live preview | 927 ms | 1,009 ms | 28.4 ms | 26.0 ms |
+
+Measured on Obsidian 1.15.1 on 2026-11-24, on an idle machine.
 
 Live preview walks the whole tree on every keystroke and splits every node's classes, so its keystroke follows the tree's length and how cheaply its class strings split. A first run gave 87.9 ms against 29.4 ms, until the re-parse stopped at the viewport, as the stock one does, and the class strings were internalized ([demo-plugin.md](demo-plugin.md#results)).
 
