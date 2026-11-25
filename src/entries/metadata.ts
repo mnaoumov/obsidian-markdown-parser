@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The metadata entry point (`obsidian-markdown-parser/metadata`, and the root of the metadata package): the
+ * The metadata entry point (`@mnaoumov/obsidian-markdown-parser/metadata`, and the root of the metadata package): the
  * `CachedMetadata` Obsidian's metadata worker posts for a document.
  *
  * - {@link parseMetadata} gives that `CachedMetadata`, built from the remark engine's tree, equal to the worker's as

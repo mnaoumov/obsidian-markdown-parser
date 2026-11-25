@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The syntax entry point (`obsidian-markdown-parser/syntax`): what the `lezer`, `mdast` and `markdown-it` adapters
+ * The syntax entry point (`@mnaoumov/obsidian-markdown-parser/syntax`): what the `lezer`, `mdast` and `markdown-it` adapters
  * share, the node names, the options and the conformance corpus.
  *
  * - {@link ObsidianNode} names the syntax nodes, and {@link CONFORMANCE_CASES} is the corpus every adapter is checked

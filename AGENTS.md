@@ -1,10 +1,10 @@
 # obsidian-markdown-parser
 
-## L1. Status: PRIVATE
+## L1. Status: public, not yet released
 
-This repository is private. Do not make it public, publish it to npm, link it from any public place, or mention it in a public issue, PR, forum post or README of another project. Making it public needs the Obsidian team's permission first, and asking for it is the owner's call.
+The repository is public: the Obsidian team allowed it in November 2026. `README.md` is written for a public reader, so process notes, phase history and hand-over terms belong here or in `docs/`, not there.
 
-`npm run build` makes two installable packages, the whole parser and `obsidian-markdown-parser-metadata` (`packages/metadata/`, the metadata projection without the editor or CodeMirror dependencies), described in [`docs/api.md`](docs/api.md). Both keep `"private": true`: a consumer installs a tarball from `npm pack`, never a registry. A new module under `src/remark/` or `src/metadata/` stays inside the metadata package's import closure, which `src/entries/metadata-package.test.ts` pins; a new package that closure imports goes into `packages/metadata/package.json` at the root package's version.
+`npm run build` makes two packages, `@mnaoumov/obsidian-markdown-parser` (everything) and `@mnaoumov/obsidian-markdown-parser-metadata` (`packages/metadata/`, the metadata projection without the editor or CodeMirror dependencies), described in [`docs/api.md`](docs/api.md). Both are set up for npm but nothing is published yet: the license is still `UNLICENSED`, and choosing one is the owner's call, made before the first release. The first release is 1.0.0. `npm run version -- <type>` cuts a release (changelog, tag, GitHub release), and `.github/workflows/publish-npm.yml` publishes both packages from the GitHub release through npm trusted publishing, so no npm token exists anywhere. The two packages always share one version: `scripts/version.ts` writes it into `packages/metadata/package.json` too. Trusted publishing cannot make a package that does not exist yet, so the very first publish of each package is done once by hand by the owner, and each package's npm settings then name `publish-npm.yml` as its trusted publisher. A new module under `src/remark/` or `src/metadata/` stays inside the metadata package's import closure, which `src/entries/metadata-package.test.ts` pins; a new package that closure imports goes into `packages/metadata/package.json` at the root package's version.
 
 ## L2. Goal
 

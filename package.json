@@ -1,9 +1,19 @@
 {
-  "name": "obsidian-markdown-parser",
+  "name": "@mnaoumov/obsidian-markdown-parser",
   "version": "0.1.0",
-  "private": true,
-  "description": "Incremental parser for Obsidian-flavoured markdown, built on @lezer/markdown.",
-  "keywords": [],
+  "description": "A parser for Obsidian-flavoured markdown that reproduces Obsidian's editor classes, syntax and CachedMetadata, for Lezer, micromark/mdast, markdown-it and remark.",
+  "keywords": [
+    "obsidian",
+    "markdown",
+    "parser",
+    "lezer",
+    "codemirror",
+    "micromark",
+    "mdast",
+    "markdown-it",
+    "remark",
+    "wikilinks"
+  ],
   "homepage": "https://github.com/mnaoumov/obsidian-markdown-parser#readme",
   "bugs": {
     "url": "https://github.com/mnaoumov/obsidian-markdown-parser/issues"
@@ -78,10 +88,12 @@
     "self-check": "jiti scripts/self-check.ts",
     "special-names": "jiti scripts/links/special-names.ts",
     "prepare": "jiti scripts/git/prepare.ts",
+    "publish:npm": "jiti scripts/publish-npm.ts",
     "spellcheck": "jiti scripts/quality/spellcheck.ts",
     "test": "jiti scripts/testing/test.ts",
     "test:coverage": "jiti scripts/testing/test-coverage.ts",
-    "test:watch": "jiti scripts/testing/test-watch.ts"
+    "test:watch": "jiti scripts/testing/test-watch.ts",
+    "version": "jiti scripts/version.ts"
   },
   "overrides": {
     "eslint-plugin-import": "npm:eslint-plugin-import-x@^4.17.1",
@@ -171,5 +183,8 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

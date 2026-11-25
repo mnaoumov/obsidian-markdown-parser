@@ -1,8 +1,23 @@
 {
-  "name": "obsidian-markdown-parser-metadata",
+  "name": "@mnaoumov/obsidian-markdown-parser-metadata",
   "version": "0.1.0",
-  "private": true,
   "description": "The CachedMetadata Obsidian's metadata worker posts for a document, and the remark-parse 8 engine it is built from, without the editor or CodeMirror dependencies.",
+  "keywords": [
+    "obsidian",
+    "markdown",
+    "parser",
+    "metadata",
+    "remark"
+  ],
+  "homepage": "https://github.com/mnaoumov/obsidian-markdown-parser/tree/main/packages/metadata#readme",
+  "bugs": {
+    "url": "https://github.com/mnaoumov/obsidian-markdown-parser/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mnaoumov/obsidian-markdown-parser.git",
+    "directory": "packages/metadata"
+  },
   "license": "UNLICENSED",
   "author": "Michael Naumov",
   "type": "module",
@@ -29,5 +44,8 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
