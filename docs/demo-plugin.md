@@ -146,3 +146,23 @@ The metadata is still the same as the 1.15.1 worker's on every text. The long fo
 The 100,000-line row gave between 1.3 and 1.8 in three runs. The wikilinks' median of 857 ms is the load: their minimums were 22.8 ms and 17.8 ms. These rows still need a run on an idle machine.
 
 A list item's bullet is now read with one match instead of a replace callback, and its lines are split once instead of three times. Measured on 2026-11-12 under a heavier load, where a parse's wall time was about four times its CPU time, the 100,000-line vault row's minimum CPU time over 7 runs went from 421 to 499 ms before the change to 390 to 407 ms after it, in three alternating rounds each. Against the worker in the same process, the ratio of minimum CPU times was 1.07 and 1.24 in two runs. With the worker loaded in the process, `parseMetadata` took about a fifth more CPU time than without it, so part of the gap in the table above comes from sharing the heap with the worker rather than from the engine.
+
+### On an idle machine
+
+The same bench on 2026-11-24 at `243dd78`, on the same machine with no other job running. `parseMetadata` and the 1.15.1 worker each give the median of 5 runs. The last column is the ratio of their minimums over 31 interleaved runs (`parseMetadata`'s over the worker's), taken in a separate run. The 10,000 unclosed brackets row has no worker minimum, because the harness skips the worker there.
+
+| Text | Characters | `parseMetadata` | Worker 1.15.1 | Ratio of minimums |
+| :--- | ---------: | --------------: | ------------: | ----------------: |
+| Vault notes, 10,000 lines | 374,468 | 28.4 ms | 28.4 ms | 1.36 |
+| Vault notes, 100,000 lines | 3,648,939 | 293 ms | 256 ms | 1.30 |
+| List nested 500 deep | 254,889 | 79.9 ms | 568 ms | 0.21 |
+| List nested 600 deep | 365,889 | 129 ms | 1,182 ms | 0.19 |
+| Quote nested 600 deep | 1,206 | 0.4 ms | 0.5 ms | 1.23 |
+| 10,000 unclosed emphasis openers | 60,000 | 22.4 ms | 1,459 ms | 0.02 |
+| 10,000 unclosed brackets | 30,000 | 14.9 ms | 2,427 ms | - |
+| 10,000 unclosed backtick runs | 69,991 | 1.9 ms | 1.8 ms | 1.50 |
+| 10,000 wikilinks on one line | 90,000 | 15.0 ms | 13.5 ms | 1.25 |
+| Footnote definition of 100,000 characters | 100,023 | 3.2 ms | 4.6 ms | 0.22 |
+| Reference definition title of 100,000 characters | 100,017 | 0.8 ms | 1.6 ms | 0.55 |
+
+The metadata is the same as the 1.15.1 worker's on every text. On an idle machine every time is several times lower than under load, and the loaded runs above overstated both sides. `parseMetadata` still beats the worker on the nested lists, the unclosed emphasis openers and brackets, and both long definitions. It is still slower on the vault notes, the nested quote, the backtick runs and the wikilinks, by 1.2 to 1.5 times by minimum. The medians are closer: the 10,000-line note ties, and the 100,000-line note is 1.14 times the worker's. Timed by CPU time in a process of its own and then beside the worker, the 100,000-line note's `parseMetadata` runs were about the same (most runs 450 to 520 ms both ways), so the shared heap is not the cause of the remaining gap. Windows counts CPU time in 15.6 ms ticks, which is too coarse to settle it more finely.
