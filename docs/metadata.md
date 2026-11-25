@@ -3,7 +3,7 @@
 `parseMetadata` in `src/metadata/` gives the `CachedMetadata` Obsidian's metadata worker posts for a document, built from the [`remark-parse` 8 engine](remark.md)'s tree. It is phase 2 of the project. It equals the worker's metadata as JSON, key order included, so the two can be compared with `JSON.stringify` alone.
 
 ```ts
-import { parseMetadata } from 'obsidian-markdown-parser';
+import { parseMetadata } from '@mnaoumov/obsidian-markdown-parser';
 
 const metadata = parseMetadata('---\ntags: [a]\n---\n# Title [[Note]]\n\n[text](other%20note.md)');
 // { links: [...], headings: [...], sections: [...], frontmatter: { tags: ['a'] }, frontmatterPosition: {...}, frontmatterLinks: [] }

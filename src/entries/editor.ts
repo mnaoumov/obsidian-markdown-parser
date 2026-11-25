@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The editor entry point (`obsidian-markdown-parser/editor`): the classes Obsidian's editor puts on every character
+ * The editor entry point (`@mnaoumov/obsidian-markdown-parser/editor`): the classes Obsidian's editor puts on every character
  * and line.
  *
  * - {@link highlight} and {@link highlightLines} give those classes, resumable from any line whose state

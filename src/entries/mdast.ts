@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The micromark and mdast entry point (`obsidian-markdown-parser/mdast`): the Obsidian syntax as micromark and
+ * The micromark and mdast entry point (`@mnaoumov/obsidian-markdown-parser/mdast`): the Obsidian syntax as micromark and
  * `mdast-util-from-markdown` extensions.
  *
  * - {@link parseMdast} gives the mdast tree with the Obsidian syntax, and {@link micromarkObsidianMarkdown} and

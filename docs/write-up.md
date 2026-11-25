@@ -2,7 +2,7 @@
 
 A report for the Obsidian team on `obsidian-markdown-parser`: what it set out to do, what it does, measured against the current Obsidian 1.15.1 oracle pin (with earlier measurements dated below), what it does not do yet, where its code comes from, and the terms it is offered on. Each section links the page that holds the details and the numbers.
 
-The repository is private and nothing in it has been published.
+The repository is public, with the Obsidian team's permission. Nothing in it has been published to npm yet.
 
 ## In short
 
@@ -196,6 +196,6 @@ npm run build               # both packages, into dist/lib/ and packages/metadat
 - **The oracles as test cases for your own suites**: `npm run export:test-cases` writes the spec examples, the quirk probes and the metadata worker documents as plain JSON into `dist/test-cases/`, each spec case with both the spec's HTML and Obsidian's, the CommonMark and GFM examples in files of their own, each an `-all` file beside a `-failing` file of only the examples Obsidian departs on, the quirk probes Obsidian departs on with the HTML of commonmark.js or cmark-gfm, reference implementations that pass their whole spec, plus a sample of notes with all three modes' HTML as the user sees them, and the notes where the editor (by `editor` we mean `Source mode` or `Live Preview`) and Reading view disagree, the forum issues and the 30 new kinds the mode judge found across the oracle corpora ([mode-judge.md](mode-judge.md)) and where the metadata cache drops or misplaces data (with the metadata expected), and no code of this parser ([oracles.md](oracles.md#the-oracles-as-test-cases-for-another-project)).
 - **The editor's cost**: `npx jiti scripts/demo/cm6-bench.ts [--lines <n>]`.
 - **The metadata's cost against Obsidian's worker**: `npx jiti scripts/demo/metadata-bench.ts --worker <path to worker.js>...`.
-- **The packages and their entry points**: [api.md](api.md). `obsidian-markdown-parser-metadata` is the metadata alone, with four small dependencies and no editor.
+- **The packages and their entry points**: [api.md](api.md). `@mnaoumov/obsidian-markdown-parser-metadata` is the metadata alone, with four small dependencies and no editor.
 
 The scripts that read a live Obsidian need `obsidian-integration-testing`, which launches the app in a throw-away profile and vault.

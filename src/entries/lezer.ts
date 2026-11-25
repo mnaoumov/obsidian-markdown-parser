@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The Lezer entry point (`obsidian-markdown-parser/lezer`): the Obsidian syntax as `@lezer/markdown` extensions.
+ * The Lezer entry point (`@mnaoumov/obsidian-markdown-parser/lezer`): the Obsidian syntax as `@lezer/markdown` extensions.
  *
  * - {@link parse} gives the `@lezer/markdown` tree with the Obsidian syntax, and {@link obsidianMarkdown} is that
  *   syntax as `@lezer/markdown` extensions.

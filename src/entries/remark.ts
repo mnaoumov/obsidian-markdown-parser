@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The remark entry point (`obsidian-markdown-parser/remark`, and `./remark` of the metadata package): the engine
+ * The remark entry point (`@mnaoumov/obsidian-markdown-parser/remark`, and `./remark` of the metadata package): the engine
  * Obsidian's reading view and metadata worker parse with.
  *
  * - {@link parseRemark} parses as they do: `remark-parse` 8 with Obsidian's edits and the Obsidian syntax as the worker

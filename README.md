@@ -1,55 +1,152 @@
 # obsidian-markdown-parser
 
-**Private, experimental.** An incremental parser for Obsidian-flavoured markdown, built on `@lezer/markdown`, aiming to reproduce Obsidian's editor tokens and metadata exactly.
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![CI](https://img.shields.io/github/actions/workflow/status/mnaoumov/obsidian-markdown-parser/ci.yml?branch=main&label=CI)](https://github.com/mnaoumov/obsidian-markdown-parser/actions/workflows/ci.yml)
 
-Unofficial: not affiliated with or endorsed by Obsidian. See [AGENTS.md](AGENTS.md) for status, goals and method.
+A parser for Obsidian-flavoured markdown that gives the same answers as Obsidian itself: the classes its editor puts on every character, the syntax tree of wikilinks, embeds, tags, comments, math, highlights, footnotes, block ids and callouts, the HTML of its reading view, and the `CachedMetadata` its metadata worker posts for a note.
 
-The whole picture for the Obsidian team, with what each goal reached, the known gaps and the terms, is in [docs/write-up.md](docs/write-up.md).
+Tools that read an Obsidian vault outside the app (publishers, linters, static-site generators, test mocks, editors) each re-implement that syntax, and each gets its edge cases a little differently from Obsidian. This project defines the Obsidian syntax once, measures every reading against a running Obsidian, and ships it for the main JavaScript markdown ecosystems: `@lezer/markdown` and CodeMirror 6, micromark with mdast, markdown-it, and a port of the `remark-parse` 8 engine that Obsidian's reading view and metadata worker run.
 
-It is three engines, not one: the editor's classes come from a ported CodeMirror 5 line tokenizer hosted as a Lezer parser, the Obsidian syntax tree from `@lezer/markdown`, and the reading view's parse and the metadata from a port of `remark-parse` 8. Why each output needs its engine, what each is measured against, and what a single Lezer engine would take are in [docs/architecture.md](docs/architecture.md).
+> [!NOTE]
+> Unofficial: not affiliated with or endorsed by Obsidian.
 
-## Development
+## Status
 
-The tooling follows the owner's TypeScript template: `npm install`, then `npm run build:compile` (type check), `npm run lint`, `npm run format:check`, `npm run spellcheck`, `npm run lint:md` and `npm test`.
+Experimental, and not yet released to npm. The API may change before 1.0.0. Measured against Obsidian 1.15.1 on desktop (1.14.4 on Android):
 
-`npm run build` compiles two installable packages, both `private` and never published: `obsidian-markdown-parser` into `dist/lib/`, with an entry point per part (`./editor`, `./lezer`, `./mdast`, `./markdown-it`, `./syntax`, `./remark`, `./metadata`), and `obsidian-markdown-parser-metadata` (`packages/metadata/`), the metadata projection and its remark engine without the editor or CodeMirror dependencies. `npm pack` and `npm pack --workspace packages/metadata` make the tarballs. The entry points, what each exports and the packages' dependencies are in [docs/api.md](docs/api.md).
+1. **Editor classes:** every character and line of all 46,508 documents in eleven fuzzed corpora gets the live editor's classes ([phase-1.md](docs/phase-1.md)).
+2. **Metadata:** `parseMetadata` equals the worker's `CachedMetadata` as JSON, key order included, on 3,743 documents run through the app's own worker and on the live app's metadata of all 674 spec examples ([metadata.md](docs/metadata.md)).
+3. **Spec conformance:** with the `commonmark` preset, the micromark and markdown-it adapters pass all 652 examples of the CommonMark 0.31.2 suite and the Lezer tree passes 651 ([spec-suites.md](docs/spec-suites.md)).
+4. **Live parsing:** the editor tokenizer resumes from any line and reuses the old parse after an edit, so an edit at the start of a 100,000-line document re-parses in under 1 ms ([cm6-host.md](docs/cm6-host.md)).
 
-`highlight(text)` in `src/index.ts` gives the classes Obsidian's editor puts on every character and line, and `highlightLines` resumes from any line. How close it is, and how it works, is in [docs/phase-1.md](docs/phase-1.md). Third-party code it ports is listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+What is not done yet is in [the write-up](docs/write-up.md).
 
-`editorClassLanguage` runs that tokenizer in CodeMirror 6, with the editor's tree shape and incremental re-parsing, and `editorClasses` renders its classes. How it works and what an edit costs are in [docs/cm6-host.md](docs/cm6-host.md); run `npx jiti scripts/demo/cm6-bench.ts` to measure it.
+## What it gives you
 
-A private demo plugin in `src/demo-plugin/` runs that language inside Obsidian in place of the stock one, and compares the editor classes and the metadata with the app's own. Build it with `npx jiti scripts/demo/build-demo-plugin.ts`, which writes `dist/demo-plugin/`, and copy that folder into a test vault's `.obsidian/plugins/markdown-parser-demo/`. It is never published. `npx jiti scripts/demo/demo-plugin-measure.ts` runs it on a real vault in an owned Obsidian instance and prints its reports. What it shows and the numbers are in [docs/demo-plugin.md](docs/demo-plugin.md).
+| Entry point | Gives |
+| --- | --- |
+| `@mnaoumov/obsidian-markdown-parser/editor` | `highlight` and `highlightLines`: the classes Obsidian's editor puts on every character and line. `editorClassLanguage`: that tokenizer as a CodeMirror 6 `Language`, with incremental re-parsing. |
+| `@mnaoumov/obsidian-markdown-parser/lezer` | `parse`: the `@lezer/markdown` tree with the Obsidian syntax, and `obsidianMarkdown`, the syntax as `@lezer/markdown` extensions. |
+| `@mnaoumov/obsidian-markdown-parser/mdast` | `parseMdast`: an mdast tree with the Obsidian syntax, and the micromark and `mdast-util-from-markdown` extensions behind it. |
+| `@mnaoumov/obsidian-markdown-parser/markdown-it` | `parseMarkdownIt`: markdown-it tokens with the Obsidian syntax, and `markdownItObsidianSyntax`, the markdown-it plugin. |
+| `@mnaoumov/obsidian-markdown-parser/remark` | `parseRemark`: the tree Obsidian's reading view and metadata worker parse, and `renderRemarkHtml`, its HTML. |
+| `@mnaoumov/obsidian-markdown-parser/metadata` | `parseMetadata`: the `CachedMetadata` Obsidian's metadata worker posts for a note. |
+| `@mnaoumov/obsidian-markdown-parser-metadata` | The same `parseMetadata` and remark engine as a separate package with four small dependencies and no editor or CodeMirror. |
 
-`parse(text)` gives the `@lezer/markdown` tree with the Obsidian syntax: internal links, embeds, tags, `%%` comments, math, highlights, footnotes, block ids, callouts, task markers and front matter. The syntax, its conformance corpus and how the tree compares with the editor are in [docs/syntax.md](docs/syntax.md). To score the tree against the oracles, run `npx jiti scripts/oracles/syntax-diff.ts`, and add `--construct <name> --examples <n>` to see where documents differ.
+The root `@mnaoumov/obsidian-markdown-parser` exports all of them. Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, and Obsidian's departures from the spec as flags of their own. The full list is in [api.md](docs/api.md).
 
-`parseMdast(text)` gives the same syntax as an mdast tree, through the micromark extension `micromarkObsidianMarkdown` and the `mdast-util-from-markdown` extension `mdastObsidianMarkdown`. The mdast nodes and how the adapter compares with the Lezer tree are in [docs/syntax.md](docs/syntax.md#the-micromark-and-mdast-adapter). To compare the two on the oracles, run `npx jiti scripts/oracles/adapter-diff.ts`, with the same `--construct` and `--examples` options.
+## Usage
 
-`parseMarkdownIt(text)` gives the same syntax as markdown-it tokens, through the markdown-it plugin `markdownItObsidianSyntax`, and `createObsidianMarkdownIt()` is a markdown-it configured with it, which also renders the syntax as HTML. The tokens and how they compare with the Lezer tree are in [docs/syntax.md](docs/syntax.md#the-markdown-it-plugin). To compare them on the oracles, run `npx jiti scripts/oracles/adapter-diff.ts --adapter markdown-it`.
+The metadata Obsidian's metadata cache would hold for a note:
 
-Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, as in `createObsidianParser({ preset: 'commonmark', tag: true })`, `createMicromarkObsidianMarkdown(options)` and `createObsidianMarkdownIt(options)`. With the `commonmark` preset each adapter is checked against the CommonMark 0.31.2 spec suite, and with `gfm` against the GFM spec's extension examples, both vendored in `spec/`. The results, the examples still failing and what each flag changes are in [docs/spec-suites.md](docs/spec-suites.md).
+```ts
+import { parseMetadata } from '@mnaoumov/obsidian-markdown-parser-metadata';
 
-`parseRemark(text)` parses as Obsidian's reading view and metadata worker do, and `parseMetadata(text)` gives the `CachedMetadata` the metadata worker posts for a document, equal to it as JSON. The engine is in [docs/remark.md](docs/remark.md) and the projection in [docs/metadata.md](docs/metadata.md). To re-read the worker oracle, run `npx jiti scripts/capture/worker-oracle.ts`, which runs the metadata worker of the `obsidian-versions` checkout beside this repository.
+const metadata = parseMetadata('---\ntags: [project]\n---\n# Title\n\nSee [[Other note#Heading|alias]], #tag and ==highlight==. ^block-id\n');
+metadata?.links?.[0]?.link; // 'Other note#Heading'
+metadata?.links?.[0]?.displayText; // 'alias'
+metadata?.tags?.[0]?.tag; // '#tag'
+metadata?.frontmatter; // { tags: ['project'] }
+```
 
-To read a new oracle from a live Obsidian, run `npx jiti scripts/capture/oracle.ts --seed <n>` (this needs a global `obsidian-integration-testing` install). To score the tokenizer against an oracle, run `npx jiti scripts/oracles/oracle-diff.ts [--oracle <file>]`, and add `--show <id>...` to see where documents differ.
+The classes Obsidian's editor gives each line and span:
 
-Desktop oracles are pinned to Obsidian 1.15.1; the independently measured Android oracles remain on 1.14.4. To re-read all of them from another Obsidian and see what changed, run `npm run oracle:refresh -- [--obsidian-version <x.y.z|public-latest|catalyst-latest>]`: it writes that version's oracles beside the pinned ones, then reports, per oracle, the readings that changed between the versions and whether the parser matches the new ones. `npm run oracle:drift -- --to-version <version>` gives the same report for oracles already read. How it works and the last run are in [docs/oracles.md](docs/oracles.md).
+```ts
+import { highlight } from '@mnaoumov/obsidian-markdown-parser/editor';
+
+const lines = highlight('# Title\nSee [[Other note]]');
+lines[0]?.classes; // ['HyperMD-header', 'HyperMD-header-1']
+lines[0]?.spans[0]?.classes; // ['formatting', 'formatting-header', 'formatting-header-1', 'header', 'header-1']
+```
+
+The same tokenizer as the language of a CodeMirror 6 editor:
+
+```ts
+import { LanguageSupport } from '@codemirror/language';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import {
+  editorClasses,
+  editorClassLanguage
+} from '@mnaoumov/obsidian-markdown-parser/editor';
+
+const state = EditorState.create({ doc: '# Title', extensions: [new LanguageSupport(editorClassLanguage), editorClasses] });
+new EditorView({ parent: document.body, state });
+```
+
+The Obsidian syntax in each ecosystem:
+
+```ts
+import { parse } from '@mnaoumov/obsidian-markdown-parser/lezer';
+import { parseMarkdownIt } from '@mnaoumov/obsidian-markdown-parser/markdown-it';
+import { parseMdast } from '@mnaoumov/obsidian-markdown-parser/mdast';
+
+parse('See [[Other note]] and #tag'); // Lezer tree: Document > Paragraph > InternalLink, Tag ...
+parseMdast('See [[Other note]] and #tag'); // mdast: { type: 'internalLink', path: 'Other note', ... }
+parseMarkdownIt('See [[Other note]] and #tag'); // tokens: InternalLink_open, InternalLinkPath, ..., Tag_open ...
+```
+
+The reading view's HTML:
+
+```ts
+import { parseRemark, renderRemarkHtml } from '@mnaoumov/obsidian-markdown-parser/remark';
+
+renderRemarkHtml(parseRemark('See [[Other note]] and ==hi==\n'));
+// <p>See <a class="internal-link" data-href="Other note" href="Other note">Other note</a> and <mark>hi</mark></p>
+```
+
+## Installation
+
+Not on npm yet. Until the first release, build the packages from a clone and install the tarballs:
+
+```sh
+npm install
+npm run build
+npm pack                                # the whole parser
+npm pack --workspace packages/metadata  # the metadata package
+```
+
+Then `npm install <path to the tarball>` in your project. Both packages are ES modules with TypeScript declarations, for Node 22 or later and for bundlers.
+
+## How it works
+
+It is three engines, not one, because Obsidian's three outputs come from three kinds of parser: the editor's classes from a CodeMirror 5 line tokenizer (ported here and hosted in CodeMirror 6), the syntax tree from `@lezer/markdown` with Obsidian extensions, and the reading view and metadata from a port of `remark-parse` 8 with Obsidian's edits. Why each output needs its engine, and what a single engine would take, is in [architecture.md](docs/architecture.md).
+
+Nothing is matched to a description of Obsidian's behaviour. Each reading is matched to oracles read from a running Obsidian over the Chrome DevTools Protocol and from its metadata worker, and the pinned Obsidian version can be moved with one command that reports what changed ([oracles.md](docs/oracles.md)). What is ported from open-source code, what was learned by reading Obsidian's code, and what was only measured is in [provenance.md](docs/provenance.md).
 
 ## How it tests Obsidian
 
-Beside matching Obsidian, the oracles and engines make a test suite for Obsidian itself. Each of the bug finders below sorts what it finds into families with verdicts. Extend them rather than starting over:
+The oracles and engines also make a test suite for Obsidian itself. Each finder below sorts what it finds into families with verdicts:
 
-1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([docs/spec-suites.md](docs/spec-suites.md)).
-2. **The mode judge** compares the editor (by `editor` we mean `Source mode` or `Live Preview`) with Reading view on every oracle document (`npm run mode-judge`, [docs/mode-judge.md](docs/mode-judge.md)).
-3. **The self-check judges** find where Obsidian is wrong but consistent with itself. They check reference-free relations over notes from a grammar of every construct: positions slice their construct, a prefix shifts everything, padding keeps the structure, a rename leaves the rest alone, an escape removes its construct, a block reads the same alone and in context, and the cache agrees with Reading view (`npm run self-check`, [docs/self-check.md](docs/self-check.md)).
-4. **The engine differential** finds where Obsidian is wrong only by the spec. It renders the grammar's CommonMark and GFM notes with Reading view's engine and with `micromark`, `markdown-it` and `commonmark.js`, and flags where the references agree and Obsidian does not (`npm run self-check -- --engines`, [docs/self-check.md](docs/self-check.md#the-engine-differential)).
-5. **Link parity** finds what a wikilink can express and a markdown link cannot, and the other way round, and the links Obsidian writes itself that miss their target, measured against the help's promise that the two formats are equivalent (`npm run link-parity`, [docs/link-parity.md](docs/link-parity.md)).
-6. **Special note names** finds what each vault surface does with a note whose name holds a character Obsidian warns about, a character link syntax reserves, or one the vault normalizes: the index, explorer, switcher, search, links, graph, embeds, `obsidian://open` and renames (`npm run special-names`, [docs/special-names.md](docs/special-names.md)), the same on Android for the names Windows cannot store (`npm run special-names -- --android`), and names in neither Unicode normal form (`npm run special-names -- --normalization`).
-7. **Link cases** finds where a link leads in the vault shapes the owner's forum reports name: a name a root note and a note in a folder share, a renamed note with spaces, a file with no extension, the links `generateMarkdownLink` writes, and a note composer merge across folders (`npm run link-cases`, [docs/link-cases.md](docs/link-cases.md)).
+1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([spec-suites.md](docs/spec-suites.md)).
+2. **The mode judge** compares Source mode and Live Preview with Reading view on every oracle document (`npm run mode-judge`, [mode-judge.md](docs/mode-judge.md)).
+3. **The self-check judges** find where Obsidian is wrong but consistent with itself, through reference-free relations over generated notes: positions slice their construct, a prefix shifts everything, a rename leaves the rest alone, and the cache agrees with Reading view (`npm run self-check`, [self-check.md](docs/self-check.md)).
+4. **The engine differential** finds where Obsidian is wrong only by the spec, by rendering generated CommonMark and GFM notes with Reading view's engine and with `micromark`, `markdown-it` and `commonmark.js` (`npm run self-check -- --engines`).
+5. **Link parity** finds what a wikilink can express and a markdown link cannot, and the other way round (`npm run link-parity`, [link-parity.md](docs/link-parity.md)).
+6. **Special note names** finds what each vault surface does with a note whose name holds a character Obsidian warns about, one link syntax reserves, or one the vault normalizes, on desktop and Android (`npm run special-names`, [special-names.md](docs/special-names.md)).
+7. **Link cases** finds where a link leads in vault shapes from forum reports: a name a root note and a folder note share, a renamed note with spaces, a file with no extension, and a note composer merge across folders (`npm run link-cases`, [link-cases.md](docs/link-cases.md)).
 
-`npm run oracle:refresh` re-reads the oracles from a new Obsidian build, and the first three finders then run on that build's behaviour.
+## Documentation
 
-What is ported from open-source code, what was learned by reading Obsidian's code, what was only measured, and what the oracle files hold are in [docs/provenance.md](docs/provenance.md).
+1. [API](docs/api.md): the packages, their entry points and what each exports.
+2. [Architecture](docs/architecture.md): the three engines and why.
+3. [Syntax](docs/syntax.md), [remark engine](docs/remark.md) and [metadata](docs/metadata.md): the rules each follows and how they are checked.
+4. [Spec suites](docs/spec-suites.md): CommonMark and GFM results, and Obsidian's departures from them.
+5. [Oracles](docs/oracles.md): how Obsidian is measured, and how to move to a new version.
+6. [Development](docs/development.md): building, checking, releasing and measuring from a clone.
+7. [Write-up](docs/write-up.md): the goals, the result per goal, and the known gaps.
 
-`@quartz-community/remark-obsidian` is prior art for the mdast target and the `remark-parse` 8 engine. Its test inputs are imported into the worker oracle and measured against Obsidian ([docs/remark-obsidian.md](docs/remark-obsidian.md)).
+## Contributing
 
-The Phase 0 harness in `phase0/` stays only to reproduce [docs/phase-0.md](docs/phase-0.md): `node phase0/oracle.mjs 300`, then `node phase0/gap.mjs 6 tree|lines|state`.
+Issues and pull requests are welcome. Before a change to the parser, run the checks in [development.md](docs/development.md); a change that moves a measured number updates the page that states it.
+
+## Support
+
+<!-- markdownlint-disable MD033 -->
+
+<a href="https://www.buymeacoffee.com/mnaoumov" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" width="217"></a>
+
+<!-- markdownlint-enable MD033 -->
+
+## License
+
+© [Michael Naumov](https://github.com/mnaoumov/). No license has been granted yet; one will be chosen before the first release. Code ported from open-source projects keeps its own license, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

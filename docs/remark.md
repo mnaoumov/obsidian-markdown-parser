@@ -3,7 +3,7 @@
 `src/remark/` is the parser Obsidian's reading view and metadata worker run: `remark-parse` 8.0.3 with `commonmark: true` and `gfm: true`, Obsidian's edits to three of its block tokenizers, and the Obsidian syntax its extensions add. It is the fourth parser [the spec suites' decision](spec-suites.md#where-these-come-from-and-the-decision) called for. Obsidian's inline algorithm, its tabs, lazy quote lines and paragraph whitespace are no rules added to it: they are how `remark-parse` 8 reads markdown, so the engine has them by construction.
 
 ```ts
-import { parseRemark, renderRemarkHtml } from 'obsidian-markdown-parser';
+import { parseRemark, renderRemarkHtml } from '@mnaoumov/obsidian-markdown-parser';
 
 const tree = parseRemark('> [!note] Title\n> - [?] task [[Note|alias]] #tag'); // mdast, with positions
 const html = renderRemarkHtml(tree); // as remark-html 13 renders it
