@@ -1,6 +1,6 @@
 {
   "name": "@mnaoumov/obsidian-markdown-parser-metadata",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "The CachedMetadata Obsidian's metadata worker posts for a document, and the remark-parse 8 engine it is built from, without the editor or CodeMirror dependencies.",
   "keywords": [
     "obsidian",

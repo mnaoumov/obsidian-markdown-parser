@@ -1,6 +1,6 @@
 {
   "name": "@mnaoumov/obsidian-markdown-parser",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A parser for Obsidian-flavoured markdown that reproduces Obsidian's editor classes, syntax and CachedMetadata, for Lezer, micromark/mdast, markdown-it and remark.",
   "keywords": [
     "obsidian",
