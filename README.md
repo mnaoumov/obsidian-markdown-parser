@@ -1,6 +1,6 @@
 # obsidian-markdown-parser
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![CI](https://img.shields.io/github/actions/workflow/status/mnaoumov/obsidian-markdown-parser/ci.yml?branch=main&label=CI)](https://github.com/mnaoumov/obsidian-markdown-parser/actions/workflows/ci.yml)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![CI](https://img.shields.io/github/actions/workflow/status/mnaoumov/obsidian-markdown-parser/ci.yml?branch=main&label=CI)](https://github.com/mnaoumov/obsidian-markdown-parser/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/mnaoumov/obsidian-markdown-parser)](https://github.com/mnaoumov/obsidian-markdown-parser/blob/main/LICENSE)
 
 A parser for Obsidian-flavoured markdown that gives the same answers as Obsidian itself: the classes its editor puts on every character, the syntax tree of wikilinks, embeds, tags, comments, math, highlights, footnotes, block ids and callouts, the HTML of its reading view, and the `CachedMetadata` its metadata worker posts for a note.
 
