@@ -11,7 +11,7 @@ Tools that read an Obsidian vault outside the app (publishers, linters, static-s
 
 ## Status
 
-Experimental, and not yet released to npm. The API may change before 1.0.0. Measured against Obsidian 1.15.1 on desktop (1.14.4 on Android):
+Released on npm from 1.0.0, following semantic versioning: a breaking change to the API waits for a major version. Measured against Obsidian 1.15.1 on desktop (1.14.4 on Android):
 
 1. **Editor classes:** every character and line of all 46,508 documents in eleven fuzzed corpora gets the live editor's classes ([phase-1.md](docs/phase-1.md)).
 2. **Metadata:** `parseMetadata` equals the worker's `CachedMetadata` as JSON, key order included, on 3,743 documents run through the app's own worker and on the live app's metadata of all 674 spec examples ([metadata.md](docs/metadata.md)).
@@ -96,16 +96,17 @@ renderRemarkHtml(parseRemark('See [[Other note]] and ==hi==\n'));
 
 ## Installation
 
-Not on npm yet. Until the first release, build the packages from a clone and install the tarballs:
-
 ```sh
-npm install
-npm run build
-npm pack                                # the whole parser
-npm pack --workspace packages/metadata  # the metadata package
+npm install @mnaoumov/obsidian-markdown-parser
 ```
 
-Then `npm install <path to the tarball>` in your project. Both packages are ES modules with TypeScript declarations, for Node 22 or later and for bundlers.
+Or, for the metadata projection alone, without the editor or CodeMirror dependencies:
+
+```sh
+npm install @mnaoumov/obsidian-markdown-parser-metadata
+```
+
+Both packages are ES modules with TypeScript declarations, for Node 22 or later and for bundlers.
 
 ## How it works
 
@@ -152,6 +153,10 @@ The oracles and engines also make a test suite for Obsidian itself. Each finder 
 
 Last searched for similar libraries on 2026-11-25.
 
+## Changelog
+
+All notable changes to this project will be documented in the [CHANGELOG](./CHANGELOG.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. Before a change to the parser, run the checks in [development.md](docs/development.md); a change that moves a measured number updates the page that states it.
@@ -166,4 +171,4 @@ Issues and pull requests are welcome. Before a change to the parser, run the che
 
 ## License
 
-© [Michael Naumov](https://github.com/mnaoumov/). No license has been granted yet; one will be chosen before the first release. Code ported from open-source projects keeps its own license, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+© [Michael Naumov](https://github.com/mnaoumov/). Released under the [MIT License](LICENSE). Code ported from open-source projects keeps its own license, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

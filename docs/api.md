@@ -1,21 +1,20 @@
 # API overview
 
-The parser ships as two npm packages. Until the first release reaches npm, a consumer installs a tarball made by `npm pack`, as below.
+The parser ships as two npm packages, which always share one version.
 
 - **`@mnaoumov/obsidian-markdown-parser`** is everything: the editor's classes, the three syntax adapters, the remark engine and the metadata. It depends on CodeMirror 6, `@lezer/*`, `codemirror@5`, micromark and mdast, markdown-it, `yaml` and three entity tables.
 - **`@mnaoumov/obsidian-markdown-parser-metadata`** (`packages/metadata/`) is the metadata projection and the remark engine it is built from, and nothing else. It depends on `yaml`, `character-entities-legacy`, `character-reference-invalid` and `decode-named-character-reference` only.
 
 The metadata package exists for a consumer that needs only `CachedMetadata`, such as a mock of Obsidian's metadata cache, and must not pull in an editor. Its source is the same `src/remark/` and `src/metadata/` the root package builds, compiled by `packages/metadata/tsconfig.build.json`. `src/entries/metadata-package.test.ts` pins that their import closure reaches no other module and no package beyond those four, at the root package's versions.
 
-## Building and installing
+## Installing
 
 ```sh
-npm run build                                   # dist/lib/ and packages/metadata/dist/
-npm pack                                        # mnaoumov-obsidian-markdown-parser-<version>.tgz
-npm pack --workspace packages/metadata          # mnaoumov-obsidian-markdown-parser-metadata-<version>.tgz
+npm install @mnaoumov/obsidian-markdown-parser            # everything
+npm install @mnaoumov/obsidian-markdown-parser-metadata   # the metadata projection alone
 ```
 
-Then, in the consumer, `npm install <path to the tarball>`. Both packages are ES modules with TypeScript declarations, for Node 22 or later and for bundlers.
+Both packages are ES modules with TypeScript declarations, for Node 22 or later and for bundlers. To try an unreleased change, `npm run build` in a clone, then `npm pack` and `npm pack --workspace packages/metadata` give the tarballs, which `npm install <path to the tarball>` installs.
 
 ## Entry points
 
