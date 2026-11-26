@@ -1,0 +1,45 @@
+---
+title: obsidian-markdown-parser
+description: A parser for Obsidian-flavoured markdown that reproduces Obsidian's editor classes, syntax and CachedMetadata, for Lezer, micromark/mdast, markdown-it and remark.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+    title: obsidian-markdown-parser
+    tagline: Obsidian-flavoured markdown, measured against the live app - the editor's class tokens, the syntax as Lezer, micromark/mdast and markdown-it extensions, and the metadata worker's CachedMetadata.
+    image:
+        alt: obsidian-markdown-parser logo
+        file: ../../assets/logo.svg
+    actions:
+        - text: API overview
+          link: /obsidian-markdown-parser/guides/api/
+          icon: rocket
+        - text: API reference
+          link: /obsidian-markdown-parser/api/
+          icon: open-book
+          variant: secondary
+        - text: The write-up
+          link: /obsidian-markdown-parser/guides/write-up/
+          icon: document
+          variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+<CardGrid stagger>
+    <Card title="The editor's classes" icon="pencil">
+        The CSS classes Obsidian's editor puts on every character and line, so themes keep working, resumable from any line and hosted as a [CodeMirror 6 language](./guides/cm6-host/).
+    </Card>
+
+    <Card title="The syntax, defined once" icon="puzzle">
+        Wikilinks, embeds, tags, comments, math, callouts, block ids, highlights and footnotes, as extensions for [Lezer, micromark/mdast and markdown-it](./guides/syntax/), checked against one corpus.
+    </Card>
+
+    <Card title="CachedMetadata" icon="list-format">
+        [`parseMetadata`](./guides/metadata/) gives the metadata worker's `CachedMetadata`, equal as JSON, also published alone as `@mnaoumov/obsidian-markdown-parser-metadata`.
+    </Card>
+
+    <Card title="Measured, not copied" icon="magnifier">
+        Every behaviour is matched against a real Obsidian instance through [pinned oracles](./guides/oracles/), never copied from the app's code.
+    </Card>
+</CardGrid>
