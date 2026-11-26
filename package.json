@@ -22,7 +22,7 @@
     "type": "git",
     "url": "git+https://github.com/mnaoumov/obsidian-markdown-parser.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Michael Naumov",
   "type": "module",
   "exports": {

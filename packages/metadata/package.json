@@ -18,7 +18,7 @@
     "url": "git+https://github.com/mnaoumov/obsidian-markdown-parser.git",
     "directory": "packages/metadata"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Michael Naumov",
   "type": "module",
   "exports": {
@@ -34,6 +34,7 @@
   },
   "files": [
     "dist",
+    "LICENSE",
     "THIRD-PARTY-NOTICES.md"
   ],
   "dependencies": {

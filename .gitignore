@@ -18,6 +18,7 @@ dist
 coverage
 
 # Copied in by `npm run build`
+/packages/metadata/LICENSE
 /packages/metadata/THIRD-PARTY-NOTICES.md
 
 /tsconfig.tsbuildinfo

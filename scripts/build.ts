@@ -3,7 +3,7 @@
  *
  * Builds both packages: the whole parser into `dist/lib/` (`tsconfig.build.json`) and the metadata package into
  * `packages/metadata/dist/` (`packages/metadata/tsconfig.build.json`), each as ES modules with declarations, and
- * copies `THIRD-PARTY-NOTICES.md` into the metadata package. Nothing here publishes: `scripts/publish-npm.ts` does,
+ * copies `LICENSE` and `THIRD-PARTY-NOTICES.md` into the metadata package. Nothing here publishes: `scripts/publish-npm.ts` does,
  * from CI.
  *
  * Usage: `npm run build`, then `npm pack` and `npm pack --workspace packages/metadata` give the tarballs.
@@ -36,5 +36,7 @@ async function main(): Promise<void> {
 
   await execFromRoot([...resolveToolCommand({ tool: 'tsc' }), '--project', 'tsconfig.build.json']);
   await execFromRoot([...resolveToolCommand({ tool: 'tsc' }), '--project', 'packages/metadata/tsconfig.build.json']);
-  copyFileSync(join(root, 'THIRD-PARTY-NOTICES.md'), join(metadataPackageFolder, 'THIRD-PARTY-NOTICES.md'));
+  for (const fileName of ['LICENSE', 'THIRD-PARTY-NOTICES.md']) {
+    copyFileSync(join(root, fileName), join(metadataPackageFolder, fileName));
+  }
 }
