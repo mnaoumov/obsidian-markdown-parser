@@ -360,7 +360,7 @@ function blockIdBlock(parser: RemarkParser, eat: Eat, value: string, isSilent: b
     return true;
   }
   parser.hasFootnoteOrBlockId = true;
-  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  return eat.add(match[0], { type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 // Only the rest of the inline content, to its end, can be a block id.
@@ -373,7 +373,7 @@ function blockIdInline(parser: RemarkParser, eat: Eat, value: string, isSilent: 
     return true;
   }
   parser.hasFootnoteOrBlockId = true;
-  return eat(match[0])({ type: 'blockId', value: match.groups?.['id'] ?? '' });
+  return eat.add(match[0], { type: 'blockId', value: match.groups?.['id'] ?? '' });
 }
 
 /*
@@ -603,7 +603,7 @@ function footnoteReference(parser: RemarkParser, eat: Eat, value: string, isSile
 
   const label = value.slice(DELIMITER_LENGTH, labelEnd);
   parser.hasFootnoteOrBlockId = true;
-  return eat(value.slice(0, index))({ identifier: label.toLowerCase(), label, type: 'footnoteReference' });
+  return eat.add(value.slice(0, index), { identifier: label.toLowerCase(), label, type: 'footnoteReference' });
 }
 
 function forEachListItem(node: RemarkNode, callback: (item: RemarkNode) => void): void {
@@ -631,7 +631,7 @@ function frontmatter(parser: RemarkParser, eat: Eat, value: string, isSilent: bo
   if (close === -1) {
     return;
   }
-  return isSilent || eat(value.slice(0, close + FRONTMATTER_FENCE.length))({ type: 'yaml', value: value.slice(FRONTMATTER_FENCE.length + 1, close - 1) });
+  return isSilent || eat.add(value.slice(0, close + FRONTMATTER_FENCE.length), { type: 'yaml', value: value.slice(FRONTMATTER_FENCE.length + 1, close - 1) });
 }
 
 /*
@@ -767,7 +767,7 @@ function inlineMath(_parser: RemarkParser, eat: Eat, value: string, isSilent: bo
   index++;
 
   if (isEscaped) {
-    return isSilent || eat(value.slice(0, index))({ type: 'text', value: '$' });
+    return isSilent || eat.add(value.slice(0, index), { type: 'text', value: '$' });
   }
 
   const isDisplay = value.charCodeAt(index) === DOLLAR;
@@ -812,7 +812,7 @@ function inlineMath(_parser: RemarkParser, eat: Eat, value: string, isSilent: bo
   if (contentEnd === undefined) {
     return;
   }
-  return isSilent || eat(value.slice(0, index))({ display: isDisplay, type: 'inlineMath', value: value.slice(contentStart, contentEnd) });
+  return isSilent || eat.add(value.slice(0, index), { display: isDisplay, type: 'inlineMath', value: value.slice(contentStart, contentEnd) });
 }
 
 function insertAll<Name extends string>(methods: readonly Name[], insertions: readonly (readonly [name: Name, anchor: Name, isAfter?: boolean])[]): Name[] {
@@ -839,7 +839,7 @@ function internalLink(_parser: RemarkParser, eat: Eat, value: string, isSilent: 
     return true;
   }
 
-  return eat(match[0])({ ...parseInternalLink(content), type: match.groups?.['embed'] ? 'embed' : 'internalLink' });
+  return eat.add(match[0], { ...parseInternalLink(content), type: match.groups?.['embed'] ? 'embed' : 'internalLink' });
 }
 
 function isBlankLine(line: FootnoteLine | undefined): boolean {
@@ -996,7 +996,7 @@ function mathBlock(_parser: RemarkParser, eat: Eat, value: string, isSilent: boo
     lineEnd = nextLineEnd(value, lineStart);
   }
 
-  return eat(value.slice(0, lineEnd))({ type: 'math', value: lines.join('\n') });
+  return eat.add(value.slice(0, lineEnd), { type: 'math', value: lines.join('\n') });
 }
 
 function nextLineEnd(value: string, lineStart: number): number {
@@ -1066,7 +1066,7 @@ function softBreakAsHard(_parser: RemarkParser, eat: Eat, value: string, isSilen
   if (value.charCodeAt(index) !== LINE_FEED) {
     return;
   }
-  return isSilent || eat(value.slice(0, index + 1))({ type: 'break' });
+  return isSilent || eat.add(value.slice(0, index + 1), { type: 'break' });
 }
 
 /*
@@ -1078,7 +1078,7 @@ function tag(_parser: RemarkParser, eat: Eat, value: string, isSilent: boolean):
   if (!match || NUMBER_TAG_RE.test(match[0])) {
     return;
   }
-  return isSilent || eat(match[0])({ name: match[0].slice(1), type: 'tag' });
+  return isSilent || eat.add(match[0], { name: match[0].slice(1), type: 'tag' });
 }
 
 // Visits the tree in document order, but the inside of inline footnotes.

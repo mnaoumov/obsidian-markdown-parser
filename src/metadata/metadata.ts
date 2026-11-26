@@ -135,6 +135,7 @@ const TRAILING_BLOCK_ID_RE = /^\s*\^[a-zA-Z0-9-]+/u;
 const LINE_BREAKS_RE = /\r\n|\r/gu;
 const IMAGE_SIZE_RE = /^\s*\d+\s*(?:x\s*\d+\s*)?$/u;
 const DEFAULT_HEADING_LEVEL = 1;
+const BYTE_ORDER_MARK_CODE = 0xFE_FF;
 const DELETED_WHEN_EMPTY = new Set(['embeds', 'footnoteRefs', 'footnotes', 'headings', 'links', 'listItems', 'referenceLinks', 'sections', 'tags']);
 
 const ORIGIN: RemarkPoint = { column: 1, line: 1, offset: 0 };
@@ -443,7 +444,9 @@ function metadataOf(text: string, root: RemarkRoot, hasFootnoteOrBlockId: boolea
 
 // Throws `WorkerFailure` where the worker throws.
 function metadataOrFailure(markdown: string, options: ParseMetadataOptions): CachedMetadata {
-  const text = new TextDecoder().decode(new TextEncoder().encode(markdown));
+  // The worker is handed the note as UTF-8 and decodes it, which replaces each lone surrogate and drops a leading byte
+  // order mark. A well-formed note without one comes back unchanged, so only another note makes the trip.
+  const text = markdown.isWellFormed() && markdown.codePointAt(0) !== BYTE_ORDER_MARK_CODE ? markdown : new TextDecoder().decode(new TextEncoder().encode(markdown));
   const { hasFootnoteOrBlockId, root } = parseRemarkTree(text, { shouldReadSoftLineBreaksAsHard: true });
   return metadataOf(text, root, hasFootnoteOrBlockId, workerReleaseOf(options.obsidianVersion));
 }

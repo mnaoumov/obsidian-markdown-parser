@@ -166,3 +166,26 @@ The same bench on 2026-11-24 at `243dd78`, on the same machine with no other job
 | Reference definition title of 100,000 characters | 100,017 | 0.8 ms | 1.6 ms | 0.55 |
 
 The metadata is the same as the 1.15.1 worker's on every text. On an idle machine every time is several times lower than under load, and the loaded runs above overstated both sides. `parseMetadata` still beats the worker on the nested lists, the unclosed emphasis openers and brackets, and both long definitions. It is still slower on the vault notes, the nested quote, the backtick runs and the wikilinks, by 1.2 to 1.5 times by minimum. The medians are closer: the 10,000-line note ties, and the 100,000-line note is 1.14 times the worker's. Timed by CPU time in a process of its own and then beside the worker, the 100,000-line note's `parseMetadata` runs were about the same (most runs 450 to 520 ms both ways), so the shared heap is not the cause of the remaining gap. Windows counts CPU time in 15.6 ms ticks, which is too coarse to settle it more finely.
+
+### After the third round
+
+The third round went after what a long note allocates, measured with V8's sampling heap profiler with inlining turned off, so that each byte is charged to the function that made it. Before it, 10 parses of the 10,000-line vault note allocated 404 MB. The changes:
+
+1. Each `tokenize` call made a fresh scope, and with it the memo entries of every locator for every paragraph and heading. These entries were about a quarter of all the bytes. Now there is one scope per nesting depth, reused by every later call at that depth. An entry left by an earlier text is reset on its first use.
+2. `eat.add(subvalue, node)` eats and adds a node in one step. `eat(subvalue)(node)` made a function in between, and it was about a tenth of the bytes. Every tokenizer whose node is made without eating more uses it. Those whose node holds children read after the eat, such as paragraphs, headings and emphasis, keep `eat(subvalue)(node)`.
+3. A text run that merges into the text before it is not given a position of its own. A merged node's indent is extended in place, not copied.
+4. The line starts and the blank lines are read by character code, not by a regular expression with a match array per line. A fenced code block's content is read a line at a time, not a character at a time.
+5. A note with no lone surrogate and no byte order mark skips the UTF-8 round trip that reproduces the worker's decoding.
+
+The same 10 parses now allocate 234 MB, 42% less. The metadata is unchanged: the tests, the worker oracle and `src/remark/scan-memo.test.ts` all pass.
+
+Measured on 2026-11-25 with other bulk jobs holding the machine, so these are not idle-machine numbers. `parseMetadata` and the 1.15.1 worker each ran in a process of their own, alternately, three rounds each. The table gives the minimum per parse over the rounds, and the ratio is the range of the per-round ratios of minimums. The before column is the minimum of two runs of `parseMetadata` earlier the same day, before the changes.
+
+| Text | Before: `parseMetadata` | After: `parseMetadata` | Worker 1.15.1 | Ratio after |
+| :--- | ----------------------: | ---------------------: | ------------: | ----------: |
+| Vault notes, 10,000 lines | 74.9 ms | 41.7 ms | 28.8 ms | 1.30 to 1.53 |
+| 10,000 unclosed backtick runs | 1.25 ms | 1.30 ms | 0.90 ms | 1.27 to 1.44 |
+| 10,000 wikilinks on one line | 13.3 ms | 11.9 ms | 10.2 ms | 1.05 to 1.17 |
+| Quote nested 600 deep | 0.28 ms | 0.29 ms | 0.28 ms | 1.00 to 1.18 |
+
+The vault note's minimum fell by about 40%, and the time spent in garbage collection fell from 19% to 15% of its CPU profile. The CPU time per parse, counted over all threads, stayed at about 60 ms, so under this load the gain shows in the best runs rather than in the average. The vault note and the backtick runs are still slower than the worker by minimum. The wikilinks and the nested quote are now within the noise of these runs. These rows still need a run on an idle machine.

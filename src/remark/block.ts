@@ -76,7 +76,6 @@ const UNDERSCORE_CODE = 95;
 const GRAVE_ACCENT_CODE = 96;
 const TILDE_CODE = 126;
 
-const BLANK_LINE_RE = /^[ \t]*(?:\n|$)/u;
 const CALLOUT_RE = /^\[!(?<header>[^\]]+)\](?<fold>[+-]?)(?:\s|$)/u;
 const WHITESPACE_RUN_RE = /\s+/gu;
 const LOOSE_LIST_ITEM_RE = /\n\n(?!\s*$)/u;
@@ -369,20 +368,32 @@ function atxHeading(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
 }
 
 function blankLine(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
-  let subvalue = '';
   let index = 0;
   const length = value.length;
 
+  // Upstream matches `^[ \t]*(?:\n|$)` against the rest of the value at each line; a scan by character code reads the
+  // same lines without a slice and a match array for each.
   while (index < length) {
-    const match = BLANK_LINE_RE.exec(value.slice(index));
+    let end = index;
+    let code = value.codePointAt(end);
 
-    if (!match) {
+    while (code === SPACE_CODE || code === TAB_CODE) {
+      code = value.codePointAt(++end);
+    }
+
+    if (end === length) {
+      index = end;
       break;
     }
 
-    index += match[0].length;
-    subvalue += match[0];
+    if (code !== LINE_FEED_CODE) {
+      break;
+    }
+
+    index = end + 1;
   }
+
+  const subvalue = value.slice(0, index);
 
   if (subvalue === '') {
     return;
@@ -450,7 +461,7 @@ function blockHtml(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
 
   const subvalue = value.slice(0, index);
 
-  return eat(subvalue)({ type: 'html', value: subvalue });
+  return eat.add(subvalue, { type: 'html', value: subvalue });
 }
 
 function blockquote(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], value: string, silent: boolean): TokenizerResult {
@@ -791,7 +802,7 @@ function definition(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
       title = parser.decodeRaw(parser.unescape(title), titleStart);
     }
 
-    return eat(subvalue)({
+    return eat.add(subvalue, {
       identifier: normalizeIdentifier(identifier),
       label: identifier,
       title: title || null,
@@ -921,9 +932,22 @@ function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
     exdentedClosing = '';
 
     if (character !== '\n') {
-      content += character;
-      exdentedClosing += character;
-      index++;
+      if (!character) {
+        index++;
+        continue;
+      }
+
+      // The rest of the line at once, as the character-by-character loop upstream leaves it: all of it in the content,
+      // and all but its last character in the exdented content, the last waiting in `exdentedClosing`. A string per
+      // character made a code block's content cost a string per character it holds.
+      let lineEnd = value.indexOf('\n', index + 1);
+      if (lineEnd === -1) {
+        lineEnd = value.length;
+      }
+      content += value.slice(index, lineEnd);
+      exdentedContent += value.slice(index, lineEnd - 1);
+      exdentedClosing = value.charAt(lineEnd - 1);
+      index = lineEnd;
       continue;
     }
 
@@ -1017,7 +1041,7 @@ function fencedCode(parser: RemarkParser, eat: Parameters<BlockTokenizer>[1], va
     }
   }
 
-  return eat(subvalue)({
+  return eat.add(subvalue, {
     lang: lang || flag || null,
     meta: meta || null,
     type: 'code',
@@ -1138,7 +1162,7 @@ function indentedCode(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1],
       return true;
     }
 
-    return eat(subvalue)({
+    return eat.add(subvalue, {
       lang: null,
       meta: null,
       type: 'code',
@@ -1909,7 +1933,7 @@ function thematicBreak(_parser: RemarkParser, eat: Parameters<BlockTokenizer>[1]
         return true;
       }
 
-      return eat(subvalue)({ type: 'thematicBreak' });
+      return eat.add(subvalue, { type: 'thematicBreak' });
     } else {
       return;
     }
