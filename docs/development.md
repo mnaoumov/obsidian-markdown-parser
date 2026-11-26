@@ -14,6 +14,10 @@ How to build, check and measure the parser from a clone of this repository. What
 
 `npm run version -- <major|minor|patch|x.y.z>` bumps both packages to one version, settles `CHANGELOG.md`, commits, tags, pushes and creates the GitHub release. Publishing that release runs `.github/workflows/publish-npm.yml`, which builds and publishes both packages through npm trusted publishing.
 
+## The documentation site
+
+`npm run docs:build` builds <https://mnaoumov.dev/obsidian-markdown-parser/> into `docs/dist/` with the shared site of `@mnaoumov/typescript-dev-toolkit` (Astro and Starlight), then checks every link of the output; `npm run docs:dev` serves it while you edit, and `npm run docs:preview` serves the last build. The pages under `docs/` are the source of the site's guides: `scripts/docs/docs-guides.ts` copies each into the uncommitted `docs/src/content/docs/guides/`, its first heading as the title, a link to another page as that page's link on the site and a link to any other file as that file on GitHub, so a new page is added to the order in that script. The API reference is generated from the TSDoc of every export of `src/index.ts`. Publishing a release, or dispatching `.github/workflows/build-pages.yml` on `main`, deploys the site.
+
 ## Measuring
 
 - `npx jiti scripts/demo/cm6-bench.ts` measures the CodeMirror 6 host ([cm6-host.md](cm6-host.md)).
