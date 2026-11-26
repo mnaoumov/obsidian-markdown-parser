@@ -13,12 +13,12 @@ Tools that read an Obsidian vault outside the app (publishers, linters, static-s
 
 Released on npm from 1.0.0, following semantic versioning: a breaking change to the API waits for a major version. Measured against Obsidian 1.15.1 on desktop (1.14.4 on Android):
 
-1. **Editor classes:** every character and line of all 46,508 documents in eleven fuzzed corpora gets the live editor's classes ([phase-1.md](docs/phase-1.md)).
-2. **Metadata:** `parseMetadata` equals the worker's `CachedMetadata` as JSON, key order included, on 3,743 documents run through the app's own worker and on the live app's metadata of all 674 spec examples ([metadata.md](docs/metadata.md)).
-3. **Spec conformance:** with the `commonmark` preset, the micromark and markdown-it adapters pass all 652 examples of the CommonMark 0.31.2 suite and the Lezer tree passes 651 ([spec-suites.md](docs/spec-suites.md)).
-4. **Live parsing:** the editor tokenizer resumes from any line and reuses the old parse after an edit, so an edit at the start of a 100,000-line document re-parses in under 1 ms ([cm6-host.md](docs/cm6-host.md)).
+1. **Editor classes:** every character and line of all 46,508 documents in eleven fuzzed corpora gets the live editor's classes ([phase-1.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/phase-1/)).
+2. **Metadata:** `parseMetadata` equals the worker's `CachedMetadata` as JSON, key order included, on 3,743 documents run through the app's own worker and on the live app's metadata of all 674 spec examples ([metadata.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/metadata/)).
+3. **Spec conformance:** with the `commonmark` preset, the micromark and markdown-it adapters pass all 652 examples of the CommonMark 0.31.2 suite and the Lezer tree passes 651 ([spec-suites.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/spec-suites/)).
+4. **Live parsing:** the editor tokenizer resumes from any line and reuses the old parse after an edit, so an edit at the start of a 100,000-line document re-parses in under 1 ms ([cm6-host.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/cm6-host/)).
 
-What is not done yet is in [the write-up](docs/write-up.md).
+What is not done yet is in [the write-up](https://mnaoumov.dev/obsidian-markdown-parser/guides/write-up/).
 
 ## What it gives you
 
@@ -32,7 +32,7 @@ What is not done yet is in [the write-up](docs/write-up.md).
 | `@mnaoumov/obsidian-markdown-parser/metadata` | `parseMetadata`: the `CachedMetadata` Obsidian's metadata worker posts for a note. |
 | `@mnaoumov/obsidian-markdown-parser-metadata` | The same `parseMetadata` and remark engine as a separate package with four small dependencies and no editor or CodeMirror. |
 
-The root `@mnaoumov/obsidian-markdown-parser` exports all of them. Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, and Obsidian's departures from the spec as flags of their own. The full list is in [api.md](docs/api.md).
+The root `@mnaoumov/obsidian-markdown-parser` exports all of them. Every adapter takes the same options: a preset (`commonmark`, `gfm` or `obsidian`, the default) with any of its flags turned on or off, and Obsidian's departures from the spec as flags of their own. The full list is in [api.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/api/).
 
 ## Usage
 
@@ -110,31 +110,33 @@ Both packages are ES modules with TypeScript declarations, for Node 22 or later 
 
 ## How it works
 
-It is three engines, not one, because Obsidian's three outputs come from three kinds of parser: the editor's classes from a CodeMirror 5 line tokenizer (ported here and hosted in CodeMirror 6), the syntax tree from `@lezer/markdown` with Obsidian extensions, and the reading view and metadata from a port of `remark-parse` 8 with Obsidian's edits. Why each output needs its engine, and what a single engine would take, is in [architecture.md](docs/architecture.md).
+It is three engines, not one, because Obsidian's three outputs come from three kinds of parser: the editor's classes from a CodeMirror 5 line tokenizer (ported here and hosted in CodeMirror 6), the syntax tree from `@lezer/markdown` with Obsidian extensions, and the reading view and metadata from a port of `remark-parse` 8 with Obsidian's edits. Why each output needs its engine, and what a single engine would take, is in [architecture.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/architecture/).
 
-Nothing is matched to a description of Obsidian's behaviour. Each reading is matched to oracles read from a running Obsidian over the Chrome DevTools Protocol and from its metadata worker, and the pinned Obsidian version can be moved with one command that reports what changed ([oracles.md](docs/oracles.md)). What is ported from open-source code, what was learned by reading Obsidian's code, and what was only measured is in [provenance.md](docs/provenance.md).
+Nothing is matched to a description of Obsidian's behaviour. Each reading is matched to oracles read from a running Obsidian over the Chrome DevTools Protocol and from its metadata worker, and the pinned Obsidian version can be moved with one command that reports what changed ([oracles.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/oracles/)). What is ported from open-source code, what was learned by reading Obsidian's code, and what was only measured is in [provenance.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/provenance/).
 
 ## How it tests Obsidian
 
 The oracles and engines also make a test suite for Obsidian itself. Each finder below sorts what it finds into families with verdicts:
 
-1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([spec-suites.md](docs/spec-suites.md)).
-2. **The mode judge** compares Source mode and Live Preview with Reading view on every oracle document (`npm run mode-judge`, [mode-judge.md](docs/mode-judge.md)).
-3. **The self-check judges** find where Obsidian is wrong but consistent with itself, through reference-free relations over generated notes: positions slice their construct, a prefix shifts everything, a rename leaves the rest alone, and the cache agrees with Reading view (`npm run self-check`, [self-check.md](docs/self-check.md)).
+1. **Spec suites** compare Obsidian's readings of every CommonMark and GFM spec example with the spec ([spec-suites.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/spec-suites/)).
+2. **The mode judge** compares Source mode and Live Preview with Reading view on every oracle document (`npm run mode-judge`, [mode-judge.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/mode-judge/)).
+3. **The self-check judges** find where Obsidian is wrong but consistent with itself, through reference-free relations over generated notes: positions slice their construct, a prefix shifts everything, a rename leaves the rest alone, and the cache agrees with Reading view (`npm run self-check`, [self-check.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/self-check/)).
 4. **The engine differential** finds where Obsidian is wrong only by the spec, by rendering generated CommonMark and GFM notes with Reading view's engine and with `micromark`, `markdown-it` and `commonmark.js` (`npm run self-check -- --engines`).
-5. **Link parity** finds what a wikilink can express and a markdown link cannot, and the other way round (`npm run link-parity`, [link-parity.md](docs/link-parity.md)).
-6. **Special note names** finds what each vault surface does with a note whose name holds a character Obsidian warns about, one link syntax reserves, or one the vault normalizes, on desktop and Android (`npm run special-names`, [special-names.md](docs/special-names.md)).
-7. **Link cases** finds where a link leads in vault shapes from forum reports: a name a root note and a folder note share, a renamed note with spaces, a file with no extension, and a note composer merge across folders (`npm run link-cases`, [link-cases.md](docs/link-cases.md)).
+5. **Link parity** finds what a wikilink can express and a markdown link cannot, and the other way round (`npm run link-parity`, [link-parity.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/link-parity/)).
+6. **Special note names** finds what each vault surface does with a note whose name holds a character Obsidian warns about, one link syntax reserves, or one the vault normalizes, on desktop and Android (`npm run special-names`, [special-names.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/special-names/)).
+7. **Link cases** finds where a link leads in vault shapes from forum reports: a name a root note and a folder note share, a renamed note with spaces, a file with no extension, and a note composer merge across folders (`npm run link-cases`, [link-cases.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/link-cases/)).
 
 ## Documentation
 
-1. [API](docs/api.md): the packages, their entry points and what each exports.
-2. [Architecture](docs/architecture.md): the three engines and why.
-3. [Syntax](docs/syntax.md), [remark engine](docs/remark.md) and [metadata](docs/metadata.md): the rules each follows and how they are checked.
-4. [Spec suites](docs/spec-suites.md): CommonMark and GFM results, and Obsidian's departures from them.
-5. [Oracles](docs/oracles.md): how Obsidian is measured, and how to move to a new version.
-6. [Development](docs/development.md): building, checking, releasing and measuring from a clone.
-7. [Write-up](docs/write-up.md): the goals, the result per goal, and the known gaps.
+The documentation site is <https://mnaoumov.dev/obsidian-markdown-parser/>, with the [API reference](https://mnaoumov.dev/obsidian-markdown-parser/api/) generated from the TSDoc. Its guides:
+
+1. [API](https://mnaoumov.dev/obsidian-markdown-parser/guides/api/): the packages, their entry points and what each exports.
+2. [Architecture](https://mnaoumov.dev/obsidian-markdown-parser/guides/architecture/): the three engines and why.
+3. [Syntax](https://mnaoumov.dev/obsidian-markdown-parser/guides/syntax/), [remark engine](https://mnaoumov.dev/obsidian-markdown-parser/guides/remark/) and [metadata](https://mnaoumov.dev/obsidian-markdown-parser/guides/metadata/): the rules each follows and how they are checked.
+4. [Spec suites](https://mnaoumov.dev/obsidian-markdown-parser/guides/spec-suites/): CommonMark and GFM results, and Obsidian's departures from them.
+5. [Oracles](https://mnaoumov.dev/obsidian-markdown-parser/guides/oracles/): how Obsidian is measured, and how to move to a new version.
+6. [Development](https://mnaoumov.dev/obsidian-markdown-parser/guides/development/): building, checking, releasing and measuring from a clone.
+7. [Write-up](https://mnaoumov.dev/obsidian-markdown-parser/guides/write-up/): the goals, the result per goal, and the known gaps.
 
 ## See also
 
@@ -159,7 +161,7 @@ All notable changes to this project will be documented in the [CHANGELOG](./CHAN
 
 ## Contributing
 
-Issues and pull requests are welcome. Before a change to the parser, run the checks in [development.md](docs/development.md); a change that moves a measured number updates the page that states it.
+Issues and pull requests are welcome. Before a change to the parser, run the checks in [development.md](https://mnaoumov.dev/obsidian-markdown-parser/guides/development/); a change that moves a measured number updates the page that states it.
 
 ## Support
 
