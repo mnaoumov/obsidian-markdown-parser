@@ -1,0 +1,100 @@
+name: Bug report
+description: Report a bug and help improve the project
+title: "[BUG] Don't forget to write a meaningful title"
+labels: bug
+assignees: mnaoumov
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug report
+
+        > [!WARNING]
+        >
+        > Incomplete, vague, or poorly described bug reports will be closed.
+        >
+        > The bug report and all attachments must be in English. Exception: the bug is directly related to non-English language usage. Non-English bug reports will be closed.
+  - type: textarea
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug. Include any relevant details.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Affected API
+      description: Which part of the parser gives the wrong result?
+      multiple: true
+      options:
+        - Editor classes (class tokenizer, CodeMirror 6 language)
+        - Lezer tree (@lezer/markdown extensions)
+        - micromark / mdast adapter
+        - markdown-it plugin
+        - remark engine (parseRemark, renderRemarkHtml)
+        - CachedMetadata (parseMetadata, metadata package)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Input markdown
+      description: The smallest markdown document that shows the bug, exactly as written, including whitespace and front matter.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Code
+      description: The call you made, with its options (preset, flags).
+      render: typescript
+      placeholder: |
+        import { parseMetadata } from '@mnaoumov/obsidian-markdown-parser-metadata';
+
+        console.log(JSON.stringify(parseMetadata(markdown), null, 2));
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Obsidian output
+      description: What Obsidian itself gives for this input - the editor's classes, the reading view's HTML, or `app.metadataCache.getFileCache(file)` - and in which view or mode you read it.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Actual output
+      description: What the parser gave instead. Include error messages if available.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Package version
+      description: The version of `@mnaoumov/obsidian-markdown-parser` or `@mnaoumov/obsidian-markdown-parser-metadata` you used. ⚠️ Must be the latest one. If not, explain why above.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Obsidian version
+      description: The Obsidian version you read the expected output from, and the platform (desktop or mobile).
+      placeholder: 1.15.1, desktop
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment
+      description: Operating system, and the runtime or tool versions that matter (Node.js, bundler, browser, ...).
+      placeholder: Windows 11, Node.js 24
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Attachments
+      description: Screenshots, videos, logs or sample files that help reproduce the bug.
+      placeholder: Drag and drop files here.
+  - type: checkboxes
+    attributes:
+      label: Confirmations
+      description: Ensure the following conditions are met
+      options:
+        - label: I have checked the repository's issues and haven't found any similar bugs
+          required: true
