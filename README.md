@@ -169,6 +169,12 @@ Issues and pull requests are welcome. Before a change to the parser, run the che
 
 <!-- markdownlint-enable MD033 -->
 
+### Filing an issue (for AI agents and humans)
+
+Open issues through the [issue forms](https://github.com/mnaoumov/obsidian-markdown-parser/issues/new/choose), not as blank issues.
+
+Filing from the CLI or the API (`gh issue create --body`, or an AI agent filing for you) skips the form, and `gh issue create --template` cannot load an issue form. In that case, open the matching form in [`.github/ISSUE_TEMPLATE/`](https://github.com/mnaoumov/obsidian-markdown-parser/tree/HEAD/.github/ISSUE_TEMPLATE), copy every field as a `### <label>` heading in the form's order, and fill in each one. Always state the version you used and your operating system.
+
 ## License
 
 © [Michael Naumov](https://github.com/mnaoumov/). Released under the [MIT License](LICENSE). Code ported from open-source projects keeps its own license, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
