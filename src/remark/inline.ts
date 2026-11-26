@@ -178,7 +178,7 @@ function autoLink(parser: RemarkParser, eat: Eat, value: string, silent: boolean
 
   const children = withTextOnly(parser, () => parser.tokenizeInline(content, now));
 
-  return eat(subvalue)({
+  return eat.add(subvalue, {
     children,
     title: null,
     type: 'link',
@@ -251,7 +251,7 @@ function email(parser: RemarkParser, eat: Eat, value: string, silent: boolean): 
 
   const children = withTextOnly(parser, () => parser.tokenizeInline(content, eat.now()));
 
-  return eat(content)({
+  return eat.add(content, {
     children,
     title: null,
     type: 'link',
@@ -297,7 +297,7 @@ function escape(_parser: RemarkParser, eat: Eat, value: string, silent: boolean)
         return true;
       }
 
-      return eat(`\\${character}`)(character === '\n' ? { type: 'break' } : { type: 'text', value: character });
+      return eat.add(`\\${character}`, character === '\n' ? { type: 'break' } : { type: 'text', value: character });
     }
   }
 
@@ -400,7 +400,7 @@ function hardBreak(_parser: RemarkParser, eat: Eat, value: string, silent: boole
 
       queue += character;
 
-      return eat(queue)({ type: 'break' });
+      return eat.add(queue, { type: 'break' });
     }
 
     if (character !== ' ') {
@@ -502,7 +502,7 @@ function inlineCode(_parser: RemarkParser, eat: Eat, value: string, silent: bool
     }
   }
 
-  return eat(value.slice(0, closingFenceEnd))({
+  return eat.add(value.slice(0, closingFenceEnd), {
     type: 'inlineCode',
     value: value.slice(openingFenceEnd, closingFenceStart)
   });
@@ -539,7 +539,7 @@ function inlineHtml(parser: RemarkParser, eat: Eat, value: string, silent: boole
     parser.inLink = false;
   }
 
-  return eat(subvalue)({ type: 'html', value: subvalue });
+  return eat.add(subvalue, { type: 'html', value: subvalue });
 }
 
 function isAlphabeticalCode(code: number): boolean {
@@ -836,7 +836,7 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
   }
 
   if (isImage) {
-    return eat(subvalue)({
+    return eat.add(subvalue, {
       alt: parser.decodeRaw(parser.unescape(content), now) || null,
       title: title || null,
       type: 'image',
@@ -848,7 +848,7 @@ function link(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
   const children = parser.tokenizeInline(content, now);
   exit();
 
-  return eat(subvalue)({
+  return eat.add(subvalue, {
     children,
     title: title || null,
     type: 'link',
@@ -995,7 +995,7 @@ function literalUrl(parser: RemarkParser, eat: Eat, value: string, silent: boole
 
   const children = withTextOnly(parser, () => parser.tokenizeInline(content, eat.now()));
 
-  return eat(content)({ children, title: null, type: 'link', url: urlValue });
+  return eat.add(content, { children, title: null, type: 'link', url: urlValue });
 }
 
 /*
@@ -1306,7 +1306,7 @@ function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolea
   identifier = referenceType === 'full' ? identifier : content;
 
   if (isImage) {
-    return eat(subvalue)({
+    return eat.add(subvalue, {
       alt: parser.decodeRaw(parser.unescape(content), now) || null,
       identifier: normalizeIdentifier(identifier),
       label: identifier,
@@ -1319,7 +1319,7 @@ function reference(parser: RemarkParser, eat: Eat, value: string, silent: boolea
   const children = parser.tokenizeInline(content, now);
   exit();
 
-  return eat(subvalue)({
+  return eat.add(subvalue, {
     children,
     identifier: normalizeIdentifier(identifier),
     label: identifier,
@@ -1442,7 +1442,7 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
   // Without an ampersand the run is one text node, as `decode` would make it, with no point or handler to make first.
   if (!subvalue.includes('&')) {
     if (subvalue) {
-      eat(subvalue)({ type: 'text', value: subvalue });
+      eat.add(subvalue, { type: 'text', value: subvalue });
     }
 
     return;
@@ -1451,7 +1451,7 @@ function text(parser: RemarkParser, eat: Eat, value: string, silent: boolean): T
   const now = eat.now();
 
   parser.decode(subvalue, now, (content, source) => {
-    eat(source ?? content)({ type: 'text', value: content });
+    eat.add(source ?? content, { type: 'text', value: content });
   });
 
   return;

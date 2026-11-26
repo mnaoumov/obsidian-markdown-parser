@@ -60,6 +60,11 @@ describe('parseMetadata', () => {
     expect(parseMetadata('\u{FEFF}# a')?.headings?.[0]?.position.start.offset).toBe(0);
   });
 
+  it('reads a lone surrogate as the replacement character, as the worker reads the bytes', () => {
+    const replacementCharacter = '\u{D800}'.toWellFormed();
+    expect(parseMetadata('# a\u{D800}b')?.headings?.[0]?.heading).toBe(`a${replacementCharacter}b`);
+  });
+
   it('puts the footnotes section on the line after the last block', () => {
     const metadata = parseMetadata('a ^[n] b\n^bid');
     expect(metadata?.sections?.slice(-2)).toEqual([

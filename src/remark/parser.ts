@@ -8,7 +8,7 @@
  * gone. The tokenizers are in `block.ts` and `inline.ts`.
  */
 
-/* eslint-disable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- A line-for-line port: its control flow and names stay as upstream wrote them, and perfectionist/sort-classes orders public members first. */
+/* eslint-disable no-magic-numbers, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- A line-for-line port: its control flow and names stay as upstream wrote them, and perfectionist/sort-classes orders public members first. */
 
 import type {
   RemarkNode,
@@ -64,6 +64,18 @@ export interface Eat {
    * @returns A function that adds a node at the eaten range.
    */
   (subvalue: string): EatApply;
+
+  /**
+   * Eats `subvalue` and adds a node at the eaten range, as `eat(subvalue)(node, parent)` does, without making the
+   * function in between: most eats add a node at once, and that function was about a tenth of a long note's allocations. Its
+   * arguments are read before the eat, so none may eat, as with {@link Eat.reset}.
+   *
+   * @param subvalue - The text to eat. It must start the value.
+   * @param node - The node.
+   * @param parent - The parent, if not the tokens being made.
+   * @returns The node, or the text node it merged into.
+   */
+  readonly add: <Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent) => Node;
 
   /**
    * The current point.
@@ -248,6 +260,8 @@ interface TokenizeMethod {
 const ASCII_CODE_COUNT = 128;
 const SPACE_CODE = 32;
 const TAB_CODE = 9;
+const LINE_FEED_CODE = 10;
+const CARRIAGE_RETURN_CODE = 13;
 
 /**
  * The block tokenizers of `remark-parse` 8, in the order they are tried.
@@ -304,7 +318,6 @@ export const INTERRUPT_BLOCKQUOTE: Interruptors = ['indentedCode', 'fencedCode',
 // The characters a backslash escapes in `commonmark` mode (`markdown-escapes`).
 const ESCAPES = '\\`*{}[]()#+-.!_>~|\n"$%&\',/:;<=?@^';
 const LINE_BREAKS_RE = /\r\n|\r/gu;
-const LINE_ENDING_RE = /\r?\n|\r/gu;
 const BYTE_ORDER_MARK = 0xFE_FF;
 
 /**
@@ -404,11 +417,13 @@ export class LineOffsets {
    * @returns Its offset, or `null` when none is set.
    */
   public get(line: number): null | number {
-    if (Number.isSafeInteger(line) && line >= 0 && line < this.byLine.length) {
-      const value = this.byLine[line] ?? NaN;
-      return Number.isNaN(value) ? null : value;
+    // A typed array gives `undefined` for any index it does not hold, fractions and negatives included, so one read
+    // replaces the range checks every point made.
+    const value = this.byLine[line];
+    if (value === undefined) {
+      return this.beyond.get(line) ?? null;
     }
-    return this.beyond.get(line) ?? null;
+    return Number.isNaN(value) ? null : value;
   }
 
   /**
@@ -489,6 +504,9 @@ export class RemarkParser {
 
   private blockTokenizeBuilt: BlockTokenizeBuilt | undefined;
 
+  // How many `tokenize` calls are running, and the scope each depth reuses.
+  private depth = 0;
+
   /*
    * The one eat every tokenizer is given, acting on the frame of the `tokenize` call running. A tokenizer eats only while
    * its own call runs: the calls it makes for nested content have returned before it eats again.
@@ -505,6 +523,8 @@ export class RemarkParser {
 
   private readonly lineStarts: number[];
 
+  private readonly scopes: TokenizeScope[] = [];
+
   /**
    * Creates a parser over a document.
    *
@@ -515,13 +535,24 @@ export class RemarkParser {
     // The set itself, never changed: a copy would be a new key, and build its list and dispatch again for every parser.
     this.inlineTokenizers = tokenizers.inline;
     this.lineStarts = [];
-    for (const match of text.matchAll(LINE_ENDING_RE)) {
-      this.lineStarts.push(match.index + match[0].length);
+    // A scan by character code, where a match array per line was about a twentieth of a long note's allocations.
+    const length = text.length;
+    for (let index = 0; index < length; index++) {
+      const code = text.codePointAt(index);
+      if (code === LINE_FEED_CODE) {
+        this.lineStarts.push(index + 1);
+      } else if (code === CARRIAGE_RETURN_CODE) {
+        if (text.codePointAt(index + 1) === LINE_FEED_CODE) {
+          index++;
+        }
+        this.lineStarts.push(index + 1);
+      }
     }
     this.lineStarts.push(text.length + 1);
     this.offset = new LineOffsets(this.lineStarts.length);
     const eatSubvalue = (subvalue: string): EatApply => this.eatSubvalue(this.currentFrame(), subvalue);
     this.eat = Object.assign(eatSubvalue, {
+      add: <Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node => this.eatAndAdd(this.currentFrame(), subvalue, node, parent),
       now: (): RemarkPoint => this.pointOf(this.currentFrame()),
       reset: <Node extends RemarkNode>(subvalue: string, node: Node, parent?: RemarkParent): Node => this.eatAndReset(this.currentFrame(), subvalue, node, parent),
       test: (subvalue: string): RemarkPosition => this.eatAndTest(this.currentFrame(), subvalue)
@@ -854,9 +885,28 @@ export class RemarkParser {
       return this.place(frame, this.addEaten(frame, this.place(frame, node, current), parent), current, indentation);
     }
 
+    /*
+     * A new text node that merges into the text before it is never placed: its position would be read only to decide the
+     * merge, and is computed here without being made. A paragraph's text is eaten up to each place a construct could
+     * start, and most of those runs merge, so most of them need no position of their own.
+     */
+    if (node.type === 'text') {
+      const previous = (parent ? parent.children : frame.tokens).at(-1);
+      if (
+        previous?.type === 'text'
+        && isMergeable(previous)
+        && (current.line !== frame.line || frame.column - current.column === node.value.length)
+      ) {
+        previous.value += node.value;
+        const merged: RemarkNode = this.place(frame, previous, current, indentation);
+        return merged as Node;
+      }
+    }
+
     // A new node gets the position the two placings give it at once: the first leaves an empty indent that the second
-    // copies the eaten lines' indentation after. Merging reads only its start and end.
-    node.position = { end: this.pointOf(frame), indent: [...indentation], start: current };
+    // copies the eaten lines' indentation after. Merging reads only its start and end. The indentation is the caller's
+    // own copy, since a later merge into this node appends to its indent.
+    node.position = { end: this.pointOf(frame), indent: indentation, start: current };
     const result = this.addEaten(frame, node, parent);
     return result === node ? node : this.place(frame, result, current, indentation);
   }
@@ -899,6 +949,12 @@ export class RemarkParser {
     return this.frame;
   }
 
+  // `eat(subvalue)(node, parent)` in one step, with no function in between and no copy of the indentation.
+  private eatAndAdd<Node extends RemarkNode>(frame: TokenizeFrame, subvalue: string, node: Node, parent?: RemarkParent): Node {
+    const current = this.consume(frame, subvalue);
+    return this.applyEaten(frame, current, this.indentationAfter(current.line, frame.line), node, parent);
+  }
+
   private eatAndReset<Node extends RemarkNode>(frame: TokenizeFrame, subvalue: string, node: Node, parent?: RemarkParent): Node {
     const startLine = frame.line;
     const startColumn = frame.column;
@@ -938,7 +994,8 @@ export class RemarkParser {
 
     // Upstream made `reset` and `test` closures for every eat, and only a few tokenizers ever call them. An anonymous
     // arrow, since a bundler keeping names wraps every named function expression it creates in a call.
-    return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => this.applyEaten(frame, current, indentation, node, parent);
+    // The function may be called more than once, so each call gets its own copy of the indentation.
+    return <Node extends RemarkNode>(node: Node, parent?: RemarkParent): Node => this.applyEaten(frame, current, [...indentation], node, parent);
   }
 
   // The indentation of each line after `firstLine` up to `lastLine`: those an eaten text covers after its first.
@@ -965,16 +1022,15 @@ export class RemarkParser {
   private place<Carrier extends PositionCarrier>(frame: TokenizeFrame, node: Carrier, before: RemarkPoint, indent?: number[]): Carrier {
     const previous = node.position;
     const start = previous ? previous.start : before;
-    let combined: number[] = [];
-    let n = previous?.end.line ?? 0;
-    const l = before.line;
     let nodeIndent = indent;
 
-    node.position = { end: this.pointOf(frame), indent: [], start };
-
-    // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in.
+    // A merged node: its start stays, and the indent between the two parts, which is empty, is filled in. Upstream
+    // copies the node's indent and the new one into a new array; the node's own indent, which nothing else holds, is
+    // extended in place instead.
     if (previous && nodeIndent && previous.indent) {
-      combined = previous.indent;
+      const combined = previous.indent;
+      let n = previous.end.line;
+      const l = before.line;
 
       if (n < l) {
         while (++n < l) {
@@ -984,10 +1040,14 @@ export class RemarkParser {
         combined.push(before.column);
       }
 
-      nodeIndent = [...combined, ...nodeIndent];
+      const added = nodeIndent === combined ? [...nodeIndent] : nodeIndent;
+      for (const column of added) {
+        combined.push(column);
+      }
+      nodeIndent = combined;
     }
 
-    node.position.indent = nodeIndent ?? [];
+    node.position = { end: this.pointOf(frame), indent: nodeIndent ?? [], start };
 
     return node;
   }
@@ -1024,7 +1084,19 @@ export class RemarkParser {
       return tokens;
     }
 
-    const scope = new TokenizeScope(initialValue.length);
+    /*
+     * One scope per nesting depth, reused by every later call at that depth: the calls nest, so the scope of a call that
+     * returned is read by nobody. A fresh scope per call made its memo entries again for every paragraph and heading,
+     * and those entries were a quarter of a long note's allocations.
+     */
+    const depth = this.depth;
+    let scope = this.scopes[depth];
+    if (scope) {
+      scope.reuse(initialValue.length);
+    } else {
+      scope = new TokenizeScope(initialValue.length);
+      this.scopes.push(scope);
+    }
     const frame = new TokenizeFrame(initialValue, location, tokens, scope);
     const outerFrame = this.frame;
     const outerScope = this.scope;
@@ -1036,6 +1108,7 @@ export class RemarkParser {
 
     this.frame = frame;
     this.scope = scanMemoSettings.isEnabled ? scope : undefined;
+    this.depth = depth + 1;
     try {
       // Try every tokenizer; when one eats, start over on the rest.
       while (frame.value) {
@@ -1079,6 +1152,7 @@ export class RemarkParser {
         }
       }
     } finally {
+      this.depth = depth;
       this.frame = outerFrame;
       this.scope = outerScope;
     }
@@ -1127,19 +1201,32 @@ export class TokenizeScope {
    */
   public isValid = true;
 
+  /**
+   * The text's length.
+   */
+  public length: number;
+
   // All three are made on first use: most `tokenize` calls read a heading or a short line and need none.
   private foundIndices: Map<string, LocatedIndex> | undefined;
+
+  // Which text each entry of `locatedIndices` was found in: an entry left by an earlier text is reset on its first use.
+  private readonly locatedGenerations: number[] = [];
 
   private locatedIndices: LocatedIndex[] | undefined;
 
   private memos: Map<string, Map<number, number>> | undefined;
+
+  // Counts the texts this scope has held.
+  private textGeneration = 0;
 
   /**
    * Creates the memos of a text.
    *
    * @param length - The text's length.
    */
-  public constructor(public readonly length: number) {}
+  public constructor(length: number) {
+    this.length = length;
+  }
 
   /**
    * `value.indexOf(search, fromIndex)`, remembered by `search`: what a search found from an earlier start still holds
@@ -1181,6 +1268,11 @@ export class TokenizeScope {
     if (!entry) {
       entry = { at: -1, from: Infinity };
       this.locatedIndices[slot] = entry;
+      this.locatedGenerations[slot] = this.textGeneration;
+    } else if (this.locatedGenerations[slot] !== this.textGeneration) {
+      // Left by an earlier text: what it found holds for that text only.
+      resetLocated(entry);
+      this.locatedGenerations[slot] = this.textGeneration;
     }
     return entry;
   }
@@ -1199,6 +1291,28 @@ export class TokenizeScope {
       this.memos.set(name, map);
     }
     return map;
+  }
+
+  /**
+   * Makes the memos those of a new text, keeping the entries to fill in again: the scope is reused by the next
+   * `tokenize` call at its depth once its own call has returned.
+   *
+   * @param length - The new text's length.
+   */
+  public reuse(length: number): void {
+    this.length = length;
+    this.isValid = true;
+    this.textGeneration++;
+    // `forEach` with a function made once, where a `for...of` makes an iterator at every `tokenize` call.
+    this.foundIndices?.forEach(resetLocated);
+    this.memos?.forEach(clearMemo);
+  }
+}
+
+// Only a memo that holds something: clearing makes the map a new table even when it is empty.
+function clearMemo(memo: Map<number, number>): void {
+  if (memo.size > 0) {
+    memo.clear();
   }
 }
 
@@ -1254,4 +1368,16 @@ function isMergeable(node: RemarkNode): boolean {
   return start.line !== end.line || end.column - start.column === node.value.length;
 }
 
-/* eslint-enable no-magic-numbers, no-useless-assignment, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- The port ends here. */
+// Forgets what a search found, and what each of its markers' searches found.
+function resetLocated(entry: LocatedIndex): void {
+  entry.at = -1;
+  entry.from = Infinity;
+  if (entry.alternatives) {
+    for (const alternative of entry.alternatives) {
+      alternative.at = -1;
+      alternative.from = Infinity;
+    }
+  }
+}
+
+/* eslint-enable no-magic-numbers, unicorn/consistent-boolean-name, unicorn/consistent-class-member-order, unicorn/no-break-in-nested-loop, unicorn/prefer-ternary -- The port ends here. */
